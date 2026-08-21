@@ -1,0 +1,76 @@
+name: onyx
+description: Knowledge graph flashcard app with spaced repetition.
+publish_to: none
+
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^3.1.0
+  riverpod_annotation: ^4.0.0
+  hooks_riverpod: ^3.1.0
+  flutter_hooks: ^0.21.3+1
+
+  # Database
+  drift: ^2.19.1
+  sqlite3_flutter_libs: ^0.6.0+eol
+  path_provider: ^2.1.3
+  path: ^1.9.0
+
+  # File / vault access
+  file_picker: ^12.0.0
+
+  # Markdown rendering — flutter_markdown was discontinued by Google (May 2025);
+  # flutter_markdown_plus is the community-maintained, API-compatible successor.
+  flutter_markdown_plus: ^1.0.6
+
+  # Secure storage (API key in iOS Keychain)
+  flutter_secure_storage: ^11.0.0
+
+  # Navigation
+  go_router: ^17.5.0
+
+  # Claude API
+  http: ^1.2.2
+
+  # URL launching (practice redirect after interview question review)
+  url_launcher: ^6.3.0
+
+  # Utilities
+  uuid: ^4.4.2
+  intl: ^0.20.3
+  yaml: ^3.1.2
+
+  # SRS scheduler — official open-spaced-repetition Dart port of FSRS-6.
+  # Pure Dart, no native deps. Reversible: we can vendor/self-implement later.
+  fsrs: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Riverpod code generation
+  riverpod_generator: ^4.0.0+1
+  riverpod_lint: ^3.1.0
+  build_runner: ^2.4.11
+
+  # drift code generation
+  drift_dev: ^2.19.1
+
+  # Custom lint runner (required by riverpod_lint)
+  custom_lint: ^0.8.1
+
+  # Test utilities
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

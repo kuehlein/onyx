@@ -1,0 +1,1 @@
+**Cache hit rate** is the primary health metric. In well-tuned production systems, hit rates of 95–99% are common for read-heavy workloads. At 99% hit rate, a cache absorbs 99 of every 100 DB reads. Dropping from 99% to 90% increases DB load by **10x** (miss rate goes from 1% to 10%); a cache stampede can cause a hit rate to collapse to 0% momentarily.
