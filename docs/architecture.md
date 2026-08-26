@@ -100,8 +100,32 @@ Template files live in `examples/vault/_meta/` in the project repo.
 - Vault path bookmark + user preferences
 - API key reference (actual key in iOS Keychain via `flutter_secure_storage`)
 
-If SQLite is deleted, all card content survives in the vault. SRS history is
-lost; that is the accepted trade-off for local-first with no server.
+If SQLite is deleted, all card content survives in the vault, and the derived
+caches (`card_cache`, `card_links`) rebuild on the next index. SRS *progress*
+would be lost — except that Onyx periodically snapshots it into the vault (see
+below), so a reinstall or corrupted DB restores your scheduling state too.
+
+### SRS State Backup & Restore
+
+The precious, non-rebuildable data is `srs_state` (current scheduling) and the
+`reviews` history. To survive a lost SQLite file without a server, Onyx writes a
+compact snapshot into the vault at `Flashcards/_meta/onyx-state.json`, carried
+off-device for free by whatever already syncs the vault (Obsidian Sync, git,
+iCloud).
+
+- **What:** `srs_state` for every `(card_id, section_slug)` — stability,
+  difficulty, due, review count, last review — keyed by `card_id` so it survives
+  file renames. ~120 KB for a few hundred cards. A compacted review summary is
+  optional.
+- **When:** debounced — written on session end / app backgrounding, never per
+  review. The vault sees one changed file per session (no churn, and no volatile
+  state mixed into authored card files).
+- **Restore:** on launch with an empty `srs_state`, seed the DB from the snapshot
+  if present. On conflict, most recent `last_review` wins.
+
+This is a durability layer built after the core study loop works. It needs no
+change to the card format — the snapshot is a separate `_meta/` file, decoupled
+from the cards.
 
 ## SQLite Schema
 
