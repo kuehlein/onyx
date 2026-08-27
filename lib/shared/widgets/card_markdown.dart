@@ -74,25 +74,18 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
     String data,
     Map<String, String> glossary,
   ) {
-    final sheet = _styleSheet(context);
-    final scheme = Theme.of(context).colorScheme;
     return MarkdownBody(
       data: data,
       selectable: true,
-      styleSheet: sheet,
-      builders: {
-        'code': CodeBlockBuilder(),
-        // Custom link rendering: a real bottom border lets the underline sit
-        // lower and thicker than a text-decoration underline (which Flutter
-        // can't offset, so it collides with the glyphs).
-        'a': _LinkBuilder(
-          textStyle: sheet.p ?? const TextStyle(),
-          underlineColor: scheme.onSurfaceVariant,
-          onTap: (text, href) => _handleLink(context, text, href, glossary),
-        ),
-      },
+      styleSheet: _styleSheet(context),
+      builders: {'code': CodeBlockBuilder()},
       // GitHub-flavored so pipe tables, strikethrough, and ```lang fences parse.
       extensionSet: md.ExtensionSet.gitHubFlavored,
+      // Native link rendering keeps links inline, selectable, and tappable —
+      // custom widgets broke all three. The underline is styled in the sheet.
+      onTapLink: (text, href, title) {
+        if (href != null) _handleLink(context, text, href, glossary);
+      },
     );
   }
 
@@ -253,9 +246,15 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
-      // Links are rendered by _LinkBuilder (custom underline), so this style is
-      // unused for `a`; keep it plain.
-      a: body,
+      // Links (glossary terms + external): body-coloured text with a dim, dotted
+      // underline — discreet, and it stays native so links flow inline, remain
+      // selectable, and are tappable.
+      a: body.copyWith(
+        decoration: TextDecoration.underline,
+        decorationStyle: TextDecorationStyle.dotted,
+        decorationColor: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+        decorationThickness: 1.5,
+      ),
       // Accent only the bullet marker (not the item text) so lists are scannable
       // without lowering text contrast.
       listBullet: body.copyWith(color: scheme.primary),
@@ -292,89 +291,6 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
       tableBody: body.copyWith(fontSize: 15),
     );
   }
-}
-
-/// Renders a Markdown link (`a`) with a custom underline that can sit lower and
-/// thicker than a text-decoration underline, and routes taps to [onTap].
-class _LinkBuilder extends MarkdownElementBuilder {
-  _LinkBuilder({
-    required this.textStyle,
-    required this.underlineColor,
-    required this.onTap,
-  });
-
-  final TextStyle textStyle;
-  final Color underlineColor;
-  final void Function(String text, String href) onTap;
-
-  @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    final href = element.attributes['href'];
-    if (href == null) return null;
-    final label = element.textContent;
-    return _LinkText(
-      text: label,
-      style: textStyle,
-      underlineColor: underlineColor,
-      onTap: () => onTap(label, href),
-    );
-  }
-}
-
-class _LinkText extends StatelessWidget {
-  const _LinkText({
-    required this.text,
-    required this.style,
-    required this.underlineColor,
-    required this.onTap,
-  });
-
-  final String text;
-  final TextStyle style;
-  final Color underlineColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: CustomPaint(
-        // Dotted line painted in the reserved bottom padding — control over
-        // dots, thickness, and offset that a text-decoration underline lacks.
-        foregroundPainter: _DottedUnderline(color: underlineColor),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Text(text, style: style),
-        ),
-      ),
-    );
-  }
-}
-
-/// A thin dotted line along the bottom edge of the paint area.
-class _DottedUnderline extends CustomPainter {
-  _DottedUnderline({required this.color});
-
-  final Color color;
-  static const _stroke = 1.0;
-  static const _dash = 1.0;
-  static const _gap = 2.5;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = _stroke
-      ..strokeCap = StrokeCap.round;
-    final y = size.height - _stroke / 2;
-    for (var x = 0.0; x < size.width; x += _dash + _gap) {
-      canvas.drawLine(Offset(x, y), Offset(x + _dash, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DottedUnderline old) => old.color != color;
 }
 
 /// A run of the source: either a normal Markdown chunk or a parsed callout.
