@@ -12,6 +12,12 @@ class SrsStates extends Table {
   TextColumn get sectionSlug => text()();
   RealColumn get stability => real().withDefault(const Constant(0))();
   RealColumn get difficulty => real().withDefault(const Constant(5))();
+
+  /// FSRS learning state: 1=learning, 2=review, 3=relearning (see fsrs State).
+  IntColumn get state => integer().withDefault(const Constant(1))();
+
+  /// FSRS learning/relearning step index; null once the card reaches review.
+  IntColumn get step => integer().nullable()();
   DateTimeColumn get dueAt => dateTime()();
   DateTimeColumn get lastReview => dateTime().nullable()();
   IntColumn get reviewCount => integer().withDefault(const Constant(0))();

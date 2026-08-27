@@ -20,7 +20,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          // v2: FSRS learning-state columns on srs_state.
+          if (from < 2) {
+            await m.addColumn(srsStates, srsStates.state);
+            await m.addColumn(srsStates, srsStates.step);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {
