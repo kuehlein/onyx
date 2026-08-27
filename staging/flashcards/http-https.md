@@ -16,7 +16,7 @@ confidence: low
 HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for transferring data between clients and servers over [TCP](_meta/glossary.md#tcp); HTTPS adds a [TLS](_meta/glossary.md#tls) layer that encrypts the connection before any application data is exchanged, providing confidentiality, integrity, and server authentication. The stateless property means every request is independent — servers must not rely on prior connection state, which enables horizontal scaling.
 
 > [!tip] Reach for HTTPS when
-> Any credentials, [PII](_meta/glossary.md#pii), or payment data are in transit, or the [API](_meta/glossary.md#api) is public-facing. TLS prevents man-in-the-middle interception; statelessness is what lets you scale horizontally without sticky sessions.
+> Any credentials, [PII](_meta/glossary.md#pii), or payment data are in transit, or the API is public-facing. TLS prevents man-in-the-middle interception; statelessness is what lets you scale horizontally without sticky sessions.
 
 ## When to Use
 

@@ -3,9 +3,6 @@
 Definitions for acronyms used across cards. Edit freely in Obsidian — this note
 is the single source of truth. Cards link here, e.g. `[TCP](_meta/glossary.md#tcp)`.
 
-## API
-Application Programming Interface — the defined set of endpoints or functions one program exposes for another to call.
-
 ## CDN
 Content Delivery Network — a geographically distributed set of caching servers that serve static content from a location near the user.
 

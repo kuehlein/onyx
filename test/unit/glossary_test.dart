@@ -19,12 +19,15 @@ http.Client _client(String replyText) => MockClient((_) async => http.Response(
 
 void main() {
   group('detectGlossaryTerms', () {
-    test('finds acronyms, skips stopwords and single letters', () {
+    test('finds specialist acronyms, skips stopwords and single letters', () {
       final terms = detectGlossaryTerms([
-        'Use HTTP over TCP; the API resolves via DNS.',
+        'Use HTTP over TCP; the API resolves via DNSSEC.',
         'A note: OK, TODO later. A single X, and O(1).',
       ]);
-      expect(terms, containsAll({'HTTP', 'TCP', 'API', 'DNS'}));
+      expect(terms, containsAll({'TCP', 'DNSSEC'}));
+      // ubiquitous / noise are stopped
+      expect(terms.contains('HTTP'), isFalse);
+      expect(terms.contains('API'), isFalse);
       expect(terms.contains('OK'), isFalse);
       expect(terms.contains('A'), isFalse);
     });

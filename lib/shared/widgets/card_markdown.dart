@@ -18,41 +18,55 @@ import 'code_block.dart';
 /// the browser. Line length is meant to be constrained by the caller (~66ch).
 ///
 /// Obsidian-style callouts (`> [!tip] Title` … ) render as tinted, iconed
-/// panels. Links into the vault glossary note (`[API](_meta/glossary.md#api)`)
-/// pop a definition sheet instead of navigating. Everything else is normal
-/// Markdown.
-class CardMarkdown extends ConsumerWidget {
+/// panels. Links into the vault glossary note (`[TCP](_meta/glossary.md#tcp)`)
+/// render as discreet dotted terms and, on tap, show a small definition popover
+/// anchored to the term (Wikipedia-style) rather than navigating.
+class CardMarkdown extends ConsumerStatefulWidget {
   const CardMarkdown(this.data, {super.key});
 
   final String data;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CardMarkdown> createState() => _CardMarkdownState();
+}
+
+class _CardMarkdownState extends ConsumerState<CardMarkdown> {
+  // Last pointer-down position, used to anchor the glossary popover to the term
+  // (onTapLink doesn't report coordinates).
+  Offset? _tapDown;
+
+  @override
+  Widget build(BuildContext context) {
     final glossary = ref.watch(glossaryProvider).asData?.value ?? const {};
-    final segments = _splitCallouts(data);
+    final segments = _splitCallouts(widget.data);
 
-    // Common case: no callouts — render the whole thing as one Markdown block.
+    final Widget content;
     if (segments.length == 1 && !segments.first.isCallout) {
-      return _markdown(context, segments.first.content, glossary);
+      content = _markdown(context, segments.first.content, glossary);
+    } else {
+      final children = <Widget>[];
+      for (final segment in segments) {
+        if (children.isNotEmpty) children.add(const SizedBox(height: 12));
+        children.add(
+          segment.isCallout
+              ? Callout(
+                  type: segment.calloutType!,
+                  title: segment.calloutTitle,
+                  body: segment.content.isEmpty
+                      ? null
+                      : _markdown(context, segment.content, glossary),
+                )
+              : _markdown(context, segment.content, glossary),
+        );
+      }
+      content = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
     }
 
-    final children = <Widget>[];
-    for (final segment in segments) {
-      if (children.isNotEmpty) children.add(const SizedBox(height: 12));
-      children.add(
-        segment.isCallout
-            ? Callout(
-                type: segment.calloutType!,
-                title: segment.calloutTitle,
-                body: segment.content.isEmpty
-                    ? null
-                    : _markdown(context, segment.content, glossary),
-              )
-            : _markdown(context, segment.content, glossary),
-      );
-    }
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+    return Listener(
+      onPointerDown: (event) => _tapDown = event.position,
+      child: content,
+    );
   }
 
   Widget _markdown(
@@ -72,8 +86,8 @@ class CardMarkdown extends ConsumerWidget {
     );
   }
 
-  /// A link whose path ends in the glossary note is resolved to a definition
-  /// sheet (the anchor is the term slug); any other link opens externally.
+  /// A link whose path ends in the glossary note pops a definition (its anchor
+  /// is the term slug); any other link opens externally.
   Future<void> _onTapLink(
     BuildContext context,
     String text,
@@ -90,7 +104,8 @@ class CardMarkdown extends ConsumerWidget {
         if (anchor.startsWith('^')) anchor = anchor.substring(1); // block-ref
         final definition = glossary[anchor];
         if (definition != null) {
-          _showDefinition(context, text.isEmpty ? anchor : text, definition);
+          _showGlossaryPopover(
+              context, text.isEmpty ? anchor : text, definition);
         }
         return;
       }
@@ -103,27 +118,78 @@ class CardMarkdown extends ConsumerWidget {
     }
   }
 
-  void _showDefinition(BuildContext context, String term, String definition) {
+  /// A small floating card near the tapped term; tap outside to dismiss.
+  void _showGlossaryPopover(
+      BuildContext context, String term, String definition) {
+    final overlay = Overlay.of(context);
     final theme = Theme.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(term,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(color: theme.colorScheme.primary)),
-            const SizedBox(height: 8),
-            Text(definition,
-                style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
-          ],
-        ),
+    final screen = MediaQuery.of(context).size;
+    final tap = _tapDown ?? Offset(screen.width / 2, screen.height / 2);
+
+    const width = 300.0;
+    const estHeight = 160.0;
+    final left = (tap.dx - width / 2).clamp(8.0, screen.width - width - 8);
+    final below = tap.dy + 16;
+    final flipAbove = below + estHeight > screen.height - 16;
+    final top = flipAbove
+        ? (tap.dy - estHeight - 16).clamp(8.0, screen.height - 16)
+        : below;
+
+    late OverlayEntry entry;
+    void dismiss() {
+      if (entry.mounted) entry.remove();
+    }
+
+    entry = OverlayEntry(
+      builder: (ctx) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: dismiss,
+              child: const SizedBox.shrink(),
+            ),
+          ),
+          Positioned(
+            left: left,
+            top: top,
+            child: GestureDetector(
+              onTap: () {}, // absorb taps on the card so it doesn't dismiss
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: width, maxHeight: screen.height * 0.5),
+                child: Material(
+                  elevation: 8,
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(term,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 6),
+                          Text(definition,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  height: 1.4,
+                                  color: theme.colorScheme.onSurface)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
+    overlay.insert(entry);
   }
 
   MarkdownStyleSheet _styleSheet(BuildContext context) {
@@ -179,10 +245,13 @@ class CardMarkdown extends ConsumerWidget {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
+      // Discreet: links keep the body colour with only a faint dotted underline
+      // (glossary terms should whisper, not shout). Same treatment for external
+      // links — unobtrusive is the goal.
       a: body.copyWith(
-        color: scheme.primary,
         decoration: TextDecoration.underline,
-        decorationColor: scheme.primary.withValues(alpha: 0.5),
+        decorationStyle: TextDecorationStyle.dotted,
+        decorationColor: bodyColor.withValues(alpha: 0.4),
       ),
       // Accent only the bullet marker (not the item text) so lists are scannable
       // without lowering text contrast.

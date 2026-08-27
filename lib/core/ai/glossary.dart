@@ -5,8 +5,16 @@ import 'claude_service.dart';
 /// candidates for the one-time AI draft of the glossary note — NOT at runtime.
 final _acronymPattern = RegExp(r'\b[A-Z][A-Z0-9]{1,5}\b');
 
-/// Obvious noise to skip before spending tokens; the AI filters the rest.
-const _stopWords = {'OK', 'TODO', 'FIXME', 'NOTE', 'TIP', 'ETC', 'AKA'};
+/// Skipped before drafting: editor noise, plus ubiquitous terms any SWE
+/// interview candidate already knows (defining them would just be clutter). The
+/// AI prompt filters the rest.
+const _stopWords = {
+  // editor noise
+  'OK', 'TODO', 'FIXME', 'NOTE', 'TIP', 'ETC', 'AKA',
+  // assumed-known SWE basics
+  'API', 'HTTP', 'HTTPS', 'URL', 'URI', 'ID', 'CPU', 'RAM', 'GPU', 'OS',
+  'IO', 'UI', 'UX', 'HTML', 'CSS', 'PC', 'USB', 'FAQ',
+};
 
 /// Distinct candidate acronyms found across [texts].
 Set<String> detectGlossaryTerms(Iterable<String> texts) {
