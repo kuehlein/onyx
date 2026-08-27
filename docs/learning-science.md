@@ -206,3 +206,58 @@ Do not obsess over card atomicity — there is no peer-reviewed evidence that
 splitting every card into six mini-cards produces better results than one
 well-structured card. Use Onyx to build the pattern library; supplement with
 novel problem practice for transfer.
+
+---
+
+## Presentation & Visual Design
+
+The sections above concern *content*. This one concerns how a card is *shown* —
+grounded in cognitive load theory, Mayer's multimedia principles, WCAG, and the
+readability literature. (Synthesized from a research pass; the named works are
+established but exact citations weren't live-verified.)
+
+### Typography & contrast
+
+**Confidence: High.** On dark themes, pure white on pure black causes *halation*
+(glyphs bloom into the dark field) and reads as an undifferentiated wall. Use
+**off-white text on a dark-gray surface**, never `#FFF` on `#000`. Body prose at
+**~16px, line-height 1.5**, with generous spacing between blocks. Cap line length
+to a **readable measure (~66 characters)** even on wide screens — long lines hurt
+comprehension. Build hierarchy from **weight, opacity tiers, and a single accent
+hue** (Mayer's *signaling* principle), not a riot of colors; over-cueing cancels
+the benefit.
+
+### Segmentation & progressive disclosure
+
+**Confidence: Medium-High.** Mayer's *segmenting* principle (learner-paced chunks)
+reliably helps, most for complex material and novices. But hiding content behind
+a click has a cost: collapsed sections are under-explored ("out of sight, out of
+mind"). Reconciliation: **always chunk; collapse selectively.** Keep the card's
+*core teaching* visible; collapse only supplementary/long/already-known material,
+and **label collapsed sections** so the reader can decide to expand. In Onyx the
+core ≈ the quizzable (scheduled) sections — these stay expanded and accented; the
+rest collapse by default.
+
+### Syntax highlighting
+
+**Confidence: Medium.** Sarkar (2015) found syntax colouring reduces code
+comprehension time, with the benefit **larger for novices** and shrinking with
+expertise. Use a **restrained palette** and — critically for a learning tool —
+keep **comments legible** (many dark themes render them below 4.5:1; lift them).
+
+### Inline links vs. a deferred "Related" section
+
+**Confidence: High (that inline links raise load).** DeStefano & LeFevre (2007)
+reviewed hypertext reading and found embedded links generally **increase
+cognitive load and often decrease comprehension** — each inline link forces a
+"click or not?" decision and invites disorientation. This is the *seductive
+details* / *coherence* problem applied to navigation.
+
+**Design implication for Onyx:** keep the study passage **linear and link-free**;
+surface concept connections in a **deferred "Related" section** after the
+content, curated to a few high-value links. This is the evidence-based default
+and the one Onyx follows. If in-body concept links are ever added (the
+"Wikipedia-style" idea), make them **low-cost and deferred** — subtly marked, no
+navigation on a stray tap, connection revealed on explicit long-press/expand —
+rather than bright inline jumps. (Note: card wikilinks currently render as inert
+`[[slug]]` text in the body; making them interactive is exactly this decision.)
