@@ -32,14 +32,14 @@ A blockchain is a cryptographically linked list of blocks where each block conta
 - Over a distributed database with MVCC: you need Byzantine fault tolerance, not just crash fault tolerance — you do not trust all writers
 
 **Do not use when:**
-- All writers are trusted and performance matters → use a replicated database (Postgres + WAL, CockroachDB)
+- All writers are trusted and performance matters → use a replicated database (Postgres + [WAL](_meta/glossary.md#wal), CockroachDB)
 - You need mutable records → use a distributed key-value store; blockchains are append-only by design
-- Throughput requirements exceed ~thousands of TPS and finality latency is critical → consider L2 rollups or permissioned chains (Hyperledger Fabric), not a public L1
+- Throughput requirements exceed ~thousands of [TPS](_meta/glossary.md#tps) and finality latency is critical → consider L2 rollups or permissioned chains (Hyperledger Fabric), not a public L1
 
 ## Key Properties
 
 **Block anatomy (Bitcoin-style):**
-- `previousHash`: SHA-256(SHA-256(previous block header)) — the cryptographic link
+- `previousHash`: [SHA-256](_meta/glossary.md#sha-256)(SHA-256(previous block header)) — the cryptographic link
 - `merkleRoot`: root of a Merkle tree over all transactions in this block; lets a light client verify one transaction with O(log n) hashes instead of downloading all transactions
 - `nonce`: the value miners iterate to satisfy the proof-of-work target (`hash(header) < target`)
 - `timestamp`, `version`, `bits` (difficulty target): consensus metadata
@@ -48,8 +48,8 @@ A blockchain is a cryptographically linked list of blocks where each block conta
 Every block header commits to its entire ancestry. A hash is a fixed-size digest produced by a one-way function — collision resistance means no attacker can produce two distinct inputs with the same digest. Therefore `previousHash` is an unforgeable pointer; changing any ancestor changes all descendant hashes, breaking the chain.
 
 **Ethereum extensions:**
-- Block header additionally contains `stateRoot`, `transactionsRoot`, and `receiptsRoot` — all Merkle Patricia Trie (MPT) roots. This lets a client verify world-state membership proofs (EIP-1186) without syncing the full chain.
-- Post-Merge: PoW nonce replaced by a BLS aggregate signature from the validator committee (`randaoReveal`, `parentBeaconBlockRoot`).
+- Block header additionally contains `stateRoot`, `transactionsRoot`, and `receiptsRoot` — all Merkle Patricia Trie ([MPT](_meta/glossary.md#mpt)) roots. This lets a client verify world-state membership proofs (EIP-1186) without syncing the full chain.
+- Post-Merge: [PoW](_meta/glossary.md#pow) nonce replaced by a [BLS](_meta/glossary.md#bls) aggregate signature from the validator committee (`randaoReveal`, `parentBeaconBlockRoot`).
 
 ## Time & Space Complexity
 
@@ -61,7 +61,7 @@ Every block header commits to its entire ancestry. A hash is a fixed-size digest
 | Merkle inclusion proof | O(log n) | Sibling hashes from leaf to root |
 | Reorg to depth d | O(d · n) | Must re-validate d blocks |
 
-Space: O(h · n) for full node storing all blocks and transactions. Bitcoin's UTXO set is ~10 GB (2025); Ethereum's full state is ~1+ TB with history.
+Space: O(h · n) for full node storing all blocks and transactions. Bitcoin's [UTXO](_meta/glossary.md#utxo) set is ~10 GB (2025); Ethereum's full state is ~1+ TB with history.
 
 ## Common Pitfalls
 
@@ -74,9 +74,9 @@ Space: O(h · n) for full node storing all blocks and transactions. Bitcoin's UT
 
 **Merkle tree second-preimage attack.** In a naive binary Merkle tree, an internal node and a leaf node of the same digest can be confused if the tree is not depth-prefixed. Bitcoin prevents this by different hash functions for leaves vs. internal nodes. Do not implement a Merkle tree without this distinction.
 
-**Finality is probabilistic on PoW chains.** Six confirmations on Bitcoin gives ~99.9% practical finality, but it is never absolute. Ethereum PoS has economic finality after two justified checkpoints (~12.8 min) — a materially different guarantee; know which you are discussing.
+**Finality is probabilistic on PoW chains.** Six confirmations on Bitcoin gives ~99.9% practical finality, but it is never absolute. Ethereum [PoS](_meta/glossary.md#pos) has economic finality after two justified checkpoints (~12.8 min) — a materially different guarantee; know which you are discussing.
 
-**Hash pointer ≠ content-addressed storage.** A `previousHash` is a commitment to the exact bytes of the prior block header, not a fetch key (unlike IPFS CIDs). The chain does not self-host retrieval; peers gossip blocks separately.
+**Hash pointer ≠ content-addressed storage.** A `previousHash` is a commitment to the exact bytes of the prior block header, not a fetch key (unlike IPFS [CID](_meta/glossary.md#cid)s). The chain does not self-host retrieval; peers gossip blocks separately.
 
 ## Trade-offs
 
@@ -158,14 +158,14 @@ Key observations:
 - Bitcoin: unspent transaction outputs; validity requires no double-spend, checked against the UTXO set
 - Ethereum: account balances and nonces; validity requires nonce monotonicity and sufficient balance
 
-**Rollup blocks (L2):** L2 sequencers post compressed transaction data or ZK-validity proofs to L1 blocks. The L1 block's data availability guarantees the L2 chain's integrity even if the L2 operator disappears.
+**Rollup blocks (L2):** L2 sequencers post compressed transaction data or [ZK](_meta/glossary.md#zk)-validity proofs to L1 blocks. The L1 block's data availability guarantees the L2 chain's integrity even if the L2 operator disappears.
 
 ## Resources
 
 - Bitcoin Whitepaper: https://bitcoin.org/bitcoin.pdf (sections 2–4 cover the chain structure and Merkle tree)
 - Ethereum Yellow Paper: https://ethereum.github.io/yellowpaper/paper.pdf (block header spec, MPT)
 - *Mastering Bitcoin* (Antonopoulos) — Chapter 9: The Blockchain
-- *Mastering Ethereum* (Antonopoulos & Wood) — Chapter 9: Smart Contracts and the EVM
+- *Mastering Ethereum* (Antonopoulos & Wood) — Chapter 9: Smart Contracts and the [EVM](_meta/glossary.md#evm)
 - Ethereum EIP-1186 (eth_getProof / state proofs): https://eips.ethereum.org/EIPS/eip-1186
 
 ## Related

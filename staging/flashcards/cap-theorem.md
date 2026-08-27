@@ -13,14 +13,14 @@ confidence: medium
 
 # CAP Theorem
 
-A distributed data store can guarantee at most two of three properties simultaneously: **Consistency** (every read receives the most recent write or an error), **Availability** (every request receives a non-error response, though it may be stale), and **Partition Tolerance** (the system continues operating despite network partitions). Because network partitions are unavoidable in practice, real-world systems choose between CP and AP behavior — not CA.
+A distributed data store can guarantee at most two of three properties simultaneously: **Consistency** (every read receives the most recent write or an error), **Availability** (every request receives a non-error response, though it may be stale), and **Partition Tolerance** (the system continues operating despite network partitions). Because network partitions are unavoidable in practice, real-world systems choose between [CP](_meta/glossary.md#cp) and [AP](_meta/glossary.md#ap) behavior — not CA.
 
 > [!important] The real choice is CP vs AP — never "CA"
 > Partitions are unavoidable in any networked system, so **P is non-negotiable**. During a partition you either refuse requests you can't safely answer (CP) or serve possibly-stale data (AP). "CA without P" just means a single-node system.
 
 ## When to Use
 
-**Problem signals that suggest CAP Theorem is relevant:**
+**Problem signals that suggest [CAP](_meta/glossary.md#cap) Theorem is relevant:**
 - "Design a distributed database / cache / key-value store"
 - "What happens when two data centers lose connectivity?"
 - "How do you handle network failures between nodes?"
@@ -31,11 +31,11 @@ A distributed data store can guarantee at most two of three properties simultane
 
 **Prefer explicit CAP discussion over alternatives when:**
 - Over generic availability/reliability framing: CAP forces you to name the concrete trade-off at partition time, which is what interviewers want to hear
-- Over ACID framing: ACID applies within a single node or single transaction; CAP applies to the distributed coordination between nodes
+- Over [ACID](_meta/glossary.md#acid) framing: ACID applies within a single node or single transaction; CAP applies to the distributed coordination between nodes
 
 **Do not use when:**
 - Designing a single-node system → ACID and locking are the right frame
-- Discussing latency vs. throughput → this is a different axis (PACELC extends CAP with latency trade-offs)
+- Discussing latency vs. throughput → this is a different axis ([PACELC](_meta/glossary.md#pacelc) extends CAP with latency trade-offs)
 
 ## Key Properties
 
@@ -61,13 +61,13 @@ Since P is non-negotiable, the practical question is: during a partition, does t
 **CP systems:**
 - Guarantee the user never reads stale data — critical for financial transactions, leader election, distributed locks
 - Sacrifice availability: a minority partition cannot serve reads/writes until quorum is restored
-- Latency spikes during coordination (Paxos/Raft rounds add RTTs)
+- Latency spikes during coordination (Paxos/Raft rounds add [RTT](_meta/glossary.md#rtt)s)
 - Complexity: requires quorum reads/writes, leader election, fencing tokens
 
 **AP systems:**
-- Guarantee the system stays responsive even during network failures — critical for shopping carts, social feeds, DNS, CDNs
+- Guarantee the system stays responsive even during network failures — critical for shopping carts, social feeds, [DNS](_meta/glossary.md#dns), [CDN](_meta/glossary.md#cdn)s
 - Sacrifice consistency: nodes diverge during a partition; conflicts must be resolved on merge
-- Conflict resolution strategies: last-write-wins (LWW), vector clocks, CRDTs, application-level merge
+- Conflict resolution strategies: last-write-wins ([LWW](_meta/glossary.md#lww)), vector clocks, [CRDT](_meta/glossary.md#crdt)s, application-level merge
 - Typical staleness window: seconds to minutes depending on replication lag and gossip interval
 
 **PACELC extension (what interviewers may probe further):**
@@ -82,7 +82,7 @@ Many workloads tolerate slightly higher latency for consistency. Google Spanner 
 - **Conflating consistency with durability:** CAP consistency is about read-after-write across nodes, not about data surviving crashes. A system can be durable (fsync) but still eventually consistent.
 - **Forgetting that AP systems have tunable consistency:** Cassandra's `QUORUM` read/write level can approximate strong consistency at the cost of availability, blurring the hard boundary.
 - **Ignoring the partition recovery phase:** After a partition heals, AP systems must reconcile diverged state. Failing to design this reconciliation path (e.g., using CRDTs or application merge logic) leads to data corruption.
-- **Conflating availability in CAP with SLA uptime:** CAP availability is a formal property (every request gets a response from a non-failing node). A 99.99% SLA uptime is a separate operational concern.
+- **Conflating availability in CAP with SLA uptime:** CAP availability is a formal property (every request gets a response from a non-failing node). A 99.99% [SLA](_meta/glossary.md#sla) uptime is a separate operational concern.
 
 ## Implementation Notes
 
@@ -98,7 +98,7 @@ Many workloads tolerate slightly higher latency for consistency. Google Spanner 
 - **Tunable consistency:** Expose per-request consistency level (e.g., Cassandra: `ONE`, `QUORUM`, `ALL`). Operators tune the CP/AP dial per use-case without re-architecting.
 
 **Multi-region design decision:**
-In active-active multi-region, cross-region writes over WAN (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
+In active-active multi-region, cross-region writes over [WAN](_meta/glossary.md#wan) (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
 
 ## Resources
 

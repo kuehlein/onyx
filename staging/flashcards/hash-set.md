@@ -27,7 +27,7 @@ A hash set stores an unordered collection of unique values with O(1) average-cas
 - "Does X exist in the collection?" asked repeatedly — linear scan would be O(n) per query
 - Cycle detection in linked lists or graphs (track visited nodes)
 - Sliding window problems where you need to know if a new element already appears in the current window
-- "Find the element that appears only once" — XOR works too, but a set generalizes to k-unique variants
+- "Find the element that appears only once" — [XOR](_meta/glossary.md#xor) works too, but a set generalizes to k-unique variants
 
 **Prefer Hash Set over alternatives when:**
 - Over sorted array + binary search: when you need O(1) vs O(log n) lookup and insertion order does not matter
@@ -37,7 +37,7 @@ A hash set stores an unordered collection of unique values with O(1) average-cas
 
 **Do not use when:**
 - You need to count occurrences → use a `Map` (hash map) instead
-- You need sorted iteration or range queries → use a sorted structure (BST, sorted array) instead
+- You need sorted iteration or range queries → use a sorted structure ([BST](_meta/glossary.md#bst), sorted array) instead
 - You need to find the k-th smallest/largest element → use a heap or sorted structure instead
 - Values are large objects you need to associate data with → use a `Map` instead
 

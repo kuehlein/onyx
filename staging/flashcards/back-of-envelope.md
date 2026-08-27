@@ -12,7 +12,7 @@ confidence: medium
 
 # Back-of-Envelope Estimation
 
-Rough-order-of-magnitude calculations that translate vague scale requirements into concrete numbers — QPS, storage, bandwidth, machine counts — before any architecture decisions are made. The numbers themselves matter less than demonstrating structured reasoning and knowing which assumptions to surface.
+Rough-order-of-magnitude calculations that translate vague scale requirements into concrete numbers — [QPS](_meta/glossary.md#qps), storage, bandwidth, machine counts — before any architecture decisions are made. The numbers themselves matter less than demonstrating structured reasoning and knowing which assumptions to surface.
 
 > [!tip] What the interviewer is grading
 > State assumptions out loud, round to powers of 10, and always apply the **peak multiplier (≈2–3× average)** — magnitude is the answer, not precision.
@@ -79,7 +79,7 @@ Rough-order-of-magnitude calculations that translate vague scale requirements in
 **Canonical estimation structure (use this in every interview):**
 
 **Step 1 — Clarify the scale assumptions out loud**
-- Daily Active Users (DAU)
+- Daily Active Users ([DAU](_meta/glossary.md#dau))
 - Read/write ratio
 - Peak-to-average ratio (rule of thumb: peak ≈ 2–3× average)
 - Data retention window
@@ -118,7 +118,7 @@ Egress = reads_per_sec × object_size
 ```
 Machines = peak_QPS / QPS_per_machine
 ```
-A typical app server handles ~1,000–10,000 RPS depending on workload. A cache node (Redis) handles ~100K–1M ops/sec.
+A typical app server handles ~1,000–10,000 [RPS](_meta/glossary.md#rps) depending on workload. A cache node (Redis) handles ~100K–1M ops/sec.
 
 **Common decision thresholds derived from estimation:**
 - Peak QPS > ~5,000 on a write path → consider write sharding or async queuing

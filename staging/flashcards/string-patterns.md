@@ -42,12 +42,12 @@ In-place reversal / rotation:
 - "Reverse words in a string in-place" — reverse entire string, then reverse each word individually
 
 **Prefer string-specific patterns over alternatives when:**
-- Over generic DFS/BFS: character-frequency problems have O(26) state, making an explicit graph unnecessary — a fixed-size array/map suffices
-- Over DP for anagram detection: sorting or frequency count is O(n) or O(n log n) vs. O(n²) DP; use DP only when you need edit distance or longest common subsequence
+- Over generic [DFS](_meta/glossary.md#dfs)/[BFS](_meta/glossary.md#bfs): character-frequency problems have O(26) state, making an explicit graph unnecessary — a fixed-size array/map suffices
+- Over [DP](_meta/glossary.md#dp) for anagram detection: sorting or frequency count is O(n) or O(n log n) vs. O(n²) DP; use DP only when you need edit distance or longest common subsequence
 - Over brute-force O(n²) substring search: sliding window reduces to O(n) by maintaining a running invariant rather than recomputing from scratch
 
 **Do not use when:**
-- You need substring *position* with overlap → use KMP or Rabin-Karp instead of naive sliding window
+- You need substring *position* with overlap → use [KMP](_meta/glossary.md#kmp) or Rabin-Karp instead of naive sliding window
 - The alphabet is unbounded (e.g., Unicode code points in the millions) → fixed-size array trick breaks; use a general hash map and note the space cost
 - The problem asks for *edit distance* or *longest common subsequence* → two-pointer/frequency won't work; reach for DP
 

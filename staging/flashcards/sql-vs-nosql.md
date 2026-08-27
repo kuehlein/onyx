@@ -14,7 +14,7 @@ confidence: low
 
 # SQL vs NoSQL Databases
 
-Relational databases (SQL) enforce a rigid, typed schema and guarantee ACID transactions via a structured query language; NoSQL databases trade some of those guarantees for flexible schemas, horizontal scalability, and specialized data models (document, key-value, wide-column, graph). The right choice depends on data shape, consistency requirements, and scale — not on which sounds more modern.
+Relational databases (SQL) enforce a rigid, typed schema and guarantee [ACID](_meta/glossary.md#acid) transactions via a structured query language; NoSQL databases trade some of those guarantees for flexible schemas, horizontal scalability, and specialized data models (document, key-value, wide-column, graph). The right choice depends on data shape, consistency requirements, and scale — not on which sounds more modern.
 
 > [!tip] Default to SQL
 > Choose SQL unless a scale signal is **explicit** (100M+ users, millions of writes/sec) or the data model demands it. A well-indexed Postgres node handles ~100K–500K reads/sec — enough for most products. Reaching for NoSQL "for scale" without justification is the classic red flag.
@@ -33,7 +33,7 @@ Relational databases (SQL) enforce a rigid, typed schema and guarantee ACID tran
 - The prompt specifies **massive scale** (hundreds of millions of users, petabyte-scale data, millions of writes/sec) where horizontal sharding of a relational DB becomes operationally complex
 - Data is **sparse or heterogeneous** — user profiles with hundreds of optional fields, product catalogs with wildly different attributes per category
 - The access pattern is **known and narrow**: always look up by a single key (session store, user preferences) → key-value store; always fetch a document by ID (product catalog, CMS) → document store
-- The problem mentions **time-series data** (metrics, IoT, logs) → wide-column (Cassandra) or purpose-built TSDBs
+- The problem mentions **time-series data** (metrics, IoT, logs) → wide-column (Cassandra) or purpose-built [TSDB](_meta/glossary.md#tsdb)s
 - **Eventual consistency is acceptable** and the system tolerates stale reads (social media feeds, shopping cart recommendations, leaderboards)
 - The data has a **graph structure** (social networks: "friends of friends", fraud rings) → graph DB (Neo4j)
 
@@ -43,7 +43,7 @@ Relational databases (SQL) enforce a rigid, typed schema and guarantee ACID tran
 - Over wide-column: transaction semantics are required across multiple rows
 
 **Prefer NoSQL over SQL when:**
-- Over SQL for write-heavy workloads at scale: Cassandra's log-structured merge tree achieves ~1–5 ms p99 writes under typical single-DC conditions; PostgreSQL sharding is operationally expensive
+- Over SQL for write-heavy workloads at scale: Cassandra's log-structured merge tree achieves ~1–5 ms [p99](_meta/glossary.md#p99) writes under typical single-DC conditions; PostgreSQL sharding is operationally expensive
 - Over SQL for document-shaped data: MongoDB avoids costly schema migrations when product attributes change weekly
 - Over SQL for caching / session storage: Redis delivers sub-millisecond reads from RAM vs. ~5–10 ms for indexed SQL queries
 
@@ -57,15 +57,15 @@ Relational databases (SQL) enforce a rigid, typed schema and guarantee ACID tran
 | Property | SQL (e.g. PostgreSQL, MySQL) | Document (MongoDB) | Wide-Column (Cassandra) | Key-Value (Redis) |
 |---|---|---|---|---|
 | Schema | Rigid, typed | Flexible per document | Column families, flexible | None |
-| Query model | Full SQL (JOINs, aggregations) | Document queries + aggregation pipeline | CQL (partition + clustering key only) | GET/SET/range |
-| Consistency | Strong (ACID) | Tunable (majority r/w = CP; default eventual = AP) | Tunable (LOCAL_QUORUM for strong) | Strong (single node); eventual (cluster) |
+| Query model | Full SQL (JOINs, aggregations) | Document queries + aggregation pipeline | [CQL](_meta/glossary.md#cql) (partition + clustering key only) | GET/SET/range |
+| Consistency | Strong (ACID) | Tunable (majority r/w = [CP](_meta/glossary.md#cp); default eventual = [AP](_meta/glossary.md#ap)) | Tunable (LOCAL_QUORUM for strong) | Strong (single node); eventual (cluster) |
 | Horizontal scale | Hard (read replicas easy; write sharding complex) | Native sharding | Native; designed for it | Native clustering |
 | Typical read latency | 5–50 ms (indexed, across network) | 5–20 ms | 1–5 ms | < 1 ms (in-memory) |
 | Typical write throughput | ~50K–200K writes/sec per node (tuned) | ~20K–80K writes/sec | ~100K+ writes/sec per node | ~100K–1M ops/sec |
 
 ## Trade-offs
 
-**Consistency vs. Availability (CAP Theorem):**
+**Consistency vs. Availability ([CAP](_meta/glossary.md#cap) Theorem):**
 CAP applies to distributed systems — you cannot simultaneously guarantee Consistency, Availability, and Partition Tolerance. Single-node SQL sidesteps CAP entirely by not distributing writes. Distributed SQL systems (Spanner, CockroachDB) choose CP: under a network partition they reject writes rather than risk divergence. AP stores (Cassandra, DynamoDB by default) stay available and reconcile conflicts later. Not all NoSQL is AP: HBase and Zookeeper are CP; MongoDB with majority write/read concern is CP. In interviews, state the CAP classification of the specific database you choose and justify whether the system can tolerate stale reads.
 
 **Schema flexibility vs. data integrity:**

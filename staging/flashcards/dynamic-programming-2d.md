@@ -14,10 +14,10 @@ confidence: high
 
 # Dynamic Programming — 2D Patterns
 
-2D DP solves problems where the optimal answer at each cell `(i, j)` depends on previously computed answers in the same grid or table — the core insight is that two independent dimensions of choice or constraint interact, so a 1D array of subproblems cannot capture the full state.
+2D [DP](_meta/glossary.md#dp) solves problems where the optimal answer at each cell `(i, j)` depends on previously computed answers in the same grid or table — the core insight is that two independent dimensions of choice or constraint interact, so a 1D array of subproblems cannot capture the full state.
 
 > [!tip] Recognition trigger
-> Two sequences being compared/aligned/matched (edit distance, LCS, regex), or two independent indices that each move toward a base case, means 2D DP. Define `dp[i][j]` in plain English *before* writing the recurrence.
+> Two sequences being compared/aligned/matched (edit distance, [LCS](_meta/glossary.md#lcs), regex), or two independent indices that each move toward a base case, means 2D DP. Define `dp[i][j]` in plain English *before* writing the recurrence.
 
 ## When to Use
 
@@ -31,7 +31,7 @@ confidence: high
 
 **Prefer 2D DP over alternatives when:**
 - Over 1D DP: the state cannot be compressed to one dimension without losing information about which sub-problem combination produced it
-- Over BFS/DFS alone: you need optimal substructure across two dimensions, not just reachability
+- Over [BFS](_meta/glossary.md#bfs)/[DFS](_meta/glossary.md#dfs) alone: you need optimal substructure across two dimensions, not just reachability
 - Over greedy: locally optimal choices do not globally hold (e.g., editing two strings requires tracking all alignments)
 
 **Do not use when:**

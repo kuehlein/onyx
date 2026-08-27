@@ -26,7 +26,7 @@ Constraints: `1 <= s.length <= 10^4`, `s` consists of bracket characters only.
 **Pattern:** Stack matching
 
 > [!tip] Recognition signal
-> Delimiters that must close in **reverse order** of opening is exactly LIFO → reach for a stack. Push openers; on a closer, the top must be its pair, else invalid. Valid input leaves the stack empty.
+> Delimiters that must close in **reverse order** of opening is exactly [LIFO](_meta/glossary.md#lifo) → reach for a stack. Push openers; on a closer, the top must be its pair, else invalid. Valid input leaves the stack empty.
 
 **Key insight:** Every closing bracket must match the *most recently seen* unmatched opening bracket — and only that one. This last-in, first-out requirement is the precise definition of a stack. You don't need to track all unmatched opens at once; you only ever need to check the top. If the top doesn't match the current closer, or the stack is empty when a closer arrives, the string is invalid. After processing all characters, a valid string leaves the stack empty.
 

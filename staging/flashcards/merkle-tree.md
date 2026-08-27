@@ -31,13 +31,13 @@ A **Merkle tree** (hash tree) is a binary tree in which every leaf is the crypto
 **Prefer a Merkle tree over alternatives when:**
 - Over a **flat hash of the whole dataset** (`hash(concat(all blocks))`): a flat hash proves *the whole set* is intact but forces you to have all data to verify any part; Merkle proves *individual membership* with `O(log n)` proof and supports partial verification.
 - Over a **hash list / hash chain**: a list gives `O(n)` proof size and `O(n)` re-verification; Merkle gives `O(log n)` proofs and only `O(log n)` recomputation on an update.
-- Over a **HMAC / MAC over the set**: a MAC needs a shared secret and does not localize *where* corruption occurred; Merkle needs no secret and pinpoints the differing subtree.
-- Over a **plain balanced BST / hash table**: those give fast lookup but no compact cryptographic membership proof against an untrusted server.
+- Over a **[HMAC](_meta/glossary.md#hmac) / [MAC](_meta/glossary.md#mac) over the set**: a MAC needs a shared secret and does not localize *where* corruption occurred; Merkle needs no secret and pinpoints the differing subtree.
+- Over a **plain balanced [BST](_meta/glossary.md#bst) / hash table**: those give fast lookup but no compact cryptographic membership proof against an untrusted server.
 
 **Do not use when:**
 - The dataset is tiny or you always have all of it -> a single `hash(all bytes)` is simpler and cheaper.
 - You need to prove **non-membership** or ordered-range queries efficiently -> use a **sparse Merkle tree** or **Merkle–Patricia / Merkle B-tree**, not a plain Merkle tree.
-- You need frequent random inserts/deletes with cheap rebalancing -> plain Merkle trees are order-sensitive and rebuild-heavy; use a Patricia/AVL-Merkle hybrid.
+- You need frequent random inserts/deletes with cheap rebalancing -> plain Merkle trees are order-sensitive and rebuild-heavy; use a Patricia/[AVL](_meta/glossary.md#avl)-Merkle hybrid.
 - Confidentiality (not integrity) is the goal -> Merkle trees provide integrity/authentication, not encryption.
 - A single writer holds all data and there is no untrusted intermediary -> the proof machinery is unnecessary overhead.
 
@@ -47,7 +47,7 @@ A **Merkle tree** (hash tree) is a binary tree in which every leaf is the crypto
 |---|---|
 | Root binds everything | The root hash is a succinct commitment to every leaf and their order. |
 | Inclusion proof size | `O(log n)` sibling hashes (the authentication path). |
-| Collision resistance | Security reduces to the collision resistance of the underlying hash (e.g., SHA-256). |
+| Collision resistance | Security reduces to the collision resistance of the underlying hash (e.g., [SHA-256](_meta/glossary.md#sha-256)). |
 | Order-sensitive | Leaf order is part of the commitment; permuting leaves changes the root. |
 | Verifier is stateless | Given root + leaf + path, verification needs no other state and no secret. |
 | Update locality | Changing one leaf recomputes only the `O(log n)` nodes on its path to the root. |
@@ -57,8 +57,8 @@ A **Merkle tree** (hash tree) is a binary tree in which every leaf is the crypto
 > [!warning] Domain-separate leaves from internal nodes
 > If leaf and internal hashes share a domain, an attacker can pass an internal node off as a leaf (second-preimage attack). Prefix leaves with `0x00` and internal nodes with `0x01` before hashing, as RFC 6962 does.
 
-- **Second-preimage / node-type confusion.** If leaf hashes and internal hashes use the same domain, an attacker can present an internal node as if it were a leaf. **Fix:** domain-separate — prefix leaves with `0x00` and internal nodes with `0x01` before hashing (as Certificate Transparency, RFC 6962, does).
-- **Odd-node duplication attack (CVE-2012-2459).** Bitcoin duplicates the last hash when a level has an odd count. Duplicating an existing subtree can yield the *same root* for two different transaction lists, letting an attacker mutate a block into an invalid form with an identical Merkle root (a malleability/DoS vector). Mitigate by rejecting any block whose transaction list contains duplicate txids (equivalently, whose Merkle computation had to duplicate a node) — this is Bitcoin Core's fix.
+- **Second-preimage / node-type confusion.** If leaf hashes and internal hashes use the same domain, an attacker can present an internal node as if it were a leaf. **Fix:** domain-separate — prefix leaves with `0x00` and internal nodes with `0x01` before hashing (as Certificate Transparency, [RFC](_meta/glossary.md#rfc) 6962, does).
+- **Odd-node duplication attack ([CVE](_meta/glossary.md#cve)-2012-2459).** Bitcoin duplicates the last hash when a level has an odd count. Duplicating an existing subtree can yield the *same root* for two different transaction lists, letting an attacker mutate a block into an invalid form with an identical Merkle root (a malleability/DoS vector). Mitigate by rejecting any block whose transaction list contains duplicate txids (equivalently, whose Merkle computation had to duplicate a node) — this is Bitcoin Core's fix.
 - **Forgetting to bind element order** when order matters (transactions) — or *not* sorting when a canonical order is required for reproducible roots across nodes.
 - **Assuming inclusion proofs prove uniqueness.** A plain inclusion proof shows a leaf exists; it does not prove the leaf is *unique* or that the set excludes something (no non-membership).
 - **Using a weak/truncated hash.** Truncating the digest lowers collision resistance and can make forged siblings feasible.
@@ -138,7 +138,7 @@ Key detail: the proof must carry each sibling's **side** (left/right) so concate
 | **Binary Merkle tree** | Classic membership proofs (Bitcoin block tx commitment). |
 | **Merkle–Patricia trie** | Key→value with efficient inclusion *and* non-membership proofs (Ethereum state/storage/tx tries). |
 | **Sparse Merkle tree** | Fixed key space; proves presence and absence via default (empty) subtree hashes. |
-| **Merkle Mountain Range (MMR)** | Append-only logs with cheap appends and consistency proofs (e.g., Grin, Utreexo). |
+| **Merkle Mountain Range ([MMR](_meta/glossary.md#mmr))** | Append-only logs with cheap appends and consistency proofs (e.g., Grin, Utreexo). |
 | **Verkle tree** | Replaces sibling hashes with vector commitments → much smaller proofs (Ethereum roadmap). |
 | **RFC 6962 (CT) tree** | Append-only log with inclusion *and* consistency proofs; domain-separated leaves/nodes. |
 

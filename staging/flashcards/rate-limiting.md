@@ -24,7 +24,7 @@ Rate limiting constrains how often a client can invoke an operation within a tim
 **Problem signals that suggest rate limiting:**
 - The prompt mentions a public-facing API, third-party developer access, or API keys — any public surface can be abused
 - "Protect against DDoS / abuse / scraping" appears as a requirement
-- SLA or quota language: "each user gets X requests per day/hour/minute"
+- [SLA](_meta/glossary.md#sla) or quota language: "each user gets X requests per day/hour/minute"
 - The system has an expensive downstream (ML inference, external payment provider, database write path) that cannot absorb unbounded traffic
 - Multi-tenancy is present — one noisy tenant must not starve others
 - "Prevent [resource] from being exhausted" or "ensure availability under heavy load"
@@ -36,7 +36,7 @@ Rate limiting constrains how often a client can invoke an operation within a tim
 - Over autoscaling alone: compute costs are unbounded or scale-up latency (minutes) is too slow to absorb sudden spikes
 
 **Do not use when:**
-- Traffic is entirely internal and trusted (service-to-service within a private VPC) → prefer backpressure or queue depth signals
+- Traffic is entirely internal and trusted (service-to-service within a private [VPC](_meta/glossary.md#vpc)) → prefer backpressure or queue depth signals
 - The bottleneck is a single global resource with no client attribution → use a semaphore or token bucket at the resource level without per-client state
 
 ## Key Properties
@@ -48,7 +48,7 @@ Rate limiting constrains how often a client can invoke an operation within a tim
 | **Fixed Window Counter** | O(1) | 2× burst at window boundary | Lumpy | Simple quotas, daily limits |
 | **Sliding Window Log** | O(requests in window) | Exact | Smooth | Audit trails, low-volume premium APIs |
 | **Sliding Window Counter** | O(1) | ~10% over-burst at boundary | Near-smooth | High-throughput APIs with acceptable approximation |
-| **Token Bucket** | O(1) | Configurable burst up to bucket size | Smooth | APIs allowing short bursts (CDN, mobile clients) |
+| **Token Bucket** | O(1) | Configurable burst up to bucket size | Smooth | APIs allowing short bursts ([CDN](_meta/glossary.md#cdn), mobile clients) |
 | **Leaky Bucket** | O(queue depth) | No burst — strict constant rate | Perfectly smooth | Downstream protection, payment processors |
 
 **Token bucket** is the most commonly chosen algorithm in practice: it naturally allows burst absorption (idle clients accumulate tokens up to capacity) while bounding the maximum burst, and O(1) state makes it cheap at scale.

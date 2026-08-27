@@ -14,10 +14,10 @@ confidence: low
 
 # Content Delivery Network (CDN)
 
-A CDN is a geographically distributed network of edge servers that cache and serve content from locations physically close to end users, reducing latency by eliminating round trips to the origin server. It works because network latency scales with physical distance and hop count — serving bytes from 50 km away instead of 5,000 km cuts response time from hundreds of milliseconds to single digits.
+A [CDN](_meta/glossary.md#cdn) is a geographically distributed network of edge servers that cache and serve content from locations physically close to end users, reducing latency by eliminating round trips to the origin server. It works because network latency scales with physical distance and hop count — serving bytes from 50 km away instead of 5,000 km cuts response time from hundreds of milliseconds to single digits.
 
 > [!tip] Reach for a CDN for static, cacheable content served to a global audience
-> Images, video, JS/CSS bundles, media streaming, geographically distributed users. It offloads 80–95% of requests and absorbs traffic spikes at the edge. Skip it for highly personalized or faster-than-TTL dynamic data.
+> Images, video, JS/CSS bundles, media streaming, geographically distributed users. It offloads 80–95% of requests and absorbs traffic spikes at the edge. Skip it for highly personalized or faster-than-[TTL](_meta/glossary.md#ttl) dynamic data.
 
 ## When to Use
 
@@ -32,14 +32,14 @@ A CDN is a geographically distributed network of edge servers that cache and ser
 - A read-heavy API with relatively stable responses (e.g. public catalog data, sports scores, weather) that could be edge-cached
 
 **Prefer a CDN over alternatives when:**
-- Over application-layer caching (Redis/Memcached): user is geographically distributed — in-region application caches still require a cross-ocean TCP connection; CDN edge nodes serve from within 50 ms of the user
+- Over application-layer caching (Redis/Memcached): user is geographically distributed — in-region application caches still require a cross-ocean [TCP](_meta/glossary.md#tcp) connection; CDN edge nodes serve from within 50 ms of the user
 - Over scaling up the origin: CDN offloads 80–95% of requests entirely, making origin capacity a small fraction of what you'd otherwise need; cost per GB served at the edge is typically 2–5x cheaper than origin egress
 - Over replicating full origin servers to each region: CDN caches on-demand (no pre-seeding required for most content), simpler operational model, no database replication complexity
 
 **Do not use when:**
 - Content is highly personalized and cannot be shared across users → application-layer cache keyed per user, or skip caching
-- Data changes faster than your minimum TTL allows (real-time order books, live auction state) → serve directly from origin or use WebSockets/SSE
-- Regulatory requirements mandate data not leave a specific jurisdiction → CDN PoP placement may violate data-residency laws; use regional origin clusters with strict geo-routing instead
+- Data changes faster than your minimum TTL allows (real-time order books, live auction state) → serve directly from origin or use WebSockets/[SSE](_meta/glossary.md#sse)
+- Regulatory requirements mandate data not leave a specific jurisdiction → CDN [PoP](_meta/glossary.md#pop) placement may violate data-residency laws; use regional origin clusters with strict geo-routing instead
 
 ## Key Properties
 
@@ -52,7 +52,7 @@ A CDN is a geographically distributed network of edge servers that cache and ser
 | PoP count (major CDNs) | 70–1,000+ cities globally (Fastly ≈70, Cloudflare ≈330+, Akamai ≈1,000+) |
 
 **How a request resolves:**
-1. User's DNS query routes to the nearest CDN PoP via Anycast or latency-based DNS.
+1. User's [DNS](_meta/glossary.md#dns) query routes to the nearest CDN PoP via Anycast or latency-based DNS.
 2. Edge node checks its cache (HIT → respond immediately; MISS → fetch from origin).
 3. Edge stores the response and serves subsequent requests until TTL expires.
 
@@ -75,7 +75,7 @@ CDN egress pricing is typically $0.01–0.08/GB (vs. $0.08–0.20/GB from cloud 
 A CDN outage (Fastly June 2021, Akamai July 2021) can take down many sites simultaneously. Mitigations: multi-CDN setup, origin fallback via health checks, or DNS failover.
 
 **Security surface:**
-The CDN sits between users and your origin, so it can inspect and terminate TLS. This is often desirable (DDoS mitigation, WAF, bot detection) but means the CDN provider has access to plaintext traffic. For highly sensitive data, end-to-end encryption or origin-pull with mutual TLS is required.
+The CDN sits between users and your origin, so it can inspect and terminate [TLS](_meta/glossary.md#tls). This is often desirable (DDoS mitigation, [WAF](_meta/glossary.md#waf), bot detection) but means the CDN provider has access to plaintext traffic. For highly sensitive data, end-to-end encryption or origin-pull with mutual TLS is required.
 
 **Dynamic content:**
 Modern CDNs support edge compute (Cloudflare Workers, Lambda@Edge) to execute lightweight logic at PoPs — useful for A/B testing headers, auth token validation, or response personalization without a full origin round trip.

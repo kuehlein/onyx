@@ -15,7 +15,7 @@ confidence: medium
 
 # Binary Search Tree (BST)
 
-A BST is a binary tree where every node satisfies the invariant: all keys in the left subtree are strictly less than the node's key, and all keys in the right subtree are strictly greater. This ordering property is what makes BSTs useful — it lets you eliminate half the remaining search space at each node, enabling O(log n) operations on a balanced tree.
+A [BST](_meta/glossary.md#bst) is a binary tree where every node satisfies the invariant: all keys in the left subtree are strictly less than the node's key, and all keys in the right subtree are strictly greater. This ordering property is what makes BSTs useful — it lets you eliminate half the remaining search space at each node, enabling O(log n) operations on a balanced tree.
 
 > [!tip] Reach for a BST when
 > You need **fast search AND ordered queries** (range, rank, successor, k-th smallest) on a *dynamic* set. In-order traversal yields sorted output for free. If you only need O(1) lookup use a hash map; if you only need min/max use a heap.
@@ -38,7 +38,7 @@ A BST is a binary tree where every node satisfies the invariant: all keys in the
 
 **Do not use when:**
 - You only need O(1) lookup by key → use a hash map instead
-- The input arrives already sorted and the tree won't be self-balancing → degenerates to O(n) linked list; use a balanced BST (AVL, Red-Black) or just a sorted array + binary search
+- The input arrives already sorted and the tree won't be self-balancing → degenerates to O(n) linked list; use a balanced BST ([AVL](_meta/glossary.md#avl), Red-Black) or just a sorted array + binary search
 - You only need min or max → use a heap
 - The key space is small and dense → use an array indexed by key
 

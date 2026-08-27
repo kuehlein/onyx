@@ -33,7 +33,7 @@ A technique that maintains a contiguous subarray (or substring) between two poin
 - Over two-pointer on a sorted array: the input is unsorted and positional order must be preserved
 
 **Do not use when:**
-- The subarray does not need to be contiguous → use DP or greedy on subsequences instead
+- The subarray does not need to be contiguous → use [DP](_meta/glossary.md#dp) or greedy on subsequences instead
 - The optimal answer can skip elements (subsequence problems) → dynamic programming
 - The window constraint is not monotonic (e.g., "exactly k occurrences" with both add and remove invalidating the window non-directionally) → reformulate as "at most k" minus "at most k−1", then apply sliding window twice
 - Input size is tiny (n ≤ 20) → brute force is clearer and fast enough

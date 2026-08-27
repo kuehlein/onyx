@@ -22,7 +22,7 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 
 **Problem signals that suggest HTTP/HTTPS is relevant:**
 - Any system that serves web clients, mobile apps, or third-party developers via a public or internal API
-- The prompt mentions browsers, REST APIs, webhooks, CDNs, load balancers, or reverse proxies
+- The prompt mentions browsers, REST APIs, webhooks, [CDN](_meta/glossary.md#cdn)s, load balancers, or reverse proxies
 - Authentication, session management, or token exchange is part of the design
 - You are asked to secure a data transfer path or comply with PCI-DSS/HIPAA (HTTPS is mandatory)
 - The system must integrate with external SaaS providers (payment processors, identity providers, analytics)
@@ -31,10 +31,10 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 **Prefer HTTPS over plain HTTP when:**
 - Any user credentials, PII, or payment data are in transit — TLS prevents man-in-the-middle interception
 - The API is public-facing — modern browsers flag mixed content and block insecure requests
-- You need mutual authentication (mTLS) between services — HTTPS provides the certificate infrastructure
+- You need mutual authentication ([mTLS](_meta/glossary.md#mtls)) between services — HTTPS provides the certificate infrastructure
 
 **Do not use when:**
-- Ultra-low-latency internal service communication at high RPS → prefer gRPC over HTTP/1.1 (binary framing, multiplexing, header compression via HTTP/2 are available but gRPC tooling is optimized for it)
+- Ultra-low-latency internal service communication at high [RPS](_meta/glossary.md#rps) → prefer [gRPC](_meta/glossary.md#grpc) over HTTP/1.1 (binary framing, multiplexing, header compression via HTTP/2 are available but gRPC tooling is optimized for it)
 - Large binary streaming (video, game state) → WebSockets or QUIC reduce framing overhead
 - Internal cluster traffic where the network is already encrypted (e.g. inside a mTLS service mesh) → adding HTTPS can be redundant, though defense-in-depth often still warrants it
 
@@ -44,10 +44,10 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 |---|---|---|---|
 | Transport | TCP | TCP | QUIC (UDP) |
 | Multiplexing | No (head-of-line blocking) | Yes (streams) | Yes (independent streams) |
-| Header compression | No | HPACK | QPACK |
+| Header compression | No | HPACK | [QPACK](_meta/glossary.md#qpack) |
 | Server push | No | Deprecated (removed from all major browsers 2022) | No |
 | TLS | Optional | Required in practice | Always (QUIC mandates TLS 1.3) |
-| Typical latency (TLS handshake) | TLS 1.2: 2 RTT / TLS 1.3: 1 RTT | TLS 1.2: 2 RTT / TLS 1.3: 1 RTT | 1 RTT initial; 0-RTT resumption |
+| Typical latency (TLS handshake) | TLS 1.2: 2 [RTT](_meta/glossary.md#rtt) / TLS 1.3: 1 RTT | TLS 1.2: 2 RTT / TLS 1.3: 1 RTT | 1 RTT initial; 0-RTT resumption |
 
 **TLS handshake cost:**
 - TLS 1.2: 2 full RTTs before first application byte — ~200–400 ms on intercontinental paths
@@ -56,7 +56,7 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 - HTTP/3 (QUIC) mandates TLS 1.3 and integrates the handshake into QUIC's own, achieving 1-RTT initial and 0-RTT on resumption
 - HTTP/2 + TLS 1.3 is the current baseline for high-performance web APIs
 
-**Statelessness implications:** Servers scale horizontally without sticky sessions. Sessions are re-attached per request via cookies, JWTs, or API keys carried in headers.
+**Statelessness implications:** Servers scale horizontally without sticky sessions. Sessions are re-attached per request via cookies, [JWT](_meta/glossary.md#jwt)s, or API keys carried in headers.
 
 **Status code classes:**
 - 2xx — success; 201 Created on resource creation, 204 No Content on deletion
@@ -74,7 +74,7 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 **HTTPS termination placement:**
 - Terminate at load balancer (SSL offloading): simplest, central certificate management, inner traffic is plaintext — acceptable if network is trusted/segmented
 - Terminate at the service (end-to-end TLS): stronger security, required for compliance in some industries; adds CPU cost (~1–5% at scale, mitigated by TLS 1.3 and hardware offload)
-- mTLS (mutual): both sides present certificates — required for zero-trust service meshes; operationally complex (certificate rotation, PKI management)
+- mTLS (mutual): both sides present certificates — required for zero-trust service meshes; operationally complex (certificate rotation, [PKI](_meta/glossary.md#pki) management)
 
 **Statelessness vs. session cost:**
 - Stateless HTTP scales perfectly horizontally but shifts state management to external stores (Redis for sessions, JWTs for bearer tokens)
@@ -93,7 +93,7 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 
 **Reverse proxy / TLS termination pattern:**
 - nginx or Envoy sits at the edge, terminates HTTPS, forwards plain HTTP (or gRPC) to upstream services over a trusted internal network
-- Load balancer (AWS ALB, GCP HTTPS LB) handles certificate provisioning (ACM / Let's Encrypt) and TLS offload automatically at scale
+- Load balancer (AWS [ALB](_meta/glossary.md#alb), GCP HTTPS [LB](_meta/glossary.md#lb)) handles certificate provisioning (ACM / Let's Encrypt) and TLS offload automatically at scale
 
 **HTTPS certificate lifecycle:**
 - Let's Encrypt: free, 90-day certificates, automated via ACME protocol (Certbot) — standard for internet-facing services
@@ -102,12 +102,12 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 
 **Common API patterns over HTTP:**
 - REST over HTTPS: resources as nouns, HTTP verbs for operations, JSON bodies, status codes for results — the default choice
-- Webhooks: server-to-server HTTP POST on events; require HTTPS, HMAC signature verification on the receiver to authenticate the sender
+- Webhooks: server-to-server HTTP POST on events; require HTTPS, [HMAC](_meta/glossary.md#hmac) signature verification on the receiver to authenticate the sender
 - Long polling: client holds an HTTP connection open until the server has data — simpler than WebSockets, higher per-connection overhead
 
 **Rate limiting at the HTTP layer:**
 - Return `429 Too Many Requests` with `Retry-After` header
-- Nginx / API Gateway enforce token-bucket or leaky-bucket limits per IP or API key before requests reach services
+- Nginx / API Gateway enforce token-bucket or leaky-bucket limits per [IP](_meta/glossary.md#ip) or API key before requests reach services
 - Typical public API limits: 100–10,000 requests/minute depending on tier
 
 **Observability hooks native to HTTP:**

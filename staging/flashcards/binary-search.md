@@ -33,7 +33,7 @@ Binary search eliminates half of the remaining search space at each step by comp
 - Over linear scan: the array is sorted and n > ~20; binary search is O(log n) vs O(n)
 - Over hash map: you need the floor/ceil/predecessor/successor, not just exact membership; hash maps cannot answer range queries efficiently
 - Over ternary search: the function is strictly monotone (not unimodal) — binary search is simpler and equivalent
-- Over sorted set / BST: you need a single lookup on static data; a BST has higher constant factors
+- Over sorted set / [BST](_meta/glossary.md#bst): you need a single lookup on static data; a BST has higher constant factors
 
 **Do not use when:**
 - Data is unsorted and sorting first would dominate cost → use a hash map for O(1) lookup

@@ -21,14 +21,14 @@ A recursive function solves a problem by reducing it to a smaller instance of it
 - The problem says "all permutations / combinations / subsets" — the search space can be constructed by repeatedly making a choice and recursing on the remainder
 - The problem says "merge/split and combine results" — divide-and-conquer structure (merge sort, quicksort, binary search)
 - A natural inductive definition exists: "the answer for n depends only on the answer for n-1 (or n-k)" — e.g., Fibonacci, factorials, Catalan numbers
-- Graph/tree traversal is required and the path needs to be reconstructed (DFS on trees is naturally recursive)
+- Graph/tree traversal is required and the path needs to be reconstructed ([DFS](_meta/glossary.md#dfs) on trees is naturally recursive)
 - The problem says "decode", "parse", or "evaluate expression" — grammar/token structures are inherently recursive
 - The constraint n ≤ 20 or depth ≤ 30 appears alongside combinatorial enumeration — the recursion tree is small enough
 
 **Prefer recursion over alternatives when:**
 - Over iteration: the data structure is a tree or graph and maintaining an explicit stack iteratively would require more bookkeeping than the recursive frame provides naturally
 - Over dynamic programming bottom-up: you need to identify the recurrence first; a working recursive solution (even exponential) is the required first step before memoization
-- Over BFS: you need path information, backtracking, or are exploring all solutions rather than shortest path
+- Over [BFS](_meta/glossary.md#bfs): you need path information, backtracking, or are exploring all solutions rather than shortest path
 
 **Do not use when:**
 - The recursion depth can reach O(n) with n up to 10^5–10^6 → Python's default stack limit (~1000 frames) will raise `RecursionError`; convert to iterative with an explicit stack or increase limit cautiously
@@ -52,7 +52,7 @@ The complexity depends on the shape of the recursion tree:
 
 - **Base case:** the condition that stops recursion and returns a concrete value without a further recursive call. Every recursive path must reach a base case or the stack overflows.
 - **Recursive case:** reduces the problem toward the base case. The critical invariant is that the argument passed to the recursive call must be strictly "smaller" (closer to the base case) by some well-founded measure (n-1, left/right subtree, prefix/suffix).
-- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in LIFO order.
+- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in [LIFO](_meta/glossary.md#lifo) order.
 - **Return value propagation:** results travel *up* the stack as each frame returns. Post-order computations (e.g., combining left and right subtree results) happen during unwinding.
 
 ## Common Pitfalls

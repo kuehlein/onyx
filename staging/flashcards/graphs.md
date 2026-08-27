@@ -16,7 +16,7 @@ confidence: high
 A graph is a set of **nodes (vertices)** connected by **edges**; it generalizes trees by allowing arbitrary connections, cycles, and multiple components. Every tree is a graph, but not every graph is a tree — the key difference is that graphs permit cycles and disconnected components.
 
 > [!warning] Mark visited *before* enqueuing, and loop over all nodes
-> Adding to `visited` only after dequeuing lets duplicates pile up and cycles loop forever. For disconnected graphs, kick off BFS/DFS from every unvisited node — starting only at node 0 misses whole components.
+> Adding to `visited` only after dequeuing lets duplicates pile up and cycles loop forever. For disconnected graphs, kick off [BFS](_meta/glossary.md#bfs)/[DFS](_meta/glossary.md#dfs) from every unvisited node — starting only at node 0 misses whole components.
 
 ## When to Use
 
@@ -46,7 +46,7 @@ A graph is a set of **nodes (vertices)** connected by **edges**; it generalizes 
 | **Undirected** | Edges are symmetric: A — B implies both directions |
 | **Weighted** | Each edge carries a numeric cost |
 | **Cyclic** | Contains at least one cycle |
-| **Acyclic** | No cycles; a directed acyclic graph is a **DAG** |
+| **Acyclic** | No cycles; a directed acyclic graph is a **[DAG](_meta/glossary.md#dag)** |
 | **Connected** | Every node is reachable from every other (undirected) |
 | **Sparse** | E ≪ V²; adjacency list preferred |
 | **Dense** | E ≈ V²; adjacency matrix sometimes preferred |

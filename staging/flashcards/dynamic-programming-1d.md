@@ -14,7 +14,7 @@ confidence: medium
 
 # Dynamic Programming — 1D Patterns
 
-1D DP solves problems where the optimal answer at position `i` depends only on a fixed number of earlier positions — the key insight is that overlapping subproblems let you trade redundant recursion for O(n) stored results, turning exponential brute-force into linear time.
+1D [DP](_meta/glossary.md#dp) solves problems where the optimal answer at position `i` depends only on a fixed number of earlier positions — the key insight is that overlapping subproblems let you trade redundant recursion for O(n) stored results, turning exponential brute-force into linear time.
 
 > [!tip] Recognition trigger
 > Write the brute-force recursion and draw the tree — if two branches call `f(i)` with the *same* arguments, you have overlapping subproblems and DP applies. "Max/min/number of ways" over a linear sequence, or the word "subsequence," are strong signals.
@@ -32,7 +32,7 @@ confidence: medium
 **Prefer 1D DP over alternatives when:**
 - Over greedy: the locally optimal choice is not globally safe — you need to compare multiple prior states (e.g., you can skip elements, making greedy fail for longest increasing subsequence)
 - Over divide-and-conquer: subproblems overlap (share inputs); D&C is for independent subproblems (merge sort)
-- Over BFS/DFS with no memoization: state space has repeated subproblems — memoized DFS is equivalent to top-down DP
+- Over [BFS](_meta/glossary.md#bfs)/[DFS](_meta/glossary.md#dfs) with no memoization: state space has repeated subproblems — memoized DFS is equivalent to top-down DP
 
 **Do not use when:**
 - Subproblems are independent → use divide-and-conquer or simple recursion
@@ -215,7 +215,7 @@ function coinChange(coins, amount) {
 | Pattern | Time | Space | Space-optimized |
 |---|---|---|---|
 | Linear (Fibonacci) | O(n) | O(n) table | O(1) — keep 2 vars |
-| Ending-at-i (LIS n²) | O(n²) | O(n) | O(n) — no reduction |
+| Ending-at-i ([LIS](_meta/glossary.md#lis) n²) | O(n²) | O(n) | O(n) — no reduction |
 | Coin change (unbounded) | O(n × k) | O(n) | O(n) — no reduction |
 | 0/1 knapsack | O(n × W) | O(n × W) | O(W) — 1D rolling array |
 

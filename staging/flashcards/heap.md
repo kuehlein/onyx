@@ -24,7 +24,7 @@ A heap is a complete binary tree stored as an array where every parent satisfies
 
 **Problem signals that suggest a heap / priority queue:**
 - "Find the k largest / k smallest / kth element" — especially when you cannot sort the full input
-- "Always process the next cheapest / nearest / highest-priority item" — greedy scheduling, Dijkstra, Prim's MST
+- "Always process the next cheapest / nearest / highest-priority item" — greedy scheduling, Dijkstra, Prim's [MST](_meta/glossary.md#mst)
 - "Merge k sorted lists / arrays / streams" — multi-way merge with O(log k) per step
 - "Running median" or "sliding window median" — two-heap split (max-heap for lower half, min-heap for upper half)
 - "Top-K frequent elements" — heap over frequency counts
@@ -37,7 +37,7 @@ A heap is a complete binary tree stored as an array where every parent satisfies
 - Over a deque/monotonic structure: elements must be globally ordered by an arbitrary priority, not just insertion order
 
 **Do not use when:**
-- You need arbitrary lookup or deletion by value → use a BST (sorted set) or hash map
+- You need arbitrary lookup or deletion by value → use a [BST](_meta/glossary.md#bst) (sorted set) or hash map
 - You need the k-th element with frequent rank changes → use an order-statistics tree
 - k equals n (you need everything sorted) → just sort; a heap gives no advantage
 - The priority is insertion order → use a queue

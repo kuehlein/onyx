@@ -23,7 +23,7 @@ A binary tree is a hierarchical data structure where each node holds a value and
 - Problem asks for paths from root to leaf, or paths through any node
 - Problem asks you to validate, serialize, deserialize, or reconstruct a tree
 - Problem asks for the "level" of nodes, level-order output, or a zigzag traversal
-- Problem asks about lowest common ancestor (LCA) of two nodes
+- Problem asks about lowest common ancestor ([LCA](_meta/glossary.md#lca)) of two nodes
 - Constraints mention balanced vs. unbalanced behavior (height matters)
 - Problem involves expression trees, decision trees, or recursive nested structure
 
@@ -33,7 +33,7 @@ A binary tree is a hierarchical data structure where each node holds a value and
 
 **Do not use when:**
 - Nodes can have more than two children → use a general N-ary tree or trie
-- You need O(log n) ordered lookups/insertions → use BST (a binary tree with the ordering invariant), AVL, or red-black tree
+- You need O(log n) ordered lookups/insertions → use [BST](_meta/glossary.md#bst) (a binary tree with the ordering invariant), [AVL](_meta/glossary.md#avl), or red-black tree
 - The relationship is many-to-many → use a graph
 
 ## Key Properties
@@ -55,8 +55,8 @@ Most binary tree operations reduce to traversal — visit every node once.
 
 | Operation | Time | Space (call stack / queue) |
 |---|---|---|
-| DFS traversal (recursive) | O(n) | O(h) — h is height |
-| BFS / level-order | O(n) | O(w) — w is max width (up to n/2 at last level) |
+| [DFS](_meta/glossary.md#dfs) traversal (recursive) | O(n) | O(h) — h is height |
+| [BFS](_meta/glossary.md#bfs) / level-order | O(n) | O(w) — w is max width (up to n/2 at last level) |
 | Search (unordered) | O(n) | O(h) |
 | Insert at specific position | O(n) | O(h) |
 

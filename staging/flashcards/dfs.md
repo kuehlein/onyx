@@ -15,10 +15,10 @@ confidence: low
 
 # Depth-First Search (DFS)
 
-DFS explores as far as possible along each branch before backtracking — the call stack (implicit or explicit) enforces this depth-first guarantee, which makes it the natural fit for problems that require exhaustive exploration, path tracking, or decisions at each node that depend on the full path taken so far.
+[DFS](_meta/glossary.md#dfs) explores as far as possible along each branch before backtracking — the call stack (implicit or explicit) enforces this depth-first guarantee, which makes it the natural fit for problems that require exhaustive exploration, path tracking, or decisions at each node that depend on the full path taken so far.
 
 > [!tip] Reach for DFS for exhaustive search, paths, and backtracking
-> "Find all paths/combinations/subsets", cycle detection, topological sort, connected components, tree traversals. If you need the *shortest* path in an unweighted graph, use BFS instead — DFS does not guarantee it.
+> "Find all paths/combinations/subsets", cycle detection, topological sort, connected components, tree traversals. If you need the *shortest* path in an unweighted graph, use [BFS](_meta/glossary.md#bfs) instead — DFS does not guarantee it.
 
 ## When to Use
 
@@ -219,7 +219,7 @@ function backtrack(start, current, result, candidates /* problem-specific params
 ## Variants
 
 - **Topological Sort (DFS-based):** run postorder DFS; nodes finish in reverse topological order — push to a stack on completion, then reverse
-- **Tarjan's SCC:** DFS with discovery timestamps and a low-link value to find strongly connected components in O(V + E)
+- **Tarjan's [SCC](_meta/glossary.md#scc):** DFS with discovery timestamps and a low-link value to find strongly connected components in O(V + E)
 - **Kosaraju's SCC:** two-pass DFS (once on original graph, once on transposed graph)
 - **Path sum / root-to-leaf problems:** carry a running sum down the recursion; check at leaf nodes
 - **DFS on implicit graphs:** many backtracking problems (combinations, permutations, word search) are DFS on an implicit state graph — no adjacency list, just a recursive expansion of choices

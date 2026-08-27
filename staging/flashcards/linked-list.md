@@ -25,13 +25,13 @@ A linked list is a linear data structure where each element (node) stores a valu
 - Constraints mention O(1) insertion/deletion at arbitrary positions (middle, after a given node)
 - The problem involves merging, reversing, or rearranging node sequences in-place without allocating extra arrays
 - Keywords: "in-place rearrangement," "remove Nth node from end," "merge two sorted lists," "detect cycle," "find intersection," "reverse linked list"
-- The data is inherently sequential but the size is unknown or highly dynamic (e.g., implementing a queue, LRU cache, or adjacency list)
+- The data is inherently sequential but the size is unknown or highly dynamic (e.g., implementing a queue, [LRU](_meta/glossary.md#lru) cache, or adjacency list)
 - The problem asks you to interleave or split lists (e.g., odd/even partition, zip two lists)
 
 **Prefer a linked list over alternatives when:**
 - Over array: you need O(1) insert/delete at a known node reference and can tolerate O(n) lookup; arrays shift O(n) elements on insert/delete
 - Over doubly-ended queue (deque): you need to splice or rewire arbitrary interior nodes, not just push/pop ends
-- Over skip list or BST: problem is straightforward sequential access with no need for sorted order or O(log n) search
+- Over skip list or [BST](_meta/glossary.md#bst): problem is straightforward sequential access with no need for sorted order or O(log n) search
 
 **Do not use when:**
 - You need O(1) random access by index → use an array
@@ -192,7 +192,7 @@ Use a linked list when insert/delete frequency dominates access frequency. In pr
 - **Doubly linked list:** adds `prev` pointer; required for O(1) node removal without predecessor traversal (LRU cache, `collections.OrderedDict` internals)
 - **Circular linked list:** tail points back to head; useful for round-robin schedulers
 - **Skip list:** layered linked lists with express lanes; achieves O(log n) average search, insert, and delete (probabilistic); used in Redis sorted sets
-- **XOR linked list:** stores `prev XOR next` in a single pointer field; halves pointer memory; rarely seen in interviews but occasionally asked as a follow-up
+- **[XOR](_meta/glossary.md#xor) linked list:** stores `prev XOR next` in a single pointer field; halves pointer memory; rarely seen in interviews but occasionally asked as a follow-up
 
 ## Resources
 

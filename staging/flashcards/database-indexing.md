@@ -35,7 +35,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 - Table is small (< ~100K rows and fits in memory) → full scan is fast enough; indexes add write overhead for no gain
 - Column has very low cardinality (e.g. a boolean `is_active`) → the optimizer may ignore the index anyway; use partial index or filter at application layer
 - Write throughput is the bottleneck and read latency is acceptable → each index adds ~1 additional B-tree write per INSERT/UPDATE; on write-heavy tables (e.g. event ingestion) indexes hurt throughput
-- The query pattern is unpredictable / ad-hoc analytics → use OLAP columnar store (BigQuery, Redshift, ClickHouse) instead
+- The query pattern is unpredictable / ad-hoc analytics → use [OLAP](_meta/glossary.md#olap) columnar store (BigQuery, Redshift, ClickHouse) instead
 
 ## Key Properties
 
@@ -79,7 +79,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 ## Trade-offs
 
 **Read latency vs. write throughput:**
-- Every index speeds reads and slows writes. On event-ingestion tables (millions of writes/sec), indexes are the primary bottleneck — minimize them or use a write-optimized store (LSM-tree engines: RocksDB, Cassandra) and index separately.
+- Every index speeds reads and slows writes. On event-ingestion tables (millions of writes/sec), indexes are the primary bottleneck — minimize them or use a write-optimized store ([LSM](_meta/glossary.md#lsm)-tree engines: RocksDB, Cassandra) and index separately.
 
 **Index maintenance during bulk loads:**
 - Drop non-essential indexes before a bulk INSERT, reload, then rebuild. Rebuilding one index at the end is faster than incrementally updating it per row during load.
@@ -119,7 +119,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 **Postgres-specific patterns worth mentioning in interviews:**
 - `CREATE INDEX CONCURRENTLY` — builds index without locking the table (takes longer; requires monitoring for failures)
 - Expression indexes: `CREATE INDEX ON users (lower(email))` — supports case-insensitive lookups
-- GIN / GiST indexes for full-text search, JSONB fields, and geometric data
+- [GIN](_meta/glossary.md#gin) / [GiST](_meta/glossary.md#gist) indexes for full-text search, JSONB fields, and geometric data
 - `pg_stat_user_indexes` — identify unused indexes consuming write budget
 
 **Migration strategy at scale:**
@@ -129,9 +129,9 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 ## Variants
 
 - **Full-text index (inverted index):** Maps tokens to row IDs; used by Elasticsearch, Postgres `tsvector`. Not a B-tree — optimized for `CONTAINS` / ranked relevance queries.
-- **Bitmap index:** Used in OLAP/data warehouses (Redshift, Oracle). Very efficient for low-cardinality columns in read-only or batch-write workloads; not suited for OLTP.
+- **Bitmap index:** Used in OLAP/data warehouses (Redshift, Oracle). Very efficient for low-cardinality columns in read-only or batch-write workloads; not suited for [OLTP](_meta/glossary.md#oltp).
 - **Spatial index (R-tree / GiST):** Geospatial queries ("find all restaurants within 5 km"). PostGIS, MySQL SPATIAL INDEX.
-- **LSM-tree (Log-Structured Merge):** Used by RocksDB, Cassandra, LevelDB. Converts random writes to sequential I/O at the cost of read amplification (must probe multiple SSTables/levels per read) and space amplification (duplicate keys exist across levels until compaction merges them). Fundamentally different trade-off from B-tree.
+- **LSM-tree (Log-Structured Merge):** Used by RocksDB, Cassandra, LevelDB. Converts random writes to sequential I/O at the cost of read amplification (must probe multiple [SSTable](_meta/glossary.md#sstable)s/levels per read) and space amplification (duplicate keys exist across levels until compaction merges them). Fundamentally different trade-off from B-tree.
 
 ## Resources
 

@@ -25,7 +25,7 @@ The security rests on three properties. Let `n` be the digest bit-length.
 | **Second-preimage resistance** | Given `m1`, hard to find `m2 != m1` with `H(m2)=H(m1)` | `O(2^n)` |
 | **Collision resistance** | Hard to find *any* pair `m1 != m2` with `H(m1)=H(m2)` | `O(2^{n/2})` (birthday) |
 
-These properties are formally independent — no strict implication holds in general (in particular, collision resistance does **not** imply preimage resistance). But collision resistance has the weakest generic bound (`2^{n/2}` vs `2^n`), so it is the easiest to break and therefore dictates output size: SHA-256 gives ~128-bit collision security and is chosen where 128-bit *symmetric* security is the target.
+These properties are formally independent — no strict implication holds in general (in particular, collision resistance does **not** imply preimage resistance). But collision resistance has the weakest generic bound (`2^{n/2}` vs `2^n`), so it is the easiest to break and therefore dictates output size: [SHA-256](_meta/glossary.md#sha-256) gives ~128-bit collision security and is chosen where 128-bit *symmetric* security is the target.
 
 ## When to Use
 
@@ -38,15 +38,15 @@ These properties are formally independent — no strict implication holds in gen
 - You need to reduce a public key to a short, checksummed **address**.
 
 **Prefer a plain cryptographic hash over alternatives when:**
-- Over a **MAC / HMAC**: you need a *public*, keyless fingerprint anyone can verify. Use HMAC instead the moment authenticity depends on a *secret* (see Pitfalls — length extension).
+- Over a **[MAC](_meta/glossary.md#mac) / [HMAC](_meta/glossary.md#hmac)**: you need a *public*, keyless fingerprint anyone can verify. Use HMAC instead the moment authenticity depends on a *secret* (see Pitfalls — length extension).
 - Over a **digital signature**: you only need integrity/identity of *content*, not proof of *who* produced it. Signatures are ~100–1000x more expensive and require key management; hashes do not prove authorship.
-- Over a **non-cryptographic hash** (CRC32, MurmurHash, FNV): an adversary can influence the input. Non-crypto hashes optimize speed/distribution and are trivially collidable on purpose.
-- Over a **password KDF** (bcrypt, scrypt, Argon2): the input has high entropy (a key, a random nonce, a 256-bit tx). A raw hash is *deliberately fast* and therefore wrong for low-entropy secrets.
+- Over a **non-cryptographic hash** (CRC32, MurmurHash, [FNV](_meta/glossary.md#fnv)): an adversary can influence the input. Non-crypto hashes optimize speed/distribution and are trivially collidable on purpose.
+- Over a **password [KDF](_meta/glossary.md#kdf)** (bcrypt, scrypt, Argon2): the input has high entropy (a key, a random nonce, a 256-bit tx). A raw hash is *deliberately fast* and therefore wrong for low-entropy secrets.
 
 **Do not use when:**
 - Hashing passwords or other low-entropy secrets -> use **Argon2id / scrypt / bcrypt** (slow, salted, memory-hard). A single SHA-256 is brute-forceable at billions/sec on GPUs.
-- You need authenticated integrity with a shared key -> use **HMAC** (or an AEAD like AES-GCM), never `H(secret ‖ message)`.
-- You need short output *and* collision resistance from a legacy 128-bit digest -> **MD5 and SHA-1 are broken** for collision resistance; use SHA-256 or BLAKE2/BLAKE3.
+- You need authenticated integrity with a shared key -> use **HMAC** (or an [AEAD](_meta/glossary.md#aead) like AES-GCM), never `H(secret ‖ message)`.
+- You need short output *and* collision resistance from a legacy 128-bit digest -> **[MD5](_meta/glossary.md#md5) and SHA-1 are broken** for collision resistance; use SHA-256 or [BLAKE2](_meta/glossary.md#blake2)/[BLAKE3](_meta/glossary.md#blake3).
 - You need a fast in-memory hash table or checksum with no adversary -> a non-cryptographic hash is faster and sufficient.
 - You need constant-time equality of digests in a security context -> compare with a constant-time comparator, not `==` (timing side channel), though this is a comparison issue, not the hash itself.
 
@@ -77,7 +77,7 @@ These properties are formally independent — no strict implication holds in gen
 |---|---|
 | Digest size vs cost | Larger `n` -> stronger collision resistance but larger storage/bandwidth (matters at billions of hashes in a Merkle forest). |
 | Speed vs abuse resistance | Fast is good for throughput (PoW verification, integrity) but *bad* for password/secret hashing where you want slowness. |
-| Construction | Merkle–Damgård (SHA-2): mature, ubiquitous, but length-extendable. Sponge (SHA-3/Keccak): length-extension immune, arbitrary output (XOF), slower in software. BLAKE3: very fast, parallel/tree-based, SIMD-friendly. |
+| Construction | Merkle–Damgård (SHA-2): mature, ubiquitous, but length-extendable. Sponge (SHA-3/Keccak): length-extension immune, arbitrary output ([XOF](_meta/glossary.md#xof)), slower in software. BLAKE3: very fast, parallel/tree-based, SIMD-friendly. |
 | Standardization vs performance | SHA-256 is the FIPS/interoperability default; BLAKE3 is faster but less universally deployed. |
 | Ecosystem lock-in | Bitcoin uses double-SHA-256; Ethereum uses Keccak-256 (pre-standard SHA-3 padding). Mixing them up produces silently wrong addresses/hashes. |
 

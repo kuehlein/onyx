@@ -19,12 +19,12 @@ interview feedback that may not appear in day-to-day engineering work.
 
 | Term | Meaning |
 |---|---|
-| **AC** (Accepted) | Correct output, within time and memory limits |
-| **TLE** (Time Limit Exceeded) | Solution is too slow — wrong complexity class |
-| **MLE** (Memory Limit Exceeded) | Too much memory — reduce space complexity |
-| **WA** (Wrong Answer) | Output is incorrect — logic error, edge case missed |
-| **RE** (Runtime Error) | Crash at runtime — null pointer, index out of bounds, infinite recursion causing stack overflow |
-| **OLE** (Output Limit Exceeded) | Printed far too much — usually an infinite loop with a print inside |
+| **[AC](_meta/glossary.md#ac)** (Accepted) | Correct output, within time and memory limits |
+| **[TLE](_meta/glossary.md#tle)** (Time Limit Exceeded) | Solution is too slow — wrong complexity class |
+| **[MLE](_meta/glossary.md#mle)** (Memory Limit Exceeded) | Too much memory — reduce space complexity |
+| **[WA](_meta/glossary.md#wa)** (Wrong Answer) | Output is incorrect — logic error, edge case missed |
+| **[RE](_meta/glossary.md#re)** (Runtime Error) | Crash at runtime — null pointer, index out of bounds, infinite recursion causing stack overflow |
+| **[OLE](_meta/glossary.md#ole)** (Output Limit Exceeded) | Printed far too much — usually an infinite loop with a print inside |
 
 ## Complexity Terms
 
@@ -49,7 +49,7 @@ interview feedback that may not appear in day-to-day engineering work.
 | **Tabulation** | Bottom-up DP: fill a table iteratively from base cases upward |
 | **Optimal substructure** | The optimal solution to the problem contains optimal solutions to its subproblems — prerequisite for DP |
 | **Overlapping subproblems** | The same subproblem is solved multiple times in naive recursion — prerequisite for DP |
-| **State** | The set of variables that uniquely identifies a DP subproblem (e.g., `(i, remaining_capacity)`) |
+| **State** | The set of variables that uniquely identifies a [DP](_meta/glossary.md#dp) subproblem (e.g., `(i, remaining_capacity)`) |
 
 ## Interview Process Terms
 

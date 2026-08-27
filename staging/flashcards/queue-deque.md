@@ -14,10 +14,10 @@ confidence: medium
 
 # Queue and Deque
 
-A queue enforces FIFO (First-In, First-Out) ordering — the first element enqueued is the first dequeued — making it the natural structure for any problem where processing order must mirror arrival order. A deque (double-ended queue) generalizes this by allowing O(1) insertion and removal from both ends, enabling it to function as a queue, stack, or sliding-window buffer simultaneously.
+A queue enforces [FIFO](_meta/glossary.md#fifo) (First-In, First-Out) ordering — the first element enqueued is the first dequeued — making it the natural structure for any problem where processing order must mirror arrival order. A deque (double-ended queue) generalizes this by allowing O(1) insertion and removal from both ends, enabling it to function as a queue, stack, or sliding-window buffer simultaneously.
 
 > [!tip] Recognition signal
-> "Level by level", "shortest path in an unweighted grid/graph", "minimum steps to reach X" → **BFS with a queue**. "Sliding window max/min" → **monotonic deque** of indices.
+> "Level by level", "shortest path in an unweighted grid/graph", "minimum steps to reach X" → **[BFS](_meta/glossary.md#bfs) with a queue**. "Sliding window max/min" → **monotonic deque** of indices.
 
 ## When to Use
 
@@ -45,7 +45,7 @@ A queue enforces FIFO (First-In, First-Out) ordering — the first element enque
 - You need to access an arbitrary element by index → use an array/list
 - You need the minimum or maximum across the entire structure at query time → use a heap
 - You need to process in priority order, not arrival order → use a `heapq` / priority queue
-- DFS is more appropriate (e.g., cycle detection, topological sort with recursion, path enumeration) → use a stack or the call stack
+- [DFS](_meta/glossary.md#dfs) is more appropriate (e.g., cycle detection, topological sort with recursion, path enumeration) → use a stack or the call stack
 
 ## Time & Space Complexity
 
@@ -67,7 +67,7 @@ A queue enforces FIFO (First-In, First-Out) ordering — the first element enque
 
 - **Queue:** FIFO — elements exit in the same order they entered. Supports enqueue (right), dequeue (left), and peek-front.
 - **Deque:** Double-ended — O(1) at both ends. Can model a queue (append right, pop left), a stack (append right, pop right), or a sliding window.
-- **Thread safety:** `collections.deque` is thread-safe for `append` and `popleft` operations (GIL-protected atomic ops). For producer-consumer across threads use `queue.Queue` which adds blocking and `maxsize`.
+- **Thread safety:** `collections.deque` is thread-safe for `append` and `popleft` operations ([GIL](_meta/glossary.md#gil)-protected atomic ops). For producer-consumer across threads use `queue.Queue` which adds blocking and `maxsize`.
 - **`queue.Queue` vs `collections.deque`:** `queue.Queue` is for thread synchronization (blocking `get`/`put`, `maxsize`). `collections.deque` is for single-threaded algorithmic use — it is faster and has no overhead.
 - **Monotonic deque:** A deque maintained in monotonically increasing or decreasing order. When a new element arrives, pop from the back until the invariant holds, then append. This enables O(1) window max/min queries.
 

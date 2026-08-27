@@ -84,7 +84,7 @@ Space: O(1) — only two scalar variables regardless of input size.
 - **What if you can make unlimited transactions (but must sell before buying again)?** →
   Greedy: sum every upward price difference `prices[i] - prices[i-1]` when
   positive. O(n) time, O(1) space. (LC #122)
-- **What if there is a cooldown of one day after selling?** → DP with three
+- **What if there is a cooldown of one day after selling?** → [DP](_meta/glossary.md#dp) with three
   states per day: holding, sold (cooldown), idle. (LC #309)
 - **What if buying/selling has a transaction fee?** → Greedy/DP variant; subtract
   the fee from profit on every sell to decide whether the trade is worthwhile.

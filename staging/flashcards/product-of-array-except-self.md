@@ -31,7 +31,7 @@ Constraints: `2 <= nums.length <= 10^5`, `-30 <= nums[i] <= 30`. The product of 
 **Key insight:** You cannot use the "total product ÷ current element" shortcut because division is forbidden (and zeros break it anyway). Instead, notice that the product of everything except `nums[i]` is exactly the product of all elements to the *left* of `i` multiplied by all elements to the *right* of `i`. You can compute these two partial products independently in two linear passes, then multiply them together. No element ever multiplies itself — the left pass stops before `i`, the right pass stops after `i`.
 
 **Recognition signals:**
-- The problem asks for a product (or sum, XOR, etc.) of "all except self" — a classical exclusion problem
+- The problem asks for a product (or sum, [XOR](_meta/glossary.md#xor), etc.) of "all except self" — a classical exclusion problem
 - Division is explicitly disallowed, ruling out the naive total-product approach
 - The array can contain zeros, which further rules out division
 - O(n) time constraint with no extra passes budget pushes you toward a two-pass prefix/suffix pattern

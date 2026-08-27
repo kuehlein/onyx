@@ -14,7 +14,7 @@ confidence: medium
 
 # ACID Properties
 
-ACID is the set of four guarantees — Atomicity, Consistency, Isolation, Durability — that relational databases provide to ensure correctness in the face of failures and concurrent access. Each property eliminates a specific class of data corruption; together they let you reason about transactions as if they run alone and completely.
+[ACID](_meta/glossary.md#acid) is the set of four guarantees — Atomicity, Consistency, Isolation, Durability — that relational databases provide to ensure correctness in the face of failures and concurrent access. Each property eliminates a specific class of data corruption; together they let you reason about transactions as if they run alone and completely.
 
 > [!tip] Recognition heuristic
 > Reach for ACID when the interviewer signals **data integrity is non-negotiable** — money movement, inventory/seat reservation, "no double-spend," or "what happens if the server crashes mid-operation?"

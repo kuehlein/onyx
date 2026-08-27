@@ -32,12 +32,12 @@ complexity.
 | n ≤ 10^18 | O(log n) or O(1) | Binary search on answer space, closed-form math |
 | n ≤ 10^12–10^14 | O(√n) | Trial division for primality, counting divisors, sqrt decomposition |
 | n ≤ 10^8–10^9 | O(n) | Linear scan, two pointers, sliding window, hash map |
-| n ≤ 10^6–10^7 | O(n) to O(n log n) | Sort, BFS/DFS, monotonic stack |
+| n ≤ 10^6–10^7 | O(n) to O(n log n) | Sort, [BFS](_meta/glossary.md#bfs)/[DFS](_meta/glossary.md#dfs), monotonic stack |
 | n ≤ 10^4–10^5 | O(n log n) | Sort + binary search, heap |
-| n ≤ 10^3–10^4 | O(n²) | Nested loops, 2D DP |
+| n ≤ 10^3–10^4 | O(n²) | Nested loops, 2D [DP](_meta/glossary.md#dp) |
 | n ≤ 200–500 | O(n³) | 3D DP, Floyd-Warshall |
 | n ≤ 20–25 | O(2^n) | Bitmask DP, backtracking |
-| n ≤ 12–15 | O(n!) or O(n·2^n) | Permutations, TSP-style DP |
+| n ≤ 12–15 | O(n!) or O(n·2^n) | Permutations, [TSP](_meta/glossary.md#tsp)-style DP |
 
 ## Key Properties
 
@@ -55,7 +55,7 @@ complexity.
 
 ## Common Pitfalls
 
-- **n ≤ 10^5 with an O(n²) solution:** 10^10 operations → TLE. If you find
+- **n ≤ 10^5 with an O(n²) solution:** 10^10 operations → [TLE](_meta/glossary.md#tle). If you find
   yourself writing nested loops over the full array, check the constraint first.
 - **Ignoring hidden O(n) inside a loop:** a loop that calls a library sort or
   string copy inside it is O(n²), not O(n). Every inner operation counts.

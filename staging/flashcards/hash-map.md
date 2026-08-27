@@ -33,7 +33,7 @@ A hash map stores key-value pairs by running each key through a hash function to
 - Over a trie: when keys are arbitrary hashable types, not only strings with shared-prefix queries
 
 **Do not use when:**
-- You need **sorted** key iteration → JS has no built-in sorted map; sort `[...map.entries()]` on demand or use a BST
+- You need **sorted** key iteration → JS has no built-in sorted map; sort `[...map.entries()]` on demand or use a [BST](_meta/glossary.md#bst)
 - You need range queries ("all keys between A and B") → use a BST or segment tree
 - You need JSON serialization of the map → plain object `{}` serializes with `JSON.stringify`; `Map` does not
 - Worst-case guarantees are required and hash collisions are adversarially controlled → use a tree map (O(log n) guaranteed, no built-in in JS)
@@ -146,7 +146,7 @@ addEdge(0, 1);
 - **Plain object `{}`** — simpler than `Map` when keys are always strings or symbols and you need JSON serialization. Avoid for numeric or object keys.
 - **`Set`** — `Map` without values; O(1) membership testing and deduplication. Use `new Set(arr)` to deduplicate an array.
 - **`WeakMap`** — keys must be objects; does not prevent garbage collection of keys. Used for caching computed values on DOM nodes or objects without memory leaks.
-- **LRU Cache (Map trick)** — `Map` preserves insertion order; implement LRU by deleting and re-inserting on access (moves to end), evicting with `map.keys().next().value` (the oldest key).
+- **[LRU](_meta/glossary.md#lru) Cache (Map trick)** — `Map` preserves insertion order; implement LRU by deleting and re-inserting on access (moves to end), evicting with `map.keys().next().value` (the oldest key).
 - **Bidirectional map** — two `Map`s (`key→val` and `val→key`) for O(1) lookup in both directions; used in problems requiring inverse mapping (e.g., encode/decode).
 - **Frequency counter pattern** — `map.set(k, (map.get(k) ?? 0) + 1)` is the idiomatic JS counter; no special class needed.
 

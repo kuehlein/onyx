@@ -19,24 +19,24 @@ A blockchain address is a collision-resistant hash digest of a public key, deriv
 
 **Problem signals that suggest this concept is directly relevant:**
 - An interview question asks "how does a user prove ownership of funds without revealing a password?"
-- A system design prompt asks you to design a wallet, a key management service (KMS), or an HD wallet derivation scheme
+- A system design prompt asks you to design a wallet, a key management service ([KMS](_meta/glossary.md#kms)), or an [HD](_meta/glossary.md#hd) wallet derivation scheme
 - A question asks "what is an Ethereum address?" or "why are addresses 20 bytes?"
 - A question involves signature verification, transaction authorization, or on-chain identity
 - A question asks about the security properties of blockchain accounts (e.g., "what happens if two users collide on the same address?")
 - Any question about private key custody, seed phrases, or hardware wallets
 
-**Prefer this concept (ECDSA + hashing) over alternatives when:**
+**Prefer this concept ([ECDSA](_meta/glossary.md#ecdsa) + hashing) over alternatives when:**
 - Over symmetric cryptography: asymmetric keys allow public verification of a signature without exposing the signing secret — essential when anyone on the network must verify a transaction without a shared secret
 - Over simple hash-based identity: a public key lets you also prove knowledge of the preimage (private key) via a signature; a bare hash gives you an identifier but no authentication mechanism
 
 **Do not use when:**
-- Signing bulk data for storage integrity alone → use HMAC or plain SHA-256 (no need for asymmetric overhead)
+- Signing bulk data for storage integrity alone → use [HMAC](_meta/glossary.md#hmac) or plain [SHA-256](_meta/glossary.md#sha-256) (no need for asymmetric overhead)
 - Anonymity is the primary goal → zero-knowledge proofs or stealth addresses extend this primitive; raw public-key addresses are pseudonymous, not anonymous
 
 ## Key Properties
 
-**Elliptic Curve Discrete Logarithm Problem (ECDLP):**
-Given `Q = k · G` (scalar multiplication of generator point `G` by private scalar `k`), recovering `k` from `Q` is computationally infeasible. This is the security foundation — not factoring (RSA) and not generic DLP (Diffie-Hellman over integers).
+**Elliptic Curve Discrete Logarithm Problem ([ECDLP](_meta/glossary.md#ecdlp)):**
+Given `Q = k · G` (scalar multiplication of generator point `G` by private scalar `k`), recovering `k` from `Q` is computationally infeasible. This is the security foundation — not factoring ([RSA](_meta/glossary.md#rsa)) and not generic [DLP](_meta/glossary.md#dlp) (Diffie-Hellman over integers).
 
 **Bitcoin and Ethereum both use secp256k1:**
 - 256-bit private key `k` chosen uniformly at random from `[1, n-1]` where `n` is the curve order (~2²⁵⁶)
@@ -44,7 +44,7 @@ Given `Q = k · G` (scalar multiplication of generator point `G` by private scal
 
 **Address derivation is one-way and lossy:**
 - **Ethereum:** `address = keccak256(publicKey[1:])[12:]` — drop the `04` prefix byte, hash the 64-byte key, take the last 20 bytes. The address discards 44 bytes of the public key; the public key cannot be recovered from the address alone (only from a transaction signature).
-- **Bitcoin P2PKH:** `address = Base58Check(RIPEMD-160(SHA-256(publicKey)))` — double-hashing adds quantum resistance margin and reduces the digest to 20 bytes.
+- **Bitcoin [P2PKH](_meta/glossary.md#p2pkh):** `address = Base58Check(RIPEMD-160(SHA-256(publicKey)))` — double-hashing adds quantum resistance margin and reduces the digest to 20 bytes.
 
 **Signature scheme (ECDSA):**
 - Signing: given message hash `z` and private key `k`, produce `(r, s)` pair
@@ -60,11 +60,11 @@ Given `Q = k · G` (scalar multiplication of generator point `G` by private scal
 - **k-value reuse in ECDSA is catastrophic.** If the same nonce `k` is used to sign two different messages, the private key can be algebraically recovered. Sony's PS3 signing key was extracted this way. Ethereum uses deterministic nonce generation (RFC 6979) to prevent this.
 - **Ethereum addresses are not checksummed by default.** EIP-55 defines a checksum via mixed-case hex encoding (`keccak256` of the lowercase address determines which letters are uppercased). Ignoring this leads to silent fund loss from typos.
 - **Compressed vs. uncompressed keys produce different addresses.** Early Bitcoin clients used uncompressed keys; modern wallets use compressed. The same private key yields two different public keys (and thus two different Bitcoin addresses) depending on compression.
-- **The address does not commit to the signing algorithm.** On Ethereum, a contract and an EOA (externally owned account) share the same 20-byte address space — distinguishing them requires a node call (`eth_getCode`).
+- **The address does not commit to the signing algorithm.** On Ethereum, a contract and an [EOA](_meta/glossary.md#eoa) (externally owned account) share the same 20-byte address space — distinguishing them requires a node call (`eth_getCode`).
 
 ## Trade-offs
 
-| Property | secp256k1 (ECDSA) | Ed25519 (EdDSA) |
+| Property | secp256k1 (ECDSA) | Ed25519 ([EdDSA](_meta/glossary.md#eddsa)) |
 |---|---|---|
 | Key size | 32-byte private, 33/65-byte public | 32-byte private, 32-byte public |
 | Signature size | 64 bytes (+ 1 recovery byte on ETH) | 64 bytes |
@@ -104,7 +104,7 @@ function deriveEthereumAddress(privateKeyHex) {
 // This is why Ethereum can skip storing public keys — they're recovered on demand
 ```
 
-**HD Wallet derivation (BIP-32 / BIP-44):** A single 128–256-bit entropy seed (encoded as a 12/24-word BIP-39 mnemonic) is stretched via PBKDF2 into a 512-bit master seed, then a tree of child keys is derived via HMAC-SHA512 at each node. Path `m/44'/60'/0'/0/0` is the first Ethereum address. Child key derivation is one-way — a child key cannot be used to recover the parent.
+**HD Wallet derivation (BIP-32 / BIP-44):** A single 128–256-bit entropy seed (encoded as a 12/24-word BIP-39 mnemonic) is stretched via [PBKDF2](_meta/glossary.md#pbkdf2) into a 512-bit master seed, then a tree of child keys is derived via HMAC-SHA512 at each node. Path `m/44'/60'/0'/0/0` is the first Ethereum address. Child key derivation is one-way — a child key cannot be used to recover the parent.
 
 ## Resources
 

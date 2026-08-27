@@ -26,14 +26,14 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 - The same expensive result is recomputed or re-fetched repeatedly (high read amplification on a small hot set).
 - Read:write ratio is high (e.g. 100:1) — data is read many times between mutations.
 - A downstream dependency (DB, third-party API, disk) is the latency or throughput bottleneck, and its responses are deterministic for a given input.
-- P99 latency spikes trace to a slow backing store that returns identical answers.
+- [P99](_meta/glossary.md#p99) latency spikes trace to a slow backing store that returns identical answers.
 - Traffic shows a skewed / Zipfian distribution — a few keys account for most requests.
 - You need to shed load from an origin that cannot scale horizontally (rate-limited API, single-writer DB).
 
 **Prefer caching over alternatives when:**
-- Over **scaling the origin (bigger DB / more replicas)**: caching is cheaper per QPS when the hot set is small and reads dominate.
+- Over **scaling the origin (bigger DB / more replicas)**: caching is cheaper per [QPS](_meta/glossary.md#qps) when the hot set is small and reads dominate.
 - Over **precomputing everything (materialized view)**: caching is lazy and self-tuning to actual access patterns; you only store what is asked for.
-- Over **a CDN**: use an app/DB cache when data is dynamic, per-user, or must be invalidated precisely; use a CDN when content is static and geo-distribution matters (they compose — CDN in front, Redis behind).
+- Over **a [CDN](_meta/glossary.md#cdn)**: use an app/DB cache when data is dynamic, per-user, or must be invalidated precisely; use a CDN when content is static and geo-distribution matters (they compose — CDN in front, Redis behind).
 
 **Do not use when:**
 - Data changes as often as it is read (write-heavy, low reuse) -> the cache thrashes; go straight to the store or use a write buffer.
@@ -48,7 +48,7 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 |---|---|
 | Hit ratio | fraction of reads served from cache; the single most important metric. |
 | Locality | temporal (recently used → reused soon) or spatial (nearby keys accessed together) — required for caching to pay off. |
-| Eviction policy | which entry to drop when full (LRU, LFU, FIFO, ARC, TTL-based). |
+| Eviction policy | which entry to drop when full ([LRU](_meta/glossary.md#lru), [LFU](_meta/glossary.md#lfu), [FIFO](_meta/glossary.md#fifo), [ARC](_meta/glossary.md#arc), [TTL](_meta/glossary.md#ttl)-based). |
 | TTL / freshness | max staleness tolerated; bounds correctness risk independent of invalidation. |
 | Consistency model | cache is a second copy → it can diverge from the source of truth. |
 | Locality of the cache | in-process (fastest, per-node, not shared) vs remote/distributed (shared, network hop) vs CDN (edge). |
@@ -61,7 +61,7 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 > When a hot key expires, thousands of concurrent misses hit the origin at once. Mitigate with single-flight request coalescing, a per-key refill lock, probabilistic early expiration, or stale-while-revalidate.
 
 - **Thundering herd / cache stampede:** a hot key expires and thousands of concurrent requests all miss and hit the origin simultaneously. Mitigate with request coalescing (single-flight), a mutex/lock per key on refill, probabilistic early expiration, or serving stale-while-revalidate.
-- **Unbounded cache growth:** no eviction / no maxmemory → OOM. Always set a size bound *and* an eviction policy.
+- **Unbounded cache growth:** no eviction / no maxmemory → [OOM](_meta/glossary.md#oom). Always set a size bound *and* an eviction policy.
 - **Stale reads after write:** updating the DB but forgetting to invalidate/update the cache. Decide the write strategy explicitly (below).
 - **Invalidation races:** a concurrent read repopulates the cache with the old value in the window between DB write and cache delete. Delete-after-write plus short TTL, or versioned keys, reduce the window.
 - **Cache penetration:** repeatedly querying keys that do not exist in the origin → every request misses and hits the DB. Cache negative results (with short TTL) or use a Bloom filter to short-circuit known-absent keys.

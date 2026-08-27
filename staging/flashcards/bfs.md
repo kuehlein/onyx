@@ -14,7 +14,7 @@ confidence: medium
 
 # Breadth-First Search (BFS)
 
-BFS explores all nodes at the current distance from the source before advancing to nodes one step farther away — a queue enforces this level-by-level guarantee. Because BFS visits nodes in non-decreasing order of edge count from the source, it finds the **shortest path (fewest edges)** in unweighted graphs and answers any question about the minimum number of "steps" to reach a target.
+[BFS](_meta/glossary.md#bfs) explores all nodes at the current distance from the source before advancing to nodes one step farther away — a queue enforces this level-by-level guarantee. Because BFS visits nodes in non-decreasing order of edge count from the source, it finds the **shortest path (fewest edges)** in unweighted graphs and answers any question about the minimum number of "steps" to reach a target.
 
 > [!tip] Recognition heuristic
 > Keywords "minimum / shortest / fewest / nearest steps" on an **unweighted** graph or grid signal BFS. If edge weights differ, use Dijkstra instead.
@@ -33,14 +33,14 @@ BFS explores all nodes at the current distance from the source before advancing 
 **Keywords that frequently appear:** "minimum", "shortest", "fewest", "nearest", "level by level", "steps", "hops"
 
 **Prefer BFS over alternatives when:**
-- Over DFS: you need the **shortest path** in an unweighted graph — DFS finds *a* path, not necessarily the shortest
+- Over [DFS](_meta/glossary.md#dfs): you need the **shortest path** in an unweighted graph — DFS finds *a* path, not necessarily the shortest
 - Over Dijkstra: all edge weights are equal (BFS is simpler and O(V+E) vs O((V+E) log V))
 - Over BFS with one source: when the problem has **multiple simultaneous sources** (e.g., "distance from nearest 0"), seed the queue with all sources at once (multi-source BFS)
 
 **Do not use when:**
 - Edge weights differ → use Dijkstra (non-negative weights) or Bellman-Ford (negative weights)
 - You need to explore all paths or enumerate combinations → use DFS / backtracking
-- The graph is a DAG and you need shortest weighted path → topological sort + DP
+- The graph is a [DAG](_meta/glossary.md#dag) and you need shortest weighted path → topological sort + [DP](_meta/glossary.md#dp)
 - The search space is enormous and the goal is deep → consider bidirectional BFS or A*
 
 ## Time & Space Complexity
@@ -57,7 +57,7 @@ BFS explores all nodes at the current distance from the source before advancing 
 
 - **Completeness:** BFS always finds a path if one exists (for finite graphs).
 - **Optimality:** BFS finds the path with the fewest edges in an unweighted graph.
-- **FIFO order:** the queue is the structural reason for both properties — nodes dequeued earlier were enqueued earlier (i.e., discovered at a smaller depth).
+- **[FIFO](_meta/glossary.md#fifo) order:** the queue is the structural reason for both properties — nodes dequeued earlier were enqueued earlier (i.e., discovered at a smaller depth).
 - **Level invariant:** all nodes at depth d are fully processed before any node at depth d+1 is processed. This makes it natural to track which "level" (step count) you are on by either using a sentinel or noting queue size at the start of each level.
 
 ## Common Pitfalls
