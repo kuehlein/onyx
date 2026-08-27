@@ -25,7 +25,12 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
+    // Application-support, not documents: onyx.sqlite is a derived cache rebuilt
+    // from the vault, so it belongs in app-internal storage (on iOS that keeps
+    // it out of the user-visible, iCloud-backed Documents dir). path_provider
+    // creates this directory; the documents dir may not exist (e.g. a Linux box
+    // with no XDG user-dirs configured).
+    final dir = await getApplicationSupportDirectory();
     final file = File(p.join(dir.path, 'onyx.sqlite'));
     return NativeDatabase.createInBackground(file);
   });
