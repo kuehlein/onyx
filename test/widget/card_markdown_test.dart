@@ -38,6 +38,22 @@ void main() {}
     expect(find.text('unknown language code'), findsOneWidget);
   });
 
+  testWidgets('highlights aliased languages like ```js (not plain text)',
+      (tester) async {
+    const markdown = '''
+```js
+const answer = 42;
+```
+''';
+    await tester.pumpWidget(host(markdown));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    // Highlighted code is a RichText of spans, so the raw line is NOT present as
+    // a plain Text widget. If `js` fell back to plain, this would be findsOne.
+    expect(find.text('const answer = 42;'), findsNothing);
+  });
+
   testWidgets('renders an Obsidian callout with title and body',
       (tester) async {
     const markdown = '''

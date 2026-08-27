@@ -29,6 +29,41 @@ final Map<String, TextStyle> _codeTheme = {
 ///
 /// Registered on the `code` element, which Markdown uses for both inline spans
 /// and fenced blocks; we only take over multi-line / language-tagged blocks.
+/// Common fence aliases → the canonical name the highlight registry uses.
+const Map<String, String> _languageAliases = {
+  'js': 'javascript',
+  'jsx': 'javascript',
+  'ts': 'typescript',
+  'tsx': 'typescript',
+  'py': 'python',
+  'sh': 'bash',
+  'shell': 'bash',
+  'zsh': 'bash',
+  'console': 'bash',
+  'yml': 'yaml',
+  'md': 'markdown',
+  'c++': 'cpp',
+  'cs': 'csharp',
+  'rb': 'ruby',
+  'rs': 'rust',
+  'kt': 'kotlin',
+  'golang': 'go',
+  'html': 'xml',
+  'plaintext': '',
+  'text': '',
+  'txt': '',
+};
+
+/// Maps a fence tag to a highlight language the registry knows, resolving
+/// aliases; returns null for bare/unknown/plain-text fences (render plain).
+String? _resolveLanguage(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final key = raw.toLowerCase();
+  final canonical = _languageAliases[key] ?? key;
+  if (canonical.isEmpty) return null; // explicitly plain (e.g. ```text)
+  return allLanguages.containsKey(canonical) ? canonical : null;
+}
+
 class CodeBlockBuilder extends MarkdownElementBuilder {
   static const _monospace = TextStyle(
     fontFamily: 'monospace',
@@ -47,10 +82,11 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
 
     final rawLang =
         hasLanguage ? className.substring('language-'.length) : null;
-    // Only highlight languages the registry knows; a bare fence (null) or an
-    // unrecognised tag makes highlight.parse() throw, so those render plain.
-    final language =
-        (rawLang != null && allLanguages.containsKey(rawLang)) ? rawLang : null;
+    // Resolve common aliases the registry is keyed by canonical name only
+    // (e.g. ```js -> javascript), then only highlight a language it actually
+    // knows — a bare fence (null) or unknown tag renders plain rather than
+    // making highlight.parse() throw.
+    final language = _resolveLanguage(rawLang);
     final code = content.replaceFirst(RegExp(r'\n$'), '');
     final background =
         draculaTheme['root']?.backgroundColor ?? const Color(0xFF282A36);
