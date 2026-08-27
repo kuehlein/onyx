@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ai/claude_service.dart';
+import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/vault.dart';
 
@@ -14,6 +16,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final source = ref.watch(vaultSourceProvider);
     final index = ref.watch(vaultIndexProvider);
+    final apiKey = ref.watch(apiKeyProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -61,14 +64,113 @@ class SettingsScreen extends ConsumerWidget {
             onTap: source == null ? null : () => _restore(context, ref),
           ),
           const _SectionHeader('Claude'),
-          const ListTile(
-            leading: Icon(Icons.key_outlined),
-            title: Text('API key'),
-            subtitle: Text('Stored in the iOS Keychain — coming soon'),
+          ...apiKey.when(
+            loading: () => const [
+              ListTile(
+                leading: Icon(Icons.key_outlined),
+                title: Text('Anthropic API key'),
+                subtitle: Text('Checking…'),
+              ),
+            ],
+            error: (e, _) => [
+              ListTile(
+                leading: const Icon(Icons.key_outlined),
+                title: const Text('Anthropic API key'),
+                subtitle: Text('Storage error: $e'),
+              ),
+            ],
+            data: (key) {
+              final isSet = key != null && key.isNotEmpty;
+              return [
+                ListTile(
+                  leading: const Icon(Icons.key_outlined),
+                  title: const Text('Anthropic API key'),
+                  subtitle: Text(isSet
+                      ? 'Key saved · stored in the Keychain'
+                      : 'Not set — tap to add'),
+                  trailing: isSet
+                      ? IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Remove key',
+                          onPressed: () => _clearApiKey(context, ref),
+                        )
+                      : null,
+                  onTap: () => _editApiKey(context, ref),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.wifi_tethering),
+                  title: const Text('Test connection'),
+                  subtitle: const Text('Send a tiny request to verify the key'),
+                  enabled: isSet,
+                  onTap: isSet ? () => _testConnection(context, ref) : null,
+                ),
+              ];
+            },
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _editApiKey(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = TextEditingController();
+    final key = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Anthropic API key'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'sk-ant-…'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (key == null || key.isEmpty) return;
+    try {
+      await ref.read(apiKeyProvider.notifier).set(key);
+      messenger.showSnackBar(const SnackBar(content: Text('API key saved')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not save key: $e')));
+    }
+  }
+
+  Future<void> _clearApiKey(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(apiKeyProvider.notifier).clear();
+      messenger.showSnackBar(const SnackBar(content: Text('API key removed')));
+    } catch (e) {
+      messenger
+          .showSnackBar(SnackBar(content: Text('Could not remove key: $e')));
+    }
+  }
+
+  Future<void> _testConnection(BuildContext context, WidgetRef ref) async {
+    final service = ref.read(claudeServiceProvider);
+    if (service == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(content: Text('Testing…')));
+    try {
+      final reply = await service.complete(
+          prompt: 'Reply with exactly: pong', maxTokens: 16);
+      messenger.showSnackBar(
+          SnackBar(content: Text('Connected — Claude replied "$reply"')));
+    } on ClaudeException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Failed: ${e.message}')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 
   Future<void> _backupNow(BuildContext context, WidgetRef ref) async {
