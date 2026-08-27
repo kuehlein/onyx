@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/dracula.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+// highlight's language registry — used to check a fence's language is known
+// before highlighting (an unknown/null language makes parse() throw).
+// ignore: depend_on_referenced_packages
+import 'package:highlight/languages/all.dart' show allLanguages;
 // The `code` element type comes from the markdown package (a transitive dep of
 // flutter_markdown_plus); we reference it directly in the builder signature.
 // ignore: depend_on_referenced_packages
@@ -41,11 +45,33 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     final isBlock = hasLanguage || content.contains('\n');
     if (!isBlock) return null; // inline code -> default stylesheet handling
 
-    final language =
+    final rawLang =
         hasLanguage ? className.substring('language-'.length) : null;
+    // Only highlight languages the registry knows; a bare fence (null) or an
+    // unrecognised tag makes highlight.parse() throw, so those render plain.
+    final language =
+        (rawLang != null && allLanguages.containsKey(rawLang)) ? rawLang : null;
     final code = content.replaceFirst(RegExp(r'\n$'), '');
     final background =
         draculaTheme['root']?.backgroundColor ?? const Color(0xFF282A36);
+    final foreground = draculaTheme['root']?.color ?? const Color(0xFFF8F8F2);
+    const padding = EdgeInsets.symmetric(horizontal: 14, vertical: 12);
+
+    // Soft-wrap rather than scroll horizontally: on a phone, panning long lines
+    // is a real irritant while studying. Both HighlightView's RichText and the
+    // plain Text wrap once given a bounded width (no horizontal scroll view).
+    final Widget body = language != null
+        ? HighlightView(
+            code,
+            language: language,
+            theme: _codeTheme,
+            padding: padding,
+            textStyle: _monospace,
+          )
+        : Padding(
+            padding: padding,
+            child: Text(code, style: _monospace.copyWith(color: foreground)),
+          );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -54,16 +80,7 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
         child: Container(
           width: double.infinity,
           color: background,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: HighlightView(
-              code,
-              language: language,
-              theme: _codeTheme,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              textStyle: _monospace,
-            ),
-          ),
+          child: body,
         ),
       ),
     );
