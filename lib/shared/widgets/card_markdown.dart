@@ -74,28 +74,36 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
     String data,
     Map<String, String> glossary,
   ) {
+    final sheet = _styleSheet(context);
+    final scheme = Theme.of(context).colorScheme;
     return MarkdownBody(
       data: data,
       selectable: true,
-      styleSheet: _styleSheet(context),
-      builders: {'code': CodeBlockBuilder()},
+      styleSheet: sheet,
+      builders: {
+        'code': CodeBlockBuilder(),
+        // Custom link rendering: a real bottom border lets the underline sit
+        // lower and thicker than a text-decoration underline (which Flutter
+        // can't offset, so it collides with the glyphs).
+        'a': _LinkBuilder(
+          textStyle: sheet.p ?? const TextStyle(),
+          underlineColor: scheme.onSurface.withValues(alpha: 0.8),
+          onTap: (text, href) => _handleLink(context, text, href, glossary),
+        ),
+      },
       // GitHub-flavored so pipe tables, strikethrough, and ```lang fences parse.
       extensionSet: md.ExtensionSet.gitHubFlavored,
-      onTapLink: (text, href, title) =>
-          _onTapLink(context, text, href, glossary),
     );
   }
 
   /// A link whose path ends in the glossary note pops a definition (its anchor
   /// is the term slug); any other link opens externally.
-  Future<void> _onTapLink(
+  Future<void> _handleLink(
     BuildContext context,
     String text,
-    String? href,
+    String href,
     Map<String, String> glossary,
   ) async {
-    if (href == null) return;
-
     final hash = href.indexOf('#');
     if (hash != -1) {
       final path = href.substring(0, hash).toLowerCase();
@@ -245,13 +253,9 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
-      // Discreet indicator via colour, not an underline: Flutter can't offset a
-      // text underline, so it collides with the glyphs and the dotted style is
-      // faint. A softened-accent term colour reads as tappable, stays calm, and
-      // never overlaps. Same treatment for external links.
-      a: body.copyWith(
-        color: Color.lerp(scheme.primary, body.color, 0.3),
-      ),
+      // Links are rendered by _LinkBuilder (custom underline), so this style is
+      // unused for `a`; keep it plain.
+      a: body,
       // Accent only the bullet marker (not the item text) so lists are scannable
       // without lowering text contrast.
       listBullet: body.copyWith(color: scheme.primary),
@@ -286,6 +290,65 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       tableBody: body.copyWith(fontSize: 15),
+    );
+  }
+}
+
+/// Renders a Markdown link (`a`) with a custom underline that can sit lower and
+/// thicker than a text-decoration underline, and routes taps to [onTap].
+class _LinkBuilder extends MarkdownElementBuilder {
+  _LinkBuilder({
+    required this.textStyle,
+    required this.underlineColor,
+    required this.onTap,
+  });
+
+  final TextStyle textStyle;
+  final Color underlineColor;
+  final void Function(String text, String href) onTap;
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final href = element.attributes['href'];
+    if (href == null) return null;
+    final label = element.textContent;
+    return _LinkText(
+      text: label,
+      style: textStyle,
+      underlineColor: underlineColor,
+      onTap: () => onTap(label, href),
+    );
+  }
+}
+
+class _LinkText extends StatelessWidget {
+  const _LinkText({
+    required this.text,
+    required this.style,
+    required this.underlineColor,
+    required this.onTap,
+  });
+
+  final String text;
+  final TextStyle style;
+  final Color underlineColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: underlineColor, width: 2)),
+        ),
+        // Gap between the text and the underline — the "lower" underline.
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 3),
+          child: Text(text, style: style),
+        ),
+      ),
     );
   }
 }
