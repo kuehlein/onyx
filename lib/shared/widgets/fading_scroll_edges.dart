@@ -25,32 +25,45 @@ class _FadingScrollEdgesState extends State<FadingScrollEdges> {
   bool _atTop = true;
   bool _atBottom = true;
 
-  bool _onNotification(ScrollNotification notification) {
-    final m = notification.metrics;
-    if (!m.hasContentDimensions || m.axis != Axis.vertical) return false;
+  void _update(ScrollMetrics m) {
+    if (!m.hasContentDimensions || m.axis != Axis.vertical) return;
     final atTop = m.extentBefore <= 0.5;
     final atBottom = m.extentAfter <= 0.5;
-    if (atTop != _atTop || atBottom != _atBottom) {
+    if (atTop == _atTop && atBottom == _atBottom) return;
+    // Metrics notifications fire during layout, so defer the setState.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       setState(() {
         _atTop = atTop;
         _atBottom = atBottom;
       });
-    }
-    return false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).scaffoldBackgroundColor;
-    return Stack(
-      children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: _onNotification,
-          child: widget.child,
+    // ScrollMetricsNotification fires on layout (initial + content changes);
+    // ScrollNotification fires while scrolling. Together they keep the fades
+    // correct even before the first scroll.
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (n) {
+        _update(n.metrics);
+        return false;
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          _update(n.metrics);
+          return false;
+        },
+        child: Stack(
+          children: [
+            widget.child,
+            _edge(top: true, visible: !_atTop, color: color),
+            _edge(top: false, visible: !_atBottom, color: color),
+          ],
         ),
-        _edge(top: true, visible: !_atTop, color: color),
-        _edge(top: false, visible: !_atBottom, color: color),
-      ],
+      ),
     );
   }
 
