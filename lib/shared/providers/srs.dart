@@ -18,6 +18,28 @@ SrsScheduler srsScheduler(Ref ref) => SrsScheduler();
 SrsRepository srsRepository(Ref ref) =>
     SrsRepository(ref.watch(appDatabaseProvider));
 
+/// All per-section scheduling state, keyed by `"$cardId::$sectionSlug"`.
+///
+/// Wrapped in a class rather than returned as a bare `Map<String, SrsState>`:
+/// riverpod codegen would have to emit the drift `SrsState` type in the provider
+/// signature, which fails during the build (it isn't generated yet at that
+/// phase). Holding it in a field sidesteps that.
+class SectionStates {
+  const SectionStates(this.byKey);
+
+  final Map<String, SrsState> byKey;
+
+  SrsState? operator [](String key) => byKey[key];
+}
+
+/// Loads all scheduling state; used by the browse detail view to decide which
+/// sections to open. Invalidated after each graded review so it stays fresh.
+@riverpod
+Future<SectionStates> srsStates(Ref ref) async {
+  final repo = ref.watch(srsRepositoryProvider);
+  return SectionStates(await repo.loadStates());
+}
+
 /// The built session queue plus the state snapshot it was built from (so the
 /// session can grade without re-reading the DB).
 class ReviewQueueData {
@@ -110,6 +132,8 @@ class StudySession extends _$StudySession {
       outcome: outcome,
     );
 
+    // Browse's mastery-driven collapse reads srsStates; refresh it.
+    ref.invalidate(srsStatesProvider);
     state = AsyncData(s.copyWith(index: s.index + 1));
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
+import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 CardSection _section(String heading, {bool quizzable = true}) => CardSection(
@@ -28,9 +29,15 @@ Card _card(String id, String title, {CardType type = CardType.flashcard}) =>
     );
 
 void main() {
+  // Override the SRS providers so the widget tree never touches a real DB.
   Widget app(IndexResult index) => ProviderScope(
         overrides: [
           vaultIndexProvider.overrideWith((ref) async => index),
+          srsStatesProvider
+              .overrideWith((ref) async => const SectionStates({})),
+          reviewQueueProvider.overrideWith(
+            (ref) async => const ReviewQueueData(queue: [], statesByKey: {}),
+          ),
         ],
         child: const OnyxApp(),
       );
@@ -54,8 +61,8 @@ void main() {
     for (final label in ['Home', 'Browse', 'Study', 'Settings']) {
       expect(find.text(label), findsOneWidget);
     }
-    // Home tab shows the index count.
-    expect(find.text('2 cards indexed'), findsOneWidget);
+    // Home reflects the (empty) review queue.
+    expect(find.text('All caught up — nothing due'), findsOneWidget);
   });
 
   testWidgets('Browse tab lists indexed cards by title', (tester) async {

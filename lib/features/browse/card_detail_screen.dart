@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/database/database.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
 
@@ -11,9 +13,10 @@ import '../../shared/widgets/card_markdown.dart';
 /// looked up in the live index by id (stable across filename changes).
 ///
 /// Presentation follows the learning-science synthesis (docs/learning-science):
-/// the line length is constrained (~66ch) for readability; content is chunked
-/// into panels; the core teaching (scheduled/quizzable sections) is expanded by
-/// default while supplementary sections are collapsed but clearly labelled.
+/// line length is constrained (~66ch); content is chunked into panels. Which
+/// sections open by default adapts to study state — new/due sections expand
+/// (they need work), while mastered (reviewed and scheduled out) and
+/// supplementary sections collapse.
 class CardDetailScreen extends ConsumerWidget {
   const CardDetailScreen({super.key, required this.cardId});
 
@@ -22,6 +25,7 @@ class CardDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(vaultIndexProvider);
+    final states = ref.watch(srsStatesProvider).asData?.value;
 
     return index.when(
       loading: () => const Scaffold(
@@ -49,20 +53,31 @@ class CardDetailScreen extends ConsumerWidget {
             ),
           );
         }
-        return _CardDetail(card);
+        return _CardDetail(card: card, states: states);
       },
     );
   }
 }
 
+/// Whether a section should open by default: supplementary sections stay
+/// collapsed; a quizzable section opens if it's new (never studied) or due, and
+/// collapses once it's been reviewed and scheduled into the future (mastered).
+bool _expandByDefault(CardSection section, SrsState? state, DateTime now) {
+  if (!section.quizzable) return false;
+  if (state == null) return true;
+  return !state.dueAt.isAfter(now);
+}
+
 class _CardDetail extends StatelessWidget {
-  const _CardDetail(this.card);
+  const _CardDetail({required this.card, required this.states});
 
   final Card card;
+  final SectionStates? states;
 
   @override
   Widget build(BuildContext context) {
     final isInterview = card.type == CardType.interviewQuestion;
+    final now = DateTime.now();
 
     return Scaffold(
       appBar: AppBar(title: Text(card.title)),
@@ -94,7 +109,14 @@ class _CardDetail extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               for (final section in card.sections)
-                _SectionPanel(section: section),
+                _SectionPanel(
+                  section: section,
+                  initiallyExpanded: _expandByDefault(
+                    section,
+                    states?['${card.id}::${section.slug}'],
+                    now,
+                  ),
+                ),
             ],
           ),
         ),
@@ -103,13 +125,13 @@ class _CardDetail extends StatelessWidget {
   }
 }
 
-/// One collapsible H2 section. Quizzable (scheduled) sections carry the core
-/// teaching, so they open by default and their heading is accented; other
-/// sections are supplementary and collapse to keep the card digestible.
+/// One collapsible H2 section. Whether it opens by default is decided by the
+/// caller from study state; quizzable headings are accented either way.
 class _SectionPanel extends StatelessWidget {
-  const _SectionPanel({required this.section});
+  const _SectionPanel({required this.section, required this.initiallyExpanded});
 
   final CardSection section;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +166,7 @@ class _SectionPanel extends StatelessWidget {
                   // Drop the ExpansionTile's default header/body divider lines.
                   data: theme.copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    initiallyExpanded: section.quizzable,
+                    initiallyExpanded: initiallyExpanded,
                     tilePadding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
                     expandedCrossAxisAlignment: CrossAxisAlignment.start,
