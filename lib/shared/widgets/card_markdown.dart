@@ -138,13 +138,11 @@ class CardMarkdown extends StatelessWidget {
         backgroundColor: scheme.surfaceContainerHighest,
         color: scheme.onSurface,
       ),
-      // Fallback for fenced blocks without a language (CodeBlockBuilder handles
-      // the highlighted case); keep it a calm rounded panel.
-      codeblockPadding: const EdgeInsets.all(14),
-      codeblockDecoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      // CodeBlockBuilder draws the whole code panel itself, so the <pre>
+      // wrapper must add nothing — otherwise it paints a grey box with padding
+      // around the real (dark) panel. Zero padding + a transparent decoration.
+      codeblockPadding: EdgeInsets.zero,
+      codeblockDecoration: const BoxDecoration(),
       blockquote: body.copyWith(color: scheme.onSurfaceVariant),
       blockquotePadding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       blockquoteDecoration: BoxDecoration(
