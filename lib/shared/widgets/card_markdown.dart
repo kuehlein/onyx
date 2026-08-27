@@ -87,7 +87,7 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         // can't offset, so it collides with the glyphs).
         'a': _LinkBuilder(
           textStyle: sheet.p ?? const TextStyle(),
-          underlineColor: scheme.onSurface.withValues(alpha: 0.8),
+          underlineColor: scheme.onSurfaceVariant,
           onTap: (text, href) => _handleLink(context, text, href, glossary),
         ),
       },
@@ -339,18 +339,42 @@ class _LinkText extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: underlineColor, width: 2)),
-        ),
-        // Gap between the text and the underline — the "lower" underline.
+      child: CustomPaint(
+        // Dotted line painted in the reserved bottom padding — control over
+        // dots, thickness, and offset that a text-decoration underline lacks.
+        foregroundPainter: _DottedUnderline(color: underlineColor),
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 3),
+          padding: const EdgeInsets.only(bottom: 2),
           child: Text(text, style: style),
         ),
       ),
     );
   }
+}
+
+/// A thin dotted line along the bottom edge of the paint area.
+class _DottedUnderline extends CustomPainter {
+  _DottedUnderline({required this.color});
+
+  final Color color;
+  static const _stroke = 1.0;
+  static const _dash = 1.0;
+  static const _gap = 2.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = _stroke
+      ..strokeCap = StrokeCap.round;
+    final y = size.height - _stroke / 2;
+    for (var x = 0.0; x < size.width; x += _dash + _gap) {
+      canvas.drawLine(Offset(x, y), Offset(x + _dash, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DottedUnderline old) => old.color != color;
 }
 
 /// A run of the source: either a normal Markdown chunk or a parsed callout.
