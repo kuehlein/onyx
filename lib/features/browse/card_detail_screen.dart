@@ -7,6 +7,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Read-only view of a single card: its overview plus each H2 section, rendered
 /// as Markdown with syntax-highlighted code. Reached from Browse; the card is
@@ -85,39 +86,41 @@ class _CardDetail extends StatelessWidget {
         child: ConstrainedBox(
           // Cap the measure for readable line length on wide screens.
           constraints: const BoxConstraints(maxWidth: 640),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  _MetaChip(
-                    icon: isInterview
-                        ? Icons.forum_outlined
-                        : Icons.style_outlined,
-                    label: isInterview ? 'Interview question' : 'Flashcard',
-                  ),
-                  if (card.domain != null) _MetaChip(label: card.domain!),
-                  for (final entry in card.tiers.entries)
-                    _MetaChip(label: '${entry.key} · T${entry.value}'),
-                ],
-              ),
-              if (card.overview.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                CardMarkdown(card.overview),
-              ],
-              const SizedBox(height: 16),
-              for (final section in card.sections)
-                _SectionPanel(
-                  section: section,
-                  initiallyExpanded: _expandByDefault(
-                    section,
-                    states?['${card.id}::${section.slug}'],
-                    now,
-                  ),
+          child: FadingScrollEdges(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    _MetaChip(
+                      icon: isInterview
+                          ? Icons.forum_outlined
+                          : Icons.style_outlined,
+                      label: isInterview ? 'Interview question' : 'Flashcard',
+                    ),
+                    if (card.domain != null) _MetaChip(label: card.domain!),
+                    for (final entry in card.tiers.entries)
+                      _MetaChip(label: '${entry.key} · T${entry.value}'),
+                  ],
                 ),
-            ],
+                if (card.overview.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  CardMarkdown(card.overview),
+                ],
+                const SizedBox(height: 16),
+                for (final section in card.sections)
+                  _SectionPanel(
+                    section: section,
+                    initiallyExpanded: _expandByDefault(
+                      section,
+                      states?['${card.id}::${section.slug}'],
+                      now,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

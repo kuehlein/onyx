@@ -7,6 +7,7 @@ import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Study session: recall → reveal → self-grade, one section at a time.
 /// Interview-question cards lead with the problem statement as the cue; concept
@@ -97,54 +98,56 @@ class _ReviewView extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  Row(
-                    children: [
-                      Text('$position / $total',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant)),
-                      if (card.domain != null) ...[
-                        const SizedBox(width: 8),
-                        _Pill(card.domain!),
+              child: FadingScrollEdges(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    Row(
+                      children: [
+                        Text('$position / $total',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
+                        if (card.domain != null) ...[
+                          const SizedBox(width: 8),
+                          _Pill(card.domain!),
+                        ],
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(card.title, style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 12),
-                  // The cue: problem statement for interview cards, else the
-                  // section heading you're recalling.
-                  if (isInterview && card.overview.isNotEmpty)
-                    CardMarkdown(card.overview)
-                  else
-                    Text(item.section.heading,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(color: theme.colorScheme.primary)),
-                  if (!revealed) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      isInterview
-                          ? 'Recall your approach, then reveal.'
-                          : 'Recall it, then reveal.',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
-                  ],
-                  if (revealed) ...[
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    if (isInterview)
+                    const SizedBox(height: 12),
+                    Text(card.title, style: theme.textTheme.headlineSmall),
+                    const SizedBox(height: 12),
+                    // The cue: problem statement for interview cards, else the
+                    // section heading you're recalling.
+                    if (isInterview && card.overview.isNotEmpty)
+                      CardMarkdown(card.overview)
+                    else
                       Text(item.section.heading,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary)),
-                    if (isInterview) const SizedBox(height: 6),
-                    CardMarkdown(item.section.content),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(color: theme.colorScheme.primary)),
+                    if (!revealed) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        isInterview
+                            ? 'Recall your approach, then reveal.'
+                            : 'Recall it, then reveal.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                    if (revealed) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      if (isInterview)
+                        Text(item.section.heading,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary)),
+                      if (isInterview) const SizedBox(height: 6),
+                      CardMarkdown(item.section.content),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             _ActionBar(

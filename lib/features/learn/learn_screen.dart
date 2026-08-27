@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/srs/learn_queue.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Learn mode: first exposure to never-studied sections, grouped by family.
 /// Conditional sections use a guess-then-reveal attempt; declarative sections
@@ -103,41 +104,43 @@ class _LearnView extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  Row(
-                    children: [
-                      Text('${graduated + 1} / $total',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant)),
-                      const SizedBox(width: 8),
-                      _Pill(pretest ? 'Learn · recall' : 'Learn · study'),
-                      if (item.card.domain != null) ...[
+              child: FadingScrollEdges(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    Row(
+                      children: [
+                        Text('${graduated + 1} / $total',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(width: 8),
-                        _Pill(item.card.domain!),
+                        _Pill(pretest ? 'Learn · recall' : 'Learn · study'),
+                        if (item.card.domain != null) ...[
+                          const SizedBox(width: 8),
+                          _Pill(item.card.domain!),
+                        ],
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(item.card.title, style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 6),
-                  Text(section.heading,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(color: theme.colorScheme.primary)),
-                  if (!revealed) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      'New to you. Take a guess at what this covers, then reveal.',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
-                  ],
-                  if (revealed) ...[
                     const SizedBox(height: 12),
-                    CardMarkdown(section.content),
+                    Text(item.card.title, style: theme.textTheme.headlineSmall),
+                    const SizedBox(height: 6),
+                    Text(section.heading,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(color: theme.colorScheme.primary)),
+                    if (!revealed) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        'New to you. Take a guess at what this covers, then reveal.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                    if (revealed) ...[
+                      const SizedBox(height: 12),
+                      CardMarkdown(section.content),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             _ActionBar(
