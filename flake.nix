@@ -40,6 +40,10 @@
             # GTK finds its GSettings schemas / icons via XDG_DATA_DIRS at runtime;
             # without this the desktop preview aborts on a missing-schema error.
             export XDG_DATA_DIRS="${pkgs.gtk3}/share:${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+            # Dev convenience: point the app at the staged cards so the desktop
+            # preview shows the full set without setting this each run. A manual
+            # ONYX_VAULT_PATH wins; on device the path comes from Settings.
+            export ONYX_VAULT_PATH="''${ONYX_VAULT_PATH:-$PWD/staging/flashcards}"
             if [ -d .git ]; then
               lefthook install --force 2>/dev/null || true
             fi
