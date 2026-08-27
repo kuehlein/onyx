@@ -26,6 +26,9 @@ A digital signature is a value produced from a message and a **private key** tha
 
 Contrast with a **MAC** (e.g. HMAC): a MAC also proves integrity + authenticity, but uses a *shared* secret, so it gives **no non-repudiation** — either party could have produced it. Signatures split the secret from the verifier.
 
+> [!warning] Reusing or predicting the ECDSA nonce `k` leaks the private key
+> Two signatures with the same `k` expose the key via simple algebra (the Sony PS3 and Bitcoin thefts). Use RFC 6979 deterministic nonces or EdDSA.
+
 ## When to Use
 
 **Problem signals that suggest digital signatures:**

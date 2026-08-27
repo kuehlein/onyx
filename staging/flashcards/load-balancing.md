@@ -14,6 +14,9 @@ confidence: low
 
 A load balancer distributes incoming traffic across multiple backend servers so that no single server becomes a bottleneck — it is the primary mechanism for achieving horizontal scalability and high availability in distributed systems. It works because the request-response cycle is stateless enough (at the network layer) that any healthy backend can serve any request, given correct session and state handling.
 
+> [!tip] Recognition signal
+> "Millions of requests / high RPS", "no single point of failure", "scale horizontally", "zero-downtime deploys", or "handle traffic spikes" all point to a load balancer in front of stateless replicas.
+
 ## When to Use
 
 **Problem signals that suggest load balancing:**

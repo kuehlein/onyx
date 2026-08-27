@@ -69,6 +69,9 @@ A hash map stores key-value pairs by running each key through a hash function to
 
 3. **Off-by-one in complement lookups.** In Two Sum, check `seen.has(complement)` *before* inserting the current element. Inserting first allows self-pairing when `target === 2 * x` and the element appears only once.
 
+> [!warning] Check membership with `.has()`, not truthiness
+> `if (map.get(k))` is wrong when the stored value can be `0`, `""`, or `false`. Use `map.has(k)` to test existence, then `map.get(k)`. Same trap: use `map.size`, never `map.length` (`undefined`).
+
 4. **Forgetting `map.size` — using `.length` instead.** `map.length` is `undefined`, which is always falsy. Size checks will silently return wrong results. Always use `map.size`.
 
 5. **Object keys compared by reference.** `map.set({a:1}, 'x'); map.get({a:1})` returns `undefined` — the second `{a:1}` is a different object. If you need value-based keying on objects, serialize to a string key: `JSON.stringify(obj)`.

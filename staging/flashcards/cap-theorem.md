@@ -15,6 +15,9 @@ confidence: medium
 
 A distributed data store can guarantee at most two of three properties simultaneously: **Consistency** (every read receives the most recent write or an error), **Availability** (every request receives a non-error response, though it may be stale), and **Partition Tolerance** (the system continues operating despite network partitions). Because network partitions are unavoidable in practice, real-world systems choose between CP and AP behavior — not CA.
 
+> [!important] The real choice is CP vs AP — never "CA"
+> Partitions are unavoidable in any networked system, so **P is non-negotiable**. During a partition you either refuse requests you can't safely answer (CP) or serve possibly-stale data (AP). "CA without P" just means a single-node system.
+
 ## When to Use
 
 **Problem signals that suggest CAP Theorem is relevant:**

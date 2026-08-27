@@ -27,6 +27,9 @@ Constraints: `1 <= nums.length <= 10^5`, `-10^9 <= nums[i] <= 10^9`.
 
 **Pattern:** Hash set membership
 
+> [!tip] Existence-only → hash set with early exit
+> When the question asks *whether* a value repeats (not the value or count), a set answers "seen before?" in O(1). Return the moment `seen.has(num)` is true — no need to compare every pair.
+
 **Key insight:** You only need to know whether you have *seen* a value before —
 not how many times, not where. A set answers exactly this question in O(1). The
 moment you encounter a number that already lives in the set, you have your

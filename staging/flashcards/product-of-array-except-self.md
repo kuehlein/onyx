@@ -23,6 +23,9 @@ Constraints: `2 <= nums.length <= 10^5`, `-30 <= nums[i] <= 30`. The product of 
 
 ## Approach
 
+> [!tip] The core trick
+> `output[i]` = (product of everything left of `i`) × (product of everything right of `i`). Two linear passes — a left prefix pass, then a right suffix pass reusing the output array — so no element ever multiplies itself. "Product except self" + "no division" is the signal.
+
 **Pattern:** Prefix and suffix product arrays
 
 **Key insight:** You cannot use the "total product ÷ current element" shortcut because division is forbidden (and zeros break it anyway). Instead, notice that the product of everything except `nums[i]` is exactly the product of all elements to the *left* of `i` multiplied by all elements to the *right* of `i`. You can compute these two partial products independently in two linear passes, then multiply them together. No element ever multiplies itself — the left pass stops before `i`, the right pass stops after `i`.

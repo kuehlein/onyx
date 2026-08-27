@@ -17,6 +17,9 @@ confidence: medium
 
 A BST is a binary tree where every node satisfies the invariant: all keys in the left subtree are strictly less than the node's key, and all keys in the right subtree are strictly greater. This ordering property is what makes BSTs useful — it lets you eliminate half the remaining search space at each node, enabling O(log n) operations on a balanced tree.
 
+> [!tip] Reach for a BST when
+> You need **fast search AND ordered queries** (range, rank, successor, k-th smallest) on a *dynamic* set. In-order traversal yields sorted output for free. If you only need O(1) lookup use a hash map; if you only need min/max use a heap.
+
 ## When to Use
 
 **Problem signals that suggest BST:**
@@ -65,6 +68,9 @@ A BST is a binary tree where every node satisfies the invariant: all keys in the
 **Deletion complexity:** Deleting a node with two children requires finding the in-order successor (leftmost node of the right subtree), swapping values, then deleting the successor — which has at most one child. The extra constant work doesn't change the O(log n) asymptotic.
 
 ## Common Pitfalls
+
+> [!warning] Validation checks the whole subtree, not parent-child
+> A node can be greater than its parent yet still violate the BST property against an ancestor. Validate by propagating `[min, max]` bounds down the tree — never compare only adjacent nodes.
 
 - **Forgetting the BST invariant applies to the whole subtree, not just parent-child pairs.** A node can be greater than its parent but still violate the BST property relative to an ancestor. Validation must track valid `[min, max]` bounds propagated down from ancestors.
 - **Degenerate trees from sorted input.** Inserting [1, 2, 3, 4, 5] in order gives a right-skewed linked list. Always note this risk in interviews and mention self-balancing variants.

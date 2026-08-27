@@ -16,6 +16,9 @@ confidence: high
 
 2D DP solves problems where the optimal answer at each cell `(i, j)` depends on previously computed answers in the same grid or table — the core insight is that two independent dimensions of choice or constraint interact, so a 1D array of subproblems cannot capture the full state.
 
+> [!tip] Recognition trigger
+> Two sequences being compared/aligned/matched (edit distance, LCS, regex), or two independent indices that each move toward a base case, means 2D DP. Define `dp[i][j]` in plain English *before* writing the recurrence.
+
 ## When to Use
 
 **Problem signals that suggest 2D DP:**

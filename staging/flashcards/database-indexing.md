@@ -56,6 +56,9 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 - Follows the leftmost prefix rule: an index on `(a, b, c)` serves queries filtering on `a`, `(a, b)`, or `(a, b, c)` but NOT on `b` or `c` alone
 - Place the highest-cardinality equality column first; place range columns last
 
+> [!important] Leftmost-prefix rule for composite indexes
+> An index on `(a, b, c)` serves filters on `a`, `(a, b)`, or `(a, b, c)` — but **not `b` or `c` alone**. Put equality columns first (highest cardinality first), range/sort columns last.
+
 **Partial index:**
 - Index only rows matching a condition: `CREATE INDEX idx_active_users ON users (email) WHERE is_deleted = false`
 - Smaller index, faster writes, query planner uses it only when the WHERE clause matches

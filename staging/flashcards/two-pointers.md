@@ -16,6 +16,9 @@ confidence: low
 
 Two pointers is a technique where two indices traverse the same data structure — often from opposite ends or at different speeds — to reduce an O(n²) brute-force search to O(n). The core insight is that a sorted order or monotone property lets you eliminate whole swaths of candidates with each pointer move, so you never need to try all pairs.
 
+> [!tip] Recognition signal
+> Reach for two pointers when the input is **sorted** (or sorting is acceptable) and you need a pair/triplet meeting a sum/difference target — or when a **monotone** window constraint lets you infer that moving one pointer is provably better than the other.
+
 ## When to Use
 
 **Problem signals that suggest Two Pointers:**

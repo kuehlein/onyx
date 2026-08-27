@@ -15,6 +15,9 @@ confidence: low
 
 A technique that maintains a contiguous subarray (or substring) between two pointers, expanding or shrinking the window to satisfy a constraint — avoiding the O(n²) cost of recomputing the subarray from scratch on every step by updating an incremental state as the window moves.
 
+> [!tip] Recognition trigger
+> Optimal **contiguous** subarray/substring under a **monotonic** constraint (longest/shortest with "at most k distinct", "no repeats", "window of size k"). Monotonicity is what lets you avoid backtracking.
+
 ## When to Use
 
 **Problem signals that suggest sliding window:**

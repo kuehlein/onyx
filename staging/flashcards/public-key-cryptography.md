@@ -53,6 +53,9 @@ Given `Q = k · G` (scalar multiplication of generator point `G` by private scal
 
 ## Common Pitfalls
 
+> [!warning] ECDSA nonce reuse leaks the private key
+> Signing two different messages with the same nonce `k` lets an attacker algebraically recover the private key (this broke Sony's PS3). Use deterministic nonces (RFC 6979).
+
 - **Confusing the key with the address.** The private key signs; the public key verifies; the address is a commitment to the public key used for routing funds. These are three distinct values with different exposure risk levels.
 - **k-value reuse in ECDSA is catastrophic.** If the same nonce `k` is used to sign two different messages, the private key can be algebraically recovered. Sony's PS3 signing key was extracted this way. Ethereum uses deterministic nonce generation (RFC 6979) to prevent this.
 - **Ethereum addresses are not checksummed by default.** EIP-55 defines a checksum via mixed-case hex encoding (`keccak256` of the lowercase address determines which letters are uppercased). Ignoring this leads to silent fund loss from typos.

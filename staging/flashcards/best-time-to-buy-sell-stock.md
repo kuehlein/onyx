@@ -30,6 +30,9 @@ Constraints: `1 <= prices.length <= 10^5`, `0 <= prices[i] <= 10^4`.
 
 **Pattern:** Single-pass min tracking
 
+> [!tip] Recognition heuristic
+> "Buy before you sell" is a forward-only ordering constraint — it collapses the O(n²) pair search into one left-to-right pass tracking the running minimum.
+
 **Key insight:** You never need to look backward. At every day, the best you
 could have done is buy at the lowest price seen *so far* and sell today. That
 means a single left-to-right pass is sufficient: track the running minimum and

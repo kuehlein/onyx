@@ -60,6 +60,9 @@ The complexity depends on the shape of the recursion tree:
 - **Missing or incorrect base case** — the most common interview error. A base case that handles `n == 0` but not `n < 0` will loop infinitely if the caller passes a negative value. Always ask: "what are all the terminal states?"
 - **Not returning the recursive result** — writing `self.helper(node.left)` instead of `return self.helper(node.left)` silently discards the answer; Python returns `None` by default.
 - **Mutating shared state without restoring it (backtracking bug)** — appending to a `path` list and forgetting `path.pop()` before the frame returns corrupts results for sibling branches. The golden rule: if you mutate state before recursing, undo it after.
+
+> [!warning] Backtracking golden rule
+> If you mutate shared state before recursing, **undo it after** (`path.push(...)` → recurse → `path.pop()`). Forgetting the undo corrupts sibling branches — the most common backtracking bug.
 - **Recomputing overlapping subproblems** — explaining "my solution is O(2^n)" without recognizing memoization would reduce it to O(n) is an immediate red flag to interviewers.
 - **Off-by-one in the base case** — e.g., stopping at `len(arr) == 0` when the correct stop is `lo > hi` in a binary search recursion.
 - **Assuming Python has tail-call optimization** — it does not. A recursive solution with O(n) depth on n=10^5 will crash unless rewritten iteratively or the recursion limit is raised.

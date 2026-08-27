@@ -15,6 +15,9 @@ confidence: high
 
 A graph is a set of **nodes (vertices)** connected by **edges**; it generalizes trees by allowing arbitrary connections, cycles, and multiple components. Every tree is a graph, but not every graph is a tree — the key difference is that graphs permit cycles and disconnected components.
 
+> [!warning] Mark visited *before* enqueuing, and loop over all nodes
+> Adding to `visited` only after dequeuing lets duplicates pile up and cycles loop forever. For disconnected graphs, kick off BFS/DFS from every unvisited node — starting only at node 0 misses whole components.
+
 ## When to Use
 
 **Problem signals that suggest Graphs:**

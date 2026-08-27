@@ -16,6 +16,9 @@ confidence: low
 
 Relational databases (SQL) enforce a rigid, typed schema and guarantee ACID transactions via a structured query language; NoSQL databases trade some of those guarantees for flexible schemas, horizontal scalability, and specialized data models (document, key-value, wide-column, graph). The right choice depends on data shape, consistency requirements, and scale — not on which sounds more modern.
 
+> [!tip] Default to SQL
+> Choose SQL unless a scale signal is **explicit** (100M+ users, millions of writes/sec) or the data model demands it. A well-indexed Postgres node handles ~100K–500K reads/sec — enough for most products. Reaching for NoSQL "for scale" without justification is the classic red flag.
+
 ## When to Use
 
 **Problem signals that suggest SQL (relational):**

@@ -16,6 +16,9 @@ confidence: medium
 
 Rate limiting constrains how often a client can invoke an operation within a time window — the core mechanism that prevents resource exhaustion, enforces fair use, and absorbs traffic spikes before they cascade into outages.
 
+> [!tip] Default answer
+> Reach for **token bucket** unless told otherwise: O(1) state, allows bounded bursts, cheap at scale. It's the most commonly chosen algorithm in practice.
+
 ## When to Use
 
 **Problem signals that suggest rate limiting:**

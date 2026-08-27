@@ -16,6 +16,9 @@ confidence: low
 
 A CDN is a geographically distributed network of edge servers that cache and serve content from locations physically close to end users, reducing latency by eliminating round trips to the origin server. It works because network latency scales with physical distance and hop count — serving bytes from 50 km away instead of 5,000 km cuts response time from hundreds of milliseconds to single digits.
 
+> [!tip] Reach for a CDN for static, cacheable content served to a global audience
+> Images, video, JS/CSS bundles, media streaming, geographically distributed users. It offloads 80–95% of requests and absorbs traffic spikes at the edge. Skip it for highly personalized or faster-than-TTL dynamic data.
+
 ## When to Use
 
 **Problem signals that suggest a CDN:**
@@ -93,6 +96,9 @@ The cache key is typically `scheme + host + path + selected query params`. Key m
 - Vary on `User-Agent` → shatters cache into thousands of variants; avoid
 - Vary on `Accept-Encoding` → CDN should handle this transparently
 - Cache personalized responses without per-user cache isolation (e.g., failing to set `Cache-Control: private` on user-specific endpoints, or letting the CDN cache a `/dashboard` that returns user-specific HTML) → all users share one cached copy; critical security flaw. Fix: set `Cache-Control: private` or `no-store` on any response that is not safe to share across users.
+
+> [!warning] Caching per-user content under a shared key leaks data
+> If the CDN caches a user-specific response (e.g. `/dashboard`) without per-user isolation, one user's data is served to everyone. Set `Cache-Control: private` or `no-store` on anything not safe to share.
 
 **Purge strategy comparison:**
 

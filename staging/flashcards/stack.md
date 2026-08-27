@@ -15,6 +15,9 @@ confidence: medium
 
 A stack is a last-in, first-out (LIFO) linear data structure where every insert and delete operates on the same end (the "top"). LIFO is the key invariant: the most recently added item is always the first to be removed, which makes a stack the natural model for any problem where you must undo, reverse, or defer processing until a matching or closing condition is found.
 
+> [!tip] Recognition trigger
+> Reach for a stack on **matching/paired delimiters**, **next greater/smaller element** (monotonic stack), or anything phrased "most recent / last opened / innermost / undo". LIFO is the tell.
+
 ## When to Use
 
 **Problem signals that suggest a stack:**

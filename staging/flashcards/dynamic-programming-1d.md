@@ -16,6 +16,9 @@ confidence: medium
 
 1D DP solves problems where the optimal answer at position `i` depends only on a fixed number of earlier positions — the key insight is that overlapping subproblems let you trade redundant recursion for O(n) stored results, turning exponential brute-force into linear time.
 
+> [!tip] Recognition trigger
+> Write the brute-force recursion and draw the tree — if two branches call `f(i)` with the *same* arguments, you have overlapping subproblems and DP applies. "Max/min/number of ways" over a linear sequence, or the word "subsequence," are strong signals.
+
 ## When to Use
 
 **Problem signals that suggest 1D DP:**

@@ -65,6 +65,9 @@ Most binary tree operations reduce to traversal — visit every node once.
 
 ## Traversal Patterns
 
+> [!tip] Choosing a traversal
+> Ask "do I need parent info **before** or **after** recursing into children?" Before → preorder. After (need subtree results) → postorder. Sorted BST output → inorder. Layer-by-layer → BFS.
+
 The four canonical traversals and what they reveal:
 
 - **Inorder (left → root → right):** produces sorted output for a BST; reconstructs BST from scratch

@@ -17,6 +17,9 @@ tags:
 
 Caching stores the result of an expensive computation or fetch in faster, closer storage so subsequent identical requests are served cheaply. It is fundamentally a bet: **the cost of a miss + eviction + staleness is worth paying for a high hit ratio.** A cache only helps when access has *locality* (temporal or spatial) and the underlying data is read far more often than it changes.
 
+> [!tip] Caching pays off only with locality + read-heavy access
+> Reach for a cache when a small hot set is read far more than it changes (skewed/Zipfian traffic, high read:write ratio). No locality (uniform random over a huge keyspace) → near-0% hit ratio; the cache just adds a hop.
+
 ## When to Use
 
 **Problem signals that suggest caching:**
@@ -53,6 +56,9 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 **Effective latency:** `avg = hit_ratio * hit_cost + (1 - hit_ratio) * (miss_cost + fill_cost)`. A cache with an 80% hit ratio but a very slow miss path can be *slower* than no cache — always compare against the uncached baseline.
 
 ## Common Pitfalls
+
+> [!warning] Thundering herd is the classic cache-stampede failure
+> When a hot key expires, thousands of concurrent misses hit the origin at once. Mitigate with single-flight request coalescing, a per-key refill lock, probabilistic early expiration, or stale-while-revalidate.
 
 - **Thundering herd / cache stampede:** a hot key expires and thousands of concurrent requests all miss and hit the origin simultaneously. Mitigate with request coalescing (single-flight), a mutex/lock per key on refill, probabilistic early expiration, or serving stale-while-revalidate.
 - **Unbounded cache growth:** no eviction / no maxmemory → OOM. Always set a size bound *and* an eviction policy.

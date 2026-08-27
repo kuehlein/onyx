@@ -14,6 +14,9 @@ confidence: medium
 
 Rough-order-of-magnitude calculations that translate vague scale requirements into concrete numbers — QPS, storage, bandwidth, machine counts — before any architecture decisions are made. The numbers themselves matter less than demonstrating structured reasoning and knowing which assumptions to surface.
 
+> [!tip] What the interviewer is grading
+> State assumptions out loud, round to powers of 10, and always apply the **peak multiplier (≈2–3× average)** — magnitude is the answer, not precision.
+
 ## When to Use
 
 **Problem signals that suggest back-of-envelope estimation:**

@@ -15,6 +15,9 @@ confidence: high
 
 Binary search eliminates half of the remaining search space at each step by comparing the target against the midpoint of a sorted range — this logarithmic halving is why it finds any element in O(log n) comparisons rather than O(n).
 
+> [!tip] Recognition heuristic
+> If the input is **sorted**, or you can phrase the answer as a **monotone predicate** `feasible(x)`, binary search likely applies — even when the problem never says the word "search".
+
 ## When to Use
 
 **Problem signals that suggest binary search:**

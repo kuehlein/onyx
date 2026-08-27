@@ -15,6 +15,9 @@ confidence: medium
 
 A contiguous block of memory storing elements of the same type, indexed by position. Random access is O(1) because any element's address is computable as `base + index * element_size` — arithmetic, not traversal.
 
+> [!tip] Recognition heuristic
+> Reach for an array when the input is a fixed/known-length sequence and access is **index-based** or **adjacency-based** — swaps, in-place rearrangement, two-pointer/sliding-window, or prefix sums.
+
 ## When to Use
 
 **Problem signals that suggest Array:**

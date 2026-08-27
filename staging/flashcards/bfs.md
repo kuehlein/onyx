@@ -16,6 +16,9 @@ confidence: medium
 
 BFS explores all nodes at the current distance from the source before advancing to nodes one step farther away — a queue enforces this level-by-level guarantee. Because BFS visits nodes in non-decreasing order of edge count from the source, it finds the **shortest path (fewest edges)** in unweighted graphs and answers any question about the minimum number of "steps" to reach a target.
 
+> [!tip] Recognition heuristic
+> Keywords "minimum / shortest / fewest / nearest steps" on an **unweighted** graph or grid signal BFS. If edge weights differ, use Dijkstra instead.
+
 ## When to Use
 
 **Problem signals that suggest BFS:**
@@ -58,6 +61,9 @@ BFS explores all nodes at the current distance from the source before advancing 
 - **Level invariant:** all nodes at depth d are fully processed before any node at depth d+1 is processed. This makes it natural to track which "level" (step count) you are on by either using a sentinel or noting queue size at the start of each level.
 
 ## Common Pitfalls
+
+> [!warning] Mark visited at enqueue time, not dequeue time
+> Marking on dequeue lets the same node get enqueued multiple times — wasted work and potentially wrong distances. Add to the visited set the moment you push a neighbor.
 
 - **Forgetting the visited set in graphs** — without it, BFS loops on cycles and never terminates. Mark nodes visited *at enqueue time*, not at dequeue time; marking at dequeue allows the same node to be enqueued multiple times, wasting work and potentially causing incorrect distance counts.
 - **Forgetting multi-source BFS** — if you run BFS from each source separately and aggregate, you lose O(n) time. Seed all sources into the queue at depth 0 and let BFS spread from all of them simultaneously.

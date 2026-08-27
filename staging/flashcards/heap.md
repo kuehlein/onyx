@@ -17,6 +17,9 @@ confidence: low
 
 A heap is a complete binary tree stored as an array where every parent satisfies a fixed ordering invariant with its children (min-heap: parent ≤ children; max-heap: parent ≥ children) — this invariant guarantees O(1) peek at the extreme element and O(log n) insert/remove without sorting the entire collection.
 
+> [!tip] "Top-k / kth largest" without a full sort → size-k heap
+> Keep a heap of size `k` (min-heap for k *largest*, max-heap for k *smallest*) and evict when it overflows. That's O(n log k) instead of O(n log n). Repeatedly pulling the next cheapest/nearest item is also a heap signal.
+
 ## When to Use
 
 **Problem signals that suggest a heap / priority queue:**

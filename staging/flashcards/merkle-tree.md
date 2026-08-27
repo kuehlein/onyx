@@ -54,6 +54,9 @@ A **Merkle tree** (hash tree) is a binary tree in which every leaf is the crypto
 
 ## Common Pitfalls
 
+> [!warning] Domain-separate leaves from internal nodes
+> If leaf and internal hashes share a domain, an attacker can pass an internal node off as a leaf (second-preimage attack). Prefix leaves with `0x00` and internal nodes with `0x01` before hashing, as RFC 6962 does.
+
 - **Second-preimage / node-type confusion.** If leaf hashes and internal hashes use the same domain, an attacker can present an internal node as if it were a leaf. **Fix:** domain-separate — prefix leaves with `0x00` and internal nodes with `0x01` before hashing (as Certificate Transparency, RFC 6962, does).
 - **Odd-node duplication attack (CVE-2012-2459).** Bitcoin duplicates the last hash when a level has an odd count. Duplicating an existing subtree can yield the *same root* for two different transaction lists, letting an attacker mutate a block into an invalid form with an identical Merkle root (a malleability/DoS vector). Mitigate by rejecting any block whose transaction list contains duplicate txids (equivalently, whose Merkle computation had to duplicate a node) — this is Bitcoin Core's fix.
 - **Forgetting to bind element order** when order matters (transactions) — or *not* sorting when a canonical order is required for reproducible roots across nodes.

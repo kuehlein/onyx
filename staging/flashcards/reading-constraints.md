@@ -22,6 +22,9 @@ experienced engineers immediately rule out approaches before touching code.
 ~10⁸ simple operations per second. Work backwards from n to the required
 complexity.
 
+> [!tip] Read n first
+> Before touching code, read the input constraint and work backwards from ~10⁸ ops/sec. n tells you which complexity classes are ruled out — this is how experienced engineers eliminate approaches instantly.
+
 ## Constraint → Complexity Table
 
 | Input size n | Required complexity | Typical approaches |

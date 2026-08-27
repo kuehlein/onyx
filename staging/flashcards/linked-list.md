@@ -15,6 +15,9 @@ confidence: low
 
 A linked list is a linear data structure where each element (node) stores a value and a pointer to the next node, forming a chain. Because nodes live in arbitrary memory locations connected by pointers, insertions and deletions at known positions are O(1) — no shifting required — but random access is O(n) since you must traverse from the head.
 
+> [!tip] Recognition signal
+> The problem hands you a **node reference** (not an index) and asks to insert/delete/rewire in-place: "remove Nth from end", "merge two sorted lists", "detect cycle", "reverse". Default to a **dummy head** to kill first-element edge cases.
+
 ## When to Use
 
 **Problem signals that suggest a linked list:**

@@ -17,6 +17,9 @@ confidence: low
 
 DFS explores as far as possible along each branch before backtracking — the call stack (implicit or explicit) enforces this depth-first guarantee, which makes it the natural fit for problems that require exhaustive exploration, path tracking, or decisions at each node that depend on the full path taken so far.
 
+> [!tip] Reach for DFS for exhaustive search, paths, and backtracking
+> "Find all paths/combinations/subsets", cycle detection, topological sort, connected components, tree traversals. If you need the *shortest* path in an unweighted graph, use BFS instead — DFS does not guarantee it.
+
 ## When to Use
 
 **Problem signals that suggest DFS:**

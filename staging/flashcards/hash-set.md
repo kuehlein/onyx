@@ -15,6 +15,9 @@ confidence: medium
 
 A hash set stores an unordered collection of unique values with O(1) average-case lookup, insertion, and deletion by mapping each element through a hash function to a bucket index — collisions are handled by chaining or open addressing, but with a good hash function and load factor control, constant-time access holds in practice.
 
+> [!tip] Longest-consecutive-sequence trick
+> Dump everything into a set, then only start counting a streak from `n` when `n - 1` is absent. This visits each element at most twice, turning the naive O(n²) into O(n).
+
 ## When to Use
 
 **Problem signals that suggest Hash Set:**

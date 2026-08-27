@@ -16,6 +16,9 @@ confidence: medium
 
 A queue enforces FIFO (First-In, First-Out) ordering — the first element enqueued is the first dequeued — making it the natural structure for any problem where processing order must mirror arrival order. A deque (double-ended queue) generalizes this by allowing O(1) insertion and removal from both ends, enabling it to function as a queue, stack, or sliding-window buffer simultaneously.
 
+> [!tip] Recognition signal
+> "Level by level", "shortest path in an unweighted grid/graph", "minimum steps to reach X" → **BFS with a queue**. "Sliding window max/min" → **monotonic deque** of indices.
+
 ## When to Use
 
 **Problem signals that suggest a Queue:**
@@ -69,6 +72,9 @@ A queue enforces FIFO (First-In, First-Out) ordering — the first element enque
 - **Monotonic deque:** A deque maintained in monotonically increasing or decreasing order. When a new element arrives, pop from the back until the invariant holds, then append. This enables O(1) window max/min queries.
 
 ## Common Pitfalls
+
+> [!warning] Mark visited on enqueue, not on dequeue
+> If you mark a node visited only when dequeuing, it can be enqueued many times before processing — causing O(V²) blowup or infinite loops on cyclic graphs.
 
 - **Using `list` as a queue in Python:** `list.pop(0)` is O(n). Interviewers will catch this. Always use `collections.deque` and call `.popleft()`.
 - **Forgetting to mark nodes visited before enqueuing (BFS):** If you mark visited only when dequeuing, the same node can be enqueued multiple times before being processed, causing O(V²) or worse behavior and infinite loops on cyclic graphs. Mark visited immediately upon enqueue.

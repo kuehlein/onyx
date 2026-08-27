@@ -61,6 +61,9 @@ These properties are formally independent — no strict implication holds in gen
 
 ## Common Pitfalls
 
+> [!warning] Never build a MAC as `H(key ‖ msg)`
+> Merkle–Damgård hashes (MD5, SHA-1, SHA-256/512) are length-extendable: given `H(secret ‖ msg)` and `len(secret)`, an attacker forges `H(secret ‖ msg ‖ pad ‖ ext)` without the secret. Use **HMAC**, or a length-extension-immune hash (SHA-3/Keccak, BLAKE2/3, SHA-512/256).
+
 - **Length-extension attack (Merkle–Damgård):** SHA-256, SHA-512, SHA-1, MD5 leak enough state that, given `H(secret ‖ msg)` and `len(secret)`, an attacker computes `H(secret ‖ msg ‖ pad ‖ ext)` without knowing the secret. => Never build a MAC as `H(key ‖ data)`. Use **HMAC**, or a hash immune by design (SHA-3/Keccak, BLAKE2/3, or SHA-512/256).
 - **Confusing collision vs preimage resistance:** SHA-1 and MD5 are shattered for *collisions* but preimages remain hard. A protocol only relying on second-preimage resistance may survive; one relying on collision resistance (e.g., certificate signing over attacker-chosen content) does not.
 - **Birthday bound underestimation:** an `n`-bit digest gives only `n/2` bits of collision security. A 128-bit hash => ~2^64 work to collide — feasible for a funded adversary. Size the digest to the collision threat, not the preimage threat.

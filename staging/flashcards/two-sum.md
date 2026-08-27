@@ -28,6 +28,9 @@ Constraints: `2 <= nums.length <= 10^4`, `-10^9 <= nums[i] <= 10^9`.
 
 **Pattern:** Hash map complement lookup
 
+> [!tip] Core trick
+> For each `x` the missing partner is fixed: `target - x`. Store value → index as you go and check for the complement *before* inserting — this turns the O(n) search per element into an O(1) map lookup.
+
 **Key insight:** For every element `x`, the number that would complete the pair
 is fully determined: it must be `target - x`. Instead of searching the rest of
 the array for that complement (O(n) per element), store each element's value →

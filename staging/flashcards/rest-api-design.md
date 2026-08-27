@@ -37,6 +37,9 @@ REST (Representational State Transfer) is an architectural style for distributed
 
 ## Key Properties
 
+> [!tip] The one rule to remember
+> The verb lives in the HTTP method, **not** the URL. `POST /orders` — never `POST /createOrder`. Nouns in paths, verbs in methods, status codes carry outcome.
+
 **Uniform Interface — the central REST constraint:**
 - Resources identified by stable URLs: `/users/{id}`, `/orders/{id}/items`
 - HTTP verbs carry semantics, not the URL: `GET` (read, safe, idempotent), `POST` (create, not idempotent), `PUT` (full replace, idempotent), `PATCH` (partial update), `DELETE` (idempotent)

@@ -65,6 +65,9 @@ Space: O(h · n) for full node storing all blocks and transactions. Bitcoin's UT
 
 ## Common Pitfalls
 
+> [!warning] "Longest chain" is wrong — it's the heaviest chain
+> Bitcoin's canonical chain is the one with the **most cumulative proof-of-work**, not the most blocks. Finality on PoW is also probabilistic (6 confirmations ≈ 99.9%, never absolute).
+
 **Confusing block hash with transaction hash.** A block hash is the digest of the block *header* only, not the transactions. Transactions are committed via the Merkle root in the header — they are not directly hashed into the block hash.
 
 **Assuming longest chain = canonical chain.** Bitcoin uses "heaviest chain" (most cumulative proof-of-work), not strictly the longest by block count. An attacker with 51% hash power can produce a shorter chain with more work if they mine faster.

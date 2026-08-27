@@ -16,6 +16,9 @@ confidence: low
 
 A blockchain transaction is a cryptographically signed state-transition instruction that moves through distinct phases — construction, signing, broadcast, mempool queuing, block inclusion, and finalization — before it becomes irreversible. Each phase enforces invariants (signature validity, nonce ordering, fee sufficiency, state rules) that together prevent double-spends without a trusted third party.
 
+> [!warning] Broadcast ≠ Confirmed ≠ Finalized
+> A tx in the mempool can be evicted, replaced (RBF), or never mined. Crediting on broadcast (before mining) is a double-spend vector. Confirmed (1 block) is still not final — probabilistic finality (Bitcoin) needs N confirmations; Ethereum has explicit finality only after ~2 epochs.
+
 ## When to Use
 
 **Interview/design scenarios where this concept is directly relevant:**

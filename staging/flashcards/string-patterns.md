@@ -66,6 +66,9 @@ In-place reversal / rotation:
 
 ## Key Properties
 
+> [!tip] Fixed-alphabet trick
+> Character set ≤ 26? Swap the hash map for an `int[26]` indexed by `ord(c) - ord('a')`. Space becomes provably **O(1)** (constant, doesn't grow with n) and indexing is faster — the go-to for anagram/frequency problems.
+
 **The fixed-alphabet trick.** When the character set is exactly lowercase ASCII (26 chars), replace `dict` with `int[26]`. Array indexing is faster in practice and the space is provably O(1) — the constant never grows with input size. Use `ord(c) - ord('a')` as the index.
 
 **Canonical form for grouping.** Two strings are anagrams iff they have the same canonical form. Two canonical forms work:

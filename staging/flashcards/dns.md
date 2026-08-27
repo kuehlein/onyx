@@ -15,6 +15,9 @@ confidence: medium
 
 DNS is the distributed, hierarchical naming system that translates human-readable hostnames into IP addresses — it is the internet's phone book, and its recursive resolution model allows billions of mappings to be served globally without any single authority holding the full dataset.
 
+> [!warning] Lower the TTL *before* any planned failover or cutover
+> If TTL is 86 400 s, a change takes up to 24 h to propagate. Drop TTL to 30–60 s hours ahead, and expect stale traffic for up to 2× TTL since some resolvers ignore reductions.
+
 ## When to Use
 
 **Problem signals that suggest DNS:**
