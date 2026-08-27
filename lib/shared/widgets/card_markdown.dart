@@ -77,7 +77,7 @@ class CardMarkdown extends StatelessWidget {
       // it belongs to, while a larger *top* pushes the following block away — so
       // a list groups with the sentence above it, not floating equidistant. (List
       // items carry no padding, so only paragraphs move.)
-      pPadding: const EdgeInsets.only(top: 13, bottom: 2),
+      pPadding: const EdgeInsets.only(top: 13, bottom: 0),
       blockSpacing: 4,
       h1: heading(text.headlineSmall!),
       h1Padding: const EdgeInsets.only(top: 14),
