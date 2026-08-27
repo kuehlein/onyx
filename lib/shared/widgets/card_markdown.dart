@@ -73,16 +73,16 @@ class CardMarkdown extends StatelessWidget {
       // heading paddings add the breathing room back between prose blocks.
       // Net: bullets tightest, paragraphs airy, subheadings clearly separated.
       p: body,
-      pPadding: const EdgeInsets.symmetric(vertical: 6),
-      blockSpacing: 6,
+      pPadding: const EdgeInsets.symmetric(vertical: 9),
+      blockSpacing: 4,
       h1: heading(text.headlineSmall!),
-      h1Padding: const EdgeInsets.only(top: 10),
+      h1Padding: const EdgeInsets.only(top: 14),
       h2: heading(text.titleLarge!),
-      h2Padding: const EdgeInsets.only(top: 10),
+      h2Padding: const EdgeInsets.only(top: 14),
       h3: heading(text.titleMedium!).copyWith(color: scheme.primary),
-      h3Padding: const EdgeInsets.only(top: 10),
+      h3Padding: const EdgeInsets.only(top: 14),
       h4: heading(text.titleSmall!).copyWith(color: scheme.primary),
-      h4Padding: const EdgeInsets.only(top: 10),
+      h4Padding: const EdgeInsets.only(top: 14),
       // Emphasis pops via full brightness + weight (opacity-tier signaling).
       strong: body.copyWith(
         color: scheme.onSurface,
