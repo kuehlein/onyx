@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+// The extension set (for GFM tables etc.) comes from the markdown package, a
+// transitive dep of flutter_markdown_plus.
+// ignore: depend_on_referenced_packages
+import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
 import 'code_block.dart';
@@ -21,6 +25,8 @@ class CardMarkdown extends StatelessWidget {
       selectable: true,
       styleSheet: _styleSheet(context),
       builders: {'code': CodeBlockBuilder()},
+      // GitHub-flavored so pipe tables, strikethrough, and ```lang fences parse.
+      extensionSet: md.ExtensionSet.gitHubFlavored,
       onTapLink: (text, href, title) => _onTapLink(href),
     );
   }
@@ -39,9 +45,12 @@ class CardMarkdown extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
 
-    // Body: high-emphasis off-white (onSurface), never pure white, at 1.5.
+    // Body: softened off-white (~87% of onSurface), never pure white — cuts
+    // halation/glare on the dark surface while staying well above 4.5:1. Reserve
+    // full-brightness onSurface for emphasis (see `strong`) so bold terms pop.
+    final bodyColor = scheme.onSurface.withValues(alpha: 0.87);
     final body = text.bodyLarge!.copyWith(
-      color: scheme.onSurface,
+      color: bodyColor,
       height: 1.5,
       fontSize: 16,
     );
@@ -65,14 +74,20 @@ class CardMarkdown extends StatelessWidget {
       h2: heading(text.titleLarge!),
       h3: heading(text.titleMedium!).copyWith(color: scheme.primary),
       h4: heading(text.titleSmall!).copyWith(color: scheme.primary),
-      strong: body.copyWith(fontWeight: FontWeight.w700),
+      // Emphasis pops via full brightness + weight (opacity-tier signaling).
+      strong: body.copyWith(
+        color: scheme.onSurface,
+        fontWeight: FontWeight.w700,
+      ),
       em: body.copyWith(fontStyle: FontStyle.italic),
       a: body.copyWith(
         color: scheme.primary,
         decoration: TextDecoration.underline,
         decorationColor: scheme.primary.withValues(alpha: 0.5),
       ),
-      listBullet: body,
+      // Accent only the bullet marker (not the item text) so lists are scannable
+      // without lowering text contrast.
+      listBullet: body.copyWith(color: scheme.primary),
       listIndent: 22,
       // Inline code: a subtle tinted chip, distinct from prose without shouting.
       code: mono.copyWith(
@@ -93,6 +108,19 @@ class CardMarkdown extends StatelessWidget {
         border: Border(left: BorderSide(color: scheme.primary, width: 3)),
         borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
       ),
+      // Tables: a real grid — visible cell borders, roomy padding, and a bold,
+      // tinted header row so the structure reads at a glance. Columns flex to
+      // share the width so cells wrap instead of forcing a horizontal scroll.
+      tableColumnWidth: const FlexColumnWidth(),
+      tableBorder: TableBorder.all(color: scheme.outlineVariant),
+      tableCellsPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      tableHeadAlign: TextAlign.left,
+      tableHead: body.copyWith(
+        color: scheme.onSurface,
+        fontWeight: FontWeight.w700,
+      ),
+      tableBody: body.copyWith(fontSize: 15),
     );
   }
 }

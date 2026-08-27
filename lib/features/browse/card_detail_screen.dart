@@ -116,43 +116,64 @@ class _SectionPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    // A left accent rail plus a hairline border give each section a distinct
+    // "region" (Gestalt common-region) without noisy dividers. The rail also
+    // signals importance: primary for core/quizzable sections, muted otherwise.
+    final accent = section.quizzable ? scheme.primary : scheme.outlineVariant;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       // Material (not a bare coloured Container) so the ExpansionTile's inner
       // ListTile has a Material ancestor to paint its background/ink onto.
       child: Material(
         color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
-        child: Theme(
-          // Drop the ExpansionTile's default header/body divider lines.
-          data: theme.copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            initiallyExpanded: section.quizzable,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    section.heading,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color:
-                          section.quizzable ? scheme.primary : scheme.onSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        // IntrinsicHeight so the accent rail can stretch to the panel's height
+        // (a Row in a ListView is otherwise vertically unbounded).
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 4, color: accent),
+              Expanded(
+                child: Theme(
+                  // Drop the ExpansionTile's default header/body divider lines.
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    initiallyExpanded: section.quizzable,
+                    tilePadding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            section.heading,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: section.quizzable
+                                  ? scheme.primary
+                                  : scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        if (section.quizzable)
+                          Tooltip(
+                            message: 'Scheduled for review',
+                            child: Icon(Icons.check_circle_outline,
+                                size: 18, color: scheme.primary),
+                          ),
+                      ],
                     ),
+                    children: [CardMarkdown(section.content)],
                   ),
                 ),
-                if (section.quizzable)
-                  Tooltip(
-                    message: 'Scheduled for review',
-                    child: Icon(Icons.check_circle_outline,
-                        size: 18, color: scheme.primary),
-                  ),
-              ],
-            ),
-            children: [CardMarkdown(section.content)],
+              ),
+            ],
           ),
         ),
       ),
