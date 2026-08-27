@@ -31,6 +31,10 @@ dependencies:
   # flutter_markdown_plus is the community-maintained, API-compatible successor.
   flutter_markdown_plus: ^1.0.6
 
+  # Syntax highlighting for fenced code blocks. Pure Dart (highlight) + a thin
+  # widget layer (flutter_highlight); no native deps. Bundles many editor themes.
+  flutter_highlight: ^0.7.0
+
   # Secure storage (API key in iOS Keychain)
   flutter_secure_storage: ^11.0.0
 
