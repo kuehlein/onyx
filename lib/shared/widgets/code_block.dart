@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
-import 'package:flutter_highlight/themes/dracula.dart';
+import 'package:flutter_highlight/themes/tomorrow-night.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 // highlight's language registry — used to check a fence's language is known
 // before highlighting (an unknown/null language makes parse() throw).
@@ -11,21 +11,14 @@ import 'package:highlight/languages/all.dart' show allLanguages;
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 
-/// Dracula, with the comment colour lifted for contrast. The stock comment
-/// (#6272A4 on #282A36) is ~2.5:1 — below WCAG's 4.5:1 and a known weak spot for
-/// dark themes; in a learning tool comments carry real pedagogy, so we brighten
-/// them (kept in-palette, still italic) rather than let them fade out.
-final Map<String, TextStyle> _codeTheme = {
-  ...draculaTheme,
-  'comment':
-      const TextStyle(color: Color(0xFF9BA6D6), fontStyle: FontStyle.italic),
-  'quote':
-      const TextStyle(color: Color(0xFF9BA6D6), fontStyle: FontStyle.italic),
-};
+/// Tomorrow Night: a calm, neutral dark theme whose muted-purple keywords echo
+/// the app's violet accent. Its comments (#969896 on #1d1f21 ≈ 5.7:1) already
+/// clear WCAG 4.5:1, so — unlike Dracula — no contrast lift is needed.
+const Map<String, TextStyle> _codeTheme = tomorrowNightTheme;
 
-/// Renders fenced code blocks with syntax highlighting (Dracula — its purple
-/// accents suit the app's violet scheme, and its distinct panel background
-/// separates code from prose). Inline code falls through to the stylesheet.
+/// Renders fenced code blocks with syntax highlighting on a distinct panel
+/// background that separates code from prose. Inline code falls through to the
+/// stylesheet.
 ///
 /// Registered on the `code` element, which Markdown uses for both inline spans
 /// and fenced blocks; we only take over multi-line / language-tagged blocks.
@@ -89,8 +82,8 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     final language = _resolveLanguage(rawLang);
     final code = content.replaceFirst(RegExp(r'\n$'), '');
     final background =
-        draculaTheme['root']?.backgroundColor ?? const Color(0xFF282A36);
-    final foreground = draculaTheme['root']?.color ?? const Color(0xFFF8F8F2);
+        _codeTheme['root']?.backgroundColor ?? const Color(0xFF1D1F21);
+    final foreground = _codeTheme['root']?.color ?? const Color(0xFFC5C8C6);
     const padding = EdgeInsets.symmetric(horizontal: 14, vertical: 12);
 
     // Soft-wrap rather than scroll horizontally: on a phone, panning long lines
