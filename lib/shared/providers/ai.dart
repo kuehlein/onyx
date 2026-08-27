@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/api_key_store.dart';
@@ -9,12 +11,20 @@ part 'ai.g.dart';
 @Riverpod(keepAlive: true)
 ApiKeyStore apiKeyStore(Ref ref) => ApiKeyStore();
 
-/// The saved API key (null if none). Reactive: saving/clearing refreshes it and
+/// The active API key (null if none). Reactive: saving/clearing refreshes it and
 /// anything that depends on [claudeService].
+///
+/// Dev override: `ANTHROPIC_API_KEY` in the environment wins. This lets AI be
+/// tested on a Linux desktop where the libsecret/keyring service isn't available
+/// (on device the iOS Keychain works and this var is unset).
 @Riverpod(keepAlive: true)
 class ApiKey extends _$ApiKey {
   @override
-  Future<String?> build() => ref.watch(apiKeyStoreProvider).read();
+  Future<String?> build() async {
+    final env = Platform.environment['ANTHROPIC_API_KEY'];
+    if (env != null && env.isNotEmpty) return env;
+    return ref.watch(apiKeyStoreProvider).read();
+  }
 
   Future<void> set(String key) async {
     await ref.read(apiKeyStoreProvider).write(key);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/srs.dart';
@@ -19,6 +20,9 @@ class HomeScreen extends ConsumerWidget {
     final index = ref.watch(vaultIndexProvider);
     final dueCount = ref.watch(reviewQueueProvider).asData?.value.queue.length;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
+    final apiKey = ref.watch(apiKeyProvider);
+    final needsKey =
+        apiKey.hasValue && (apiKey.value == null || apiKey.value!.isEmpty);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onyx')),
@@ -78,6 +82,22 @@ class HomeScreen extends ConsumerWidget {
                   icon: const Icon(Icons.grid_view_outlined),
                   label: const Text('Browse cards'),
                 ),
+                if (needsKey) ...[
+                  const SizedBox(height: 24),
+                  Card(
+                    margin: EdgeInsets.zero,
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    child: ListTile(
+                      leading: Icon(Icons.auto_awesome_outlined,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Enable AI features'),
+                      subtitle:
+                          const Text('Add your Anthropic API key in Settings'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.go('/settings'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
