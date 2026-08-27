@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 
-/// Landing screen. For now it surfaces the index status (how many cards were
-/// parsed, and any diagnostics) and links into study. The daily-review queue
-/// lands here once the scheduler exists.
+/// Landing screen: how many sections are ready to review, and the way into a
+/// session.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -14,6 +14,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final index = ref.watch(vaultIndexProvider);
+    final queue = ref.watch(reviewQueueProvider);
+    final dueCount = queue.asData?.value.queue.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onyx')),
@@ -39,7 +41,11 @@ class HomeScreen extends ConsumerWidget {
                   data: (r) => Text(
                     r.cardCount == 0
                         ? 'No vault configured yet — open Settings.'
-                        : '${r.cardCount} cards indexed',
+                        : dueCount == null
+                            ? '${r.cardCount} cards indexed'
+                            : dueCount == 0
+                                ? 'All caught up — nothing due'
+                                : '$dueCount section${dueCount == 1 ? '' : 's'} to review',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -47,9 +53,14 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: () => context.go('/quiz'),
+                  onPressed:
+                      (dueCount ?? 0) == 0 ? null : () => context.go('/quiz'),
                   icon: const Icon(Icons.school_outlined),
-                  label: const Text('Start a session'),
+                  label: Text(
+                    (dueCount ?? 0) == 0
+                        ? 'Nothing to study'
+                        : 'Start a session',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
