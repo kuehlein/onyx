@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/shared/widgets/callout.dart';
 import 'package:onyx/shared/widgets/card_markdown.dart';
 
 void main() {
@@ -35,6 +36,40 @@ void main() {}
     expect(tester.takeException(), isNull);
     expect(find.text('bare fence code'), findsOneWidget);
     expect(find.text('unknown language code'), findsOneWidget);
+  });
+
+  testWidgets('renders an Obsidian callout with title and body',
+      (tester) async {
+    const markdown = '''
+Intro paragraph.
+
+> [!important] Watch out
+> Use a heap when the set **changes**.
+
+Trailing paragraph.
+''';
+    await tester.pumpWidget(host(markdown));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Callout), findsOneWidget);
+    expect(find.text('Watch out'), findsOneWidget); // custom title
+    // Surrounding prose still renders as normal markdown.
+    expect(find.textContaining('Intro paragraph'), findsOneWidget);
+  });
+
+  testWidgets('callout without a title falls back to the type label',
+      (tester) async {
+    const markdown = '''
+> [!tip]
+> A helpful hint.
+''';
+    await tester.pumpWidget(host(markdown));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Callout), findsOneWidget);
+    expect(find.text('Tip'), findsOneWidget); // default label for [!tip]
   });
 
   testWidgets('renders a GFM table without error', (tester) async {

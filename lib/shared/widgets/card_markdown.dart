@@ -6,6 +6,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'callout.dart';
 import 'code_block.dart';
 
 /// Renders card Markdown with a stylesheet tuned for reading/retention:
@@ -13,6 +14,9 @@ import 'code_block.dart';
 /// (not pure-white) body text, primary-tinted headings for signaling, and
 /// syntax-highlighted code blocks. Text is selectable; external links open in
 /// the browser. Line length is meant to be constrained by the caller (~66ch).
+///
+/// Obsidian-style callouts (`> [!tip] Title` … ) render as tinted, iconed
+/// panels; everything else is normal Markdown.
 class CardMarkdown extends StatelessWidget {
   const CardMarkdown(this.data, {super.key});
 
@@ -20,6 +24,33 @@ class CardMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final segments = _splitCallouts(data);
+
+    // Common case: no callouts — render the whole thing as one Markdown block.
+    if (segments.length == 1 && !segments.first.isCallout) {
+      return _markdown(context, segments.first.content);
+    }
+
+    final children = <Widget>[];
+    for (final segment in segments) {
+      if (children.isNotEmpty) children.add(const SizedBox(height: 12));
+      children.add(
+        segment.isCallout
+            ? Callout(
+                type: segment.calloutType!,
+                title: segment.calloutTitle,
+                body: segment.content.isEmpty
+                    ? null
+                    : _markdown(context, segment.content),
+              )
+            : _markdown(context, segment.content),
+      );
+    }
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+  }
+
+  Widget _markdown(BuildContext context, String data) {
     return MarkdownBody(
       data: data,
       selectable: true,
@@ -136,4 +167,70 @@ class CardMarkdown extends StatelessWidget {
       tableBody: body.copyWith(fontSize: 15),
     );
   }
+}
+
+/// A run of the source: either a normal Markdown chunk or a parsed callout.
+class _Segment {
+  const _Segment.markdown(this.content)
+      : isCallout = false,
+        calloutType = null,
+        calloutTitle = null;
+
+  const _Segment.callout({
+    required this.calloutType,
+    required this.calloutTitle,
+    required this.content,
+  }) : isCallout = true;
+
+  final bool isCallout;
+  final String? calloutType;
+  final String? calloutTitle;
+  final String content;
+}
+
+/// The head of an Obsidian callout: `> [!type]`, optional fold marker, optional
+/// inline title. e.g. `> [!warning]- Careful`.
+final _calloutHead = RegExp(r'^>\s?\[!(\w+)\][+-]?\s*(.*)$');
+final _quoteLine = RegExp(r'^>\s?');
+
+/// Splits the source into normal-Markdown and callout segments. Contiguous
+/// `>`-quoted lines that open with `[!type]` become callouts; ordinary
+/// blockquotes stay in the Markdown stream and render via the stylesheet.
+List<_Segment> _splitCallouts(String source) {
+  final lines = source.split('\n');
+  final segments = <_Segment>[];
+  final buffer = <String>[];
+
+  void flush() {
+    if (buffer.isEmpty) return;
+    final text = buffer.join('\n').trim();
+    if (text.isNotEmpty) segments.add(_Segment.markdown(text));
+    buffer.clear();
+  }
+
+  var i = 0;
+  while (i < lines.length) {
+    final head = _calloutHead.firstMatch(lines[i]);
+    if (head == null) {
+      buffer.add(lines[i]);
+      i++;
+      continue;
+    }
+    flush();
+    final title = head.group(2)!.trim();
+    final body = <String>[];
+    i++;
+    while (i < lines.length && lines[i].startsWith('>')) {
+      body.add(lines[i].replaceFirst(_quoteLine, ''));
+      i++;
+    }
+    segments.add(_Segment.callout(
+      calloutType: head.group(1)!,
+      calloutTitle: title.isEmpty ? null : title,
+      content: body.join('\n').trim(),
+    ));
+  }
+  flush();
+
+  return segments.isEmpty ? [const _Segment.markdown('')] : segments;
 }
