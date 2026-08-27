@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/providers/learn.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 
-/// Landing screen: how many sections are ready to review, and the way into a
-/// session.
+/// Landing screen: what's ready to review, what's new to learn, and the ways in.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -14,8 +14,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final index = ref.watch(vaultIndexProvider);
-    final queue = ref.watch(reviewQueueProvider);
-    final dueCount = queue.asData?.value.queue.length;
+    final dueCount = ref.watch(reviewQueueProvider).asData?.value.queue.length;
+    final newCount = ref.watch(learnQueueProvider).asData?.value.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onyx')),
@@ -41,11 +41,7 @@ class HomeScreen extends ConsumerWidget {
                   data: (r) => Text(
                     r.cardCount == 0
                         ? 'No vault configured yet — open Settings.'
-                        : dueCount == null
-                            ? '${r.cardCount} cards indexed'
-                            : dueCount == 0
-                                ? 'All caught up — nothing due'
-                                : '$dueCount section${dueCount == 1 ? '' : 's'} to review',
+                        : _statusLine(dueCount, newCount, r.cardCount),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -58,8 +54,19 @@ class HomeScreen extends ConsumerWidget {
                   icon: const Icon(Icons.school_outlined),
                   label: Text(
                     (dueCount ?? 0) == 0
-                        ? 'Nothing to study'
-                        : 'Start a session',
+                        ? 'Nothing to review'
+                        : 'Review — $dueCount due',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed:
+                      (newCount ?? 0) == 0 ? null : () => context.go('/learn'),
+                  icon: const Icon(Icons.auto_stories_outlined),
+                  label: Text(
+                    (newCount ?? 0) == 0
+                        ? 'Nothing new to learn'
+                        : 'Learn — $newCount new',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -74,5 +81,14 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _statusLine(int? due, int? newCount, int cardCount) {
+    if (due == null && newCount == null) return '$cardCount cards indexed';
+    final parts = <String>[
+      if ((due ?? 0) > 0) '$due to review',
+      if ((newCount ?? 0) > 0) '$newCount new to learn',
+    ];
+    return parts.isEmpty ? 'All caught up' : parts.join(' · ');
   }
 }

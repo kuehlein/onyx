@@ -15,6 +15,41 @@ class SrsRepository {
     return {for (final r in rows) '${r.cardId}::${r.sectionSlug}': r};
   }
 
+  /// Graduate a section out of Learn mode: seed its initial FSRS state so it
+  /// enters the review queue, WITHOUT writing a `reviews` row — the forgetting
+  /// curve should be fit from the first real review (the next encounter), not
+  /// this first-study event. Logged to `activity_log` instead. reviewCount stays
+  /// 0 so the next review counts as the first.
+  Future<void> seedState({
+    required String cardId,
+    required String sectionSlug,
+    required ReviewOutcome outcome,
+  }) async {
+    await _db.transaction(() async {
+      await _db.into(_db.srsStates).insertOnConflictUpdate(
+            SrsStatesCompanion.insert(
+              cardId: cardId,
+              sectionSlug: sectionSlug,
+              stability: Value(outcome.stability),
+              difficulty: Value(outcome.difficulty),
+              state: Value(outcome.state),
+              step: Value(outcome.step),
+              dueAt: outcome.due,
+              lastReview: Value(outcome.lastReview),
+              reviewCount: const Value(0),
+            ),
+          );
+      await _db.into(_db.activityLog).insert(
+            ActivityLogCompanion.insert(
+              occurredAt: outcome.lastReview,
+              eventType: 'learn',
+              cardId: Value(cardId),
+              sectionSlug: Value(sectionSlug),
+            ),
+          );
+    });
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

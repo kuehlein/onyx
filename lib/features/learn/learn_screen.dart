@@ -3,43 +3,47 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/srs/review_queue.dart';
-import '../../shared/models/card.dart';
-import '../../shared/providers/srs.dart';
+import '../../core/srs/learn_queue.dart';
+import '../../shared/providers/learn.dart';
 import '../../shared/widgets/card_markdown.dart';
 
-/// Study session: recall → reveal → self-grade, one section at a time.
-/// Interview-question cards lead with the problem statement as the cue; concept
-/// cards use the section heading. Grading runs FSRS and advances.
-class QuizScreen extends ConsumerStatefulWidget {
-  const QuizScreen({super.key});
+/// Learn mode: first exposure to never-studied sections, grouped by family.
+/// Conditional sections use a guess-then-reveal attempt; declarative sections
+/// are read. Good/Easy graduates a section into the FSRS review schedule; lower
+/// grades re-queue it. Nothing here writes a review-log row.
+class LearnScreen extends ConsumerStatefulWidget {
+  const LearnScreen({super.key});
 
   @override
-  ConsumerState<QuizScreen> createState() => _QuizScreenState();
+  ConsumerState<LearnScreen> createState() => _LearnScreenState();
 }
 
-class _QuizScreenState extends ConsumerState<QuizScreen> {
-  bool _revealed = false;
+class _LearnScreenState extends ConsumerState<LearnScreen> {
+  bool _attempted = false;
 
   void _grade(int grade) {
-    setState(() => _revealed = false);
-    ref.read(studySessionProvider.notifier).grade(grade);
+    setState(() => _attempted = false);
+    ref.read(learnSessionProvider.notifier).grade(grade);
   }
 
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(studySessionProvider);
+    final session = ref.watch(learnSessionProvider);
     final s = session.asData?.value;
     final showProgress = s != null && !s.isDone && s.total > 0;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Study'),
+        title: const Text('Learn'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.go('/'),
+        ),
         bottom: showProgress
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(4),
                 child: LinearProgressIndicator(
-                  value: s.index / s.total,
+                  value: s.graduated / s.total,
                   minHeight: 4,
                 ),
               )
@@ -48,18 +52,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       body: session.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Text('Could not build a session:\n$e',
+          child: Text('Could not start learning:\n$e',
               textAlign: TextAlign.center),
         ),
         data: (s) {
           if (s.total == 0) return const _EmptyState();
-          if (s.isDone) return _CompleteState(reviewed: s.total);
-          return _ReviewView(
+          if (s.isDone) return _CompleteState(learned: s.graduated);
+          return _LearnView(
             item: s.current!,
-            position: s.index + 1,
+            graduated: s.graduated,
             total: s.total,
-            revealed: _revealed,
-            onReveal: () => setState(() => _revealed = true),
+            attempted: _attempted,
+            onReveal: () => setState(() => _attempted = true),
             onGrade: _grade,
           );
         },
@@ -68,28 +72,30 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 }
 
-class _ReviewView extends StatelessWidget {
-  const _ReviewView({
+class _LearnView extends StatelessWidget {
+  const _LearnView({
     required this.item,
-    required this.position,
+    required this.graduated,
     required this.total,
-    required this.revealed,
+    required this.attempted,
     required this.onReveal,
     required this.onGrade,
   });
 
-  final ReviewItem item;
-  final int position;
+  final LearnItem item;
+  final int graduated;
   final int total;
-  final bool revealed;
+  final bool attempted;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final card = item.card;
-    final isInterview = card.type == CardType.interviewQuestion;
+    final section = item.section;
+    final pretest = isPretestSection(section.heading);
+    // Read sections show content immediately; pretest sections wait for a guess.
+    final revealed = attempted || !pretest;
 
     return Center(
       child: ConstrainedBox(
@@ -102,47 +108,34 @@ class _ReviewView extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text('$position / $total',
+                      Text('${graduated + 1} / $total',
                           style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
-                      if (card.domain != null) ...[
+                      const SizedBox(width: 8),
+                      _Pill(pretest ? 'Learn · recall' : 'Learn · study'),
+                      if (item.card.domain != null) ...[
                         const SizedBox(width: 8),
-                        _Pill(card.domain!),
+                        _Pill(item.card.domain!),
                       ],
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(card.title, style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 12),
-                  // The cue: problem statement for interview cards, else the
-                  // section heading you're recalling.
-                  if (isInterview && card.overview.isNotEmpty)
-                    CardMarkdown(card.overview)
-                  else
-                    Text(item.section.heading,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(color: theme.colorScheme.primary)),
+                  Text(item.card.title, style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 6),
+                  Text(section.heading,
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: theme.colorScheme.primary)),
                   if (!revealed) ...[
                     const SizedBox(height: 20),
                     Text(
-                      isInterview
-                          ? 'Recall your approach, then reveal.'
-                          : 'Recall it, then reveal.',
+                      'New to you. Take a guess at what this covers, then reveal.',
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                   if (revealed) ...[
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    if (isInterview)
-                      Text(item.section.heading,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary)),
-                    if (isInterview) const SizedBox(height: 6),
-                    CardMarkdown(item.section.content),
+                    const SizedBox(height: 12),
+                    CardMarkdown(section.content),
                   ],
                 ],
               ),
@@ -159,7 +152,8 @@ class _ReviewView extends StatelessWidget {
   }
 }
 
-/// Bottom bar: a Reveal button before, four grade buttons after.
+/// Reveal before attempting; after, a grade bar. Again/Hard re-study this
+/// session; Good/Easy graduate the section into review.
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,
@@ -183,24 +177,38 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: revealed
-            ? Row(
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final (grade, label, color) in _grades) ...[
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => onGrade(grade),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: color.withValues(alpha: 0.18),
-                          foregroundColor: color,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: Text(label),
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      'Good or Easy adds it to your review schedule.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
-                    if (grade != 4) const SizedBox(width: 8),
-                  ],
+                  ),
+                  Row(
+                    children: [
+                      for (final (grade, label, color) in _grades) ...[
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => onGrade(grade),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: color.withValues(alpha: 0.18),
+                              foregroundColor: color,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: Text(label),
+                          ),
+                        ),
+                        if (grade != 4) const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
                 ],
               )
             : SizedBox(
@@ -253,12 +261,12 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline,
+            Icon(Icons.auto_stories_outlined,
                 size: 48, color: theme.colorScheme.primary),
             const SizedBox(height: 12),
-            Text('Nothing due right now', style: theme.textTheme.titleMedium),
+            Text('No new material', style: theme.textTheme.titleMedium),
             const SizedBox(height: 6),
-            Text('New cards and reviews will appear here.',
+            Text("You've started every card. Keep reviewing to lock it in.",
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -270,8 +278,8 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _CompleteState extends ConsumerWidget {
-  const _CompleteState({required this.reviewed});
-  final int reviewed;
+  const _CompleteState({required this.learned});
+  final int learned;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -282,19 +290,20 @@ class _CompleteState extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.celebration_outlined,
+            Icon(Icons.school_outlined,
                 size: 48, color: theme.colorScheme.primary),
             const SizedBox(height: 12),
-            Text('Session complete', style: theme.textTheme.titleLarge),
+            Text('Nice work', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
-            Text('$reviewed section${reviewed == 1 ? '' : 's'} reviewed',
+            Text(
+                '$learned section${learned == 1 ? '' : 's'} added to your review schedule',
+                textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () {
-                // Fresh queue next time (reflecting the reviews just recorded).
-                ref.invalidate(reviewQueueProvider);
+                ref.invalidate(learnQueueProvider);
                 context.go('/');
               },
               child: const Text('Done'),

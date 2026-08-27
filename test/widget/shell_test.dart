@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
+import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
@@ -38,6 +39,7 @@ void main() {
           reviewQueueProvider.overrideWith(
             (ref) async => const ReviewQueueData(queue: [], statesByKey: {}),
           ),
+          learnQueueProvider.overrideWith((ref) async => const []),
         ],
         child: const OnyxApp(),
       );
@@ -61,8 +63,8 @@ void main() {
     for (final label in ['Home', 'Browse', 'Study', 'Settings']) {
       expect(find.text(label), findsOneWidget);
     }
-    // Home reflects the (empty) review queue.
-    expect(find.text('All caught up — nothing due'), findsOneWidget);
+    // Home reflects the (empty) review + learn queues.
+    expect(find.text('All caught up'), findsOneWidget);
   });
 
   testWidgets('Browse tab lists indexed cards by title', (tester) async {

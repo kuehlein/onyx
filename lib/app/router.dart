@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/learn/learn_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/settings/settings_screen.dart';
 
@@ -16,6 +17,8 @@ import '../features/settings/settings_screen.dart';
 GoRouter createRouter() => GoRouter(
       initialLocation: '/',
       routes: [
+        // Full-screen, focused flow launched from Home (outside the tab shell).
+        GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
           branches: [

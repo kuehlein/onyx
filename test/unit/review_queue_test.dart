@@ -21,7 +21,7 @@ void main() {
   final now = DateTime(2026, 1, 10, 12);
 
   group('buildReviewQueue', () {
-    test('includes due and new sections, excludes not-yet-due', () {
+    test('includes only due sections; excludes new and not-yet-due', () {
       final cards = [
         _card('A', 'a', ['s1', 's2']),
         _card('B', 'b', ['s1']),
@@ -30,44 +30,33 @@ void main() {
       final dueByKey = {
         'A::s1': now.subtract(const Duration(days: 1)), // due
         'C::s1': now.add(const Duration(days: 1)), // not yet due -> excluded
-        // A::s2 and B::s1 absent -> new
+        // A::s2 and B::s1 have no state -> new -> belong to Learn, not Review
       };
 
       final queue =
           buildReviewQueue(cards: cards, dueByKey: dueByKey, now: now);
-      final keys = queue.map((i) => i.key).toSet();
 
-      expect(keys, {'A::s1', 'A::s2', 'B::s1'});
-      expect(keys.contains('C::s1'), isFalse);
-      expect(queue.firstWhere((i) => i.key == 'A::s1').isNew, isFalse);
-      expect(queue.firstWhere((i) => i.key == 'B::s1').isNew, isTrue);
+      expect(queue.map((i) => i.key), ['A::s1']);
     });
 
-    test('interleaves across domains', () {
+    test('interleaves due sections across domains', () {
       final cards = [
         _card('A', 'a', ['s1', 's2', 's3']),
         _card('B', 'b', ['s1']),
       ];
+      final past = now.subtract(const Duration(days: 1));
+      final dueByKey = {
+        'A::s1': past,
+        'A::s2': past,
+        'A::s3': past,
+        'B::s1': past,
+      };
       final queue =
-          buildReviewQueue(cards: cards, dueByKey: const {}, now: now);
+          buildReviewQueue(cards: cards, dueByKey: dueByKey, now: now);
       final domains = queue.map((i) => i.card.domain).toList();
 
       // Round-robin: a, b, a, a (b's single item lands second, not last).
       expect(domains, ['a', 'b', 'a', 'a']);
-    });
-
-    test('caps new items at newLimit', () {
-      final cards = [
-        _card('A', 'a', List.generate(20, (i) => 's$i')),
-      ];
-      final queue = buildReviewQueue(
-        cards: cards,
-        dueByKey: const {},
-        now: now,
-        newLimit: 5,
-      );
-      expect(queue.length, 5);
-      expect(queue.every((i) => i.isNew), isTrue);
     });
 
     test('only quizzable sections are scheduled', () {
@@ -90,8 +79,12 @@ void main() {
         wikilinks: [],
         filePath: 'A.md',
       );
-      final queue =
-          buildReviewQueue(cards: [card], dueByKey: const {}, now: now);
+      final past = now.subtract(const Duration(days: 1));
+      final queue = buildReviewQueue(
+        cards: [card],
+        dueByKey: {'A::quiz': past, 'A::related': past},
+        now: now,
+      );
       expect(queue.map((i) => i.key), ['A::quiz']);
     });
   });

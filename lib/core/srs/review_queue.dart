@@ -2,53 +2,38 @@ import 'dart:collection';
 
 import '../../shared/models/card.dart';
 
-/// One item to review in a session: a single quizzable section of a card, and
-/// whether it's brand-new (never reviewed) or a scheduled repetition.
+/// One item to review in a session: a single quizzable section of a card.
 class ReviewItem {
-  const ReviewItem({
-    required this.card,
-    required this.section,
-    required this.isNew,
-  });
+  const ReviewItem({required this.card, required this.section});
 
   final Card card;
   final CardSection section;
-  final bool isNew;
 
   /// Stable composite key into `srs_state` / `reviews`.
   String get key => '${card.id}::${section.slug}';
 }
 
-/// Builds a study session from the parsed cards and their scheduling state.
-///
-/// A section is included when it is **due** (`dueAt <= now`) or **new** (no
-/// entry in [dueByKey]); everything else is skipped. New items are capped at
-/// [newLimit] so a session doesn't drown you in unseen material. The result is
-/// interleaved by domain (round-robin across tags) — the desirable-difficulty
-/// ordering our learning-science synthesis recommends over blocking one topic.
+/// Builds a review session: only sections that are already **due**
+/// (`dueAt <= now`). First exposure to un-seeded sections belongs to Learn mode,
+/// not here — a section reaches this queue only after graduating out of Learn.
+/// The result is interleaved by domain (round-robin across tags) — the
+/// desirable-difficulty ordering our learning-science synthesis recommends over
+/// blocking one topic (the opposite of Learn's grouping).
 List<ReviewItem> buildReviewQueue({
   required List<Card> cards,
   required Map<String, DateTime> dueByKey,
   required DateTime now,
-  int newLimit = 12,
 }) {
   final due = <ReviewItem>[];
-  final fresh = <ReviewItem>[];
-
   for (final card in cards) {
     for (final section in card.quizzableSections) {
-      final key = '${card.id}::${section.slug}';
-      final dueAt = dueByKey[key];
-      if (dueAt == null) {
-        fresh.add(ReviewItem(card: card, section: section, isNew: true));
-      } else if (!dueAt.isAfter(now)) {
-        due.add(ReviewItem(card: card, section: section, isNew: false));
+      final dueAt = dueByKey['${card.id}::${section.slug}'];
+      if (dueAt != null && !dueAt.isAfter(now)) {
+        due.add(ReviewItem(card: card, section: section));
       }
     }
   }
-
-  final selected = [...due, ...fresh.take(newLimit)];
-  return _interleaveByDomain(selected);
+  return _interleaveByDomain(due);
 }
 
 /// Round-robin across domain buckets so consecutive items differ in topic where
