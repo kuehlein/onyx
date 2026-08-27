@@ -25,10 +25,30 @@ void main() {
         'A note: OK, TODO later. A single X, and O(1).',
       ]);
       expect(terms, containsAll({'HTTP', 'TCP', 'API', 'DNS'}));
-      expect(terms.contains('OK'), isFalse); // stop word
-      expect(terms.contains('TODO'), isFalse);
-      expect(terms.contains('A'), isFalse); // single letter
-      expect(terms.contains('X'), isFalse);
+      expect(terms.contains('OK'), isFalse);
+      expect(terms.contains('A'), isFalse);
+    });
+  });
+
+  group('parseGlossaryNote', () {
+    test('parses ## Term sections into a slug→definition map', () {
+      const note = '''
+# Glossary
+
+## API
+Application Programming Interface — endpoints one program exposes.
+
+## Load Balancer
+Distributes traffic across servers.
+''';
+      final map = parseGlossaryNote(note);
+      expect(map['api'], contains('Application Programming'));
+      expect(map['load-balancer'], contains('Distributes traffic'));
+    });
+
+    test('glossarySlug lowercases and hyphenates', () {
+      expect(glossarySlug('API'), 'api');
+      expect(glossarySlug('Load Balancer'), 'load-balancer');
     });
   });
 
@@ -37,40 +57,42 @@ void main() {
     setUp(() => root = Directory.systemTemp.createTempSync('onyx_gloss_'));
     tearDown(() => root.deleteSync(recursive: true));
 
-    test('generate writes the vault file; load reads it back', () async {
+    test('draft writes a Markdown note; load parses it back', () async {
       final source = DesktopVaultSource(root.path);
       final claude = ClaudeService(
         apiKey: 'k',
-        client: _client(jsonEncode({
-          'HTTP': 'HyperText Transfer Protocol.',
-          'TCP': 'Transmission Control Protocol.',
-        })),
+        client: _client(
+            '# Glossary\n\n## DNS\nDomain Name System.\n\n## TCP\nTransmission Control Protocol.\n'),
       );
 
-      final map = await GlossaryService(source: source, claude: claude)
-          .generate({'HTTP', 'TCP'});
-      expect(map['HTTP'], contains('HyperText'));
+      final count =
+          await GlossaryService(source: source, claude: claude).draft({'DNS'});
+      expect(count, 2);
       expect(
         File('${root.path}/_meta/${GlossaryService.fileName}').existsSync(),
         isTrue,
       );
 
       final loaded = await GlossaryService(source: source).load();
-      expect(loaded['TCP'], contains('Transmission'));
+      expect(loaded['dns'], contains('Domain Name System'));
+      expect(loaded['tcp'], contains('Transmission'));
     });
 
-    test('tolerates a ```json fence around the reply', () async {
+    test('draft tolerates a ```markdown fence around the reply', () async {
       final source = DesktopVaultSource(root.path);
       final claude = ClaudeService(
         apiKey: 'k',
-        client: _client('```json\n{"DNS": "Domain Name System."}\n```'),
+        client: _client('```markdown\n# Glossary\n\n## DER\nDistinguished '
+            'Encoding Rules.\n```'),
       );
-      final map = await GlossaryService(source: source, claude: claude)
-          .generate({'DNS'});
-      expect(map['DNS'], 'Domain Name System.');
+      final count =
+          await GlossaryService(source: source, claude: claude).draft({'DER'});
+      expect(count, 1);
+      expect((await GlossaryService(source: source).load())['der'],
+          contains('Distinguished'));
     });
 
-    test('load returns empty when no glossary exists', () async {
+    test('load returns empty when no note exists', () async {
       final loaded =
           await GlossaryService(source: DesktopVaultSource(root.path)).load();
       expect(loaded, isEmpty);

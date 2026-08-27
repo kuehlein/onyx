@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/glossary.dart';
 import 'callout.dart';
 import 'code_block.dart';
-import 'glossary_syntax.dart';
 
 /// Renders card Markdown with a stylesheet tuned for reading/retention:
 /// 16px body at 1.5 line-height, generous spacing between blocks, off-white
@@ -19,8 +18,9 @@ import 'glossary_syntax.dart';
 /// the browser. Line length is meant to be constrained by the caller (~66ch).
 ///
 /// Obsidian-style callouts (`> [!tip] Title` … ) render as tinted, iconed
-/// panels. Known glossary terms become tappable inline (tap → a definition
-/// sheet). Everything else is normal Markdown.
+/// panels. Links into the vault glossary note (`[API](_meta/glossary.md#api)`)
+/// pop a definition sheet instead of navigating. Everything else is normal
+/// Markdown.
 class CardMarkdown extends ConsumerWidget {
   const CardMarkdown(this.data, {super.key});
 
@@ -60,41 +60,42 @@ class CardMarkdown extends ConsumerWidget {
     String data,
     Map<String, String> glossary,
   ) {
-    // Append the glossary syntax AFTER the standard inline syntaxes (esp. code)
-    // so terms never match inside inline code.
-    final extensionSet = glossary.isEmpty
-        ? md.ExtensionSet.gitHubFlavored
-        : md.ExtensionSet(
-            md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-            [
-              ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-              GlossarySyntax(glossary.keys.toSet()),
-            ],
-          );
-
     return MarkdownBody(
       data: data,
       selectable: true,
       styleSheet: _styleSheet(context),
       builders: {'code': CodeBlockBuilder()},
       // GitHub-flavored so pipe tables, strikethrough, and ```lang fences parse.
-      extensionSet: extensionSet,
-      onTapLink: (text, href, title) => _onTapLink(context, href, glossary),
+      extensionSet: md.ExtensionSet.gitHubFlavored,
+      onTapLink: (text, href, title) =>
+          _onTapLink(context, text, href, glossary),
     );
   }
 
+  /// A link whose path ends in the glossary note is resolved to a definition
+  /// sheet (the anchor is the term slug); any other link opens externally.
   Future<void> _onTapLink(
     BuildContext context,
+    String text,
     String? href,
     Map<String, String> glossary,
   ) async {
     if (href == null) return;
-    if (href.startsWith('gloss:')) {
-      final term = href.substring('gloss:'.length);
-      final definition = glossary[term];
-      if (definition != null) _showDefinition(context, term, definition);
-      return;
+
+    final hash = href.indexOf('#');
+    if (hash != -1) {
+      final path = href.substring(0, hash).toLowerCase();
+      if (path.endsWith('glossary.md')) {
+        var anchor = href.substring(hash + 1).toLowerCase();
+        if (anchor.startsWith('^')) anchor = anchor.substring(1); // block-ref
+        final definition = glossary[anchor];
+        if (definition != null) {
+          _showDefinition(context, text.isEmpty ? anchor : text, definition);
+        }
+        return;
+      }
     }
+
     final uri = Uri.tryParse(href);
     if (uri == null || !uri.hasScheme) return; // ignore bare/relative refs
     if (uri.scheme == 'http' || uri.scheme == 'https') {

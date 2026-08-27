@@ -108,11 +108,11 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 ListTile(
                   leading: const Icon(Icons.menu_book_outlined),
-                  title: const Text('Generate glossary'),
+                  title: const Text('Draft glossary note'),
                   subtitle: const Text(
-                      'Define acronyms with AI once; then tap terms in cards'),
+                      'AI writes _meta/glossary.md; edit it in Obsidian'),
                   enabled: isSet,
-                  onTap: isSet ? () => _generateGlossary(context, ref) : null,
+                  onTap: isSet ? () => _draftGlossary(context, ref) : null,
                 ),
               ];
             },
@@ -166,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _generateGlossary(BuildContext context, WidgetRef ref) async {
+  Future<void> _draftGlossary(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final claude = ref.read(claudeServiceProvider);
     final source = ref.read(vaultSourceProvider);
@@ -184,13 +184,14 @@ class SettingsScreen extends ConsumerWidget {
     ];
     final terms = detectGlossaryTerms(texts);
     messenger.showSnackBar(SnackBar(
-        content: Text('Generating glossary for ${terms.length} terms…')));
+        content: Text('Drafting glossary from ${terms.length} candidates…')));
     try {
-      final map =
-          await GlossaryService(source: source, claude: claude).generate(terms);
+      final count =
+          await GlossaryService(source: source, claude: claude).draft(terms);
       ref.invalidate(glossaryProvider);
-      messenger.showSnackBar(
-          SnackBar(content: Text('Glossary ready — ${map.length} terms')));
+      messenger.showSnackBar(SnackBar(
+          content: Text(
+              'Drafted $count terms into _meta/glossary.md — edit freely')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Glossary failed: $e')));
     }
