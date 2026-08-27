@@ -6,6 +6,9 @@ build/
 *.g.dart
 *.freezed.dart
 
+# Dev-only: the SRS backup the app writes into the staged vault at runtime.
+staging/**/_meta/
+
 # iOS
 ios/Pods/
 ios/.symlinks/

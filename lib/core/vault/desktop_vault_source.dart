@@ -39,6 +39,23 @@ class DesktopVaultSource implements VaultSource {
   Future<String> readCard(String relativePath) =>
       File(p.join(rootPath, relativePath)).readAsString();
 
+  @override
+  Future<String?> readMeta(String name) async {
+    final file = File(p.join(rootPath, '_meta', name));
+    return file.existsSync() ? file.readAsString() : null;
+  }
+
+  @override
+  Future<void> writeMeta(String name, String content) async {
+    final dir = Directory(p.join(rootPath, '_meta'));
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    // Atomic: write to a temp file, then rename over the target.
+    final target = p.join(dir.path, name);
+    final tmp = File('$target.tmp');
+    await tmp.writeAsString(content, flush: true);
+    await tmp.rename(target);
+  }
+
   /// Skip `_meta/` (vault metadata) and hidden folders like `.obsidian/`.
   bool _excluded(String relative) => p
       .split(relative)

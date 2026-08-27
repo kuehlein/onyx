@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -13,6 +14,8 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Kick off the one-time restore-from-vault-if-empty on app start.
+    ref.watch(startupRestoreProvider);
     final index = ref.watch(vaultIndexProvider);
     final dueCount = ref.watch(reviewQueueProvider).asData?.value.queue.length;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;

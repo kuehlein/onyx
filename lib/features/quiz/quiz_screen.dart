@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/backup.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
@@ -25,6 +26,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   void _grade(int grade) {
     setState(() => _revealed = false);
     ref.read(studySessionProvider.notifier).grade(grade);
+    ref.read(backupProvider.notifier).schedule();
   }
 
   @override
@@ -296,6 +298,7 @@ class _CompleteState extends ConsumerWidget {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () {
+                ref.read(backupProvider.notifier).flush();
                 // Fresh queue next time (reflecting the reviews just recorded).
                 ref.invalidate(reviewQueueProvider);
                 context.go('/');

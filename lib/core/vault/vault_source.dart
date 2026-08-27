@@ -15,4 +15,11 @@ abstract class VaultSource {
 
   /// Reads the UTF-8 content of the card at [relativePath].
   Future<String> readCard(String relativePath);
+
+  /// Reads app-managed metadata at `_meta/[name]` (e.g. the SRS backup
+  /// snapshot), or null if it doesn't exist. `_meta/` is excluded from indexing.
+  Future<String?> readMeta(String name);
+
+  /// Atomically writes [content] to `_meta/[name]`, creating `_meta/` if needed.
+  Future<void> writeMeta(String name, String content);
 }

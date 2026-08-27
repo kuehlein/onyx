@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/srs/learn_queue.dart';
+import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
@@ -25,6 +26,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
   void _grade(int grade) {
     setState(() => _attempted = false);
     ref.read(learnSessionProvider.notifier).grade(grade);
+    ref.read(backupProvider.notifier).schedule();
   }
 
   @override
@@ -306,6 +308,7 @@ class _CompleteState extends ConsumerWidget {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () {
+                ref.read(backupProvider.notifier).flush();
                 ref.invalidate(learnQueueProvider);
                 context.go('/');
               },
