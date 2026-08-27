@@ -246,14 +246,12 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
-      // Links (glossary terms + external): body-coloured text with a dim, dotted
-      // underline — discreet, and it stays native so links flow inline, remain
-      // selectable, and are tappable.
+      // Links (glossary terms + external): a faint, softened-accent tone rather
+      // than an underline. Flutter can't offset a text underline, so it clips
+      // the caps; a colour hint stays native (flows, selects, taps) and never
+      // collides with the glyphs.
       a: body.copyWith(
-        decoration: TextDecoration.underline,
-        decorationStyle: TextDecorationStyle.dotted,
-        decorationColor: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-        decorationThickness: 1.5,
+        color: Color.lerp(scheme.primary, body.color, 0.3),
       ),
       // Accent only the bullet marker (not the item text) so lists are scannable
       // without lowering text contrast.
