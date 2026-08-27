@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 // The extension set (for GFM tables etc.) comes from the markdown package, a
 // transitive dep of flutter_markdown_plus.
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../providers/glossary.dart';
 import 'callout.dart';
 import 'code_block.dart';
+import 'glossary_syntax.dart';
 
 /// Renders card Markdown with a stylesheet tuned for reading/retention:
 /// 16px body at 1.5 line-height, generous spacing between blocks, off-white
@@ -16,19 +19,21 @@ import 'code_block.dart';
 /// the browser. Line length is meant to be constrained by the caller (~66ch).
 ///
 /// Obsidian-style callouts (`> [!tip] Title` … ) render as tinted, iconed
-/// panels; everything else is normal Markdown.
-class CardMarkdown extends StatelessWidget {
+/// panels. Known glossary terms become tappable inline (tap → a definition
+/// sheet). Everything else is normal Markdown.
+class CardMarkdown extends ConsumerWidget {
   const CardMarkdown(this.data, {super.key});
 
   final String data;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glossary = ref.watch(glossaryProvider).asData?.value ?? const {};
     final segments = _splitCallouts(data);
 
     // Common case: no callouts — render the whole thing as one Markdown block.
     if (segments.length == 1 && !segments.first.isCallout) {
-      return _markdown(context, segments.first.content);
+      return _markdown(context, segments.first.content, glossary);
     }
 
     final children = <Widget>[];
@@ -41,34 +46,83 @@ class CardMarkdown extends StatelessWidget {
                 title: segment.calloutTitle,
                 body: segment.content.isEmpty
                     ? null
-                    : _markdown(context, segment.content),
+                    : _markdown(context, segment.content, glossary),
               )
-            : _markdown(context, segment.content),
+            : _markdown(context, segment.content, glossary),
       );
     }
     return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
   }
 
-  Widget _markdown(BuildContext context, String data) {
+  Widget _markdown(
+    BuildContext context,
+    String data,
+    Map<String, String> glossary,
+  ) {
+    // Append the glossary syntax AFTER the standard inline syntaxes (esp. code)
+    // so terms never match inside inline code.
+    final extensionSet = glossary.isEmpty
+        ? md.ExtensionSet.gitHubFlavored
+        : md.ExtensionSet(
+            md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+            [
+              ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+              GlossarySyntax(glossary.keys.toSet()),
+            ],
+          );
+
     return MarkdownBody(
       data: data,
       selectable: true,
       styleSheet: _styleSheet(context),
       builders: {'code': CodeBlockBuilder()},
       // GitHub-flavored so pipe tables, strikethrough, and ```lang fences parse.
-      extensionSet: md.ExtensionSet.gitHubFlavored,
-      onTapLink: (text, href, title) => _onTapLink(href),
+      extensionSet: extensionSet,
+      onTapLink: (text, href, title) => _onTapLink(context, href, glossary),
     );
   }
 
-  Future<void> _onTapLink(String? href) async {
+  Future<void> _onTapLink(
+    BuildContext context,
+    String? href,
+    Map<String, String> glossary,
+  ) async {
     if (href == null) return;
+    if (href.startsWith('gloss:')) {
+      final term = href.substring('gloss:'.length);
+      final definition = glossary[term];
+      if (definition != null) _showDefinition(context, term, definition);
+      return;
+    }
     final uri = Uri.tryParse(href);
     if (uri == null || !uri.hasScheme) return; // ignore bare/relative refs
     if (uri.scheme == 'http' || uri.scheme == 'https') {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  void _showDefinition(BuildContext context, String term, String definition) {
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(term,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(color: theme.colorScheme.primary)),
+            const SizedBox(height: 8),
+            Text(definition,
+                style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
+          ],
+        ),
+      ),
+    );
   }
 
   MarkdownStyleSheet _styleSheet(BuildContext context) {

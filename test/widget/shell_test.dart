@@ -6,6 +6,7 @@ import 'package:onyx/app/app.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/backup.dart';
+import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
@@ -42,6 +43,7 @@ void main() {
           ),
           learnQueueProvider.overrideWith((ref) async => const []),
           startupRestoreProvider.overrideWith((ref) async {}),
+          glossaryProvider.overrideWith((ref) async => const {}),
         ],
         child: const OnyxApp(),
       );

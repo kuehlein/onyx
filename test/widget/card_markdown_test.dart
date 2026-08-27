@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/widgets/callout.dart';
 import 'package:onyx/shared/widgets/card_markdown.dart';
 
 void main() {
-  Widget host(String markdown) => MaterialApp(
-        theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
-        home: Scaffold(
-          body: SingleChildScrollView(child: CardMarkdown(markdown)),
+  // CardMarkdown watches the glossary; override it so the test needs no vault.
+  Widget host(String markdown) => ProviderScope(
+        overrides: [
+          glossaryProvider.overrideWith((ref) async => const {}),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
+          home: Scaffold(
+            body: SingleChildScrollView(child: CardMarkdown(markdown)),
+          ),
         ),
       );
 

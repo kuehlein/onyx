@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/claude_service.dart';
+import '../../core/ai/glossary.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
+import '../../shared/providers/glossary.dart';
 import '../../shared/providers/vault.dart';
 
 /// App settings. Vault selection, the Claude API key (iOS Keychain via
@@ -104,6 +106,14 @@ class SettingsScreen extends ConsumerWidget {
                   enabled: isSet,
                   onTap: isSet ? () => _testConnection(context, ref) : null,
                 ),
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: const Text('Generate glossary'),
+                  subtitle: const Text(
+                      'Define acronyms with AI once; then tap terms in cards'),
+                  enabled: isSet,
+                  onTap: isSet ? () => _generateGlossary(context, ref) : null,
+                ),
               ];
             },
           ),
@@ -153,6 +163,36 @@ class SettingsScreen extends ConsumerWidget {
     } catch (e) {
       messenger
           .showSnackBar(SnackBar(content: Text('Could not remove key: $e')));
+    }
+  }
+
+  Future<void> _generateGlossary(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final claude = ref.read(claudeServiceProvider);
+    final source = ref.read(vaultSourceProvider);
+    final index = ref.read(vaultIndexProvider).asData?.value;
+    if (claude == null || source == null || index == null) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Need a key, vault, and indexed cards')));
+      return;
+    }
+    final texts = [
+      for (final card in index.cards) ...[
+        card.overview,
+        for (final section in card.sections) section.content,
+      ],
+    ];
+    final terms = detectGlossaryTerms(texts);
+    messenger.showSnackBar(SnackBar(
+        content: Text('Generating glossary for ${terms.length} terms…')));
+    try {
+      final map =
+          await GlossaryService(source: source, claude: claude).generate(terms);
+      ref.invalidate(glossaryProvider);
+      messenger.showSnackBar(
+          SnackBar(content: Text('Glossary ready — ${map.length} terms')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Glossary failed: $e')));
     }
   }
 
