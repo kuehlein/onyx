@@ -67,13 +67,22 @@ class CardMarkdown extends StatelessWidget {
         );
 
     return MarkdownStyleSheet.fromTheme(theme).copyWith(
+      // Gestalt proximity: flutter_markdown puts one uniform gap between *all*
+      // sibling blocks, so a small blockSpacing pulls list items into a tight
+      // group — then pPadding (paragraphs only; list items are exempt) and the
+      // heading paddings add the breathing room back between prose blocks.
+      // Net: bullets tightest, paragraphs airy, subheadings clearly separated.
       p: body,
-      pPadding: EdgeInsets.zero,
-      blockSpacing: 14,
+      pPadding: const EdgeInsets.symmetric(vertical: 6),
+      blockSpacing: 6,
       h1: heading(text.headlineSmall!),
+      h1Padding: const EdgeInsets.only(top: 10),
       h2: heading(text.titleLarge!),
+      h2Padding: const EdgeInsets.only(top: 10),
       h3: heading(text.titleMedium!).copyWith(color: scheme.primary),
+      h3Padding: const EdgeInsets.only(top: 10),
       h4: heading(text.titleSmall!).copyWith(color: scheme.primary),
+      h4Padding: const EdgeInsets.only(top: 10),
       // Emphasis pops via full brightness + weight (opacity-tier signaling).
       strong: body.copyWith(
         color: scheme.onSurface,
