@@ -2,6 +2,7 @@
 // with ListTile here, so hide the widget to keep the model unambiguous.
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../shared/models/card.dart';
 import '../../shared/providers/vault.dart';
@@ -84,7 +85,7 @@ class _CardTile extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-      onTap: () {}, // detail view lands with the study loop
+      onTap: () => context.go('/browse/card/${card.id}'),
     );
   }
 }

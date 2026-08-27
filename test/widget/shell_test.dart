@@ -72,6 +72,24 @@ void main() {
     expect(find.text('Two Pointers'), findsOneWidget);
   });
 
+  testWidgets('tapping a card opens its detail view', (tester) async {
+    await tester.pumpWidget(app(populated));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.grid_view_outlined),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Binary Search'));
+    await tester.pumpAndSettle();
+
+    // Detail renders the section heading and a type meta-chip.
+    expect(find.text('When to Use'), findsOneWidget);
+    expect(find.text('Flashcard'), findsOneWidget);
+  });
+
   testWidgets('Browse shows an empty-state prompt when no cards',
       (tester) async {
     await tester.pumpWidget(app(const IndexResult(

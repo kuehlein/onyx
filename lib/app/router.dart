@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/browse/browse_screen.dart';
+import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -23,7 +24,16 @@ GoRouter createRouter() => GoRouter(
             ]),
             StatefulShellBranch(routes: [
               GoRoute(
-                  path: '/browse', builder: (_, __) => const BrowseScreen()),
+                path: '/browse',
+                builder: (_, __) => const BrowseScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'card/:id',
+                    builder: (_, state) =>
+                        CardDetailScreen(cardId: state.pathParameters['id']!),
+                  ),
+                ],
+              ),
             ]),
             StatefulShellBranch(routes: [
               GoRoute(path: '/quiz', builder: (_, __) => const QuizScreen()),
