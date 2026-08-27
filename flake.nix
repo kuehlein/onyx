@@ -16,6 +16,19 @@
             flutter   # dart is bundled
             lefthook  # git hooks runner
             sqlite    # host libsqlite3 for drift tests (device uses sqlite3_flutter_libs)
+
+            # Linux desktop build toolchain — a dev-only convenience so the app
+            # can be previewed in a native window here without a Mac round-trip.
+            # None of this ships in the iOS bundle; iOS is the real target.
+            clang
+            cmake
+            ninja
+            pkg-config
+            gtk3
+            gsettings-desktop-schemas  # GSettings schemas GTK reads at runtime
+            libsecret                  # flutter_secure_storage_linux links libsecret-1
+            libsysprof-capture         # provides sysprof-capture-4.pc (glib's private dep)
+            pcre2                      # provides libpcre2-8.pc (glib's private dep)
           ];
 
           shellHook = ''
@@ -24,6 +37,9 @@
             # drift's NativeDatabase dlopen's libsqlite3.so by name during `flutter test`;
             # Nix has no /usr/lib, so put it on the loader path explicitly.
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.sqlite ]}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            # GTK finds its GSettings schemas / icons via XDG_DATA_DIRS at runtime;
+            # without this the desktop preview aborts on a missing-schema error.
+            export XDG_DATA_DIRS="${pkgs.gtk3}/share:${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
             if [ -d .git ]; then
               lefthook install --force 2>/dev/null || true
             fi
