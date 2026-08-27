@@ -21,8 +21,10 @@ class HomeScreen extends ConsumerWidget {
     final dueCount = ref.watch(reviewQueueProvider).asData?.value.queue.length;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
     final apiKey = ref.watch(apiKeyProvider);
+    // Prompt when there's no usable key — including when the keychain read errors
+    // (e.g. no libsecret service on Linux), which should read as "no key set".
     final needsKey =
-        apiKey.hasValue && (apiKey.value == null || apiKey.value!.isEmpty);
+        !apiKey.isLoading && (apiKey.value == null || apiKey.value!.isEmpty);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onyx')),

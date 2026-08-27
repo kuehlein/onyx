@@ -245,13 +245,15 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
-      // Discreet: links keep the body colour with only a faint dotted underline
-      // (glossary terms should whisper, not shout). Same treatment for external
-      // links — unobtrusive is the goal.
+      // Discreet but legible: body-coloured text with a dotted underline in the
+      // muted foreground colour — a different-enough tone that it reads as an
+      // underline rather than merging with the glyphs, without shouting like a
+      // bright link. Same calm treatment for external links.
       a: body.copyWith(
         decoration: TextDecoration.underline,
         decorationStyle: TextDecorationStyle.dotted,
-        decorationColor: bodyColor.withValues(alpha: 0.4),
+        decorationColor: scheme.onSurfaceVariant,
+        decorationThickness: 1.5,
       ),
       // Accent only the bullet marker (not the item text) so lists are scannable
       // without lowering text contrast.
