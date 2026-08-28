@@ -55,6 +55,7 @@ dependencies:
   # SRS scheduler — official open-spaced-repetition Dart port of FSRS-6.
   # Pure Dart, no native deps. Reversible: we can vendor/self-implement later.
   fsrs: ^2.0.0
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:

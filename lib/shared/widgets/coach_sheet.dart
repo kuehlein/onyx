@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../core/ai/coach.dart';
 import '../models/card.dart';
@@ -88,12 +89,58 @@ class CoachSheet extends ConsumerStatefulWidget {
 class _CoachSheetState extends ConsumerState<CoachSheet> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _speech = SpeechToText();
+  bool _sttAvailable = false;
+  bool _listening = false;
 
   ({String cardId, String? sectionSlug}) get _scope =>
       (cardId: widget.card.id, sectionSlug: widget.section?.slug);
 
   @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    // Fails cleanly where there's no speech engine (e.g. a Linux desktop); the
+    // mic button then shows as unavailable rather than doing nothing on tap.
+    final ok = await _speech.initialize(
+      onStatus: (status) {
+        // The engine stops itself after a pause — reflect that in the icon.
+        if (mounted && status != 'listening') {
+          setState(() => _listening = false);
+        }
+      },
+      onError: (_) {
+        if (mounted) setState(() => _listening = false);
+      },
+    );
+    if (mounted) setState(() => _sttAvailable = ok);
+  }
+
+  Future<void> _toggleMic() async {
+    if (!_sttAvailable) return;
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    // Dictation is appended to whatever is already typed.
+    final base = _input.text.trim();
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        final words = result.recognizedWords;
+        _input.text = base.isEmpty ? words : '$base $words';
+        _input.selection = TextSelection.collapsed(offset: _input.text.length);
+      },
+    );
+  }
+
+  @override
   void dispose() {
+    _speech.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -212,6 +259,9 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                 controller: _input,
                 busy: state.busy || !ready,
                 grading: widget.grading,
+                listening: _listening,
+                micAvailable: _sttAvailable,
+                onMic: _toggleMic,
                 onSend: _send,
               ),
             ],
@@ -514,12 +564,18 @@ class _InputBar extends StatelessWidget {
     required this.controller,
     required this.busy,
     required this.grading,
+    required this.listening,
+    required this.micAvailable,
+    required this.onMic,
     required this.onSend,
   });
 
   final TextEditingController controller;
   final bool busy;
   final bool grading;
+  final bool listening;
+  final bool micAvailable;
+  final VoidCallback onMic;
   final VoidCallback onSend;
 
   @override
@@ -542,9 +598,15 @@ class _InputBar extends StatelessWidget {
           children: [
             // Voice input is a fast-follow; the slot holds its place.
             IconButton.filledTonal(
-              onPressed: null,
-              icon: const Icon(Icons.mic_none),
-              tooltip: 'Voice input — coming soon',
+              onPressed: micAvailable ? onMic : null,
+              isSelected: listening,
+              icon: Icon(
+                listening ? Icons.mic : Icons.mic_none,
+                color: listening ? theme.colorScheme.error : null,
+              ),
+              tooltip: micAvailable
+                  ? (listening ? 'Stop' : 'Answer by voice')
+                  : 'Voice input unavailable on this device',
               style: buttonStyle,
             ),
             const SizedBox(width: 8),
