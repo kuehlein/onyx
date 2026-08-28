@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/claude_service.dart';
-import '../../core/ai/glossary.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
-import '../../shared/providers/glossary.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/vault.dart';
 
@@ -63,10 +61,10 @@ class SettingsScreen extends ConsumerWidget {
                 data: (limit) => ListTile(
                   leading: const Icon(Icons.auto_stories_outlined),
                   title: const Text('New sections per session'),
-                  subtitle: const Text(
-                      'The cap on brand-new material each Learn session. Keep it '
-                      'modest — cramming new items raises cognitive load and hurts '
-                      'retention.'),
+                  subtitle: Text(
+                      '$limit per Learn session — ${_loadLabel(limit)}. Fewer '
+                      'means stronger retention; more covers ground faster but '
+                      'raises cognitive load.'),
                   trailing: _Stepper(
                     value: limit,
                     onChanged: (v) =>
@@ -150,14 +148,6 @@ class SettingsScreen extends ConsumerWidget {
                   enabled: isSet,
                   onTap: isSet ? () => _testConnection(context, ref) : null,
                 ),
-                ListTile(
-                  leading: const Icon(Icons.menu_book_outlined),
-                  title: const Text('Draft glossary note'),
-                  subtitle: const Text(
-                      'AI writes _meta/glossary.md; edit it in Obsidian'),
-                  enabled: isSet,
-                  onTap: isSet ? () => _draftGlossary(context, ref) : null,
-                ),
               ];
             },
           ),
@@ -207,37 +197,6 @@ class SettingsScreen extends ConsumerWidget {
     } catch (e) {
       messenger
           .showSnackBar(SnackBar(content: Text('Could not remove key: $e')));
-    }
-  }
-
-  Future<void> _draftGlossary(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final claude = ref.read(claudeServiceProvider);
-    final source = ref.read(vaultSourceProvider);
-    final index = ref.read(vaultIndexProvider).asData?.value;
-    if (claude == null || source == null || index == null) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Need a key, vault, and indexed cards')));
-      return;
-    }
-    final texts = [
-      for (final card in index.cards) ...[
-        card.overview,
-        for (final section in card.sections) section.content,
-      ],
-    ];
-    final terms = detectGlossaryTerms(texts);
-    messenger.showSnackBar(SnackBar(
-        content: Text('Drafting glossary from ${terms.length} candidates…')));
-    try {
-      final count =
-          await GlossaryService(source: source, claude: claude).draft(terms);
-      ref.invalidate(glossaryProvider);
-      messenger.showSnackBar(SnackBar(
-          content: Text(
-              'Drafted $count terms into _meta/glossary.md — edit freely')));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Glossary failed: $e')));
     }
   }
 
@@ -304,6 +263,14 @@ class SettingsScreen extends ConsumerWidget {
       );
     }
   }
+}
+
+/// A plain-language read on how heavy a given new-sections count is, so the
+/// number isn't abstract.
+String _loadLabel(int sections) {
+  if (sections <= 10) return 'a light load';
+  if (sections <= 25) return 'a moderate load';
+  return 'a heavy load';
 }
 
 /// A compact −/value/+ stepper for an integer setting, clamped to the

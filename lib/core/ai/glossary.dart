@@ -1,32 +1,4 @@
 import '../vault/vault_source.dart';
-import 'claude_service.dart';
-
-/// All-caps acronyms of 2–6 chars (API, HTTP, DNSSEC, L2…). Used only to gather
-/// candidates for the one-time AI draft of the glossary note — NOT at runtime.
-final _acronymPattern = RegExp(r'\b[A-Z][A-Z0-9]{1,5}\b');
-
-/// Skipped before drafting: editor noise, plus ubiquitous terms any SWE
-/// interview candidate already knows (defining them would just be clutter). The
-/// AI prompt filters the rest.
-const _stopWords = {
-  // editor noise
-  'OK', 'TODO', 'FIXME', 'NOTE', 'TIP', 'ETC', 'AKA',
-  // assumed-known SWE basics
-  'API', 'HTTP', 'HTTPS', 'URL', 'URI', 'ID', 'CPU', 'RAM', 'GPU', 'OS',
-  'IO', 'UI', 'UX', 'HTML', 'CSS', 'PC', 'USB', 'FAQ',
-};
-
-/// Distinct candidate acronyms found across [texts].
-Set<String> detectGlossaryTerms(Iterable<String> texts) {
-  final terms = <String>{};
-  for (final text in texts) {
-    for (final match in _acronymPattern.allMatches(text)) {
-      final term = match[0]!;
-      if (!_stopWords.contains(term)) terms.add(term);
-    }
-  }
-  return terms;
-}
 
 /// GitHub/Obsidian-style heading slug: `Load Balancer` → `load-balancer`. Card
 /// links use this as the anchor (`[API](_meta/glossary.md#api)`).
@@ -65,59 +37,19 @@ Map<String, String> parseGlossaryNote(String markdown) {
   return entries;
 }
 
-/// Reads the vault glossary note, and (optionally) drafts one with AI. The
-/// glossary lives at `_meta/glossary.md` — editable in Obsidian, versioned with
-/// the vault, and used offline. AI is only a one-time drafting convenience.
+/// Reads the vault glossary note at `_meta/glossary.md` — a human-authored,
+/// Obsidian-editable, vault-versioned file that is the single source of truth
+/// for tap-to-define. (Definitions are curated in the vault, not generated.)
 class GlossaryService {
-  GlossaryService({required VaultSource source, ClaudeService? claude})
-      : _source = source,
-        _claude = claude;
+  GlossaryService({required this.source});
 
-  final VaultSource _source;
-  final ClaudeService? _claude;
+  final VaultSource source;
 
   static const fileName = 'glossary.md';
 
   /// The `slug → definition` map from the vault note (empty if none).
   Future<Map<String, String>> load() async {
-    final raw = await _source.readMeta(fileName);
+    final raw = await source.readMeta(fileName);
     return raw == null ? const {} : parseGlossaryNote(raw);
-  }
-
-  /// One-time draft: ask Claude to write a Markdown glossary for [candidates]
-  /// (keeping only genuine terms) and save it to the vault, where you then own
-  /// and edit it. Returns the number of defined terms.
-  Future<int> draft(Set<String> candidates) async {
-    final claude = _claude;
-    if (claude == null) throw ClaudeException('No API key configured');
-    if (candidates.isEmpty) return 0;
-
-    final list = (candidates.toList()..sort()).join(', ');
-    final markdown = await claude.complete(
-      maxTokens: 4096,
-      prompt:
-          'Write a glossary for a software-engineering interview-prep app. For '
-          'each candidate acronym below that is a genuine technical term, output '
-          'a Markdown H2 section: a line "## TERM" followed by a one-sentence '
-          'definition aimed at a learner. Omit anything not a real technical '
-          'term or too trivial to define. Sort sections alphabetically. Output '
-          'ONLY Markdown, starting with "# Glossary" — no prose, no code fences.'
-          '\n\nCandidates: $list',
-    );
-
-    final cleaned = _stripFence(markdown).trim();
-    await _source.writeMeta(fileName, '$cleaned\n');
-    return parseGlossaryNote(cleaned).length;
-  }
-
-  String _stripFence(String reply) {
-    var s = reply.trim();
-    if (s.startsWith('```')) {
-      s = s
-          .replaceFirst(RegExp(r'^```[a-zA-Z]*\n?'), '')
-          .replaceFirst(RegExp(r'\n?```$'), '')
-          .trim();
-    }
-    return s;
   }
 }
