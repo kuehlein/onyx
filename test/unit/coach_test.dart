@@ -43,6 +43,19 @@ void main() {
       expect(prompt, isNot(contains('## Pitfalls')));
     });
 
+    test('hidden state marks the section withheld and forbids a grade tag', () {
+      final prompt = buildCoachSystem(
+        card: _card(),
+        section: _card().sections.first,
+        revealed: false,
+        grading: true,
+      );
+      // The in-context answer is explicitly flagged as reference-only…
+      expect(prompt, contains('WITHHELD'));
+      // …and the model is told not to emit the advisory grade tag yet.
+      expect(prompt, isNot(contains('<suggest-grade>N</suggest-grade>')));
+    });
+
     test('revealed + grading permits the advisory grade tag', () {
       final prompt = buildCoachSystem(
         card: _card(),
@@ -52,6 +65,19 @@ void main() {
       );
       expect(prompt, contains('REVEALED'));
       expect(prompt, contains('<suggest-grade>N</suggest-grade>'));
+    });
+
+    test('grading selects the interviewer persona; otherwise the tutor', () {
+      final interviewer = buildCoachSystem(
+          card: _card(),
+          section: _card().sections.first,
+          revealed: true,
+          grading: true);
+      final tutor = buildCoachSystem(
+          card: _card(), section: null, revealed: true, grading: false);
+      expect(interviewer.toLowerCase(), contains('interviewer'));
+      expect(tutor.toLowerCase(), contains('tutor'));
+      expect(tutor.toLowerCase(), isNot(contains('interviewer')));
     });
 
     test('browse mode (no section) includes all sections and no grade tag', () {

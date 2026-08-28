@@ -7,6 +7,7 @@ import '../../core/srs/learn_queue.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Learn mode: first exposure to never-studied sections, grouped by family.
@@ -35,6 +36,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     final s = session.asData?.value;
     final showProgress = s != null && !s.isDone && s.total > 0;
 
+    final current = (s != null && !s.isDone) ? s.current : null;
+    // Read sections are shown; pretest sections stay hidden until the guess.
+    final revealed = current != null &&
+        (_attempted || !isPretestSection(current.section.heading));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Learn'),
@@ -42,6 +48,18 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => context.go('/'),
         ),
+        actions: [
+          if (current != null)
+            CoachButton(
+              onPressed: () => showCoachSheet(
+                context,
+                card: current.card,
+                section: current.section,
+                revealed: revealed,
+                grading: false, // Learn uses the tutor persona.
+              ),
+            ),
+        ],
         bottom: showProgress
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(4),
