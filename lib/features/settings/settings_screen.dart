@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,21 +85,36 @@ class SettingsScreen extends ConsumerWidget {
             ],
             data: (key) {
               final isSet = key != null && key.isNotEmpty;
+              // Where did the resolved key come from? The env var wins in
+              // `apiKeyProvider.build`, so if it's present the app is using it —
+              // this line is the definitive readout when debugging the env
+              // fallback on desktop.
+              final fromEnv =
+                  (Platform.environment['ANTHROPIC_API_KEY'] ?? '').isNotEmpty;
+              final String subtitle;
+              if (isSet) {
+                subtitle = fromEnv
+                    ? 'Key detected · from ANTHROPIC_API_KEY (environment)'
+                    : 'Key saved · stored in the Keychain';
+              } else if (Platform.isLinux) {
+                subtitle = 'Not set — launch with ANTHROPIC_API_KEY set '
+                    '(no keychain on Linux)';
+              } else {
+                subtitle = 'Not set — tap to add';
+              }
               return [
                 ListTile(
                   leading: const Icon(Icons.key_outlined),
                   title: const Text('Anthropic API key'),
-                  subtitle: Text(isSet
-                      ? 'Key saved · stored in the Keychain'
-                      : 'Not set — tap to add'),
-                  trailing: isSet
+                  subtitle: Text(subtitle),
+                  trailing: isSet && !fromEnv
                       ? IconButton(
                           icon: const Icon(Icons.delete_outline),
                           tooltip: 'Remove key',
                           onPressed: () => _clearApiKey(context, ref),
                         )
                       : null,
-                  onTap: () => _editApiKey(context, ref),
+                  onTap: fromEnv ? null : () => _editApiKey(context, ref),
                 ),
                 ListTile(
                   leading: const Icon(Icons.wifi_tethering),

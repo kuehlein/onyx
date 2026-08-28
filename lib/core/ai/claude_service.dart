@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// A failure talking to the Anthropic API — carries a user-presentable message.
+/// A failure talking to the Anthropic API — carries a user-presentable message
+/// and, for HTTP failures, the status code (401 = key rejected/expired).
 class ClaudeException implements Exception {
-  ClaudeException(this.message);
+  ClaudeException(this.message, {this.statusCode});
   final String message;
+  final int? statusCode;
   @override
   String toString() => 'ClaudeException: $message';
 }
@@ -33,6 +35,22 @@ class ClaudeService {
     String? system,
     String model = defaultModel,
     int maxTokens = 1024,
+  }) =>
+      chat(
+        messages: [(role: 'user', content: prompt)],
+        system: system,
+        model: model,
+        maxTokens: maxTokens,
+      );
+
+  /// Sends a multi-turn conversation and returns the concatenated text reply.
+  /// [messages] must alternate/begin with a `user` turn (Anthropic's rule);
+  /// the coach builds this from its running history.
+  Future<String> chat({
+    required List<({String role, String content})> messages,
+    String? system,
+    String model = defaultModel,
+    int maxTokens = 1024,
   }) async {
     final http.Response response;
     try {
@@ -48,7 +66,7 @@ class ClaudeService {
           'max_tokens': maxTokens,
           if (system != null) 'system': system,
           'messages': [
-            {'role': 'user', 'content': prompt},
+            for (final m in messages) {'role': m.role, 'content': m.content},
           ],
         }),
       );
@@ -57,7 +75,8 @@ class ClaudeService {
     }
 
     if (response.statusCode != 200) {
-      throw ClaudeException(_errorMessage(response));
+      throw ClaudeException(_errorMessage(response),
+          statusCode: response.statusCode);
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;

@@ -6,8 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
+import '../../shared/providers/coach.dart';
 import '../../shared/providers/srs.dart';
+import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Study session: recall → reveal → self-grade, one section at a time.
@@ -35,9 +38,34 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final s = session.asData?.value;
     final showProgress = s != null && !s.isDone && s.total > 0;
 
+    final current = (s != null && !s.isDone) ? s.current : null;
+    // The coach button always shows (when a card is on screen); the sheet
+    // itself explains a missing key rather than the button silently vanishing.
+    final canCoach = current != null;
+    // The coach's latest advisory grade for this section (only once revealed).
+    final suggestedGrade = (current != null && _revealed)
+        ? ref
+            .watch(coachProvider(current.card.id, current.section.slug))
+            .asData
+            ?.value
+            .suggestedGrade
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Study'),
+        actions: [
+          if (canCoach)
+            CoachButton(
+              onPressed: () => showCoachSheet(
+                context,
+                card: current.card,
+                section: current.section,
+                revealed: _revealed,
+                grading: true,
+              ),
+            ),
+        ],
         bottom: showProgress
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(4),
@@ -62,6 +90,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             position: s.index + 1,
             total: s.total,
             revealed: _revealed,
+            suggestedGrade: suggestedGrade,
             onReveal: () => setState(() => _revealed = true),
             onGrade: _grade,
           );
@@ -77,6 +106,7 @@ class _ReviewView extends StatelessWidget {
     required this.position,
     required this.total,
     required this.revealed,
+    required this.suggestedGrade,
     required this.onReveal,
     required this.onGrade,
   });
@@ -85,6 +115,7 @@ class _ReviewView extends StatelessWidget {
   final int position;
   final int total;
   final bool revealed;
+  final int? suggestedGrade;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
 
@@ -154,6 +185,7 @@ class _ReviewView extends StatelessWidget {
             ),
             _ActionBar(
               revealed: revealed,
+              suggestedGrade: suggestedGrade,
               onReveal: onReveal,
               onGrade: onGrade,
             ),
@@ -164,24 +196,21 @@ class _ReviewView extends StatelessWidget {
   }
 }
 
-/// Bottom bar: a Reveal button before, four grade buttons after.
+/// Bottom bar: a Reveal button before, four grade buttons after. When the coach
+/// has offered an advisory grade, that button gets an outline — a nudge, not a
+/// decision; the learner still taps.
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,
+    required this.suggestedGrade,
     required this.onReveal,
     required this.onGrade,
   });
 
   final bool revealed;
+  final int? suggestedGrade;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
-
-  static const _grades = [
-    (1, 'Again', Color(0xFFF07178)),
-    (2, 'Hard', Color(0xFFE3B341)),
-    (3, 'Good', Color(0xFF4CC38A)),
-    (4, 'Easy', Color(0xFF5AA7E6)),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -192,19 +221,22 @@ class _ActionBar extends StatelessWidget {
         child: revealed
             ? Row(
                 children: [
-                  for (final (grade, label, color) in _grades) ...[
+                  for (final (:value, :label, :color) in studyGrades) ...[
                     Expanded(
                       child: FilledButton(
-                        onPressed: () => onGrade(grade),
+                        onPressed: () => onGrade(value),
                         style: FilledButton.styleFrom(
                           backgroundColor: color.withValues(alpha: 0.18),
                           foregroundColor: color,
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: suggestedGrade == value
+                              ? BorderSide(color: color, width: 2)
+                              : null,
                         ),
                         child: Text(label),
                       ),
                     ),
-                    if (grade != 4) const SizedBox(width: 8),
+                    if (value != 4) const SizedBox(width: 8),
                   ],
                 ],
               )

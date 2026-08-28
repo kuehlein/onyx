@@ -92,6 +92,29 @@ class CardCache extends Table {
   Set<Column<Object>> get primaryKey => {cardId};
 }
 
+/// Persisted coach conversations, keyed by `(cardId, sectionSlug)`. Local-only
+/// by design: this table is NOT part of the vault snapshot, so it survives a
+/// restore-from-vault (which only touches srs_state / reviews) but is
+/// intentionally lost on reinstall. `sectionSlug` is null for a whole-card
+/// (browse) chat.
+///
+/// Row class renamed to avoid colliding with the domain `CoachMessage` in
+/// `core/ai/coach.dart`.
+@DataClassName('CoachMessageRow')
+class CoachMessages extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get cardId => text()();
+  TextColumn get sectionSlug => text().nullable()();
+
+  /// 'user' | 'assistant'.
+  TextColumn get role => text()();
+  TextColumn get body => text()();
+
+  /// Advisory grade (1–4) offered on an assistant turn; null otherwise.
+  IntColumn get suggestedGrade => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+}
+
 /// Key/value app preferences (vault bookmark, settings).
 class Preferences extends Table {
   TextColumn get key => text()();

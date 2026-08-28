@@ -8,12 +8,22 @@ import 'package:flutter/material.dart';
 /// The fade blends to the scaffold background, so content appears to dissolve
 /// off the edge. Overlays ignore pointers, so scrolling/taps pass through.
 class FadingScrollEdges extends StatefulWidget {
-  const FadingScrollEdges({super.key, required this.child, this.extent = 36});
+  const FadingScrollEdges({
+    super.key,
+    required this.child,
+    this.extent = 36,
+    this.color,
+  });
 
   final Widget child;
 
   /// Height of each fade gradient.
   final double extent;
+
+  /// The colour the content dissolves into. Defaults to the scaffold
+  /// background; pass the surface colour when used over a sheet/panel so the
+  /// fade blends into it instead of the page behind.
+  final Color? color;
 
   @override
   State<FadingScrollEdges> createState() => _FadingScrollEdgesState();
@@ -42,7 +52,7 @@ class _FadingScrollEdgesState extends State<FadingScrollEdges> {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).scaffoldBackgroundColor;
+    final color = widget.color ?? Theme.of(context).scaffoldBackgroundColor;
     // ScrollMetricsNotification fires on layout (initial + content changes);
     // ScrollNotification fires while scrolling. Together they keep the fades
     // correct even before the first scroll.

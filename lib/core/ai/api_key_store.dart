@@ -11,7 +11,18 @@ class ApiKeyStore {
 
   static const _key = 'anthropic_api_key';
 
-  Future<String?> read() => _storage.read(key: _key);
+  /// Reads the stored key, or null. Degrades to null if the platform secure
+  /// store is unavailable (e.g. no libsecret/keyring on a Linux dev desktop) so
+  /// callers see "no key" rather than a hard error — on Linux the
+  /// `ANTHROPIC_API_KEY` env fallback is the intended path anyway.
+  Future<String?> read() async {
+    try {
+      return await _storage.read(key: _key);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> write(String value) => _storage.write(key: _key, value: value);
   Future<void> delete() => _storage.delete(key: _key);
 }

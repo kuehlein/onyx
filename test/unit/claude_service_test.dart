@@ -47,6 +47,37 @@ void main() {
       );
     });
 
+    test('chat sends the full multi-turn message list in order', () async {
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'reply'},
+            ],
+          }),
+          200,
+        );
+      });
+
+      final reply = await ClaudeService(apiKey: 'k', client: client).chat(
+        system: 'be a coach',
+        messages: const [
+          (role: 'user', content: 'first'),
+          (role: 'assistant', content: 'second'),
+          (role: 'user', content: 'third'),
+        ],
+      );
+
+      expect(reply, 'reply');
+      final body = jsonDecode(captured.body) as Map<String, dynamic>;
+      expect(body['system'], 'be a coach');
+      final messages = (body['messages'] as List).cast<Map<String, dynamic>>();
+      expect(messages.map((m) => m['role']), ['user', 'assistant', 'user']);
+      expect(messages.map((m) => m['content']), ['first', 'second', 'third']);
+    });
+
     test('throws ClaudeException with the API message on error', () async {
       final client = MockClient((_) async => http.Response(
             jsonEncode({

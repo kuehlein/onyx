@@ -10,7 +10,15 @@ import 'tables.dart';
 part 'database.g.dart';
 
 @DriftDatabase(
-  tables: [SrsStates, Reviews, CardLinks, ActivityLog, CardCache, Preferences],
+  tables: [
+    SrsStates,
+    Reviews,
+    CardLinks,
+    ActivityLog,
+    CardCache,
+    Preferences,
+    CoachMessages,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Production database, backed by a file in the app documents directory.
@@ -20,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,6 +38,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.addColumn(srsStates, srsStates.state);
             await m.addColumn(srsStates, srsStates.step);
+          }
+          // v3: persisted coach conversations.
+          if (from < 3) {
+            await m.createTable(coachMessages);
           }
         },
       );

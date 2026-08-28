@@ -7,6 +7,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Read-only view of a single card: its overview plus each H2 section, rendered
@@ -69,19 +70,32 @@ bool _expandByDefault(CardSection section, SrsState? state, DateTime now) {
   return !state.dueAt.isAfter(now);
 }
 
-class _CardDetail extends StatelessWidget {
+class _CardDetail extends ConsumerWidget {
   const _CardDetail({required this.card, required this.states});
 
   final Card card;
   final SectionStates? states;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isInterview = card.type == CardType.interviewQuestion;
     final now = DateTime.now();
 
     return Scaffold(
-      appBar: AppBar(title: Text(card.title)),
+      appBar: AppBar(
+        title: Text(card.title),
+        actions: [
+          CoachButton(
+            onPressed: () => showCoachSheet(
+              context,
+              card: card,
+              section: null,
+              revealed: true,
+              grading: false,
+            ),
+          ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           // Cap the measure for readable line length on wide screens.
