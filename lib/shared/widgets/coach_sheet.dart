@@ -27,7 +27,9 @@ Future<void> showCoachSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    // A slim custom handle (see CoachSheet) sits tight to the top instead of
+    // the framework handle, which reserves ~36px and leaves the header floating.
+    showDragHandle: false,
     // Set explicitly so the transcript's fade edges can blend into the same
     // colour (see FadingScrollEdges below).
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -144,6 +146,17 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
         height: MediaQuery.of(context).size.height * 0.82,
         child: Column(
           children: [
+            // Slim drag handle, tight to the top (replaces the framework one).
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 4),
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             _Header(
               title: widget.section?.heading ?? widget.card.title,
               revealed: widget.revealed,
@@ -209,7 +222,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
       child: Row(
         children: [
           Icon(Icons.psychology_outlined, color: theme.colorScheme.primary),
@@ -444,28 +457,29 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Equal 44×44 controls flanking the field, bottom-aligned so they line up
-    // with the last line as the field grows.
+    // Separate mic / field / send, vertically centred. Buttons are a fixed 44
+    // so the filled circle actually fills them; the dense field lands close to
+    // the same height, and centring keeps everything visually level. 8px gaps
+    // plus the outer padding keep it off the edges.
+    final buttonStyle = IconButton.styleFrom(
+      fixedSize: const Size(40, 40),
+      padding: EdgeInsets.zero,
+    );
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 18),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Voice input is a fast-follow; the slot is here so the layout
-            // doesn't shift when it lands.
-            const SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.mic_none),
-                tooltip: 'Voice input — coming soon',
-                onPressed: null,
-              ),
+            // Voice input is a fast-follow; the slot holds its place.
+            IconButton.filledTonal(
+              onPressed: null,
+              icon: const Icon(Icons.mic_none),
+              tooltip: 'Voice input — coming soon',
+              style: buttonStyle,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: controller,
@@ -477,6 +491,7 @@ class _InputBar extends StatelessWidget {
                   hintText: 'Ask the coach…',
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
+                  isDense: true,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
@@ -486,15 +501,11 @@ class _InputBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton.filled(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.arrow_upward),
-                onPressed: busy ? null : onSend,
-              ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: busy ? null : onSend,
+              icon: const Icon(Icons.arrow_upward),
+              style: buttonStyle,
             ),
           ],
         ),
