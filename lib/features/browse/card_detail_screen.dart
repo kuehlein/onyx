@@ -8,6 +8,7 @@ import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
+import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Read-only view of a single card: its overview plus each H2 section, rendered
@@ -117,6 +118,8 @@ class _CardDetail extends ConsumerWidget {
                     if (card.domain != null) _MetaChip(label: card.domain!),
                     for (final entry in card.tiers.entries)
                       _MetaChip(label: '${entry.key} · T${entry.value}'),
+                    if (card.confidence != null)
+                      ConfidenceBadge(card.confidence!),
                   ],
                 ),
                 if (card.overview.isNotEmpty) ...[

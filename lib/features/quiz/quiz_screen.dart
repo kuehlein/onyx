@@ -11,6 +11,7 @@ import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
+import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 
 /// Study session: recall → reveal → self-grade, one section at a time.
@@ -145,6 +146,10 @@ class _ReviewView extends StatelessWidget {
                         if (card.domain != null) ...[
                           const SizedBox(width: 8),
                           _Pill(card.domain!),
+                        ],
+                        if (card.confidence != null) ...[
+                          const SizedBox(width: 8),
+                          ConfidenceBadge(card.confidence!),
                         ],
                       ],
                     ),
