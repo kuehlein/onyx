@@ -22,9 +22,14 @@ import 'code_block.dart';
 /// render as discreet dotted terms and, on tap, show a small definition popover
 /// anchored to the term (Wikipedia-style) rather than navigating.
 class CardMarkdown extends ConsumerStatefulWidget {
-  const CardMarkdown(this.data, {super.key});
+  const CardMarkdown(this.data, {super.key, this.compact = false});
 
   final String data;
+
+  /// Tightens block spacing for use inside a chat bubble (drops the paragraph
+  /// top-padding and shrinks inter-block gaps) so a reply doesn't carry the
+  /// card's generous reading rhythm.
+  final bool compact;
 
   @override
   ConsumerState<CardMarkdown> createState() => _CardMarkdownState();
@@ -229,9 +234,12 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
       // Asymmetric on purpose: a small *bottom* lets a list hug the lead-in line
       // it belongs to, while a larger *top* pushes the following block away — so
       // a list groups with the sentence above it, not floating equidistant. (List
-      // items carry no padding, so only paragraphs move.)
-      pPadding: const EdgeInsets.only(top: 13, bottom: 0),
-      blockSpacing: 4,
+      // items carry no padding, so only paragraphs move.) In compact (chat) mode
+      // the first paragraph shouldn't carry a top gap, so drop it.
+      pPadding: widget.compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.only(top: 13, bottom: 0),
+      blockSpacing: widget.compact ? 8 : 4,
       h1: heading(text.headlineSmall!),
       h1Padding: const EdgeInsets.only(top: 14),
       h2: heading(text.titleLarge!),

@@ -158,8 +158,8 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
               ),
             ),
             _Header(
-              title: widget.section?.heading ?? widget.card.title,
-              revealed: widget.revealed,
+              subtitle: widget.section?.heading ?? widget.card.title,
+              grading: widget.grading,
             ),
             const Divider(height: 1),
             if (!hasKey)
@@ -168,20 +168,29 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
               Expanded(
                 child: !ready
                     ? const Center(child: CircularProgressIndicator())
-                    : state.isEmpty
-                        ? _EmptyHint(revealed: widget.revealed)
-                        : FadingScrollEdges(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            child: ListView.builder(
-                              controller: _scroll,
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                              itemCount: state.messages.length,
-                              itemBuilder: (_, i) => _Bubble(
-                                message: state.messages[i],
-                                showGrade: widget.grading,
-                              ),
+                    : FadingScrollEdges(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        child: ListView(
+                          controller: _scroll,
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          children: [
+                            // Keep the question in view while the learner talks.
+                            _PromptContext(
+                              card: widget.card,
+                              section: widget.section,
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            if (state.isEmpty)
+                              _EmptyHint(revealed: widget.revealed)
+                            else
+                              for (final m in state.messages)
+                                _Bubble(
+                                  message: m,
+                                  showGrade: widget.grading,
+                                ),
+                          ],
+                        ),
+                      ),
               ),
               if (state.busy)
                 const Padding(
@@ -202,6 +211,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
               _InputBar(
                 controller: _input,
                 busy: state.busy || !ready,
+                grading: widget.grading,
                 onSend: _send,
               ),
             ],
@@ -213,10 +223,10 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.revealed});
+  const _Header({required this.subtitle, required this.grading});
 
-  final String title;
-  final bool revealed;
+  final String subtitle;
+  final bool grading;
 
   @override
   Widget build(BuildContext context) {
@@ -231,9 +241,10 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Coach', style: theme.textTheme.titleMedium),
+                Text(grading ? 'Interviewer' : 'Coach',
+                    style: theme.textTheme.titleMedium),
                 Text(
-                  title,
+                  subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall
@@ -275,6 +286,56 @@ class _EmptyHint extends StatelessWidget {
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+      ),
+    );
+  }
+}
+
+/// A read-only "here's what you're being asked" card pinned at the top of the
+/// transcript, so the prompt stays visible while the learner talks to the coach.
+class _PromptContext extends StatelessWidget {
+  const _PromptContext({required this.card, required this.section});
+
+  final Card card;
+  final CardSection? section;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isInterview = card.type == CardType.interviewQuestion;
+    // Interview cards: the problem statement is the prompt; concept cards: the
+    // section you're recalling.
+    final problem =
+        isInterview && card.overview.isNotEmpty ? card.overview : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PROMPT',
+              style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.primary, letterSpacing: 0.6)),
+          const SizedBox(height: 4),
+          Text(card.title,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          if (section != null) ...[
+            const SizedBox(height: 2),
+            Text(section!.heading,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.primary)),
+          ],
+          if (problem != null) ...[
+            const SizedBox(height: 8),
+            CardMarkdown(problem, compact: true),
+          ],
+        ],
       ),
     );
   }
@@ -360,12 +421,17 @@ class _Bubble extends StatelessWidget {
             : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
-      // The learner's text is plain; the coach's is Markdown (code, glossary
-      // links, emphasis) reusing the card renderer.
+      // Both sides render at the same 16px body size; the coach's is Markdown
+      // (code, emphasis) via the card renderer in compact mode so it doesn't
+      // carry the card's roomy top padding.
       child: isUser
           ? Text(message.text,
-              style: TextStyle(color: theme.colorScheme.onPrimaryContainer))
-          : CardMarkdown(message.text),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontSize: 16,
+                height: 1.4,
+                color: theme.colorScheme.onPrimaryContainer,
+              ))
+          : CardMarkdown(message.text, compact: true),
     );
 
     return Row(
@@ -447,11 +513,13 @@ class _InputBar extends StatelessWidget {
   const _InputBar({
     required this.controller,
     required this.busy,
+    required this.grading,
     required this.onSend,
   });
 
   final TextEditingController controller;
   final bool busy;
+  final bool grading;
   final VoidCallback onSend;
 
   @override
@@ -488,7 +556,8 @@ class _InputBar extends StatelessWidget {
                 textInputAction: TextInputAction.send,
                 onSubmitted: busy ? null : (_) => onSend(),
                 decoration: InputDecoration(
-                  hintText: 'Ask the coach…',
+                  hintText:
+                      grading ? 'Answer the interviewer…' : 'Ask the coach…',
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   isDense: true,

@@ -170,6 +170,11 @@ String _friendly(ClaudeException e) {
     return 'Your Anthropic API key was rejected — it may have expired or been '
         'revoked. Update it in Settings (or your .env on desktop).';
   }
+  if (e.message.toLowerCase().contains('credit balance')) {
+    return 'Your Anthropic API account is out of credits. The API bills '
+        'separately from a Claude Pro/Max subscription — add credits at '
+        'console.anthropic.com → Billing.';
+  }
   if (e.message.startsWith('Network error')) {
     return "Couldn't reach Claude — check your connection and try again.";
   }
