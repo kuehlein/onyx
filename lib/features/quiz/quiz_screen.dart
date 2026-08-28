@@ -39,9 +39,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final showProgress = s != null && !s.isDone && s.total > 0;
 
     final current = (s != null && !s.isDone) ? s.current : null;
-    // The coach button always shows (when a card is on screen); the sheet
-    // itself explains a missing key rather than the button silently vanishing.
-    final canCoach = current != null;
+    // Post-reveal, the coach is reachable from the app bar to debrief. Before
+    // reveal, the prominent "Answer the coach" action in the bottom bar is the
+    // entry, so the app-bar button would just be redundant.
+    final canCoach = current != null && _revealed;
     // The coach's latest advisory grade for this section (only once revealed).
     final suggestedGrade = (current != null && _revealed)
         ? ref
@@ -161,8 +162,10 @@ class _ReviewView extends StatelessWidget {
                       const SizedBox(height: 20),
                       Text(
                         isInterview
-                            ? 'Recall your approach, then reveal.'
-                            : 'Recall it, then reveal.',
+                            ? 'Recall your approach — talk it through with the '
+                                'coach, or reveal.'
+                            : 'Recall it — talk it through with the coach, or '
+                                'reveal.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant),
                       ),
@@ -186,6 +189,13 @@ class _ReviewView extends StatelessWidget {
             _ActionBar(
               revealed: revealed,
               suggestedGrade: suggestedGrade,
+              onAnswerCoach: () => showCoachSheet(
+                context,
+                card: item.card,
+                section: item.section,
+                revealed: false,
+                grading: true,
+              ),
               onReveal: onReveal,
               onGrade: onGrade,
             ),
@@ -196,19 +206,22 @@ class _ReviewView extends StatelessWidget {
   }
 }
 
-/// Bottom bar: a Reveal button before, four grade buttons after. When the coach
-/// has offered an advisory grade, that button gets an outline — a nudge, not a
-/// decision; the learner still taps.
+/// Bottom bar. Before reveal: "Answer the coach" (the mock-interview path) over
+/// a quieter "Reveal". After reveal: four grade buttons — when the coach has
+/// offered an advisory grade, that button gets an outline (a nudge, not a
+/// decision; the learner still taps).
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,
     required this.suggestedGrade,
+    required this.onAnswerCoach,
     required this.onReveal,
     required this.onGrade,
   });
 
   final bool revealed;
   final int? suggestedGrade;
+  final VoidCallback onAnswerCoach;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
 
@@ -240,16 +253,33 @@ class _ActionBar extends StatelessWidget {
                   ],
                 ],
               )
-            : SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onReveal,
-                  icon: const Icon(Icons.visibility_outlined),
-                  label: const Text('Reveal'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onAnswerCoach,
+                      icon: const Icon(Icons.psychology_outlined),
+                      label: const Text('Answer the coach'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onReveal,
+                      icon: const Icon(Icons.visibility_outlined),
+                      label: const Text('Reveal'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
               ),
       ),
     );
