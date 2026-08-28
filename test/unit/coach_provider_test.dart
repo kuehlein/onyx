@@ -108,6 +108,29 @@ void main() {
     expect(await db.select(db.coachMessages).get(), isEmpty);
   });
 
+  test('clearTestCoachConversations drops per-section chats, keeps Browse',
+      () async {
+    final c = _container(claude: _replying('ok'), db: db);
+    addTearDown(c.dispose);
+
+    // A test chat (section slug set) and a Browse chat (section null).
+    await c.read(coachProvider('c1', 'complexity').notifier).send('test q',
+        card: _card(),
+        section: _card().sections.first,
+        revealed: true,
+        grading: true);
+    await c
+        .read(coachProvider('c1', null).notifier)
+        .send('browse q', card: _card(), revealed: true, grading: false);
+    expect((await db.select(db.coachMessages).get()).length, 4); // 2 + 2
+
+    await clearTestCoachConversations(db);
+
+    final remaining = await db.select(db.coachMessages).get();
+    expect(remaining.every((m) => m.sectionSlug == null), isTrue);
+    expect(remaining.length, 2); // only the Browse turns survive
+  });
+
   test('network failure keeps the user turn (persisted) and a friendly message',
       () async {
     final offline = ClaudeService(

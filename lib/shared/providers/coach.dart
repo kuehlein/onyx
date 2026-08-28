@@ -156,6 +156,14 @@ class Coach extends _$Coach {
       );
 }
 
+/// Deletes every test-scoped (per-section) coach conversation, leaving Browse
+/// (whole-card, null-section) chats intact. Called at the start of each study
+/// session so a previous session's test chats never resurface, while a chat
+/// still survives closing/reopening the coach and tab switches *within* a
+/// session (it's reloaded from the DB).
+Future<void> clearTestCoachConversations(AppDatabase db) =>
+    (db.delete(db.coachMessages)..where((m) => m.sectionSlug.isNotNull())).go();
+
 /// Turn raw API failures into something calm and actionable for the learner.
 String _friendly(ClaudeException e) {
   if (e.statusCode == 401) {

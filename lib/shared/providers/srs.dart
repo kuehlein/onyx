@@ -4,6 +4,7 @@ import '../../core/database/database.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
+import 'coach.dart';
 import 'database.dart';
 import 'vault.dart';
 
@@ -96,6 +97,11 @@ class StudySession extends _$StudySession {
   @override
   Future<SessionState> build() async {
     final data = await ref.watch(reviewQueueProvider.future);
+    // A fresh session: drop any test-scoped coach conversations left over from
+    // a previous session so they never resurface. Browse chats are untouched;
+    // within a session, chats persist to the DB (survive close/reopen + tab
+    // switches).
+    await clearTestCoachConversations(ref.read(appDatabaseProvider));
     return SessionState(
       queue: data.queue,
       statesByKey: Map.of(data.statesByKey),
