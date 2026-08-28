@@ -4,6 +4,7 @@ import '../../core/srs/learn_queue.dart';
 import '../models/card.dart';
 import 'coach.dart';
 import 'database.dart';
+import 'settings.dart';
 import 'srs.dart';
 import 'vault.dart';
 
@@ -16,10 +17,12 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
   final states = await repo.loadStates();
+  final limit = await ref.watch(newCardLimitProvider.future);
   return buildLearnQueue(
     cards: index.cards,
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(index.cards),
+    newSectionLimit: limit,
   );
 }
 

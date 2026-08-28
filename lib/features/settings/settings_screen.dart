@@ -8,6 +8,7 @@ import '../../core/ai/glossary.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/glossary.dart';
+import '../../shared/providers/settings.dart';
 import '../../shared/providers/vault.dart';
 
 /// App settings. Vault selection, the Claude API key (iOS Keychain via
@@ -47,6 +48,32 @@ class SettingsScreen extends ConsumerWidget {
               onPressed: () => ref.invalidate(vaultIndexProvider),
             ),
           ),
+          const _SectionHeader('Learning'),
+          ref.watch(newCardLimitProvider).when(
+                loading: () => const ListTile(
+                  leading: Icon(Icons.auto_stories_outlined),
+                  title: Text('New sections per session'),
+                  subtitle: Text('Loading…'),
+                ),
+                error: (e, _) => ListTile(
+                  leading: const Icon(Icons.auto_stories_outlined),
+                  title: const Text('New sections per session'),
+                  subtitle: Text('Error: $e'),
+                ),
+                data: (limit) => ListTile(
+                  leading: const Icon(Icons.auto_stories_outlined),
+                  title: const Text('New sections per session'),
+                  subtitle: const Text(
+                      'The cap on brand-new material each Learn session. Keep it '
+                      'modest — cramming new items raises cognitive load and hurts '
+                      'retention.'),
+                  trailing: _Stepper(
+                    value: limit,
+                    onChanged: (v) =>
+                        ref.read(newCardLimitProvider.notifier).set(v),
+                  ),
+                ),
+              ),
           const _SectionHeader('Progress'),
           ListTile(
             leading: const Icon(Icons.backup_outlined),
@@ -276,6 +303,44 @@ class SettingsScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+/// A compact −/value/+ stepper for an integer setting, clamped to the
+/// NewCardLimit range and moving in its step.
+class _Stepper extends StatelessWidget {
+  const _Stepper({required this.value, required this.onChanged});
+
+  final int value;
+  final void Function(int) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          visualDensity: VisualDensity.compact,
+          onPressed: value > NewCardLimit.min
+              ? () => onChanged(value - NewCardLimit.step)
+              : null,
+        ),
+        SizedBox(
+          width: 26,
+          child: Text('$value',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          visualDensity: VisualDensity.compact,
+          onPressed: value < NewCardLimit.max
+              ? () => onChanged(value + NewCardLimit.step)
+              : null,
+        ),
+      ],
+    );
   }
 }
 
