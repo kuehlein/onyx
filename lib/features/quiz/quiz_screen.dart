@@ -39,10 +39,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final showProgress = s != null && !s.isDone && s.total > 0;
 
     final current = (s != null && !s.isDone) ? s.current : null;
-    // Post-reveal, the coach is reachable from the app bar to debrief. Before
-    // reveal, the prominent "Answer the coach" action in the bottom bar is the
-    // entry, so the app-bar button would just be redundant.
-    final canCoach = current != null && _revealed;
+    // Keep the app-bar Coach button available throughout, matching Browse and
+    // Learn. Before reveal the prominent "Answer the coach" action is the main
+    // entry; this stays as the consistent secondary one (and the debrief entry
+    // after reveal).
+    final canCoach = current != null;
     // The coach's latest advisory grade for this section (only once revealed).
     final suggestedGrade = (current != null && _revealed)
         ? ref

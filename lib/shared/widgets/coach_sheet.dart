@@ -89,7 +89,6 @@ class CoachSheet extends ConsumerStatefulWidget {
 class _CoachSheetState extends ConsumerState<CoachSheet> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  final _inputScroll = ScrollController();
   final _speech = SpeechToText();
   bool _sttAvailable = false;
   bool _listening = false;
@@ -144,7 +143,6 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
     _speech.cancel();
     _input.dispose();
     _scroll.dispose();
-    _inputScroll.dispose();
     super.dispose();
   }
 
@@ -259,7 +257,6 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                 ),
               _InputBar(
                 controller: _input,
-                scroll: _inputScroll,
                 busy: state.busy || !ready,
                 grading: widget.grading,
                 listening: _listening,
@@ -565,7 +562,6 @@ class _Thinking extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   const _InputBar({
     required this.controller,
-    required this.scroll,
     required this.busy,
     required this.grading,
     required this.listening,
@@ -575,7 +571,6 @@ class _InputBar extends StatelessWidget {
   });
 
   final TextEditingController controller;
-  final ScrollController scroll;
   final bool busy;
   final bool grading;
   final bool listening;
@@ -616,36 +611,23 @@ class _InputBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              // One always-visible scrollbar when the field overflows: suppress
-              // the desktop default (it would otherwise stack a second bar) and
-              // show a single explicit Scrollbar in the normal theme style.
-              child: ScrollConfiguration(
-                behavior:
-                    ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                child: Scrollbar(
-                  controller: scroll,
-                  thumbVisibility: true,
-                  child: TextField(
-                    controller: controller,
-                    scrollController: scroll,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: busy ? null : (_) => onSend(),
-                    decoration: InputDecoration(
-                      hintText: grading
-                          ? 'Answer the interviewer…'
-                          : 'Ask the coach…',
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+              child: TextField(
+                controller: controller,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                onSubmitted: busy ? null : (_) => onSend(),
+                decoration: InputDecoration(
+                  hintText:
+                      grading ? 'Answer the interviewer…' : 'Ask the coach…',
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
