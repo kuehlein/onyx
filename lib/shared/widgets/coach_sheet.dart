@@ -103,19 +103,25 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
   }
 
   Future<void> _initSpeech() async {
-    // Fails cleanly where there's no speech engine (e.g. a Linux desktop); the
-    // mic button then shows as unavailable rather than doing nothing on tap.
-    final ok = await _speech.initialize(
-      onStatus: (status) {
-        // The engine stops itself after a pause — reflect that in the icon.
-        if (mounted && status != 'listening') {
-          setState(() => _listening = false);
-        }
-      },
-      onError: (_) {
-        if (mounted) setState(() => _listening = false);
-      },
-    );
+    // On a platform with no speech engine (e.g. a Linux desktop) the plugin has
+    // no native side, so initialize() throws MissingPluginException rather than
+    // returning false — catch it so the mic just shows as unavailable.
+    bool ok = false;
+    try {
+      ok = await _speech.initialize(
+        onStatus: (status) {
+          // The engine stops itself after a pause — reflect that in the icon.
+          if (mounted && status != 'listening') {
+            setState(() => _listening = false);
+          }
+        },
+        onError: (_) {
+          if (mounted) setState(() => _listening = false);
+        },
+      );
+    } catch (_) {
+      ok = false;
+    }
     if (mounted) setState(() => _sttAvailable = ok);
   }
 
