@@ -6,6 +6,7 @@ import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/quiz/quiz_screen.dart';
+import '../features/reader/reader_screen.dart';
 import '../features/settings/settings_screen.dart';
 
 /// Builds the app router: a persistent bottom-nav shell (indexed stack, so each
@@ -19,6 +20,12 @@ GoRouter createRouter() => GoRouter(
       routes: [
         // Full-screen, focused flow launched from Home (outside the tab shell).
         GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
+        // In-app reader for a recommended-reading link (`/read?url=…`).
+        GoRoute(
+          path: '/read',
+          builder: (_, state) =>
+              ReaderScreen(url: state.uri.queryParameters['url'] ?? ''),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
           branches: [

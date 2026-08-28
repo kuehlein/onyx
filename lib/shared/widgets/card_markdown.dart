@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 // The extension set (for GFM tables etc.) comes from the markdown package, a
 // transitive dep of flutter_markdown_plus.
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
-import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/glossary.dart';
 import 'callout.dart';
@@ -120,7 +120,11 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
     final uri = Uri.tryParse(href);
     if (uri == null || !uri.hasScheme) return; // ignore bare/relative refs
     if (uri.scheme == 'http' || uri.scheme == 'https') {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Open in the in-app reader; it offers an "Open in browser" escape.
+      if (context.mounted) {
+        await context.push(
+            Uri(path: '/read', queryParameters: {'url': href}).toString());
+      }
     }
   }
 
