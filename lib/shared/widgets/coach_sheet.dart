@@ -616,31 +616,35 @@ class _InputBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              // A thin scrollbar signals there's more when the field overflows
-              // past its max height.
-              child: Scrollbar(
-                controller: scroll,
-                thumbVisibility: true,
-                thickness: 3,
-                radius: const Radius.circular(3),
-                child: TextField(
-                  controller: controller,
-                  scrollController: scroll,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: busy ? null : (_) => onSend(),
-                  decoration: InputDecoration(
-                    hintText:
-                        grading ? 'Answer the interviewer…' : 'Ask the coach…',
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+              // One always-visible scrollbar when the field overflows: suppress
+              // the desktop default (it would otherwise stack a second bar) and
+              // show a single explicit Scrollbar in the normal theme style.
+              child: ScrollConfiguration(
+                behavior:
+                    ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                child: Scrollbar(
+                  controller: scroll,
+                  thumbVisibility: true,
+                  child: TextField(
+                    controller: controller,
+                    scrollController: scroll,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: busy ? null : (_) => onSend(),
+                    decoration: InputDecoration(
+                      hintText: grading
+                          ? 'Answer the interviewer…'
+                          : 'Ask the coach…',
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                 ),
