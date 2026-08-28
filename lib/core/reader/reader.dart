@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -116,7 +118,9 @@ class ReaderService {
         headers: const {
           'User-Agent': 'Mozilla/5.0 (compatible; OnyxReader/1.0)'
         },
-      );
+      ).timeout(const Duration(seconds: 20));
+    } on TimeoutException {
+      throw ReaderException('The page took too long to respond.');
     } catch (_) {
       throw ReaderException("Couldn't reach the page — check your connection.");
     }

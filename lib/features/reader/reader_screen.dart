@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +54,7 @@ class ReaderScreen extends ConsumerWidget {
         ],
       ),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => _ReaderLoading(url: url),
         error: (e, _) => _ReaderError(
           url: url,
           message:
@@ -107,6 +109,66 @@ Future<void> _openExternally(String url) async {
   final uri = Uri.tryParse(url);
   if (uri != null) {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+/// The loading state. Keeps spinning, but after a few seconds it surfaces an
+/// "open in browser instead" escape — so a slow page doesn't strand you until
+/// the full timeout.
+class _ReaderLoading extends StatefulWidget {
+  const _ReaderLoading({required this.url});
+
+  final String url;
+
+  @override
+  State<_ReaderLoading> createState() => _ReaderLoadingState();
+}
+
+class _ReaderLoadingState extends State<_ReaderLoading> {
+  bool _slow = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(seconds: 3),
+        () => mounted ? setState(() => _slow = true) : null);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            // Still attempting; this just offers a shortcut once it drags.
+            if (_slow) ...[
+              const SizedBox(height: 20),
+              Text('Still loading — this one is taking a while.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Open in browser instead'),
+                onPressed: () => _openExternally(widget.url),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
