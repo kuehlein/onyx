@@ -7,6 +7,7 @@ import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
+import 'readiness_panel.dart';
 
 /// Landing screen: what's ready to review, what's new to learn, and the ways in.
 class HomeScreen extends ConsumerWidget {
@@ -28,78 +29,82 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Onyx')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Ready to study',
-                    style: theme.textTheme.headlineSmall,
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                index.when(
-                  loading: () => const Text('Indexing vault…',
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const ReadinessPanel(),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Ready to study',
+                      style: theme.textTheme.headlineSmall,
                       textAlign: TextAlign.center),
-                  error: (e, _) => Text('Index error: $e',
+                  const SizedBox(height: 8),
+                  index.when(
+                    loading: () => const Text('Indexing vault…',
+                        textAlign: TextAlign.center),
+                    error: (e, _) => Text('Index error: $e',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: theme.colorScheme.error)),
+                    data: (r) => Text(
+                      r.cardCount == 0
+                          ? 'No vault configured yet — open Settings.'
+                          : _statusLine(dueCount, newCount, r.cardCount),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: theme.colorScheme.error)),
-                  data: (r) => Text(
-                    r.cardCount == 0
-                        ? 'No vault configured yet — open Settings.'
-                        : _statusLine(dueCount, newCount, r.cardCount),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed:
-                      (dueCount ?? 0) == 0 ? null : () => context.go('/quiz'),
-                  icon: const Icon(Icons.school_outlined),
-                  label: Text(
-                    (dueCount ?? 0) == 0
-                        ? 'Nothing to review'
-                        : 'Review — $dueCount due',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.tonalIcon(
-                  onPressed:
-                      (newCount ?? 0) == 0 ? null : () => context.go('/learn'),
-                  icon: const Icon(Icons.auto_stories_outlined),
-                  label: Text(
-                    (newCount ?? 0) == 0
-                        ? 'Nothing new to learn'
-                        : 'Learn — $newCount new',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => context.go('/browse'),
-                  icon: const Icon(Icons.grid_view_outlined),
-                  label: const Text('Browse cards'),
-                ),
-                if (needsKey) ...[
-                  const SizedBox(height: 24),
-                  Card(
-                    margin: EdgeInsets.zero,
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    child: ListTile(
-                      leading: Icon(Icons.auto_awesome_outlined,
-                          color: theme.colorScheme.primary),
-                      title: const Text('Enable AI features'),
-                      subtitle:
-                          const Text('Add your Anthropic API key in Settings'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.go('/settings'),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed:
+                        (dueCount ?? 0) == 0 ? null : () => context.go('/quiz'),
+                    icon: const Icon(Icons.school_outlined),
+                    label: Text(
+                      (dueCount ?? 0) == 0
+                          ? 'Nothing to review'
+                          : 'Review — $dueCount due',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    onPressed: (newCount ?? 0) == 0
+                        ? null
+                        : () => context.go('/learn'),
+                    icon: const Icon(Icons.auto_stories_outlined),
+                    label: Text(
+                      (newCount ?? 0) == 0
+                          ? 'Nothing new to learn'
+                          : 'Learn — $newCount new',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/browse'),
+                    icon: const Icon(Icons.grid_view_outlined),
+                    label: const Text('Browse cards'),
+                  ),
+                  if (needsKey) ...[
+                    const SizedBox(height: 24),
+                    Card(
+                      margin: EdgeInsets.zero,
+                      color: theme.colorScheme.surfaceContainerHigh,
+                      child: ListTile(
+                        leading: Icon(Icons.auto_awesome_outlined,
+                            color: theme.colorScheme.primary),
+                        title: const Text('Enable AI features'),
+                        subtitle: const Text(
+                            'Add your Anthropic API key in Settings'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.go('/settings'),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
