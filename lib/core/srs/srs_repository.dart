@@ -50,6 +50,21 @@ class SrsRepository {
     });
   }
 
+  /// How many brand-new sections were first studied (graduated out of Learn)
+  /// since [since] — the `'learn'` events in the activity log. This is the
+  /// coverage-pace signal for the readiness dashboard. Note: `activity_log` is
+  /// device-local (not part of the synced snapshot), so on a freshly restored
+  /// device this reads 0 until studying resumes.
+  Future<int> sectionsStartedSince(DateTime since) async {
+    final count = _db.activityLog.id.count();
+    final row = await (_db.selectOnly(_db.activityLog)
+          ..addColumns([count])
+          ..where(_db.activityLog.eventType.equals('learn') &
+              _db.activityLog.occurredAt.isBiggerOrEqualValue(since)))
+        .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

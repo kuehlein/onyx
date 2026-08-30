@@ -95,6 +95,7 @@ Readiness computeReadiness({
   required Map<String, double> stabilityByKey,
   double stabilityTarget = 90,
   double coverageGamma = 0.7,
+  Map<String, double>? domainWeights,
 }) {
   final byDomain = <String, List<Card>>{};
   for (final c in cards) {
@@ -154,10 +155,15 @@ Readiness computeReadiness({
 
   domains.sort((a, b) => a.score.compareTo(b.score)); // weakest first
 
-  final totalItems = domains.fold(0, (a, d) => a + d.total);
-  double weightedScore(double Function(DomainReadiness) f) => totalItems == 0
+  // Overall roll-up blends per-target priority with how much material a domain
+  // has: weight = targetWeight · itemCount. With no target weights this reduces
+  // to pure size-weighting (the Phase-A default).
+  double combineWeight(DomainReadiness d) =>
+      (domainWeights?[d.domain] ?? 1.0) * d.total;
+  final weightSum = domains.fold(0.0, (a, d) => a + combineWeight(d));
+  double weightedScore(double Function(DomainReadiness) f) => weightSum == 0
       ? 0
-      : domains.fold(0.0, (a, d) => a + f(d) * d.total) / totalItems;
+      : domains.fold(0.0, (a, d) => a + f(d) * combineWeight(d)) / weightSum;
 
   return Readiness(
     domains: domains,

@@ -180,6 +180,14 @@ incrementally, but architect for the full model from day one.
   extra-signal columns + mock table land in Phase B, where interview mode is what
   actually produces those signals (there's no objective "correctness" or hint in
   the reveal-then-self-grade recall quiz).
+  - *Status (implemented):* the panel, per-target recall weighting (system
+    design rises with level; FAANG raises the durability bar to S≈120d), and
+    coverage-pace-to-date are live. The target (level/company/track + date)
+    persists to its own synced vault file `_meta/onyx-target.json` (kept
+    separate from the DB-derived progress snapshot `onyx-state.json`), with a
+    device-local preferences mirror. Pace is scoped to **coverage** ("cover
+    your material by the date"), not interview-readiness, and reads recent
+    new-section throughput from the local `activity_log`.
 - **Phase B — applied + mock dimensions (interview mode is the instrument).**
   The interview-mode coach (STT answer → AI probing/follow-ups → advisory grade)
   already resembles a real interview, so make it the *instrument* that captures

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../shared/providers/readiness.dart';
+import 'target_sheet.dart';
 
 /// Home dashboard panel: honest **knowledge-base readiness** (Phase A) —
 /// per-domain recall strength × coverage, weakest domain flagged "focus here",
@@ -16,6 +18,8 @@ class ReadinessPanel extends ConsumerWidget {
     final theme = Theme.of(context);
     final r = ref.watch(readinessProvider).asData?.value;
     if (r == null || r.isEmpty) return const SizedBox.shrink();
+    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final pace = ref.watch(readinessPaceProvider).asData?.value;
     final anyStudied = r.domains.any((d) => d.studied > 0);
 
     return Container(
@@ -45,6 +49,12 @@ class ReadinessPanel extends ConsumerWidget {
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
+          const SizedBox(height: 12),
+          _TargetRow(label: target?.label ?? '—'),
+          if (pace != null) ...[
+            const SizedBox(height: 10),
+            _PaceRow(pace),
+          ],
           const SizedBox(height: 14),
           if (!anyStudied)
             Text('Study some cards and this fills in.',
@@ -94,6 +104,124 @@ class ReadinessPanel extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+/// The tappable "aiming at `target`" row that opens the target sheet.
+class _TargetRow extends StatelessWidget {
+  const _TargetRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => showTargetSheet(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          child: Row(
+            children: [
+              Icon(Icons.flag_outlined,
+                  size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('Aiming at',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(label,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+              ),
+              Icon(Icons.chevron_right,
+                  size: 18, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The coverage-pace line toward the interview date. Copy is scoped to
+/// *coverage* ("cover your material"), never "interview-ready" — Phase A can't
+/// measure the latter.
+class _PaceRow extends StatelessWidget {
+  const _PaceRow(this.pace);
+
+  final PaceEstimate pace;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (icon, color, text) = _describe();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurface)),
+        ),
+      ],
+    );
+  }
+
+  (IconData, Color, String) _describe() {
+    final days = pace.daysLeft;
+    final inDays =
+        days == 0 ? 'today' : 'in $days ${days == 1 ? 'day' : 'days'}';
+    const green = Color(0xFF4CC38A);
+    const amber = Color(0xFFE3B341);
+    const red = Color(0xFFF07178);
+    switch (pace.status) {
+      case PaceStatus.coverageComplete:
+        return (
+          Icons.check_circle_outline,
+          green,
+          'All in-scope material started — $inDays to deepen recall.'
+        );
+      case PaceStatus.onTrack:
+        return (
+          Icons.trending_up,
+          green,
+          'On track — interview $inDays, at ~${_rate(pace.recentPerDay)}/day.'
+        );
+      case PaceStatus.slightlyBehind:
+        return (
+          Icons.schedule,
+          amber,
+          'Slightly behind — ~${_rate(pace.requiredPerDay)}/day to cover it '
+              'all $inDays (you\'re at ~${_rate(pace.recentPerDay)}/day).'
+        );
+      case PaceStatus.behind:
+        return (
+          Icons.warning_amber_outlined,
+          red,
+          'Behind — need ~${_rate(pace.requiredPerDay)}/day to cover it all '
+              '$inDays (you\'re at ~${_rate(pace.recentPerDay)}/day).'
+        );
+      case PaceStatus.notStarted:
+        return (
+          Icons.flag_outlined,
+          amber,
+          'Interview $inDays — ~${_rate(pace.requiredPerDay)}/day to cover '
+              'your material.'
+        );
+    }
+  }
+
+  String _rate(double v) {
+    if (v >= 10) return v.round().toString();
+    final s = v.toStringAsFixed(1);
+    return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
   }
 }
 

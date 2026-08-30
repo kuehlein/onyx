@@ -3,13 +3,22 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
+import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/backup.dart';
 import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/providers/learn.dart';
+import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
+
+/// Serves a fixed target so the readiness panel renders without reaching the
+/// preferences DB / vault in widget tests.
+class _FakeTargetController extends ReadinessTargetController {
+  @override
+  Future<ReadinessTarget> build() async => ReadinessTarget.fallback;
+}
 
 CardSection _section(String heading, {bool quizzable = true}) => CardSection(
       heading: heading,
@@ -44,6 +53,8 @@ void main() {
           learnQueueProvider.overrideWith((ref) async => const []),
           startupRestoreProvider.overrideWith((ref) async {}),
           glossaryProvider.overrideWith((ref) async => const {}),
+          readinessTargetControllerProvider
+              .overrideWith(_FakeTargetController.new),
         ],
         child: const OnyxApp(),
       );
