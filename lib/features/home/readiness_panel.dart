@@ -282,6 +282,19 @@ class _LadderGauge extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Rung dividers: level boundaries (New-grad|Mid|Senior|Staff)
+                  // taller/darker, the FAANG-within-level ticks lighter.
+                  for (var i = 1; i < readinessLadder.length; i++)
+                    Positioned(
+                      left: (i / readinessLadder.length) * w - 0.75,
+                      top: i.isEven ? 16 : 18,
+                      child: Container(
+                        width: 1.5,
+                        height: i.isEven ? 14 : 10,
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: i.isEven ? 0.6 : 0.3),
+                      ),
+                    ),
                   // Goal: a flag above a tick line.
                   Positioned(
                     left: goalX - 6,
@@ -318,15 +331,16 @@ class _LadderGauge extends StatelessWidget {
             );
           },
         ),
+        // One label per level, centred over its two-rung region.
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('New-grad',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            Text('Staff',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            for (final l in const ['New-grad', 'Mid', 'Senior', 'Staff'])
+              Expanded(
+                child: Text(l,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
           ],
         ),
         const SizedBox(height: 6),
@@ -349,6 +363,75 @@ class _LadderGauge extends StatelessWidget {
     final n = pos.rungsToGo;
     return 'Your knowledge base is around ${pos.currentLabel} — '
         '$n ${n == 1 ? 'rung' : 'rungs'} below your $goalLabel goal.';
+  }
+}
+
+/// A rounded progress bar with optional threshold tick-marks that extend just
+/// past the bar so they read over both the filled and empty portions.
+class _TickedBar extends StatelessWidget {
+  const _TickedBar({
+    required this.value,
+    required this.color,
+    this.marks = const [],
+  });
+
+  final double value;
+  final Color color;
+  final List<double> marks;
+
+  static const _height = 6.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        const height = _height;
+        final radius = BorderRadius.circular(height / 2);
+        return SizedBox(
+          height: height + 4,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 2,
+                child: ClipRRect(
+                  borderRadius: radius,
+                  child: Container(
+                      height: height,
+                      color: theme.colorScheme.surfaceContainerHighest),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                top: 2,
+                child: ClipRRect(
+                  borderRadius: radius,
+                  child: Container(
+                      height: height,
+                      width: value.clamp(0.0, 1.0) * w,
+                      color: color),
+                ),
+              ),
+              for (final m in marks)
+                Positioned(
+                  left: m.clamp(0.0, 1.0) * w - 0.75,
+                  top: 0,
+                  child: Container(
+                    width: 1.5,
+                    height: height + 4,
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.45),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -392,15 +475,8 @@ class _DomainRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: LinearProgressIndicator(
-            value: d.score,
-            minHeight: 6,
-            color: color,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-          ),
-        ),
+        // Ticks mark the Developing (45%) and Strong (75%) thresholds.
+        _TickedBar(value: d.score, color: color, marks: const [0.45, 0.75]),
         const SizedBox(height: 2),
         Text('${d.studied}/${d.total} started · ${d.label}',
             style: theme.textTheme.labelSmall
