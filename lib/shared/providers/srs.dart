@@ -1,11 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/database/database.dart';
+import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
 import 'coach.dart';
 import 'database.dart';
+import 'readiness.dart';
 import 'vault.dart';
 
 part 'srs.g.dart';
@@ -71,20 +73,32 @@ class SessionState {
     required this.queue,
     required this.statesByKey,
     required this.index,
+    this.readinessBefore,
+    this.grades = const [],
   });
 
   final List<ReviewItem> queue;
   final Map<String, SrsState> statesByKey;
   final int index;
 
+  /// Readiness snapshot captured at session start, so the completion screen can
+  /// show the honest movement toward the user's goal. Null if it couldn't be
+  /// computed (the summary then just omits the delta).
+  final Readiness? readinessBefore;
+
+  /// The grade given to each reviewed item so far, in order.
+  final List<int> grades;
+
   bool get isDone => index >= queue.length;
   int get total => queue.length;
   ReviewItem? get current => isDone ? null : queue[index];
 
-  SessionState copyWith({int? index}) => SessionState(
+  SessionState copyWith({int? index, List<int>? grades}) => SessionState(
         queue: queue,
         statesByKey: statesByKey,
         index: index ?? this.index,
+        readinessBefore: readinessBefore,
+        grades: grades ?? this.grades,
       );
 }
 
@@ -102,10 +116,30 @@ class StudySession extends _$StudySession {
     // within a session, chats persist to the DB (survive close/reopen + tab
     // switches).
     await clearTestCoachConversations(ref.read(appDatabaseProvider));
+
+    // Snapshot readiness before the session so the completion screen can show
+    // how far this session moved the user toward their goal. Uses `read` (not
+    // `watch`) so per-grade srs_state invalidations don't rebuild the session.
+    Readiness? before;
+    try {
+      final index = await ref.read(vaultIndexProvider.future);
+      final target = await ref.read(readinessTargetControllerProvider.future);
+      before = computeReadinessForTarget(
+        cards: index.cards,
+        stabilityByKey: {
+          for (final e in data.statesByKey.entries) e.key: e.value.stability,
+        },
+        target: target,
+      );
+    } catch (_) {
+      before = null; // summary just omits the delta
+    }
+
     return SessionState(
       queue: data.queue,
       statesByKey: Map.of(data.statesByKey),
       index: 0,
+      readinessBefore: before,
     );
   }
 
@@ -140,6 +174,7 @@ class StudySession extends _$StudySession {
 
     // Browse's mastery-driven collapse reads srsStates; refresh it.
     ref.invalidate(srsStatesProvider);
-    state = AsyncData(s.copyWith(index: s.index + 1));
+    state =
+        AsyncData(s.copyWith(index: s.index + 1, grades: [...s.grades, grade]));
   }
 }

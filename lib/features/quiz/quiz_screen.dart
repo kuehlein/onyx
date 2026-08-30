@@ -3,10 +3,12 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/coach.dart';
+import '../../shared/providers/readiness.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -87,7 +89,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         ),
         data: (s) {
           if (s.total == 0) return const _EmptyState();
-          if (s.isDone) return _CompleteState(reviewed: s.total);
+          if (s.isDone) return _CompleteState(session: s);
           return _ReviewView(
             item: s.current!,
             position: s.index + 1,
@@ -342,28 +344,53 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+/// Session summary: honest, calm feedback — how many sections were reviewed,
+/// the grade mix, and the real movement toward the user's goal (per-subject and
+/// overall). Deliberately no XP/points/celebration hype: it reports information
+/// that supports competence, it doesn't manufacture a reward (see the
+/// gamification research — extrinsic rewards can crowd out intrinsic motivation
+/// for a motivated learner).
 class _CompleteState extends ConsumerWidget {
-  const _CompleteState({required this.reviewed});
-  final int reviewed;
+  const _CompleteState({required this.session});
+  final SessionState session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final reviewed = session.total;
+
+    final before = session.readinessBefore;
+    final after = ref.watch(readinessProvider).asData?.value;
+    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final delta =
+        (before != null && after != null) ? diffReadiness(before, after) : null;
+
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(28),
           children: [
-            Icon(Icons.celebration_outlined,
-                size: 48, color: theme.colorScheme.primary),
+            Icon(Icons.check_circle_outline,
+                size: 44, color: theme.colorScheme.primary),
             const SizedBox(height: 12),
-            Text('Session complete', style: theme.textTheme.titleLarge),
+            Text('Session complete',
+                textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text('$reviewed section${reviewed == 1 ? '' : 's'} reviewed',
+                textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 24),
+            if (session.grades.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _GradeBreakdown(session.grades),
+            ],
+            if (delta != null) ...[
+              const SizedBox(height: 24),
+              _ProgressDelta(delta: delta, targetLabel: target?.label),
+            ],
+            const SizedBox(height: 28),
             FilledButton(
               onPressed: () {
                 ref.read(backupProvider.notifier).flush();
@@ -375,6 +402,135 @@ class _CompleteState extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The grade mix for the session — plain counts, coloured by grade. Honest
+/// session info, not a score to chase.
+class _GradeBreakdown extends StatelessWidget {
+  const _GradeBreakdown(this.grades);
+  final List<int> grades;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final (:value, :label, :color) in studyGrades)
+          if (grades.where((g) => g == value).length case final n when n > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$label $n',
+                  style: theme.textTheme.labelMedium
+                      ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+            ),
+      ],
+    );
+  }
+}
+
+/// The honest progress readout: overall movement + which subjects moved, framed
+/// as knowledge-base (recall) progress toward the user's own goal.
+class _ProgressDelta extends StatelessWidget {
+  const _ProgressDelta({required this.delta, required this.targetLabel});
+
+  final ReadinessDelta delta;
+  final String? targetLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final touched = delta.touched;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.trending_up,
+                  size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  targetLabel == null
+                      ? 'Progress toward your goal'
+                      : 'Progress toward $targetLabel',
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _DeltaLine(label: 'Overall', change: delta.overallChange, bold: true),
+          for (final d in touched)
+            _DeltaLine(label: prettyDomain(d.domain), change: d.change),
+          const SizedBox(height: 8),
+          Text(
+            'Recall strength toward your knowledge-base level — not a '
+            'mock-validated interview score.',
+            style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeltaLine extends StatelessWidget {
+  const _DeltaLine(
+      {required this.label, required this.change, this.bold = false});
+
+  final String label;
+  final double change;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = change * 100;
+    final steady = p.abs() < 0.05;
+    const green = Color(0xFF4CC38A);
+    const amber = Color(0xFFE3B341);
+    final color =
+        steady ? theme.colorScheme.onSurfaceVariant : (p > 0 ? green : amber);
+    final text = steady
+        ? 'steady'
+        : '${p > 0 ? '+' : '−'}${p.abs().toStringAsFixed(1)}%';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
+          ),
+          if (!steady)
+            Icon(p > 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 13, color: color),
+          const SizedBox(width: 2),
+          Text(text,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

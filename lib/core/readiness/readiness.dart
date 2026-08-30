@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../shared/models/card.dart';
+import 'target.dart';
 
 /// Phase A of the readiness model (see docs/readiness-dashboard.md): the honest
 /// **knowledge-base (recall)** dimension, computed from data we already store —
@@ -171,4 +172,90 @@ Readiness computeReadiness({
     low: weightedScore((d) => d.low),
     high: weightedScore((d) => d.high),
   );
+}
+
+/// Convenience wrapper: compute readiness for a specific [target] — its
+/// durability bar plus per-domain weights. Shared by the dashboard provider and
+/// the post-session summary so their numbers line up exactly.
+Readiness computeReadinessForTarget({
+  required List<Card> cards,
+  required Map<String, double> stabilityByKey,
+  required ReadinessTarget target,
+}) {
+  final domains = <String>{
+    for (final c in cards)
+      if (c.domain != null) c.domain!,
+  };
+  return computeReadiness(
+    cards: cards,
+    stabilityByKey: stabilityByKey,
+    stabilityTarget: target.stabilityTarget,
+    domainWeights: {for (final d in domains) d: domainWeight(target, d)},
+  );
+}
+
+/// The change in one domain's score between two readiness snapshots.
+class DomainDelta {
+  const DomainDelta(
+      {required this.domain, required this.before, required this.after});
+
+  final String domain;
+  final double before;
+  final double after;
+
+  double get change => after - before;
+}
+
+/// The overall + per-domain movement between two readiness snapshots — the
+/// honest "you moved this much toward your goal" signal for a session summary.
+class ReadinessDelta {
+  const ReadinessDelta({
+    required this.overallBefore,
+    required this.overallAfter,
+    required this.domains,
+  });
+
+  final double overallBefore;
+  final double overallAfter;
+
+  /// Per-domain deltas, in the "after" ordering (weakest-first).
+  final List<DomainDelta> domains;
+
+  double get overallChange => overallAfter - overallBefore;
+
+  /// Domains whose score actually moved this session (touched sections).
+  List<DomainDelta> get touched => [
+        for (final d in domains)
+          if (d.change.abs() > 1e-9) d
+      ];
+}
+
+/// Diffs two readiness snapshots by domain name.
+ReadinessDelta diffReadiness(Readiness before, Readiness after) {
+  final beforeByDomain = {for (final d in before.domains) d.domain: d.score};
+  return ReadinessDelta(
+    overallBefore: before.overall,
+    overallAfter: after.overall,
+    domains: [
+      for (final d in after.domains)
+        DomainDelta(
+            domain: d.domain,
+            before: beforeByDomain[d.domain] ?? 0,
+            after: d.score),
+    ],
+  );
+}
+
+/// A display label for a domain tag, e.g. `ds-a` → "DS & A".
+String prettyDomain(String domain) {
+  switch (domain) {
+    case 'ds-a':
+      return 'DS & A';
+    case 'system-design':
+      return 'System design';
+  }
+  return domain
+      .split(RegExp(r'[-_]'))
+      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+      .join(' ');
 }

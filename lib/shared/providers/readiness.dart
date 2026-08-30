@@ -54,15 +54,10 @@ Future<Readiness> readiness(Ref ref) async {
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
-  final domains = <String>{
-    for (final c in index.cards)
-      if (c.domain != null) c.domain!,
-  };
-  return computeReadiness(
+  return computeReadinessForTarget(
     cards: index.cards,
     stabilityByKey: stabilityByKey,
-    stabilityTarget: target.stabilityTarget,
-    domainWeights: {for (final d in domains) d: domainWeight(target, d)},
+    target: target,
   );
 }
 
