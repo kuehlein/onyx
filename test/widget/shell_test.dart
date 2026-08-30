@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/backup.dart';
@@ -11,6 +12,7 @@ import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
+import 'package:onyx/shared/providers/stats.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 /// Serves a fixed target so the readiness panel renders without reaching the
@@ -55,6 +57,7 @@ void main() {
           glossaryProvider.overrideWith((ref) async => const {}),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
+          studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
         ],
         child: const OnyxApp(),
       );

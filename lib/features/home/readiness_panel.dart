@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
+import '../../core/stats/streak.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/stats.dart';
 import 'target_sheet.dart';
 
 /// Home dashboard panel: honest **knowledge-base readiness** (Phase A) —
@@ -22,7 +24,10 @@ class ReadinessPanel extends ConsumerWidget {
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
     final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
+    final streak = ref.watch(studyStreakProvider).asData?.value;
     final anyStudied = r.domains.any((d) => d.studied > 0);
+    final showStreak =
+        streak != null && (streak.current > 0 || streak.studiedToday);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -51,6 +56,10 @@ class ReadinessPanel extends ConsumerWidget {
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
+          if (showStreak) ...[
+            const SizedBox(height: 10),
+            _StreakRow(streak),
+          ],
           const SizedBox(height: 12),
           _TargetRow(label: target?.label ?? '—'),
           if (pace != null) ...[
@@ -108,6 +117,54 @@ class ReadinessPanel extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The study-streak line: a flame + "N-day streak" with today's count, or a
+/// gentle "study today to keep it" nudge when the streak is still alive but
+/// today is empty.
+class _StreakRow extends StatelessWidget {
+  const _StreakRow(this.streak);
+
+  final StreakInfo streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const flame = Color(0xFFF2792B);
+    const amber = Color(0xFFE3B341);
+    final atRisk = !streak.studiedToday;
+    final detail = streak.studiedToday
+        ? '${streak.todayCount} studied today'
+        : 'study today to keep it';
+
+    return Row(
+      children: [
+        Icon(Icons.local_fire_department,
+            size: 16, color: atRisk ? amber : flame),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: '${streak.current}-day streak',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              TextSpan(
+                text: '  ·  $detail',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ]),
+          ),
+        ),
+        if (streak.best > streak.current && streak.best >= 3)
+          Text('best ${streak.best}',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      ],
     );
   }
 }

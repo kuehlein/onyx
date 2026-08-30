@@ -65,6 +65,25 @@ class SrsRepository {
     return row.read(count) ?? 0;
   }
 
+  /// Timestamps of every study action since [since] — graded reviews plus
+  /// newly learned sections (`'learn'` events). Used to compute the study
+  /// streak. Reviews sync via the snapshot; `activity_log` is device-local, so
+  /// a freshly restored device rebuilds the learn side as studying resumes.
+  Future<List<DateTime>> studyTimestamps({required DateTime since}) async {
+    final reviews = await (_db.select(_db.reviews)
+          ..where((r) => r.reviewedAt.isBiggerOrEqualValue(since)))
+        .get();
+    final learns = await (_db.select(_db.activityLog)
+          ..where((a) =>
+              a.eventType.equals('learn') &
+              a.occurredAt.isBiggerOrEqualValue(since)))
+        .get();
+    return [
+      for (final r in reviews) r.reviewedAt,
+      for (final l in learns) l.occurredAt,
+    ];
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

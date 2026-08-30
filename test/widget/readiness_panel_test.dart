@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/features/home/readiness_panel.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/stats.dart';
 
 /// Serves a fixed target without reaching the DB / vault.
 class _FakeTargetController extends ReadinessTargetController {
@@ -57,6 +59,12 @@ void main() {
           readinessPaceProvider.overrideWith((ref) async => null),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
+          studyStreakProvider.overrideWith((ref) async => const StreakInfo(
+                current: 5,
+                best: 9,
+                studiedToday: true,
+                todayCount: 12,
+              )),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -74,6 +82,8 @@ void main() {
 
     expect(find.text('Knowledge-base readiness'), findsOneWidget);
     expect(find.text('Aiming at'), findsOneWidget);
+    // Streak line renders with the current run.
+    expect(find.textContaining('5-day streak'), findsOneWidget);
     // Ladder level labels are present.
     for (final l in ['New-grad', 'Mid', 'Senior', 'Staff']) {
       expect(find.text(l), findsOneWidget);
