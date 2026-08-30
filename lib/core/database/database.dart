@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../dev.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -29,6 +30,16 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 3;
+
+  /// Deletes all study progress — schedule, review log, activity, and coach
+  /// chats — while leaving preferences (settings/target) and the rebuilt card
+  /// cache intact. Used by the dev-only "Reset local progress" action.
+  Future<void> wipeStudyData() => transaction(() async {
+        await delete(srsStates).go();
+        await delete(reviews).go();
+        await delete(activityLog).go();
+        await delete(coachMessages).go();
+      });
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,7 +66,10 @@ LazyDatabase _openConnection() {
     // creates this directory; the documents dir may not exist (e.g. a Linux box
     // with no XDG user-dirs configured).
     final dir = await getApplicationSupportDirectory();
-    final file = File(p.join(dir.path, 'onyx.sqlite'));
+    // Dev builds use a separate file so experimenting never touches the real
+    // (release) database on the same machine.
+    final name = isDevDataMode ? 'onyx-dev.sqlite' : 'onyx.sqlite';
+    final file = File(p.join(dir.path, name));
     return NativeDatabase.createInBackground(file);
   });
 }

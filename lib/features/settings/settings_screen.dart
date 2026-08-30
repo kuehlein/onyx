@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/claude_service.dart';
+import '../../core/dev.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
+import '../../shared/providers/database.dart';
+import '../../shared/providers/learn.dart';
 import '../../shared/providers/settings.dart';
+import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 
 /// App settings. Vault selection, the Claude API key (iOS Keychain via
@@ -151,8 +155,60 @@ class SettingsScreen extends ConsumerWidget {
               ];
             },
           ),
+          if (isDevDataMode) ...[
+            const _SectionHeader('Developer'),
+            ListTile(
+              leading: Icon(Icons.delete_forever_outlined,
+                  color: Theme.of(context).colorScheme.error),
+              title: const Text('Reset local progress'),
+              subtitle: const Text(
+                  'Wipe this dev build\'s schedule, reviews, streak and coach '
+                  'chats. Dev data is isolated — your real (release) progress '
+                  'is separate and untouched.'),
+              onTap: () => _resetProgress(context, ref),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _resetProgress(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset local progress?'),
+        content: const Text(
+          'Clears this development build\'s study data (schedule, review log, '
+          'streak, coach chats). This only affects the isolated dev database '
+          'and dev snapshot — real progress is untouched.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await ref.read(appDatabaseProvider).wipeStudyData();
+    ref.invalidate(srsStatesProvider);
+    ref.invalidate(reviewQueueProvider);
+    ref.invalidate(learnQueueProvider);
+    // Overwrite the (dev) snapshot so a restart doesn't restore the old data.
+    await ref.read(backupProvider.notifier).flush();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Local progress reset')),
     );
   }
 

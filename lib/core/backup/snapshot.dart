@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../database/database.dart';
+import '../dev.dart';
 import '../vault/vault_source.dart';
 
 /// Backs up study progress to a single JSON file in the vault's `_meta/` folder,
@@ -19,7 +20,10 @@ class SnapshotService {
   final AppDatabase _db;
   final VaultSource _source;
 
-  static const fileName = 'onyx-state.json';
+  /// Dev builds read/write a separate file so desktop experimenting never
+  /// overwrites the real, synced snapshot.
+  static String get fileName =>
+      isDevDataMode ? 'onyx-state.dev.json' : 'onyx-state.json';
   static const _version = 1;
 
   Future<bool> isDbEmpty() async =>
