@@ -8,6 +8,7 @@ import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/coach.dart';
+import '../../shared/providers/practice.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
@@ -316,30 +317,76 @@ class _Pill extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline,
-                size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
-            Text('Nothing due right now', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text('New cards and reviews will appear here.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle_outline,
+                  size: 48, color: theme.colorScheme.primary),
+              const SizedBox(height: 12),
+              Text('Nothing due right now', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text('New cards and reviews will appear here.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              if (weakest != null) ...[
+                const SizedBox(height: 24),
+                _PracticeSuggestion(weakest),
+              ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// The evidence-based "do more" offer: a small, non-grading practice set on the
+/// weakest domain. Renders nothing when that domain has no practice material.
+/// Applied practice (not re-drilling due cards) is the higher-leverage use of
+/// extra time — and the copy is honest that going to build something is fine too.
+class _PracticeSuggestion extends ConsumerWidget {
+  const _PracticeSuggestion(this.domain);
+
+  final String domain;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final set =
+        ref.watch(practiceSetProvider(domain)).asData?.value ?? const [];
+    if (set.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final n = set.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Want to keep going?',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelLarge
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/practice/$domain'),
+          icon: const Icon(Icons.fitness_center_outlined),
+          label: Text(
+              'Practice ${prettyDomain(domain)} · $n problem${n == 1 ? '' : 's'}'),
+          style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14)),
+        ),
+      ],
     );
   }
 }
@@ -389,6 +436,10 @@ class _CompleteState extends ConsumerWidget {
             if (delta != null) ...[
               const SizedBox(height: 24),
               _ProgressDelta(delta: delta, targetLabel: target?.label),
+            ],
+            if (after?.weakestDomain != null) ...[
+              const SizedBox(height: 24),
+              _PracticeSuggestion(after!.weakestDomain!),
             ],
             const SizedBox(height: 28),
             FilledButton(

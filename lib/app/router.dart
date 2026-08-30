@@ -5,6 +5,7 @@ import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/learn/learn_screen.dart';
+import '../features/practice/practice_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/reader/reader_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -25,6 +26,12 @@ GoRouter createRouter() => GoRouter(
           path: '/read',
           builder: (_, state) =>
               ReaderScreen(url: state.uri.queryParameters['url'] ?? ''),
+        ),
+        // A short, non-grading practice run on a domain (`/practice/ds-a`).
+        GoRoute(
+          path: '/practice/:domain',
+          builder: (_, state) =>
+              PracticeScreen(domain: state.pathParameters['domain']!),
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
