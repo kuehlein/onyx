@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
@@ -62,6 +63,24 @@ Future<Readiness> readiness(Ref ref) async {
     stabilityByKey: stabilityByKey,
     stabilityTarget: target.stabilityTarget,
     domainWeights: {for (final d in domains) d: domainWeight(target, d)},
+  );
+}
+
+/// Where the current knowledge base sits on the level×company ladder relative
+/// to the chosen goal — the "you are here vs. aiming here" gauge. Recomputes
+/// from the same cards + FSRS stability, scored against every rung.
+@riverpod
+Future<LadderPosition> readinessLadderPosition(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final states = await ref.watch(srsStatesProvider.future);
+  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final stabilityByKey = {
+    for (final e in states.byKey.entries) e.key: e.value.stability,
+  };
+  return computeLadderPosition(
+    cards: index.cards,
+    stabilityByKey: stabilityByKey,
+    target: target,
   );
 }
 

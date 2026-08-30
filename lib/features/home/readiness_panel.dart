@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../shared/providers/readiness.dart';
@@ -20,6 +21,7 @@ class ReadinessPanel extends ConsumerWidget {
     if (r == null || r.isEmpty) return const SizedBox.shrink();
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
+    final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
     final anyStudied = r.domains.any((d) => d.studied > 0);
 
     return Container(
@@ -77,15 +79,18 @@ class ReadinessPanel extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: r.overall,
-                minHeight: 8,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            const SizedBox(height: 12),
+            if (ladder != null)
+              _LadderGauge(ladder)
+            else
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: r.overall,
+                  minHeight: 8,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             for (final d in r.domains)
               Padding(
@@ -222,6 +227,128 @@ class _PaceRow extends StatelessWidget {
     if (v >= 10) return v.round().toString();
     final s = v.toStringAsFixed(1);
     return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+  }
+}
+
+/// A horizontal gauge spanning New-grad→Staff with two pins: a filled "you"
+/// marker at the current inferred rung and a flag at the goal rung. Lets the
+/// user recalibrate — aim high, but see where they actually stand today.
+class _LadderGauge extends StatelessWidget {
+  const _LadderGauge(this.pos);
+
+  final LadderPosition pos;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final goalLabel = readinessLadder[pos.goalIndex].label;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, c) {
+            final w = c.maxWidth;
+            final youX = (pos.youFraction * w).clamp(7.0, w - 7.0);
+            final goalX = (pos.goalFraction * w).clamp(6.0, w - 6.0);
+            return SizedBox(
+              height: 34,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Track.
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: 20,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Container(
+                        height: 6,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                      ),
+                    ),
+                  ),
+                  // Filled up to the current position.
+                  Positioned(
+                    left: 0,
+                    top: 20,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Container(
+                        height: 6,
+                        width: youX,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  // Goal: a flag above a tick line.
+                  Positioned(
+                    left: goalX - 6,
+                    top: 0,
+                    child: Icon(Icons.flag,
+                        size: 12, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  Positioned(
+                    left: goalX - 1,
+                    top: 14,
+                    child: Container(
+                        width: 2,
+                        height: 16,
+                        color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  // You: a filled circle with a ring, on the track.
+                  Positioned(
+                    left: youX - 7,
+                    top: 16,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: theme.colorScheme.surfaceContainerHigh,
+                            width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('New-grad',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text('Staff',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(_summary(goalLabel),
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurface)),
+      ],
+    );
+  }
+
+  String _summary(String goalLabel) {
+    if (pos.clearedCount == 0) {
+      return 'Building your foundation — not yet clearing '
+          '${readinessLadder.first.label} (recall).';
+    }
+    if (pos.atOrAboveGoal) {
+      return 'Your knowledge base is at or above your $goalLabel goal '
+          '(recall) — validate it with mock interviews.';
+    }
+    final n = pos.rungsToGo;
+    return 'Your knowledge base is around ${pos.currentLabel} — '
+        '$n ${n == 1 ? 'rung' : 'rungs'} below your $goalLabel goal.';
   }
 }
 

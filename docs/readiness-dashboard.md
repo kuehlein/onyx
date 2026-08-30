@@ -188,6 +188,13 @@ incrementally, but architect for the full model from day one.
     device-local preferences mirror. Pace is scoped to **coverage** ("cover
     your material by the date"), not interview-readiness, and reads recent
     new-section throughput from the local `activity_log`.
+  - *Status (implemented):* a **current-level gauge**. The same recall model is
+    re-scored against every rung of a level×company ladder; the longest cleared
+    prefix (≥0.7 overall) is the inferred current level. A horizontal gauge
+    shows a "you are here" pin against a "goal" flag so the user can recalibrate
+    (aim Senior·FAANG, discover they're at Mid·FAANG today, apply accordingly).
+    Recall-only, same honesty caveat — it's a knowledge-base level, not a
+    mock-validated interview level.
 - **Phase B — applied + mock dimensions (interview mode is the instrument).**
   The interview-mode coach (STT answer → AI probing/follow-ups → advisory grade)
   already resembles a real interview, so make it the *instrument* that captures
