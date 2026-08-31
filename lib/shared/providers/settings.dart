@@ -10,9 +10,10 @@ part 'settings.g.dart';
 PreferencesRepository preferencesRepository(Ref ref) =>
     PreferencesRepository(ref.watch(appDatabaseProvider));
 
-/// The cap on brand-new sections introduced in a single Learn session. Persisted
-/// in the preferences table; defaults to 20. Keeping it modest is deliberate —
-/// too many new items at once raises cognitive load and hurts retention (see
+/// The cap on brand-new sections introduced per day (see [dailyNewRemaining],
+/// which subtracts what's already been learned today). Persisted in the
+/// preferences table; defaults to 20. Keeping it modest is deliberate — too many
+/// new items at once raises cognitive load and hurts retention (see
 /// docs/learning-science.md).
 @Riverpod(keepAlive: true)
 class NewCardLimit extends _$NewCardLimit {

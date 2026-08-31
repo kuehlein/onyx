@@ -1,10 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/clock.dart';
 import '../../core/database/database.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
+import 'clock.dart';
 import 'coach.dart';
 import 'database.dart';
 import 'readiness.dart';
@@ -57,12 +59,13 @@ class ReviewQueueData {
 Future<ReviewQueueData> reviewQueue(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
+  final clock = await ref.watch(clockProvider.future);
   final states = await repo.loadStates();
   final dueByKey = {for (final e in states.entries) e.key: e.value.dueAt};
   final queue = buildReviewQueue(
     cards: index.cards,
     dueByKey: dueByKey,
-    now: DateTime.now(),
+    now: clock.now(),
   );
   return ReviewQueueData(queue: queue, statesByKey: states);
 }
@@ -152,11 +155,12 @@ class StudySession extends _$StudySession {
 
     final scheduler = ref.read(srsSchedulerProvider);
     final repo = ref.read(srsRepositoryProvider);
+    final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
     final current = s.statesByKey[item.key];
 
     final outcome = scheduler.review(
       grade: grade,
-      reviewedAt: DateTime.now(),
+      reviewedAt: clock.now(),
       stability: current?.stability,
       difficulty: current?.difficulty,
       state: current?.state,

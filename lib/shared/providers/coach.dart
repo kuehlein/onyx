@@ -5,7 +5,9 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach.dart';
 import '../../core/database/database.dart';
 import '../models/card.dart';
+import '../../core/clock.dart';
 import 'ai.dart';
+import 'clock.dart';
 import 'database.dart';
 import 'interview.dart';
 import 'readiness.dart';
@@ -123,13 +125,14 @@ class Coach extends _$Coach {
       // In a mock interview, log the coach's structured applied assessment —
       // separate from the human FSRS grade; it only feeds readiness.
       if (grading && parsed.assessment != null) {
+        final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
         await ref.read(appliedRepositoryProvider).record(
               cardId: card.id,
               sectionSlug: section?.slug,
               domain: card.domain,
               assessment: parsed.assessment!,
               source: 'interview-coach',
-              occurredAt: DateTime.now(),
+              occurredAt: clock.now(),
             );
         // Refresh the dashboard: new applied evidence can graduate readiness.
         ref.invalidate(appliedTransferProvider);

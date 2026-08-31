@@ -46,7 +46,13 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
         title: const Text('Learn'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.go('/'),
+          onPressed: () {
+            // Refresh the daily new-card allowance so Home / the quiz empty
+            // state reflect what was just learned (these providers are kept
+            // alive by Home, so they won't recompute on their own).
+            ref.invalidate(dailyNewRemainingProvider);
+            context.go('/');
+          },
         ),
         actions: [
           if (current != null)
@@ -327,7 +333,7 @@ class _CompleteState extends ConsumerWidget {
             FilledButton(
               onPressed: () {
                 ref.read(backupProvider.notifier).flush();
-                ref.invalidate(learnQueueProvider);
+                ref.invalidate(dailyNewRemainingProvider);
                 context.go('/');
               },
               child: const Text('Done'),

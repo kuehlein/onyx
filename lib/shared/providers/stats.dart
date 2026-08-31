@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/stats/streak.dart';
+import 'clock.dart';
 import 'srs.dart';
 
 part 'stats.g.dart';
@@ -13,8 +14,7 @@ Future<StreakInfo> studyStreak(Ref ref) async {
   // Establish the invalidation dependency (value itself is unused).
   await ref.watch(srsStatesProvider.future);
 
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
+  final today = (await ref.watch(clockProvider.future)).today();
   // 400 days back comfortably covers any current streak plus best-run history.
   final since = DateTime(today.year, today.month, today.day - 400);
   final timestamps =

@@ -7,6 +7,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/dev.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
+import '../../shared/providers/clock.dart';
 import '../../shared/providers/database.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/readiness.dart';
@@ -55,7 +56,7 @@ class SettingsScreen extends ConsumerWidget {
           ref.watch(newCardLimitProvider).when(
                 loading: () => const ListTile(
                   leading: Icon(Icons.auto_stories_outlined),
-                  title: Text('New sections per session'),
+                  title: Text('New sections per day'),
                   subtitle: Text('Loading…'),
                 ),
                 error: (e, _) => ListTile(
@@ -67,9 +68,10 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.auto_stories_outlined),
                   title: const Text('New sections per session'),
                   subtitle: Text(
-                      '$limit per Learn session — ${_loadLabel(limit)}. Fewer '
-                      'means stronger retention; more covers ground faster but '
-                      'raises cognitive load.'),
+                      '$limit new per day — ${_loadLabel(limit)}. Once you\'ve '
+                      'learned this many, new material waits until tomorrow. '
+                      'Fewer means stronger retention; more covers ground faster '
+                      'but raises cognitive load.'),
                   trailing: _Stepper(
                     value: limit,
                     onChanged: (v) =>
@@ -176,6 +178,34 @@ class SettingsScreen extends ConsumerWidget {
                   'flow is testable without waiting for the FSRS schedule.'),
               onTap: () => _makeAllDueNow(context, ref),
             ),
+            ref.watch(devClockOffsetProvider).when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (days) => ListTile(
+                    leading: const Icon(Icons.schedule_outlined),
+                    title: const Text('Time travel'),
+                    subtitle: Text(days == 0
+                        ? 'Clock at real time. Advance to let the FSRS schedule '
+                            'come due naturally.'
+                        : 'Clock advanced ${days > 0 ? '+' : ''}$days '
+                            'day${days.abs() == 1 ? '' : 's'} from real time.'),
+                    trailing: Wrap(
+                      spacing: 4,
+                      children: [
+                        for (final d in const [1, 7])
+                          ActionChip(
+                            label: Text('+$d'),
+                            onPressed: () => _advanceClock(ref, d),
+                          ),
+                        if (days != 0)
+                          ActionChip(
+                            label: const Text('Reset'),
+                            onPressed: () => _advanceClock(ref, null),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
           ],
         ],
       ),
@@ -221,6 +251,22 @@ class SettingsScreen extends ConsumerWidget {
     messenger.showSnackBar(
       const SnackBar(content: Text('Local progress reset')),
     );
+  }
+
+  /// Advance the dev clock by [days] (or reset when null), then refresh the
+  /// time-gated providers so due dates, the daily new allowance, streak and
+  /// readiness reflect the new "now".
+  Future<void> _advanceClock(WidgetRef ref, int? days) async {
+    final notifier = ref.read(devClockOffsetProvider.notifier);
+    if (days == null) {
+      await notifier.reset();
+    } else {
+      await notifier.advance(days);
+    }
+    ref.invalidate(reviewQueueProvider);
+    ref.invalidate(dailyNewRemainingProvider);
+    ref.invalidate(srsStatesProvider);
+    ref.invalidate(appliedTransferProvider);
   }
 
   Future<void> _makeAllDueNow(BuildContext context, WidgetRef ref) async {

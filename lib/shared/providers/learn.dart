@@ -1,7 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/clock.dart';
 import '../../core/srs/learn_queue.dart';
 import '../models/card.dart';
+import 'clock.dart';
 import 'coach.dart';
 import 'database.dart';
 import 'settings.dart';
@@ -10,19 +12,35 @@ import 'vault.dart';
 
 part 'learn.g.dart';
 
+/// How many brand-new sections may still be started today. The new-card limit is
+/// a DAILY allowance (not per-session): once you've learned that many today,
+/// there's nothing new until tomorrow — mirroring how reviews are time-gated, so
+/// new material doesn't pile up unbounded. Learned-today is counted from the
+/// activity log against the (dev-adjustable) clock's day.
+@riverpod
+Future<int> dailyNewRemaining(Ref ref) async {
+  final limit = await ref.watch(newCardLimitProvider.future);
+  final clock = await ref.watch(clockProvider.future);
+  final learnedToday = await ref
+      .watch(srsRepositoryProvider)
+      .sectionsStartedSince(clock.today());
+  return (limit - learnedToday).clamp(0, limit);
+}
+
 /// The "learn new material" queue: un-seeded quizzable sections grouped by
-/// wikilink family, foundational-first, capped for one sitting.
+/// wikilink family, foundational-first, capped by the remaining daily allowance.
 @riverpod
 Future<List<LearnItem>> learnQueue(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
   final states = await repo.loadStates();
-  final limit = await ref.watch(newCardLimitProvider.future);
+  final remaining = await ref.watch(dailyNewRemainingProvider.future);
+  if (remaining <= 0) return const [];
   return buildLearnQueue(
     cards: index.cards,
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(index.cards),
-    newSectionLimit: limit,
+    newSectionLimit: remaining,
   );
 }
 
@@ -92,9 +110,9 @@ class LearnSession extends _$LearnSession {
     if (grade >= 3) {
       final scheduler = ref.read(srsSchedulerProvider);
       final repo = ref.read(srsRepositoryProvider);
+      final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
       // A fresh section: no prior state, so this seeds the initial FSRS values.
-      final outcome =
-          scheduler.review(grade: grade, reviewedAt: DateTime.now());
+      final outcome = scheduler.review(grade: grade, reviewedAt: clock.now());
       await repo.seedState(
         cardId: item.card.id,
         sectionSlug: item.section.slug,

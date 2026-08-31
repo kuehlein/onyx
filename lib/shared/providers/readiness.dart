@@ -6,6 +6,7 @@ import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
+import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
 import 'srs.dart';
@@ -23,7 +24,7 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
     appliedTransfer(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(appliedRepositoryProvider);
-  final now = DateTime.now();
+  final now = (await ref.watch(clockProvider.future)).now();
   // Bound the query to a year; older attempts are recency-decayed to ~nil anyway.
   final attempts =
       await repo.attempts(since: now.subtract(const Duration(days: 365)));
@@ -135,7 +136,7 @@ Future<PaceEstimate?> readinessPace(Ref ref) async {
   final remaining = r.domains.fold(0, (a, d) => a + (d.total - d.studied));
 
   const window = 14;
-  final today = _todayLocal();
+  final today = (await ref.watch(clockProvider.future)).today();
   final started = await ref
       .watch(srsRepositoryProvider)
       .sectionsStartedSince(today.subtract(const Duration(days: window)));
@@ -146,9 +147,4 @@ Future<PaceEstimate?> readinessPace(Ref ref) async {
     remainingSections: remaining,
     recentPerDay: started / window,
   );
-}
-
-DateTime _todayLocal() {
-  final n = DateTime.now();
-  return DateTime(n.year, n.month, n.day);
 }
