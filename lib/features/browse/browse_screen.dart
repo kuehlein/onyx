@@ -47,16 +47,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     final states = ref.watch(srsStatesProvider).asData?.value;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Browse'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'Search & filter help',
-            onPressed: () => showSearchHelp(context),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Browse')),
       body: index.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _Message('Index error:\n$e'),
@@ -123,6 +114,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                   );
                   if (next != null) setState(() => _chipFilter = next);
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                tooltip: 'Search & filter help',
+                onPressed: () => showSearchHelp(context),
               ),
             ],
           ),
