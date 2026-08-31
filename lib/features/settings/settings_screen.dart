@@ -9,6 +9,7 @@ import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/database.dart';
 import '../../shared/providers/learn.dart';
+import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -162,10 +163,18 @@ class SettingsScreen extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.error),
               title: const Text('Reset local progress'),
               subtitle: const Text(
-                  'Wipe this dev build\'s schedule, reviews, streak and coach '
-                  'chats. Dev data is isolated — your real (release) progress '
-                  'is separate and untouched.'),
+                  'Wipe this dev build\'s schedule, reviews, streak, coach '
+                  'chats and mock attempts. Dev data is isolated — your real '
+                  '(release) progress is separate and untouched.'),
               onTap: () => _resetProgress(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.fast_forward_outlined),
+              title: const Text('Make all cards due now'),
+              subtitle: const Text(
+                  'Seed every section as due immediately so the full review '
+                  'flow is testable without waiting for the FSRS schedule.'),
+              onTap: () => _makeAllDueNow(context, ref),
             ),
           ],
         ],
@@ -205,10 +214,30 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(srsStatesProvider);
     ref.invalidate(reviewQueueProvider);
     ref.invalidate(learnQueueProvider);
+    // Applied attempts were wiped too — refresh so readiness de-graduates.
+    ref.invalidate(appliedTransferProvider);
     // Overwrite the (dev) snapshot so a restart doesn't restore the old data.
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
       const SnackBar(content: Text('Local progress reset')),
+    );
+  }
+
+  Future<void> _makeAllDueNow(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final index = await ref.read(vaultIndexProvider.future);
+    final keys = [
+      for (final c in index.cards)
+        for (final s in c.quizzableSections)
+          (cardId: c.id, sectionSlug: s.slug),
+    ];
+    await ref.read(srsRepositoryProvider).seedAllDueNow(keys);
+    ref.invalidate(srsStatesProvider);
+    ref.invalidate(reviewQueueProvider);
+    ref.invalidate(learnQueueProvider);
+    await ref.read(backupProvider.notifier).flush();
+    messenger.showSnackBar(
+      SnackBar(content: Text('${keys.length} sections set due now')),
     );
   }
 

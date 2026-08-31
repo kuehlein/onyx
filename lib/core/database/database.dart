@@ -32,14 +32,16 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 4;
 
-  /// Deletes all study progress — schedule, review log, activity, and coach
-  /// chats — while leaving preferences (settings/target) and the rebuilt card
-  /// cache intact. Used by the dev-only "Reset local progress" action.
+  /// Deletes all study progress — schedule, review log, activity, coach chats,
+  /// and applied (mock) attempts — while leaving preferences (settings/target)
+  /// and the rebuilt card cache intact. Used by the dev-only "Reset local
+  /// progress" action.
   Future<void> wipeStudyData() => transaction(() async {
         await delete(srsStates).go();
         await delete(reviews).go();
         await delete(activityLog).go();
         await delete(coachMessages).go();
+        await delete(appliedAttempts).go();
       });
 
   @override

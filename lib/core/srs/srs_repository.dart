@@ -84,6 +84,34 @@ class SrsRepository {
     ];
   }
 
+  /// DEV/E2E: make every given `(cardId, sectionSlug)` due right now, so the
+  /// whole review queue is immediately exercisable. Seeds a default review state
+  /// for un-studied sections and pulls existing ones forward to now — without
+  /// writing review-log rows (this is a testing shortcut, not real history).
+  Future<void> seedAllDueNow(
+      Iterable<({String cardId, String sectionSlug})> keys) async {
+    final now = DateTime.now();
+    await _db.batch((b) {
+      for (final k in keys) {
+        b.insert(
+          _db.srsStates,
+          SrsStatesCompanion.insert(
+            cardId: k.cardId,
+            sectionSlug: k.sectionSlug,
+            stability: const Value(1),
+            difficulty: const Value(5),
+            state: const Value(2), // review
+            step: const Value(null),
+            dueAt: now,
+            lastReview: Value(now),
+            reviewCount: const Value(0),
+          ),
+          onConflict: DoUpdate((_) => SrsStatesCompanion(dueAt: Value(now))),
+        );
+      }
+    });
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({
