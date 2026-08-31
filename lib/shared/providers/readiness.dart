@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/interview/critic.dart';
 import '../../core/interview/transfer.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
@@ -39,7 +40,8 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
     if (d == null || !domains.contains(d)) continue;
     final ageDays = now.difference(a.occurredAt).inHours / 24.0;
     samples.putIfAbsent(d, () => []).add(AppliedSample(
-          score: a.appliedScore / 100.0,
+          // Reconciled coach+critic score (mean) when a second opinion exists.
+          score: effectiveApplied01(a.appliedScore, a.verifierScore),
           novel: a.novel,
           ageDays: ageDays < 0 ? 0 : ageDays,
         ));

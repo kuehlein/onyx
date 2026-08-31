@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach.dart';
 import '../../core/database/database.dart';
+import '../../core/interview/critic.dart';
 import '../models/card.dart';
 import '../../core/clock.dart';
 import 'ai.dart';
@@ -126,7 +127,7 @@ class Coach extends _$Coach {
       // separate from the human FSRS grade; it only feeds readiness.
       if (grading && parsed.assessment != null) {
         final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
-        await ref.read(appliedRepositoryProvider).record(
+        final attemptId = await ref.read(appliedRepositoryProvider).record(
               cardId: card.id,
               sectionSlug: section?.slug,
               domain: card.domain,
@@ -136,6 +137,15 @@ class Coach extends _$Coach {
             );
         // Refresh the dashboard: new applied evidence can graduate readiness.
         ref.invalidate(appliedTransferProvider);
+        // Bounded adversarial second opinion — best-effort; never fails the send.
+        await _runCritic(
+          claude: claude,
+          card: card,
+          section: section,
+          history: [...history, CoachMessage(CoachRole.assistant, parsed.text)],
+          attemptId: attemptId,
+          coachScore: parsed.assessment!.appliedScore,
+        );
       }
       state = AsyncData(current.copyWith(
         messages: [
@@ -148,6 +158,44 @@ class Coach extends _$Coach {
     } on ClaudeException catch (e) {
       state = AsyncData(current.copyWith(
           messages: history, busy: false, error: _friendly(e)));
+    }
+  }
+
+  /// Runs the bounded adversarial second opinion on an applied attempt: a
+  /// skeptical, independent grader re-scores the candidate's answers, and the
+  /// verdict (its score + whether it corroborates the coach) is stored so the
+  /// readiness signal uses the reconciled mean. Best-effort: any failure is
+  /// swallowed so a critic hiccup never disrupts the coaching turn.
+  Future<void> _runCritic({
+    required ClaudeService claude,
+    required Card card,
+    required CardSection? section,
+    required List<CoachMessage> history,
+    required int attemptId,
+    required int coachScore,
+  }) async {
+    try {
+      final reply = await claude.complete(
+        system: buildCriticSystem(card: card, section: section),
+        prompt: buildCriticTranscript([
+          for (final m in history)
+            (
+              role: m.role == CoachRole.user ? 'user' : 'assistant',
+              content: m.text,
+            ),
+        ]),
+        maxTokens: 200,
+      );
+      final verdict = parseCriticVerdict(reply);
+      if (verdict == null) return;
+      await ref.read(appliedRepositoryProvider).recordVerdict(
+            attemptId: attemptId,
+            verifierScore: verdict.appliedScore,
+            verified: criticAgrees(coachScore, verdict.appliedScore),
+          );
+      ref.invalidate(appliedTransferProvider);
+    } catch (_) {
+      // Second opinion is advisory; leave the attempt with the coach score.
     }
   }
 

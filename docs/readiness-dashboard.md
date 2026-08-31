@@ -219,9 +219,16 @@ incrementally, but architect for the full model from day one.
     folded in conjunctively via `τ+(1-τ)·Transfer_d` (τ=0.5) so weak/unproven
     applied performance caps a high-recall domain. The headline **graduates**
     from "Knowledge-base" to "Interview readiness" once any applied evidence
-    exists; evidence-less domains are capped at the prior. Still TODO:
-    increment 3 (adversarial second-opinion / multi-grade), snapshot sync of
-    applied_attempts, and richer decomposition UI.
+    exists; evidence-less domains are capped at the prior.
+  - *Status (implemented, increment 3):* a bounded **adversarial second
+    opinion**. After the coach logs an attempt, a separate skeptical grader
+    (core/interview/critic.dart) independently re-scores the candidate's answers
+    WITHOUT seeing the coach's grade (no anchoring); its `verifierScore` and a
+    `verified` corroboration flag are stored on the attempt. The readiness
+    signal uses the **mean** of coach + critic (variance reduction, per the
+    LLM-judge-noise finding). Best-effort: a critic failure never disrupts the
+    coaching turn. Still TODO: snapshot sync of applied_attempts, and richer
+    decomposition UI (surface contested grades).
 - **Phase C — AI layer (tasks #23/#24).** Weak-area report + qualitative AI
   readiness assessment on top of the same data.
 

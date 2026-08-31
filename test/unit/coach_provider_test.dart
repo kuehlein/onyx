@@ -90,6 +90,45 @@ void main() {
     expect(reloaded.suggestedGrade, 3);
   });
 
+  test('the adversarial critic records a second-opinion verdict', () async {
+    // Distinguish the two API calls by their system prompt: the critic's carries
+    // "second-opinion"; the coach's is the interviewer prompt.
+    final claude = ClaudeService(
+      apiKey: 'k',
+      client: MockClient((req) async {
+        final body = req.body;
+        final isCritic = body.contains('second-opinion');
+        final text = isCritic
+            ? '<verdict>{"appliedScore":40,"note":"shaky"}</verdict>'
+            : 'Debrief.\n<suggest-grade>3</suggest-grade>\n'
+                '<assessment>{"appliedScore":80,"novel":true}</assessment>';
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': text},
+            ],
+          }),
+          200,
+        );
+      }),
+    );
+    final c = _container(claude: claude, db: db);
+    addTearDown(c.dispose);
+
+    await c.read(coachProvider('c1', 'complexity').notifier).send(
+          'my answer',
+          card: _card(),
+          section: _card().sections.first,
+          revealed: true,
+          grading: true,
+        );
+
+    final attempt = (await db.select(db.appliedAttempts).get()).single;
+    expect(attempt.appliedScore, 80); // coach's raw score preserved
+    expect(attempt.verifierScore, 40); // critic's independent score
+    expect(attempt.verified, isFalse); // 80 vs 40 → not corroborated
+  });
+
   test('a mock-interview assessment is logged to applied_attempts', () async {
     final c = _container(
       claude: _replying('Nice.\n<suggest-grade>3</suggest-grade>\n'
