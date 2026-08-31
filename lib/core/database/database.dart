@@ -19,6 +19,7 @@ part 'database.g.dart';
     CardCache,
     Preferences,
     CoachMessages,
+    AppliedAttempts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -29,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// Deletes all study progress — schedule, review log, activity, and coach
   /// chats — while leaving preferences (settings/target) and the rebuilt card
@@ -53,6 +54,10 @@ class AppDatabase extends _$AppDatabase {
           // v3: persisted coach conversations.
           if (from < 3) {
             await m.createTable(coachMessages);
+          }
+          // v4: Phase B applied / mock-interview attempts.
+          if (from < 4) {
+            await m.createTable(appliedAttempts);
           }
         },
       );

@@ -115,6 +115,44 @@ class CoachMessages extends Table {
   DateTimeColumn get createdAt => dateTime()();
 }
 
+/// Phase B: applied / mock-interview attempts — the signal FSRS recall can't
+/// capture (problem-solving, transfer, communication). One row per attempt,
+/// produced by the interview coach's structured assessment (and later external
+/// practice self-reports). Kept SEPARATE from `reviews`: the human's FSRS grade
+/// drives scheduling; this AI-derived applied score only feeds readiness.
+///
+/// The rubric is stored as a JSON map (dimension → 1–5) rather than fixed
+/// columns so the dimensions can vary by subject (see the generalization goal).
+class AppliedAttempts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get cardId => text()();
+  TextColumn get sectionSlug => text().nullable()();
+  TextColumn get domain => text().nullable()();
+  DateTimeColumn get occurredAt => dateTime()();
+
+  /// Overall applied performance, 0–100.
+  IntColumn get appliedScore => integer()();
+
+  /// JSON object of rubric scores, e.g. `{"correctness":4,"communication":3}`.
+  TextColumn get rubric => text().withDefault(const Constant('{}'))();
+
+  /// Whether the probe was a novel/transfer problem (the truest signal).
+  BoolColumn get novel => boolean().withDefault(const Constant(false))();
+
+  /// Hints leaned on (0 = fully unaided).
+  IntColumn get hintLevel => integer().withDefault(const Constant(0))();
+
+  /// Where it came from: 'interview-coach' | 'practice' | 'external'.
+  TextColumn get source => text()();
+  TextColumn get note => text().nullable()();
+
+  /// Adversarial second-opinion score (0–100), null until a critic pass runs.
+  IntColumn get verifierScore => integer().nullable()();
+
+  /// Whether the applied score survived the critic (null = not yet checked).
+  BoolColumn get verified => boolean().nullable()();
+}
+
 /// Key/value app preferences (vault bookmark, settings).
 class Preferences extends Table {
   TextColumn get key => text()();
