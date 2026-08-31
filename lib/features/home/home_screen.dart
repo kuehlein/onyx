@@ -59,12 +59,13 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
-                    onPressed:
-                        (dueCount ?? 0) == 0 ? null : () => context.go('/quiz'),
+                    // Always tappable: with nothing due, Study still opens to
+                    // practice on your weakest domain (see the quiz empty state).
+                    onPressed: () => context.go('/quiz'),
                     icon: const Icon(Icons.school_outlined),
                     label: Text(
                       (dueCount ?? 0) == 0
-                          ? 'Nothing to review'
+                          ? 'Study now'
                           : 'Review — $dueCount due',
                     ),
                   ),

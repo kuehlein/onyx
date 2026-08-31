@@ -59,20 +59,20 @@ void main() {
 
   group('practiceAnswerSection', () {
     test('prefers the first quizzable section', () {
-      final card = Card(
+      const card = Card(
         id: 'a',
         type: CardType.flashcard,
         title: 'a',
         overview: '',
-        tags: const ['ds-a'],
-        tiers: const {'ds-a': 1},
-        sections: const [
+        tags: ['ds-a'],
+        tiers: {'ds-a': 1},
+        sections: [
           CardSection(
               heading: 'intro', slug: 'intro', content: 'x', quizzable: false),
           CardSection(
               heading: 'core', slug: 'core', content: 'x', quizzable: true),
         ],
-        wikilinks: const [],
+        wikilinks: [],
         filePath: 'a.md',
       );
       expect(practiceAnswerSection(card)?.slug, 'core');
