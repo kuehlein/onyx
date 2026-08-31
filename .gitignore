@@ -6,9 +6,10 @@ build/
 *.g.dart
 *.freezed.dart
 
-# Dev-only: the SRS backup the app writes into the staged vault at runtime.
+# Dev-only: the SRS backup the app writes into the staged vault at runtime
+# (both the real snapshot and the dev-isolated onyx-state.dev.json).
 # (The glossary note under _meta is authored content and stays tracked.)
-staging/**/_meta/onyx-state.json
+staging/**/_meta/onyx-state*.json
 
 # iOS
 ios/Pods/
