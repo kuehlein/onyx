@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import '../../shared/models/card.dart';
+import '../interview/assessment.dart';
 
 /// Who authored a coach turn.
 enum CoachRole { user, assistant }
@@ -82,7 +85,19 @@ String buildCoachSystem({
             '(correct approach with at most one small nudge, and explained the '
             'signal→pattern link); 4=Easy (correct and unaided, and handled a '
             'constraint change or edge case you posed). Advice only — the '
-            'candidate still decides. Omit the tag if you cannot judge yet.');
+            'candidate still decides. Omit the tag if you cannot judge yet.')
+        ..writeln('On that same grading turn only, also append — on its own '
+            'final line, after the grade — a hidden structured assessment the '
+            'candidate never sees (it feeds their applied-readiness stats): '
+            '<assessment>{"appliedScore":0-100,"rubric":{"communication":1-5,'
+            '"approach":1-5,"correctness":1-5,"complexity":1-5,"edgeCases":1-5,'
+            '"independence":1-5},"novel":true|false,"hintLevel":0-5}'
+            '</assessment>. appliedScore is overall applied performance; the '
+            'rubric scores are honest 1–5 per dimension; novel is true only if '
+            'you posed a genuine transfer twist they had to handle; hintLevel '
+            'is the highest hint rung you gave (0 = unaided). Judge the whole '
+            'attempt, not politeness. Emit it at most once, only alongside the '
+            'grade, never while the answer is hidden.');
     } else {
       b
         ..writeln('The reference answer is HIDDEN — it appears below for YOUR '
@@ -177,12 +192,45 @@ String buildCoachSystem({
 final _gradeTag = RegExp(r'<suggest-grade>\s*([1-4])\s*</suggest-grade>',
     caseSensitive: false);
 
-/// Splits a raw assistant reply into the text to display and an optional
-/// advisory grade (1–4). The tag is stripped so it never shows to the learner
-/// and never re-enters the conversation history.
-({String text, int? grade}) parseCoachReply(String raw) {
+final _assessmentTag = RegExp(r'<assessment>\s*(.*?)\s*</assessment>',
+    dotAll: true, caseSensitive: false);
+
+/// Splits a raw assistant reply into the text to display, an optional advisory
+/// grade (1–4), and an optional structured applied [AppliedAssessment]. Both
+/// tags are stripped so they never show to the learner or re-enter the history.
+({String text, int? grade, AppliedAssessment? assessment}) parseCoachReply(
+    String raw) {
   final match = _gradeTag.firstMatch(raw);
   final grade = match == null ? null : int.parse(match.group(1)!);
-  final text = raw.replaceAll(_gradeTag, '').trim();
-  return (text: text, grade: grade);
+  final assessment = _parseAssessment(raw);
+  final text =
+      raw.replaceAll(_gradeTag, '').replaceAll(_assessmentTag, '').trim();
+  return (text: text, grade: grade, assessment: assessment);
+}
+
+AppliedAssessment? _parseAssessment(String raw) {
+  final match = _assessmentTag.firstMatch(raw);
+  if (match == null) return null;
+  try {
+    final j = jsonDecode(match.group(1)!) as Map<String, dynamic>;
+    final score = (j['appliedScore'] as num?)?.round();
+    if (score == null) return null;
+    final rubric = <String, int>{};
+    final rr = j['rubric'];
+    if (rr is Map) {
+      for (final e in rr.entries) {
+        final v = e.value;
+        if (v is num) rubric[e.key.toString()] = v.round().clamp(1, 5).toInt();
+      }
+    }
+    return AppliedAssessment(
+      appliedScore: score.clamp(0, 100).toInt(),
+      rubric: rubric,
+      novel: j['novel'] == true,
+      hintLevel: ((j['hintLevel'] as num?)?.round() ?? 0).clamp(0, 5).toInt(),
+      note: j['note'] is String ? j['note'] as String : null,
+    );
+  } catch (_) {
+    return null;
+  }
 }

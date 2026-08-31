@@ -90,6 +90,53 @@ void main() {
     expect(reloaded.suggestedGrade, 3);
   });
 
+  test('a mock-interview assessment is logged to applied_attempts', () async {
+    final c = _container(
+      claude: _replying('Nice.\n<suggest-grade>3</suggest-grade>\n'
+          '<assessment>{"appliedScore":68,"rubric":{"correctness":4},'
+          '"novel":true,"hintLevel":1}</assessment>'),
+      db: db,
+    );
+    addTearDown(c.dispose);
+
+    await c.read(coachProvider('c1', 'complexity').notifier).send(
+          'my answer',
+          card: _card(),
+          section: _card().sections.first,
+          revealed: true,
+          grading: true,
+        );
+
+    final attempts = await db.select(db.appliedAttempts).get();
+    expect(attempts.length, 1);
+    expect(attempts.single.cardId, 'c1');
+    expect(attempts.single.domain, 'ds-a');
+    expect(attempts.single.appliedScore, 68);
+    expect(attempts.single.novel, isTrue);
+    expect(attempts.single.source, 'interview-coach');
+    // The assessment tag never leaks into the visible transcript.
+    final state = c.read(coachProvider('c1', 'complexity')).asData!.value;
+    expect(state.messages.last.text, 'Nice.');
+  });
+
+  test('tutor mode does not log an applied attempt', () async {
+    final c = _container(
+      claude: _replying('Here is a hint.\n'
+          '<assessment>{"appliedScore":90}</assessment>'),
+      db: db,
+    );
+    addTearDown(c.dispose);
+
+    await c.read(coachProvider('c1', null).notifier).send(
+          'help',
+          card: _card(),
+          revealed: true,
+          grading: false, // tutor
+        );
+
+    expect(await db.select(db.appliedAttempts).get(), isEmpty);
+  });
+
   test('no API key → error surfaced, nothing persisted', () async {
     final c = _container(claude: null, db: db);
     addTearDown(c.dispose);

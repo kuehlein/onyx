@@ -7,6 +7,7 @@ import '../../core/database/database.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'database.dart';
+import 'interview.dart';
 
 part 'coach.g.dart';
 
@@ -118,6 +119,18 @@ class Coach extends _$Coach {
       final parsed = parseCoachReply(reply);
       await _persist(db, card.id, section?.slug, CoachRole.assistant,
           parsed.text, parsed.grade);
+      // In a mock interview, log the coach's structured applied assessment —
+      // separate from the human FSRS grade; it only feeds readiness.
+      if (grading && parsed.assessment != null) {
+        await ref.read(appliedRepositoryProvider).record(
+              cardId: card.id,
+              sectionSlug: section?.slug,
+              domain: card.domain,
+              assessment: parsed.assessment!,
+              source: 'interview-coach',
+              occurredAt: DateTime.now(),
+            );
+      }
       state = AsyncData(current.copyWith(
         messages: [
           ...history,

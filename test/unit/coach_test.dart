@@ -56,7 +56,7 @@ void main() {
       expect(prompt, isNot(contains('<suggest-grade>N</suggest-grade>')));
     });
 
-    test('revealed + grading permits the advisory grade tag', () {
+    test('revealed + grading permits the advisory grade + assessment tags', () {
       final prompt = buildCoachSystem(
         card: _card(),
         section: _card().sections.first,
@@ -65,6 +65,18 @@ void main() {
       );
       expect(prompt, contains('REVEALED'));
       expect(prompt, contains('<suggest-grade>N</suggest-grade>'));
+      expect(prompt, contains('<assessment>'));
+      expect(prompt, contains('appliedScore'));
+    });
+
+    test('hidden state forbids the assessment tag', () {
+      final prompt = buildCoachSystem(
+        card: _card(),
+        section: _card().sections.first,
+        revealed: false,
+        grading: true,
+      );
+      expect(prompt, isNot(contains('<assessment>')));
     });
 
     test('grading selects the interviewer persona; otherwise the tutor', () {
@@ -111,6 +123,42 @@ void main() {
     test('ignores an out-of-range grade tag', () {
       final r = parseCoachReply('text <suggest-grade>7</suggest-grade>');
       expect(r.grade, isNull);
+    });
+
+    test('extracts a structured assessment and strips its tag', () {
+      final r = parseCoachReply(
+        'Good debrief.\n<suggest-grade>3</suggest-grade>\n'
+        '<assessment>{"appliedScore":72,"rubric":{"correctness":4,'
+        '"complexity":3},"novel":true,"hintLevel":1}</assessment>',
+      );
+      expect(r.text, 'Good debrief.');
+      expect(r.text, isNot(contains('assessment')));
+      expect(r.grade, 3);
+      expect(r.assessment, isNotNull);
+      expect(r.assessment!.appliedScore, 72);
+      expect(r.assessment!.rubric, {'correctness': 4, 'complexity': 3});
+      expect(r.assessment!.novel, isTrue);
+      expect(r.assessment!.hintLevel, 1);
+    });
+
+    test('no assessment tag → null assessment', () {
+      expect(parseCoachReply('just a hint').assessment, isNull);
+    });
+
+    test('malformed assessment JSON → null, tag still stripped', () {
+      final r = parseCoachReply('Text <assessment>not json</assessment>');
+      expect(r.assessment, isNull);
+      expect(r.text, 'Text');
+    });
+
+    test('clamps out-of-range assessment values', () {
+      final r = parseCoachReply(
+        '<assessment>{"appliedScore":150,"rubric":{"correctness":9},'
+        '"hintLevel":42}</assessment>',
+      );
+      expect(r.assessment!.appliedScore, 100);
+      expect(r.assessment!.rubric['correctness'], 5);
+      expect(r.assessment!.hintLevel, 5);
     });
   });
 }
