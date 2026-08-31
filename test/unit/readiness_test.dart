@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/interview/transfer.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/shared/models/card.dart';
 
@@ -79,6 +80,67 @@ void main() {
       final r = computeReadiness(cards: const [], stabilityByKey: const {});
       expect(r.isEmpty, isTrue);
       expect(r.overall, 0);
+    });
+  });
+
+  group('transfer factor (Phase B)', () {
+    final cards = [
+      _card('A', 'ds-a', 1, ['s1'])
+    ];
+    const durable = {'A::s1': 300.0}; // strong recall
+
+    test('no transfer map → recall-only, interview flag false', () {
+      final r = computeReadiness(cards: cards, stabilityByKey: durable);
+      expect(r.interview, isFalse);
+      expect(r.domains.single.transfer, isNull);
+    });
+
+    test('zero-evidence transfer caps recall at the prior factor', () {
+      final recallOnly = computeReadiness(cards: cards, stabilityByKey: durable)
+          .domains
+          .single;
+      final gated = computeReadiness(
+        cards: cards,
+        stabilityByKey: durable,
+        transferByDomain: {'ds-a': computeTransfer(const [])},
+      );
+      expect(gated.interview, isTrue);
+      // Capped: score = recall · (τ + (1-τ)·0.4) = recall · 0.7.
+      expect(gated.domains.single.score, closeTo(recallOnly.score * 0.7, 1e-6));
+    });
+
+    test('strong proven transfer lifts the score back toward full recall', () {
+      final strongTransfer = computeTransfer([
+        for (var i = 0; i < 12; i++)
+          const AppliedSample(score: 0.95, novel: true, ageDays: 0),
+      ]);
+      final gated = computeReadiness(
+        cards: cards,
+        stabilityByKey: durable,
+        transferByDomain: {'ds-a': strongTransfer},
+      );
+      final capped = computeReadiness(
+        cards: cards,
+        stabilityByKey: durable,
+        transferByDomain: {'ds-a': computeTransfer(const [])},
+      );
+      expect(
+          gated.domains.single.score, greaterThan(capped.domains.single.score));
+      expect(gated.domains.single.appliedN, greaterThan(0));
+    });
+
+    test('poor applied performance drags a high-recall domain down', () {
+      final poor = computeTransfer([
+        for (var i = 0; i < 8; i++)
+          const AppliedSample(score: 0.1, novel: true, ageDays: 0),
+      ]);
+      final gated = computeReadiness(
+        cards: cards,
+        stabilityByKey: durable,
+        transferByDomain: {'ds-a': poor},
+      );
+      // Strong recall, but weak transfer caps it well below "strong".
+      expect(gated.domains.single.score, lessThan(0.6));
     });
   });
 }

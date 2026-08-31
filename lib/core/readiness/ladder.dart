@@ -8,6 +8,7 @@
 library;
 
 import '../../shared/models/card.dart';
+import '../interview/transfer.dart';
 import 'readiness.dart';
 import 'target.dart';
 
@@ -78,6 +79,7 @@ LadderPosition computeLadderPosition({
   required List<Card> cards,
   required Map<String, double> stabilityByKey,
   required ReadinessTarget target,
+  Map<String, TransferEstimate>? transferByDomain,
   double threshold = ladderReadyThreshold,
 }) {
   final domains = <String>{
@@ -93,6 +95,7 @@ LadderPosition computeLadderPosition({
       stabilityByKey: stabilityByKey,
       stabilityTarget: t.stabilityTarget,
       domainWeights: {for (final d in domains) d: domainWeight(t, d)},
+      transferByDomain: transferByDomain,
     );
     scores.add(r.overall);
   }

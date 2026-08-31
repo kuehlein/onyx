@@ -44,15 +44,21 @@ class ReadinessPanel extends ConsumerWidget {
                   size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Knowledge-base readiness',
+                child: Text(
+                    r.interview
+                        ? 'Interview readiness'
+                        : 'Knowledge-base readiness',
                     style: theme.textTheme.titleMedium),
               ),
             ],
           ),
           const SizedBox(height: 2),
           Text(
-            'How well your studied material is retained — recall, not '
-            'problem-solving.',
+            r.interview
+                ? 'Recall gated by how you actually perform on problems — not '
+                    'just what you remember.'
+                : 'How well your studied material is retained — recall, not '
+                    'problem-solving.',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
@@ -108,8 +114,12 @@ class ReadinessPanel extends ConsumerWidget {
               ),
             const SizedBox(height: 4),
             Text(
-              'Recall only — solve novel problems and mock interviews to gauge '
-              'true interview readiness.',
+              r.interview
+                  ? 'Gated by applied evidence — capped where you haven\'t '
+                      'proven transfer yet; the band tightens as you do more '
+                      'mock interviews.'
+                  : 'Recall only — solve novel problems and mock interviews to '
+                      'gauge true interview readiness.',
               style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic),
@@ -535,11 +545,21 @@ class _DomainRow extends StatelessWidget {
         // Ticks mark the Developing (45%) and Strong (75%) thresholds.
         _TickedBar(value: d.score, color: color, marks: const [0.45, 0.75]),
         const SizedBox(height: 2),
-        Text('${d.studied}/${d.total} started · ${d.label}',
+        Text(
+            '${d.studied}/${d.total} started · ${d.label}'
+            '${_transferNote(d)}',
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],
     );
+  }
+
+  /// In interview mode, surface the transfer gate per domain: the proven
+  /// transfer %, or an honest "no mocks yet". Empty in the recall-only view.
+  String _transferNote(DomainReadiness d) {
+    if (d.transfer == null) return '';
+    if (d.appliedN < 0.5) return ' · no mocks yet';
+    return ' · transfer ${(d.transfer! * 100).round()}%';
   }
 
   Color _color(DomainReadiness d) {

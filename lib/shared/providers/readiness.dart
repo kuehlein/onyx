@@ -1,15 +1,55 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/interview/transfer.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
+import 'interview.dart';
 import 'settings.dart';
 import 'srs.dart';
 import 'vault.dart';
 
 part 'readiness.g.dart';
+
+/// Per-domain transfer estimates from applied (mock-interview) attempts, plus
+/// whether any applied evidence exists at all. When it does, the dashboard
+/// graduates from knowledge-base to interview readiness and every in-scope
+/// domain is transfer-gated — evidence-less domains fall back to the pessimistic
+/// prior, so they're honestly capped rather than credited for unproven transfer.
+@riverpod
+Future<({Map<String, TransferEstimate> byDomain, bool interview})>
+    appliedTransfer(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final repo = ref.watch(appliedRepositoryProvider);
+  final now = DateTime.now();
+  // Bound the query to a year; older attempts are recency-decayed to ~nil anyway.
+  final attempts =
+      await repo.attempts(since: now.subtract(const Duration(days: 365)));
+
+  final domains = <String>{
+    for (final c in index.cards)
+      if (c.domain != null) c.domain!,
+  };
+  final samples = <String, List<AppliedSample>>{};
+  for (final a in attempts) {
+    final d = a.domain;
+    if (d == null || !domains.contains(d)) continue;
+    final ageDays = now.difference(a.occurredAt).inHours / 24.0;
+    samples.putIfAbsent(d, () => []).add(AppliedSample(
+          score: a.appliedScore / 100.0,
+          novel: a.novel,
+          ageDays: ageDays < 0 ? 0 : ageDays,
+        ));
+  }
+  return (
+    byDomain: {
+      for (final d in domains) d: computeTransfer(samples[d] ?? const []),
+    },
+    interview: attempts.isNotEmpty,
+  );
+}
 
 /// The interview being prepared for (level × company × track + optional date).
 /// Loaded from the synced vault meta file when present (so it follows the user
@@ -51,6 +91,7 @@ Future<Readiness> readiness(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final target = await ref.watch(readinessTargetControllerProvider.future);
+  final applied = await ref.watch(appliedTransferProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
@@ -58,6 +99,7 @@ Future<Readiness> readiness(Ref ref) async {
     cards: index.cards,
     stabilityByKey: stabilityByKey,
     target: target,
+    transferByDomain: applied.interview ? applied.byDomain : null,
   );
 }
 
@@ -69,6 +111,7 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final target = await ref.watch(readinessTargetControllerProvider.future);
+  final applied = await ref.watch(appliedTransferProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
@@ -76,6 +119,7 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
     cards: index.cards,
     stabilityByKey: stabilityByKey,
     target: target,
+    transferByDomain: applied.interview ? applied.byDomain : null,
   );
 }
 

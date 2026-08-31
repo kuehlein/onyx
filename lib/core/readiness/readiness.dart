@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../shared/models/card.dart';
+import '../interview/transfer.dart';
 import 'target.dart';
 
 /// Phase A of the readiness model (see docs/readiness-dashboard.md): the honest
@@ -26,16 +27,25 @@ class DomainReadiness {
     required this.high,
     required this.studied,
     required this.total,
+    this.transfer,
+    this.appliedN = 0,
   });
 
   final String domain;
   final double coverage; // 0..1 — fraction of required sections started
   final double strength; // 0..1 — weakest-link-aware retention of studied ones
-  final double score; // 0..1 — coverage^γ · strength
+  final double score; // 0..1 — coverage^γ · strength · transfer factor
   final double low; // band lower bound
   final double high; // band upper bound
   final int studied;
   final int total;
+
+  /// Proven-transfer estimate (0..1) from applied attempts, or null in the
+  /// recall-only (Phase A) view.
+  final double? transfer;
+
+  /// Weighted count of applied attempts backing [transfer].
+  final double appliedN;
 
   /// A plain-language state for the UI.
   String get label {
@@ -53,6 +63,7 @@ class Readiness {
     required this.overall,
     required this.low,
     required this.high,
+    this.interview = false,
   });
 
   /// Per-domain, sorted weakest-first (so the UI can flag "focus here").
@@ -60,6 +71,10 @@ class Readiness {
   final double overall;
   final double low;
   final double high;
+
+  /// True once applied/mock evidence exists and the transfer factor is in play —
+  /// the headline has graduated from "knowledge-base" to "interview" readiness.
+  final bool interview;
 
   bool get isEmpty => domains.isEmpty;
 
@@ -97,6 +112,8 @@ Readiness computeReadiness({
   double stabilityTarget = 90,
   double coverageGamma = 0.7,
   Map<String, double>? domainWeights,
+  Map<String, TransferEstimate>? transferByDomain,
+  double transferTau = 0.5,
 }) {
   final byDomain = <String, List<Card>>{};
   for (final c in cards) {
@@ -137,20 +154,40 @@ Readiness computeReadiness({
       strength = 0.5 * mean + 0.5 * p20; // weakest-link aware
     }
 
-    final score = pow(coverage, coverageGamma).toDouble() * strength;
+    final recall = pow(coverage, coverageGamma).toDouble() * strength;
     // Band widens with low coverage and few studied items.
-    final margin =
+    final recallMargin =
         (0.20 * (1 - coverage) + 0.30 / sqrt(studied + 1)).clamp(0.03, 0.30);
+
+    // Recall-only by default; when applied evidence is in play, gate recall by
+    // the transfer factor (τ + (1-τ)·Transfer_d) — a conjunctive weakest-link so
+    // a low/unproven applied score caps the domain even if recall is high.
+    var score = recall;
+    var low = recall - recallMargin;
+    var high = recall + recallMargin;
+    double? transferValue;
+    var appliedN = 0.0;
+    if (transferByDomain != null) {
+      final te = transferByDomain[domain] ?? zeroEvidenceTransfer;
+      transferValue = te.value;
+      appliedN = te.effectiveN;
+      double factor(double t) => transferTau + (1 - transferTau) * t;
+      score = recall * factor(te.value);
+      low = (recall - recallMargin) * factor(te.low);
+      high = (recall + recallMargin) * factor(te.high);
+    }
 
     domains.add(DomainReadiness(
       domain: domain,
       coverage: coverage,
       strength: strength,
-      score: score,
-      low: (score - margin).clamp(0, 1).toDouble(),
-      high: (score + margin).clamp(0, 1).toDouble(),
+      score: score.clamp(0, 1).toDouble(),
+      low: low.clamp(0, 1).toDouble(),
+      high: high.clamp(0, 1).toDouble(),
       studied: studied,
       total: total,
+      transfer: transferValue,
+      appliedN: appliedN,
     ));
   }
 
@@ -171,6 +208,7 @@ Readiness computeReadiness({
     overall: weightedScore((d) => d.score),
     low: weightedScore((d) => d.low),
     high: weightedScore((d) => d.high),
+    interview: transferByDomain != null,
   );
 }
 
@@ -181,6 +219,7 @@ Readiness computeReadinessForTarget({
   required List<Card> cards,
   required Map<String, double> stabilityByKey,
   required ReadinessTarget target,
+  Map<String, TransferEstimate>? transferByDomain,
 }) {
   final domains = <String>{
     for (final c in cards)
@@ -191,6 +230,7 @@ Readiness computeReadinessForTarget({
     stabilityByKey: stabilityByKey,
     stabilityTarget: target.stabilityTarget,
     domainWeights: {for (final d in domains) d: domainWeight(target, d)},
+    transferByDomain: transferByDomain,
   );
 }
 

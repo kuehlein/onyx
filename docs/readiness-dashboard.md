@@ -210,6 +210,18 @@ incrementally, but architect for the full model from day one.
     *bounded* adversarial second-opinion (a critic pass or a small self-
     consistency vote) on the applied score to catch mis-grades; (c) aggregate
     over many attempts and always present as a band — never trust a single grade.
+  - *Status (implemented, increments 1–4):* applied_attempts table + coach
+    structured assessment (rubric/appliedScore/novel/hintLevel) + the transfer
+    factor are live. `Transfer_d` is a research-backed estimate (see
+    [[phase-b-readiness-math]] / memory): weighted (novelty × recency-decay)
+    applied mean, **shrunk toward a pessimistic prior** (M=0.4, k=3
+    pseudo-attempts), with a **Beta credible band** (∝1/√n_eff — never Wald/CLT),
+    folded in conjunctively via `τ+(1-τ)·Transfer_d` (τ=0.5) so weak/unproven
+    applied performance caps a high-recall domain. The headline **graduates**
+    from "Knowledge-base" to "Interview readiness" once any applied evidence
+    exists; evidence-less domains are capped at the prior. Still TODO:
+    increment 3 (adversarial second-opinion / multi-grade), snapshot sync of
+    applied_attempts, and richer decomposition UI.
 - **Phase C — AI layer (tasks #23/#24).** Weak-area report + qualitative AI
   readiness assessment on top of the same data.
 

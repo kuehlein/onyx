@@ -8,6 +8,7 @@ import '../models/card.dart';
 import 'ai.dart';
 import 'database.dart';
 import 'interview.dart';
+import 'readiness.dart';
 
 part 'coach.g.dart';
 
@@ -130,6 +131,8 @@ class Coach extends _$Coach {
               source: 'interview-coach',
               occurredAt: DateTime.now(),
             );
+        // Refresh the dashboard: new applied evidence can graduate readiness.
+        ref.invalidate(appliedTransferProvider);
       }
       state = AsyncData(current.copyWith(
         messages: [

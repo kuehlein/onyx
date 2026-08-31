@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
+import 'package:onyx/core/interview/transfer.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -58,6 +59,8 @@ void main() {
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
           studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+          appliedTransferProvider.overrideWith((ref) async =>
+              (byDomain: <String, TransferEstimate>{}, interview: false)),
         ],
         child: const OnyxApp(),
       );

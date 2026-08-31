@@ -93,4 +93,59 @@ void main() {
     // No overflow / assertion errors surfaced during layout.
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('graduates to interview readiness when transfer evidence exists',
+      (tester) async {
+    const interviewReadiness = Readiness(
+      domains: [
+        DomainReadiness(
+          domain: 'ds-a',
+          coverage: 1,
+          strength: 0.8,
+          score: 0.5,
+          low: 0.38,
+          high: 0.62,
+          studied: 5,
+          total: 5,
+          transfer: 0.55,
+          appliedN: 4,
+        ),
+      ],
+      overall: 0.5,
+      low: 0.38,
+      high: 0.62,
+      interview: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => interviewReadiness),
+          readinessLadderPositionProvider.overrideWith((ref) async => ladder),
+          readinessPaceProvider.overrideWith((ref) async => null),
+          readinessTargetControllerProvider
+              .overrideWith(_FakeTargetController.new),
+          studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 400,
+                child: SingleChildScrollView(child: ReadinessPanel()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Interview readiness'), findsOneWidget);
+    expect(find.text('Knowledge-base readiness'), findsNothing);
+    // The transfer gate is surfaced per domain and in the caveat.
+    expect(find.textContaining('transfer 55%'), findsOneWidget);
+    expect(find.textContaining('Gated by applied evidence'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
