@@ -19,7 +19,9 @@ class HomeScreen extends ConsumerWidget {
     // Kick off the one-time restore-from-vault-if-empty on app start.
     ref.watch(startupRestoreProvider);
     final index = ref.watch(vaultIndexProvider);
-    final dueCount = ref.watch(reviewQueueProvider).asData?.value.queue.length;
+    final reviewData = ref.watch(reviewQueueProvider).asData?.value;
+    final dueCount = reviewData?.queue.length;
+    final hasProgress = reviewData?.statesByKey.isNotEmpty ?? false;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
@@ -59,14 +61,15 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
-                    // Always tappable: with nothing due, Study still opens to
-                    // practice on your weakest domain (see the quiz empty state).
+                    // Always tappable; the label tracks where you are in the
+                    // day's loop, and /quiz guides you (learn first → review →
+                    // extra practice) from its context-aware empty state.
                     onPressed: () => context.go('/quiz'),
                     icon: const Icon(Icons.school_outlined),
                     label: Text(
-                      (dueCount ?? 0) == 0
-                          ? 'Study now'
-                          : 'Review — $dueCount due',
+                      (dueCount ?? 0) > 0
+                          ? 'Review — $dueCount due'
+                          : (hasProgress ? 'Study more' : 'Study now'),
                     ),
                   ),
                   const SizedBox(height: 12),

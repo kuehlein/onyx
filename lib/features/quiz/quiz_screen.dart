@@ -8,6 +8,7 @@ import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/coach.dart';
+import '../../shared/providers/learn.dart';
 import '../../shared/providers/practice.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/srs.dart';
@@ -317,39 +318,90 @@ class _Pill extends StatelessWidget {
   }
 }
 
+/// The "no review session" state, which is context-aware:
+///  - nothing studied yet → there's nothing to test on; point to Learn;
+///  - studied before but nothing due → caught up for today, offer extra practice.
 class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final review = ref.watch(reviewQueueProvider).asData?.value;
+    final hasProgress = review?.statesByKey.isNotEmpty ?? false;
+    final newCount = ref.watch(learnQueueProvider).asData?.value.length ?? 0;
     final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle_outline,
-                  size: 48, color: theme.colorScheme.primary),
-              const SizedBox(height: 12),
-              Text('Nothing due right now', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text('New cards and reviews will appear here.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              if (weakest != null) ...[
-                const SizedBox(height: 24),
-                _PracticeSuggestion(weakest),
-              ],
-            ],
+
+    Widget frame(List<Widget> children) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ),
+            ),
           ),
+        );
+
+    // Nothing studied yet → you can't be tested on material you haven't learned.
+    if (!hasProgress) {
+      return frame([
+        Icon(Icons.auto_stories_outlined,
+            size: 48, color: theme.colorScheme.primary),
+        const SizedBox(height: 12),
+        Text('Nothing to test yet', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 6),
+        Text(
+          newCount > 0
+              ? 'Learn some material first — once you\'ve studied a card it '
+                  'comes back here for review.'
+              : 'Add a vault in Settings, then learn some cards to begin.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        if (newCount > 0) ...[
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => context.go('/learn'),
+            icon: const Icon(Icons.auto_stories_outlined),
+            label: Text('Learn $newCount new card${newCount == 1 ? '' : 's'}'),
+          ),
+        ],
+      ]);
+    }
+
+    // Studied before, nothing due now → caught up for today; offer extra work.
+    return frame([
+      Icon(Icons.check_circle_outline,
+          size: 48, color: theme.colorScheme.primary),
+      const SizedBox(height: 12),
+      Text('Caught up for today', style: theme.textTheme.titleMedium),
+      const SizedBox(height: 6),
+      Text(
+        newCount > 0
+            ? 'No reviews due. $newCount new card${newCount == 1 ? '' : 's'} '
+                'waiting in Learn whenever you want them.'
+            : 'No reviews due right now — they\'ll reappear as they come up.',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
-    );
+      if (weakest != null) ...[
+        const SizedBox(height: 24),
+        _PracticeSuggestion(weakest),
+      ],
+      if (newCount > 0) ...[
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.go('/learn'),
+          icon: const Icon(Icons.auto_stories_outlined),
+          label: Text('Learn $newCount new'),
+        ),
+      ],
+    ]);
   }
 }
 
