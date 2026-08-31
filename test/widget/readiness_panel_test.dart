@@ -126,6 +126,8 @@ void main() {
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
           studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+          appliedSummaryProvider.overrideWith(
+              (ref) async => {'ds-a': (attempts: 4, contested: 1)}),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -143,8 +145,10 @@ void main() {
 
     expect(find.text('Interview readiness'), findsOneWidget);
     expect(find.text('Knowledge-base readiness'), findsNothing);
-    // The transfer gate is surfaced per domain and in the caveat.
+    // The transfer gate + evidence decomposition is surfaced per domain.
     expect(find.textContaining('transfer 55%'), findsOneWidget);
+    expect(find.textContaining('4 mocks'), findsOneWidget);
+    expect(find.textContaining('1 contested'), findsOneWidget);
     expect(find.textContaining('Gated by applied evidence'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

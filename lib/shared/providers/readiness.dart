@@ -54,6 +54,34 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
   );
 }
 
+/// Per-domain applied-evidence counts for the dashboard decomposition: how many
+/// mock attempts back a domain and how many were *contested* (the adversarial
+/// critic disagreed with the coach's grade). Honest evidence-strength signal.
+@riverpod
+Future<Map<String, ({int attempts, int contested})>> appliedSummary(
+    Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final now = (await ref.watch(clockProvider.future)).now();
+  final rows = await ref
+      .watch(appliedRepositoryProvider)
+      .attempts(since: now.subtract(const Duration(days: 365)));
+  final domains = <String>{
+    for (final c in index.cards)
+      if (c.domain != null) c.domain!,
+  };
+  final out = <String, ({int attempts, int contested})>{};
+  for (final r in rows) {
+    final d = r.domain;
+    if (d == null || !domains.contains(d)) continue;
+    final prev = out[d] ?? (attempts: 0, contested: 0);
+    out[d] = (
+      attempts: prev.attempts + 1,
+      contested: prev.contested + (r.verified == false ? 1 : 0),
+    );
+  }
+  return out;
+}
+
 /// The interview being prepared for (level × company × track + optional date).
 /// Loaded from the synced vault meta file when present (so it follows the user
 /// across devices), falling back to a device-local preferences mirror, then to

@@ -4,6 +4,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/backup/snapshot.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/interview/applied_repository.dart';
+import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/srs/srs_repository.dart';
 import 'package:onyx/core/srs/srs_scheduler.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
@@ -72,6 +74,46 @@ void main() {
 
       final reviews = await db2.select(db2.reviews).get();
       expect(reviews.length, 2);
+      await db2.close();
+    });
+
+    test('export/restore round-trips applied_attempts', () async {
+      final at = DateTime.utc(2026, 2, 1, 9);
+      final source = DesktopVaultSource(root.path);
+
+      final db1 = AppDatabase.withExecutor(NativeDatabase.memory());
+      final applied = AppliedRepository(db1);
+      final id = await applied.record(
+        cardId: 'a',
+        sectionSlug: 's1',
+        domain: 'ds-a',
+        source: 'interview-coach',
+        occurredAt: at,
+        assessment: const AppliedAssessment(
+          appliedScore: 72,
+          rubric: {'correctness': 4},
+          novel: true,
+          hintLevel: 1,
+        ),
+      );
+      await applied.recordVerdict(
+          attemptId: id, verifierScore: 60, verified: true);
+      await SnapshotService(db1, source).export();
+      await db1.close();
+
+      final db2 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SnapshotService(db2, source).restore();
+      final rows = await AppliedRepository(db2).attempts();
+      expect(rows.length, 1);
+      final a = rows.single;
+      expect(a.cardId, 'a');
+      expect(a.domain, 'ds-a');
+      expect(a.appliedScore, 72);
+      expect(a.novel, isTrue);
+      expect(a.hintLevel, 1);
+      expect(AppliedAssessment.decodeRubric(a.rubric), {'correctness': 4});
+      expect(a.verifierScore, 60);
+      expect(a.verified, isTrue);
       await db2.close();
     });
 

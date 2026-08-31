@@ -227,8 +227,15 @@ incrementally, but architect for the full model from day one.
     `verified` corroboration flag are stored on the attempt. The readiness
     signal uses the **mean** of coach + critic (variance reduction, per the
     LLM-judge-noise finding). Best-effort: a critic failure never disrupts the
-    coaching turn. Still TODO: snapshot sync of applied_attempts, and richer
-    decomposition UI (surface contested grades).
+    coaching turn.
+  - *Status (implemented, increments 5–6):* applied_attempts now **sync to the
+    vault snapshot** (v2; older v1 snapshots still restore) so mock evidence
+    follows the user across devices like their progress. The dashboard shows the
+    per-domain **decomposition** — transfer %, mock count, and any **contested**
+    grades (where the critic disagreed) — an honest evidence-strength readout.
+    **Phase B is functionally complete** (structured assessment → adversarial
+    reconciliation → shrinkage/transfer-gating → graduated readiness, synced and
+    surfaced).
 - **Phase C — AI layer (tasks #23/#24).** Weak-area report + qualitative AI
   readiness assessment on top of the same data.
 

@@ -61,6 +61,8 @@ void main() {
           studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
           appliedTransferProvider.overrideWith((ref) async =>
               (byDomain: <String, TransferEstimate>{}, interview: false)),
+          appliedSummaryProvider.overrideWith(
+              (ref) async => <String, ({int attempts, int contested})>{}),
         ],
         child: const OnyxApp(),
       );

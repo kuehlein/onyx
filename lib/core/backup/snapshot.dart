@@ -11,9 +11,11 @@ import '../vault/vault_source.dart';
 /// survives app reinstalls), so this is what lets you pick up where you left off
 /// if the local database is lost.
 ///
-/// Snapshots `srs_state` (your schedule — the essential thing) and `reviews`
-/// (your history — for future stats / FSRS tuning). `activity_log` is excluded;
-/// it is debug/analytics only and not needed to resume.
+/// Snapshots `srs_state` (your schedule — the essential thing), `reviews` (your
+/// history — for future stats / FSRS tuning), and `applied_attempts` (the Phase
+/// B mock-interview evidence behind interview readiness), so all of it follows
+/// you across devices. `activity_log` is excluded; it is debug/analytics only
+/// and not needed to resume.
 class SnapshotService {
   SnapshotService(this._db, this._source);
 
@@ -24,7 +26,9 @@ class SnapshotService {
   /// overwrites the real, synced snapshot.
   static String get fileName =>
       isDevDataMode ? 'onyx-state.dev.json' : 'onyx-state.json';
-  static const _version = 1;
+  // v2 adds appliedAttempts. Older (v1) snapshots restore fine — the key is
+  // simply absent, so no attempts are restored.
+  static const _version = 2;
 
   Future<bool> isDbEmpty() async =>
       (await (_db.select(_db.srsStates)..limit(1)).get()).isEmpty;
@@ -36,11 +40,13 @@ class SnapshotService {
   Future<void> export() async {
     final states = await _db.select(_db.srsStates).get();
     final reviews = await _db.select(_db.reviews).get();
+    final applied = await _db.select(_db.appliedAttempts).get();
     final json = jsonEncode({
       'version': _version,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'srsStates': [for (final s in states) _srsToJson(s)],
       'reviews': [for (final r in reviews) _reviewToJson(r)],
+      'appliedAttempts': [for (final a in applied) _appliedToJson(a)],
     });
     await _source.writeMeta(fileName, json);
   }
@@ -56,13 +62,18 @@ class SnapshotService {
         (data['srsStates'] as List? ?? const []).cast<Map<String, dynamic>>();
     final reviews =
         (data['reviews'] as List? ?? const []).cast<Map<String, dynamic>>();
+    final applied = (data['appliedAttempts'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
 
     await _db.transaction(() async {
       await _db.delete(_db.srsStates).go();
       await _db.delete(_db.reviews).go();
+      await _db.delete(_db.appliedAttempts).go();
       await _db.batch((b) {
         b.insertAll(_db.srsStates, [for (final s in states) _srsFromJson(s)]);
         b.insertAll(_db.reviews, [for (final r in reviews) _reviewFromJson(r)]);
+        b.insertAll(_db.appliedAttempts,
+            [for (final a in applied) _appliedFromJson(a)]);
       });
     });
     return states.length;
@@ -114,5 +125,36 @@ class SnapshotService {
         stability: (m['stability'] as num).toDouble(),
         difficulty: (m['difficulty'] as num).toDouble(),
         elapsedDays: (m['elapsedDays'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> _appliedToJson(AppliedAttempt a) => {
+        'cardId': a.cardId,
+        'sectionSlug': a.sectionSlug,
+        'domain': a.domain,
+        'occurredAt': a.occurredAt.toUtc().toIso8601String(),
+        'appliedScore': a.appliedScore,
+        'rubric': a.rubric,
+        'novel': a.novel,
+        'hintLevel': a.hintLevel,
+        'source': a.source,
+        'note': a.note,
+        'verifierScore': a.verifierScore,
+        'verified': a.verified,
+      };
+
+  AppliedAttemptsCompanion _appliedFromJson(Map<String, dynamic> m) =>
+      AppliedAttemptsCompanion.insert(
+        cardId: m['cardId'] as String,
+        sectionSlug: Value(m['sectionSlug'] as String?),
+        domain: Value(m['domain'] as String?),
+        occurredAt: DateTime.parse(m['occurredAt'] as String),
+        appliedScore: m['appliedScore'] as int,
+        rubric: Value(m['rubric'] as String? ?? '{}'),
+        novel: Value(m['novel'] as bool? ?? false),
+        hintLevel: Value(m['hintLevel'] as int? ?? 0),
+        source: m['source'] as String,
+        note: Value(m['note'] as String?),
+        verifierScore: Value(m['verifierScore'] as int?),
+        verified: Value(m['verified'] as bool?),
       );
 }

@@ -25,6 +25,8 @@ class ReadinessPanel extends ConsumerWidget {
     final pace = ref.watch(readinessPaceProvider).asData?.value;
     final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
     final streak = ref.watch(studyStreakProvider).asData?.value;
+    final appliedSummary =
+        ref.watch(appliedSummaryProvider).asData?.value ?? const {};
     final anyStudied = r.domains.any((d) => d.studied > 0);
     final showStreak =
         streak != null && (streak.current > 0 || streak.studiedToday);
@@ -110,7 +112,9 @@ class ReadinessPanel extends ConsumerWidget {
             for (final d in r.domains)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _DomainRow(d, focus: identical(d, r.domains.first)),
+                child: _DomainRow(d,
+                    focus: identical(d, r.domains.first),
+                    summary: appliedSummary[d.domain]),
               ),
             const SizedBox(height: 4),
             Text(
@@ -503,10 +507,13 @@ class _TickedBar extends StatelessWidget {
 }
 
 class _DomainRow extends StatelessWidget {
-  const _DomainRow(this.d, {required this.focus});
+  const _DomainRow(this.d, {required this.focus, this.summary});
 
   final DomainReadiness d;
   final bool focus;
+
+  /// Applied-evidence counts for this domain (attempts + contested), or null.
+  final ({int attempts, int contested})? summary;
 
   @override
   Widget build(BuildContext context) {
@@ -555,11 +562,16 @@ class _DomainRow extends StatelessWidget {
   }
 
   /// In interview mode, surface the transfer gate per domain: the proven
-  /// transfer %, or an honest "no mocks yet". Empty in the recall-only view.
+  /// transfer %, the mock count, and any contested grades (adversarial critic
+  /// disagreed) — honest evidence strength. Empty in the recall-only view.
   String _transferNote(DomainReadiness d) {
     if (d.transfer == null) return '';
-    if (d.appliedN < 0.5) return ' · no mocks yet';
-    return ' · transfer ${(d.transfer! * 100).round()}%';
+    final n = summary?.attempts ?? 0;
+    if (n == 0) return ' · no mocks yet';
+    final contested = summary?.contested ?? 0;
+    final base = ' · transfer ${(d.transfer! * 100).round()}%'
+        ' · $n mock${n == 1 ? '' : 's'}';
+    return contested > 0 ? '$base · $contested contested' : base;
   }
 
   Color _color(DomainReadiness d) {
