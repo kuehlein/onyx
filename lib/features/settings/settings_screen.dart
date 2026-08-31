@@ -1,14 +1,20 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/material.dart';
+// Material's `Card` widget collides with our domain `Card` model (used by the
+// dev interview-seeding action); we don't render a Material Card here.
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/claude_service.dart';
+import '../../core/clock.dart';
 import '../../core/dev.dart';
+import '../../core/interview/assessment.dart';
+import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/database.dart';
+import '../../shared/providers/interview.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
@@ -171,12 +177,13 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _resetProgress(context, ref),
             ),
             ListTile(
-              leading: const Icon(Icons.fast_forward_outlined),
-              title: const Text('Make all cards due now'),
+              leading: const Icon(Icons.science_outlined),
+              title: const Text('Seed sample interview data'),
               subtitle: const Text(
-                  'Seed every section as due immediately so the full review '
-                  'flow is testable without waiting for the FSRS schedule.'),
-              onTap: () => _makeAllDueNow(context, ref),
+                  'Insert synthetic mock-interview attempts across your domains '
+                  'so the dashboard graduates to interview readiness — for '
+                  'testing the Phase B flow without answering the coach.'),
+              onTap: () => _seedInterviewData(context, ref),
             ),
             ref.watch(devClockOffsetProvider).when(
                   loading: () => const SizedBox.shrink(),
@@ -269,21 +276,47 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(appliedTransferProvider);
   }
 
-  Future<void> _makeAllDueNow(BuildContext context, WidgetRef ref) async {
+  /// Dev/E2E: insert synthetic mock-interview attempts across the vault's
+  /// domains (varied scores, novelty, recency) so the dashboard graduates to
+  /// interview readiness without answering the coach by hand.
+  Future<void> _seedInterviewData(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final index = await ref.read(vaultIndexProvider.future);
-    final keys = [
-      for (final c in index.cards)
-        for (final s in c.quizzableSections)
-          (cardId: c.id, sectionSlug: s.slug),
-    ];
-    await ref.read(srsRepositoryProvider).seedAllDueNow(keys);
-    ref.invalidate(srsStatesProvider);
-    ref.invalidate(reviewQueueProvider);
-    ref.invalidate(learnQueueProvider);
+    final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
+    final repo = ref.read(appliedRepositoryProvider);
+
+    // One representative card per domain.
+    final byDomain = <String, Card>{};
+    for (final c in index.cards) {
+      if (c.domain != null) byDomain.putIfAbsent(c.domain!, () => c);
+    }
+
+    const scores = [78, 55, 84, 47, 66]; // a realistic spread
+    var seeded = 0;
+    for (final entry in byDomain.entries) {
+      for (var i = 0; i < 4; i++) {
+        await repo.record(
+          cardId: entry.value.id,
+          sectionSlug: entry.value.quizzableSections.isEmpty
+              ? null
+              : entry.value.quizzableSections.first.slug,
+          domain: entry.key,
+          source: 'dev-seed',
+          occurredAt: clock.now().subtract(Duration(days: i * 3)),
+          assessment: AppliedAssessment(
+            appliedScore: scores[(seeded + i) % scores.length],
+            rubric: const {'correctness': 3, 'communication': 4},
+            novel: i.isEven,
+          ),
+        );
+        seeded++;
+      }
+    }
+    ref.invalidate(appliedTransferProvider);
+    ref.invalidate(appliedSummaryProvider);
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
-      SnackBar(content: Text('${keys.length} sections set due now')),
+      SnackBar(content: Text('Seeded $seeded mock attempts')),
     );
   }
 

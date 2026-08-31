@@ -79,6 +79,8 @@ class ReadinessPanel extends ConsumerWidget {
             Text('Study some cards and this fills in.',
                 style: theme.textTheme.bodyMedium)
           else ...[
+            // Headline: overall readiness toward the chosen target, labelled so
+            // it isn't confused with the level gauge below (a different scale).
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -88,18 +90,35 @@ class ReadinessPanel extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '${(r.low * 100).round()}–${(r.high * 100).round()}% range',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  child: Tooltip(
+                    message:
+                        'The likely range given how much evidence you have — it '
+                        'narrows as you study and do mock interviews.',
+                    child: Text(
+                      '${(r.low * 100).round()}–${(r.high * 100).round()}% likely',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (ladder != null)
-              _LadderGauge(ladder)
-            else
+            Text(
+              target == null
+                  ? 'overall readiness for your goal'
+                  : 'overall readiness for ${target.label}',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            if (ladder != null) ...[
+              const SizedBox(height: 16),
+              Text('Current level',
+                  style: theme.textTheme.labelMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              _LadderGauge(ladder),
+            ] else ...[
+              const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -108,7 +127,12 @@ class ReadinessPanel extends ConsumerWidget {
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
               ),
+            ],
             const SizedBox(height: 16),
+            Text('By domain',
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
             for (final d in r.domains)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -437,18 +461,21 @@ class _LadderGauge extends StatelessWidget {
   }
 }
 
-/// A rounded progress bar with optional threshold tick-marks that extend just
-/// past the bar so they read over both the filled and empty portions.
+/// A rounded progress bar with a **goal flag** marking the readiness target for
+/// this domain — the fill shows how far along you are, the flag shows the line
+/// you're aiming for (consistent with the overall level gauge's goal flag).
 class _TickedBar extends StatelessWidget {
   const _TickedBar({
     required this.value,
     required this.color,
-    this.marks = const [],
+    this.goal,
   });
 
   final double value;
   final Color color;
-  final List<double> marks;
+
+  /// Fraction (0..1) at which to place the goal flag, or null for no flag.
+  final double? goal;
 
   static const _height = 6.0;
 
@@ -460,15 +487,16 @@ class _TickedBar extends StatelessWidget {
         final w = c.maxWidth;
         const height = _height;
         final radius = BorderRadius.circular(height / 2);
+        final goalX = goal == null ? null : goal!.clamp(0.0, 1.0) * w;
         return SizedBox(
-          height: height + 4,
+          height: height + 8,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Positioned(
                 left: 0,
                 right: 0,
-                top: 2,
+                top: 6,
                 child: ClipRRect(
                   borderRadius: radius,
                   child: Container(
@@ -478,7 +506,7 @@ class _TickedBar extends StatelessWidget {
               ),
               Positioned(
                 left: 0,
-                top: 2,
+                top: 6,
                 child: ClipRRect(
                   borderRadius: radius,
                   child: Container(
@@ -487,17 +515,24 @@ class _TickedBar extends StatelessWidget {
                       color: color),
                 ),
               ),
-              for (final m in marks)
+              if (goalX != null) ...[
+                // A little flag above a tick at the goal line.
                 Positioned(
-                  left: m.clamp(0.0, 1.0) * w - 0.75,
+                  left: (goalX - 5).clamp(0.0, w - 10),
                   top: 0,
-                  child: Container(
-                    width: 1.5,
-                    height: height + 4,
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.45),
-                  ),
+                  child: Icon(Icons.flag,
+                      size: 11, color: theme.colorScheme.onSurfaceVariant),
                 ),
+                Positioned(
+                  left: (goalX - 0.75).clamp(0.0, w - 1.5),
+                  top: 4,
+                  child: Container(
+                      width: 1.5,
+                      height: height + 4,
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.55)),
+                ),
+              ],
             ],
           ),
         );
@@ -550,7 +585,8 @@ class _DomainRow extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         // Ticks mark the Developing (45%) and Strong (75%) thresholds.
-        _TickedBar(value: d.score, color: color, marks: const [0.45, 0.75]),
+        // Goal flag at the "Strong" line (0.75) — the target for this domain.
+        _TickedBar(value: d.score, color: color, goal: 0.75),
         const SizedBox(height: 2),
         Text(
             '${d.studied}/${d.total} started · ${d.label}'
