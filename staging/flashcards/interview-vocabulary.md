@@ -8,6 +8,7 @@ tiers:
   ds-a: 0
 created: 2026-08-19
 confidence: high
+priority: normal
 ---
 
 # Interview & Competitive Programming Vocabulary

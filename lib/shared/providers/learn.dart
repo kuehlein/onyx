@@ -112,7 +112,11 @@ class LearnSession extends _$LearnSession {
       final repo = ref.read(srsRepositoryProvider);
       final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
       // A fresh section: no prior state, so this seeds the initial FSRS values.
-      final outcome = scheduler.review(grade: grade, reviewedAt: clock.now());
+      final outcome = scheduler.review(
+        grade: grade,
+        reviewedAt: clock.now(),
+        desiredRetention: item.card.priority.desiredRetention,
+      );
       await repo.seedState(
         cardId: item.card.id,
         sectionSlug: item.section.slug,

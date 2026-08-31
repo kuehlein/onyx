@@ -13,6 +13,7 @@ source: blind-75
 practice_url: https://neetcode.io/problems/validate-parentheses
 created: 2026-08-20
 confidence: high
+priority: normal
 ---
 
 # Valid Parentheses

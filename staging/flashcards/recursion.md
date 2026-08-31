@@ -8,6 +8,7 @@ tiers:
   ds-a: 1
 created: 2026-08-19
 confidence: medium
+priority: high
 ---
 
 # Recursion and the Call Stack

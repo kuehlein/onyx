@@ -9,6 +9,7 @@ tiers:
   ds-a: 1
 created: 2026-08-19
 confidence: low
+priority: normal
 ---
 
 # Linked List

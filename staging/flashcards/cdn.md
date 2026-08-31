@@ -10,6 +10,7 @@ tiers:
   system-design: 1
 created: 2026-08-20
 confidence: low
+priority: normal
 ---
 
 # Content Delivery Network (CDN)

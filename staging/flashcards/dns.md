@@ -9,6 +9,7 @@ tiers:
   system-design: 1
 created: 2026-08-20
 confidence: medium
+priority: normal
 ---
 
 # DNS (Domain Name System)

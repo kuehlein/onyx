@@ -10,6 +10,7 @@ tiers:
   ds-a: 0
 created: 2026-08-19
 confidence: high
+priority: high
 ---
 
 # Reading Constraints → Required Complexity

@@ -14,6 +14,7 @@ source: blind-75
 practice_url: https://neetcode.io/problems/buy-and-sell-crypto
 created: 2026-08-20
 confidence: medium
+priority: normal
 ---
 
 # Best Time to Buy and Sell Stock

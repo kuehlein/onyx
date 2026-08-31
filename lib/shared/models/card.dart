@@ -37,6 +37,29 @@ enum Confidence {
   }
 }
 
+/// How hard to retain a card's material, mapped to an FSRS **desired retention**
+/// target. Interview-critical material is reviewed more often (higher retention)
+/// than nice-to-know material. The band is deliberately narrow — retention above
+/// ~0.95 makes review counts explode for marginal gain, and the whole point is
+/// lost if everything is marked `high`, so `normal` is the default.
+enum Priority {
+  high('high', 0.93),
+  normal('normal', 0.90),
+  low('low', 0.85);
+
+  const Priority(this.value, this.desiredRetention);
+
+  final String value;
+  final double desiredRetention;
+
+  static Priority? fromString(String? raw) {
+    for (final p in Priority.values) {
+      if (p.value == raw) return p;
+    }
+    return null;
+  }
+}
+
 /// One H2 section of a card. Each *quizzable* section is an independent SRS
 /// unit, scheduled by its `(cardId, slug)` pair — see `srs_state` in the schema.
 class CardSection {
@@ -94,6 +117,7 @@ class Card {
     this.source,
     this.domains = const [],
     this.concepts = const [],
+    this.priority = Priority.normal,
   });
 
   /// UUID v4 from frontmatter — the stable primary key across filename renames.
@@ -141,6 +165,9 @@ class Card {
 
   /// Filenames (without `.md`) of concept cards this question draws on.
   final List<String> concepts;
+
+  /// Retention priority → FSRS desired-retention target. Defaults to normal.
+  final Priority priority;
 
   /// The domain tag (first tag by convention), or null if untagged.
   String? get domain => tags.isNotEmpty ? tags.first : null;

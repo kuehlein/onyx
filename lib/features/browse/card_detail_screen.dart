@@ -118,6 +118,13 @@ class _CardDetail extends ConsumerWidget {
                     if (card.domain != null) _MetaChip(label: card.domain!),
                     for (final entry in card.tiers.entries)
                       _MetaChip(label: '${entry.key} · T${entry.value}'),
+                    if (card.priority != Priority.normal)
+                      _MetaChip(
+                        icon: card.priority == Priority.high
+                            ? Icons.priority_high
+                            : Icons.low_priority,
+                        label: '${card.priority.value} priority',
+                      ),
                     if (card.confidence != null)
                       ConfidenceBadge(card.confidence!),
                   ],

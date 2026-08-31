@@ -161,6 +161,7 @@ class StudySession extends _$StudySession {
     final outcome = scheduler.review(
       grade: grade,
       reviewedAt: clock.now(),
+      desiredRetention: item.card.priority.desiredRetention,
       stability: current?.stability,
       difficulty: current?.difficulty,
       state: current?.state,

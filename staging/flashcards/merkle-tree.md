@@ -13,6 +13,7 @@ tags:
   - data-structures
   - authenticated-data-structures
   - inclusion-proof
+priority: low
 ---
 
 # Merkle Tree

@@ -19,6 +19,7 @@ tiers:
   system-design: 2
 created: 2026-08-19
 confidence: high
+priority: high
 ---
 
 # Binary Search
@@ -156,6 +157,7 @@ void main() {
       expect(card.tags, ['ds-a', 'binary-search', 'searching']);
       expect(card.tiers, {'ds-a': 1, 'system-design': 2});
       expect(card.confidence, Confidence.high);
+      expect(card.priority, Priority.high);
       expect(card.created, DateTime(2026, 8, 19));
       expect(card.domain, 'ds-a');
     });

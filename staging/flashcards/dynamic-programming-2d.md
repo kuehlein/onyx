@@ -10,6 +10,7 @@ tiers:
   ds-a: 2
 created: 2026-08-20
 confidence: high
+priority: normal
 ---
 
 # Dynamic Programming — 2D Patterns

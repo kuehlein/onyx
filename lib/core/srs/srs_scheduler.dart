@@ -35,20 +35,31 @@ class ReviewOutcome {
 /// Thin wrapper over the FSRS scheduler. Maps our stored per-section state to an
 /// `fsrs.Card`, applies a grade, and maps the result back — keeping FSRS's Card
 /// (which collides with our model and Material's widget) out of the rest of the
-/// app. Stateless aside from the scheduler config, so a single instance is safe
-/// to share.
+/// app.
+///
+/// Desired retention can vary per card (interview-critical material is retained
+/// harder — see [Priority]); since FSRS holds desired retention on the Scheduler,
+/// we cache one underlying scheduler per retention value (a handful at most).
 class SrsScheduler {
-  SrsScheduler({fsrs.Scheduler? scheduler})
-      : _scheduler = scheduler ?? fsrs.Scheduler();
+  SrsScheduler({fsrs.Scheduler? scheduler}) {
+    if (scheduler != null) _cache[_defaultRetention] = scheduler;
+  }
 
-  final fsrs.Scheduler _scheduler;
+  static const _defaultRetention = 0.9;
+  final _cache = <double, fsrs.Scheduler>{};
+
+  fsrs.Scheduler _for(double retention) => _cache.putIfAbsent(
+      retention, () => fsrs.Scheduler(desiredRetention: retention));
 
   /// Apply [grade] (1=Again … 4=Easy) to a section. Pass the section's current
   /// persisted state, or leave the state fields null for a section being
   /// reviewed for the first time. [reviewedAt] is coerced to UTC.
+  /// [desiredRetention] shortens/lengthens intervals for higher/lower-priority
+  /// material (default 0.9).
   ReviewOutcome review({
     required int grade,
     required DateTime reviewedAt,
+    double desiredRetention = _defaultRetention,
     double? stability,
     double? difficulty,
     int? state,
@@ -75,7 +86,7 @@ class SrsScheduler {
         ? 0.0
         : now.difference(lastReview.toUtc()).inSeconds / Duration.secondsPerDay;
 
-    final result = _scheduler.reviewCard(
+    final result = _for(desiredRetention).reviewCard(
       card,
       fsrs.Rating.fromValue(grade),
       reviewDateTime: now,

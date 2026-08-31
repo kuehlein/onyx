@@ -11,6 +11,7 @@ tiers:
   ds-a: 2
 created: 2026-08-20
 confidence: medium
+priority: normal
 ---
 
 # Binary Search Tree (BST)

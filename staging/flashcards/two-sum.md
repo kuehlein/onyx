@@ -14,6 +14,7 @@ source: blind-75
 practice_url: https://neetcode.io/problems/two-integer-sum
 created: 2026-08-20
 confidence: high
+priority: normal
 ---
 
 # Two Sum

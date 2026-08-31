@@ -11,6 +11,7 @@ tags:
   - performance
   - distributed-systems
   - cache-invalidation
+priority: normal
 ---
 
 # Caching

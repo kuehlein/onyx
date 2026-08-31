@@ -13,6 +13,7 @@ tags:
   - authentication
   - ecdsa
   - eddsa
+priority: low
 ---
 
 # Digital Signatures
