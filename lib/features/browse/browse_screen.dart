@@ -4,16 +4,32 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/search/card_search.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/vault.dart';
 
-/// Lists every indexed card, grouped by domain (tag). Read-only for now — the
-/// detail view and section-level scheduling arrive with the study loop.
-class BrowseScreen extends ConsumerWidget {
+/// Lists every indexed card with a full-text search box. With no query, cards
+/// are listed alphabetically; with a query, they're filtered and ranked by
+/// relevance (title > tags/headings > body).
+class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BrowseScreen> createState() => _BrowseScreenState();
+}
+
+class _BrowseScreenState extends ConsumerState<BrowseScreen> {
+  final _controller = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider);
 
     return Scaffold(
@@ -26,19 +42,105 @@ class BrowseScreen extends ConsumerWidget {
             return const _Message(
                 'No cards indexed.\nConfigure a vault in Settings.');
           }
-          final sorted = [...result.cards]
-            ..sort((a, b) => a.title.toLowerCase().compareTo(
-                  b.title.toLowerCase(),
-                ));
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(vaultIndexProvider),
-            child: ListView.separated(
-              itemCount: sorted.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, i) => _CardTile(sorted[i]),
-            ),
+          final query = _query.trim();
+          final List<Card> cards;
+          if (query.isEmpty) {
+            cards = [...result.cards]..sort((a, b) =>
+                a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+          } else {
+            cards = searchCards(result.cards, query);
+          }
+
+          return Column(
+            children: [
+              _SearchField(
+                controller: _controller,
+                onChanged: (v) => setState(() => _query = v),
+                onClear: () {
+                  _controller.clear();
+                  setState(() => _query = '');
+                },
+              ),
+              if (query.isNotEmpty)
+                _ResultCount(count: cards.length, total: result.cards.length),
+              Expanded(
+                child: cards.isEmpty
+                    ? _Message('No cards match “$query”.')
+                    : RefreshIndicator(
+                        onRefresh: () async =>
+                            ref.invalidate(vaultIndexProvider),
+                        child: ListView.separated(
+                          itemCount: cards.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, i) => _CardTile(cards[i]),
+                        ),
+                      ),
+              ),
+            ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search cards…',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Clear',
+                  onPressed: onClear,
+                ),
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultCount extends StatelessWidget {
+  const _ResultCount({required this.count, required this.total});
+
+  final int count;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Text(
+          '$count of $total ${total == 1 ? 'card' : 'cards'}',
+          style: theme.textTheme.labelMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
       ),
     );
   }
