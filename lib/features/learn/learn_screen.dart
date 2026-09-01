@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/srs/learn_queue.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
+import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
@@ -182,7 +183,8 @@ class _LearnView extends StatelessWidget {
 }
 
 /// Reveal before attempting; after, a grade bar. Again/Hard re-study this
-/// session; Good/Easy graduate the section into review.
+/// session; Good graduates the section into review. Easy is deliberately absent
+/// in Learn — see [learnGrades].
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,
@@ -193,13 +195,6 @@ class _ActionBar extends StatelessWidget {
   final bool revealed;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
-
-  static const _grades = [
-    (1, 'Again', Color(0xFFF07178)),
-    (2, 'Hard', Color(0xFFE3B341)),
-    (3, 'Good', Color(0xFF4CC38A)),
-    (4, 'Easy', Color(0xFF5AA7E6)),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +209,7 @@ class _ActionBar extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      'Good or Easy adds it to your review schedule.',
+                      'Good adds it to your review schedule.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color:
                               Theme.of(context).colorScheme.onSurfaceVariant),
@@ -222,19 +217,21 @@ class _ActionBar extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      for (final (grade, label, color) in _grades) ...[
+                      for (var i = 0; i < learnGrades.length; i++) ...[
                         Expanded(
                           child: FilledButton(
-                            onPressed: () => onGrade(grade),
+                            onPressed: () => onGrade(learnGrades[i].value),
                             style: FilledButton.styleFrom(
-                              backgroundColor: color.withValues(alpha: 0.18),
-                              foregroundColor: color,
+                              backgroundColor:
+                                  learnGrades[i].color.withValues(alpha: 0.18),
+                              foregroundColor: learnGrades[i].color,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: Text(label),
+                            child: Text(learnGrades[i].label),
                           ),
                         ),
-                        if (grade != 4) const SizedBox(width: 8),
+                        if (i < learnGrades.length - 1)
+                          const SizedBox(width: 8),
                       ],
                     ],
                   ),
