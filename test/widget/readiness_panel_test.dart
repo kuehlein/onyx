@@ -85,6 +85,9 @@ void main() {
     expect(find.text('Senior · FAANG · General'), findsOneWidget);
     // Recall-only state (no mock evidence) is shown next to the band.
     expect(find.textContaining('recall only'), findsOneWidget);
+    // Recall-only never claims interview-readiness — status describes recall.
+    expect(find.text('Building recall'), findsOneWidget);
+    expect(find.textContaining('Interview-ready'), findsNothing);
     // Compact streak chip shows the current run.
     expect(find.text('5'), findsWidgets);
     // Ladder standing is shown as discrete milestone chips, one per level.
@@ -152,12 +155,92 @@ void main() {
     // Graduated state: the header reads "interview-tested", not recall-only.
     expect(find.textContaining('interview-tested'), findsOneWidget);
     expect(find.textContaining('recall only'), findsNothing);
+    // Calibrated status word (overall 0.5, mock-tested) → "Developing".
+    expect(find.text('Developing'), findsOneWidget);
     // The two-tone bar legend appears once mocks graduate the view.
     expect(find.text('proven in mocks'), findsOneWidget);
     expect(find.text('recall to prove'), findsOneWidget);
     // The evidence decomposition is surfaced per domain: mock count + contested.
     expect(find.textContaining('4 mocks'), findsOneWidget);
     expect(find.textContaining('1 contested'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  Future<void> pumpPanel(WidgetTester tester, Readiness r) => tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            readinessProvider.overrideWith((ref) async => r),
+            readinessLadderPositionProvider.overrideWith((ref) async => ladder),
+            readinessPaceProvider.overrideWith((ref) async => null),
+            readinessTargetControllerProvider
+                .overrideWith(_FakeTargetController.new),
+            studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+            appliedSummaryProvider.overrideWith((ref) async => const {}),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                    width: 400,
+                    child: SingleChildScrollView(child: ReadinessPanel())),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  testWidgets('high recall alone is "Strong recall", never "Interview-ready"',
+      (tester) async {
+    const highRecallOnly = Readiness(
+      domains: [
+        DomainReadiness(
+          domain: 'ds-a',
+          coverage: 1,
+          strength: 0.95,
+          score: 0.9,
+          low: 0.82, // would clear the line — but no mocks, so not "ready"
+          high: 0.98,
+          studied: 10,
+          total: 10,
+        ),
+      ],
+      overall: 0.9,
+      low: 0.82,
+      high: 0.98,
+    );
+    await pumpPanel(tester, highRecallOnly);
+    await tester.pumpAndSettle();
+    expect(find.text('Strong recall'), findsOneWidget);
+    expect(find.textContaining('Interview-ready'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mock-tested with the low band over the line → "Interview-ready"',
+      (tester) async {
+    const provenReady = Readiness(
+      domains: [
+        DomainReadiness(
+          domain: 'ds-a',
+          coverage: 1,
+          strength: 0.95,
+          score: 0.88,
+          recall: 0.92,
+          low: 0.8, // >= 0.75 ready line
+          high: 0.96,
+          studied: 10,
+          total: 10,
+          transfer: 0.9,
+          appliedN: 8,
+        ),
+      ],
+      overall: 0.88,
+      low: 0.8,
+      high: 0.96,
+      interview: true,
+    );
+    await pumpPanel(tester, provenReady);
+    await tester.pumpAndSettle();
+    expect(find.text('Interview-ready'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
