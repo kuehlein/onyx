@@ -218,15 +218,35 @@ class SettingsScreen extends ConsumerWidget {
                   '(release) progress is separate and untouched.'),
               onTap: () => _resetProgress(context, ref),
             ),
-            ListTile(
-              leading: const Icon(Icons.science_outlined),
-              title: const Text('Seed sample interview data'),
-              subtitle: const Text(
-                  'Insert synthetic mock-interview attempts across your domains '
-                  'so the dashboard graduates to interview readiness — for '
-                  'testing the Phase B flow without answering the coach.'),
-              onTap: () => _seedInterviewData(context, ref),
-            ),
+            ref.watch(devSimDayProvider).when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (day) => ListTile(
+                    leading: const Icon(Icons.science_outlined),
+                    title: const Text('Simulate study progress'),
+                    subtitle: Text(day == 0
+                        ? 'Build a realistic history: each step adds a day of '
+                            'studying + a mock, so recall coverage and interview '
+                            'evidence accumulate. Tap to watch the dashboard '
+                            'evolve; the clock advances in step.'
+                        : 'Day $day simulated — cumulative recall + mock '
+                            'evidence. Keep tapping to advance; "Reset local '
+                            'progress" clears it.'),
+                    trailing: Wrap(
+                      spacing: 4,
+                      children: [
+                        ActionChip(
+                          label: const Text('+1 day'),
+                          onPressed: () => _simulate(context, ref, 1),
+                        ),
+                        ActionChip(
+                          label: const Text('+1 week'),
+                          onPressed: () => _simulate(context, ref, 7),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ref.watch(devClockOffsetProvider).when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
@@ -293,6 +313,8 @@ class SettingsScreen extends ConsumerWidget {
     // Reset the dev clock too — a fresh testing baseline means back to real time,
     // otherwise a left-over fast-forward silently skews the next run's schedule.
     await ref.read(devClockOffsetProvider.notifier).reset();
+    // And the simulated-day counter, so "Simulate study progress" starts over.
+    await ref.read(devSimDayProvider.notifier).reset();
     ref.invalidate(srsStatesProvider);
     ref.invalidate(reviewQueueProvider);
     ref.invalidate(learnQueueProvider);
@@ -322,23 +344,30 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(appliedTransferProvider);
   }
 
-  /// Dev/E2E: insert synthetic mock-interview attempts across the vault's
-  /// domains (varied scores, novelty, recency) so the dashboard graduates to
-  /// interview readiness without answering the coach by hand.
-  Future<void> _seedInterviewData(BuildContext context, WidgetRef ref) async {
+  /// Dev/E2E: simulate [days] more days of study — **cumulative**, so repeated
+  /// taps build a believable history and the dashboard visibly evolves. Each
+  /// day widens recall coverage (new sections come online) and adds a mock
+  /// attempt per domain with a gradually climbing score; the dev clock advances
+  /// in step, so recency behaves and earlier low-stability material eventually
+  /// falls due. Interview readiness *gates* recall by proven transfer, so
+  /// planting recall first (it's logically prior) is what lets the graduated
+  /// dashboard actually populate.
+  Future<void> _simulate(BuildContext context, WidgetRef ref, int days) async {
     final messenger = ScaffoldMessenger.of(context);
     final index = await ref.read(vaultIndexProvider.future);
-    final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
+    final clock0 = ref.read(clockProvider).asData?.value ?? Clock.real;
     final repo = ref.read(appliedRepositoryProvider);
     final srsRepo = ref.read(srsRepositoryProvider);
+    final startDay = ref.read(devSimDayProvider).asData?.value ?? 0;
 
-    // Group every quizzable section by domain, and pick one representative card
-    // per domain to hang the applied attempts on.
+    // Every quizzable section by domain + one representative card per domain.
+    final domains = <String>[];
     final byDomain = <String, Card>{};
     final sectionsByDomain = <String, List<({String cardId, String slug})>>{};
     for (final c in index.cards) {
       final d = c.domain;
       if (d == null) continue;
+      if (!byDomain.containsKey(d)) domains.add(d);
       byDomain.putIfAbsent(d, () => c);
       for (final s in c.quizzableSections) {
         sectionsByDomain
@@ -346,56 +375,75 @@ class SettingsScreen extends ConsumerWidget {
             .add((cardId: c.id, slug: s.slug));
       }
     }
-
-    // 1) Plant a recall base. Interview readiness *gates* recall by proven
-    // transfer, so with no recall there's nothing to gate and the dashboard
-    // stays empty (recall is logically prior). Study ~2/3 of each domain's
-    // sections at a spread of stabilities → believable coverage + strength.
-    const stabilities = [12.0, 45.0, 90.0, 30.0, 70.0];
-    for (final entry in sectionsByDomain.entries) {
-      final studied =
-          <({String cardId, String sectionSlug, double stability})>[];
-      for (var i = 0; i < entry.value.length; i++) {
-        if (i % 3 == 2) continue; // leave ~1/3 unstudied → coverage < 1
-        studied.add((
-          cardId: entry.value[i].cardId,
-          sectionSlug: entry.value[i].slug,
-          stability: stabilities[i % stabilities.length],
-        ));
-      }
-      if (studied.isNotEmpty) {
-        await srsRepo.seedStudied(studied, at: clock.now());
-      }
+    if (byDomain.isEmpty) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('No domains found — configure a vault first')));
+      return;
     }
 
-    // 2) Layer applied (mock) evidence so the recall base graduates to
-    // interview-tested — the darker "proven" fill under the lighter recall.
-    const scores = [78, 55, 84, 47, 66]; // a realistic spread
-    var seeded = 0;
-    for (final entry in byDomain.entries) {
-      for (var i = 0; i < 4; i++) {
+    const rampDays = 7; // reach full coverage after ~a week
+    const stabilities = [10.0, 22.0, 14.0, 30.0, 18.0]; // "just learned" spread
+    int coverCount(int day, int total) =>
+        ((day / rampDays).clamp(0.0, 1.0) * total).ceil().clamp(0, total);
+
+    var mocks = 0, studiedNew = 0;
+    for (var k = 1; k <= days; k++) {
+      final day = startDay + k;
+      final simNow = clock0.now().add(Duration(days: k));
+
+      // Bring the day's newly-covered sections online (only the new slice, so
+      // earlier material keeps its own review date and can fall due over time).
+      for (final entry in sectionsByDomain.entries) {
+        final all = entry.value;
+        final from = coverCount(day - 1, all.length);
+        final to = coverCount(day, all.length);
+        final studied =
+            <({String cardId, String sectionSlug, double stability})>[];
+        for (var i = from; i < to; i++) {
+          studied.add((
+            cardId: all[i].cardId,
+            sectionSlug: all[i].slug,
+            stability: stabilities[i % stabilities.length],
+          ));
+        }
+        if (studied.isNotEmpty) {
+          await srsRepo.seedStudied(studied, at: simNow);
+          studiedNew += studied.length;
+        }
+      }
+
+      // One mock per domain this day; score climbs with the week and varies by
+      // domain so the per-domain bars diverge.
+      for (var di = 0; di < domains.length; di++) {
+        final d = domains[di];
+        final card = byDomain[d]!;
         await repo.record(
-          cardId: entry.value.id,
-          sectionSlug: entry.value.quizzableSections.isEmpty
+          cardId: card.id,
+          sectionSlug: card.quizzableSections.isEmpty
               ? null
-              : entry.value.quizzableSections.first.slug,
-          domain: entry.key,
+              : card.quizzableSections.first.slug,
+          domain: d,
           source: 'dev-seed',
-          occurredAt: clock.now().subtract(Duration(days: i * 3)),
+          occurredAt: simNow,
           assessment: AppliedAssessment(
-            appliedScore: scores[(seeded + i) % scores.length],
+            appliedScore: (46 + 5 * day + di * 7).clamp(35, 93),
             rubric: const {'correctness': 3, 'communication': 4},
-            novel: i.isEven,
+            novel: day.isOdd,
           ),
         );
-        seeded++;
+        mocks++;
       }
     }
-    // Refresh the derived dashboard providers so the Home panel graduates to
-    // interview readiness immediately on return — recall base included.
+
+    // Move the app clock to the last simulated day and persist the counter.
+    await ref.read(devClockOffsetProvider.notifier).advance(days);
+    await ref.read(devSimDayProvider.notifier).set(startDay + days);
+
+    // Refresh everything time/evidence-derived so Home reflects the new history.
     ref.invalidate(srsStatesProvider);
     ref.invalidate(reviewQueueProvider);
     ref.invalidate(learnQueueProvider);
+    ref.invalidate(dailyNewRemainingProvider);
     ref.invalidate(appliedTransferProvider);
     ref.invalidate(appliedSummaryProvider);
     ref.invalidate(readinessProvider);
@@ -403,10 +451,9 @@ class SettingsScreen extends ConsumerWidget {
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(seeded == 0
-            ? 'No domains found — configure a vault first'
-            : 'Seeded recall + $seeded mock attempts across ${byDomain.length} '
-                'domains — check Home for interview-tested readiness'),
+        content: Text('Simulated $days day${days == 1 ? '' : 's'} '
+            '($studiedNew new sections, +$mocks mocks) — now at day '
+            '${startDay + days}. Check Home.'),
       ),
     );
   }

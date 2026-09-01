@@ -80,9 +80,15 @@ class ReadinessPanel extends ConsumerWidget {
               const SizedBox(height: 8),
               _PaceRow(pace),
             ],
+            // The single progress bar — its fill IS the headline % toward the
+            // goal, so the number and the bar always agree.
+            const SizedBox(height: 12),
+            _OverallBar(r),
+            // Ladder standing shown as discrete milestone chips (levels
+            // unlocked), NOT a rival fill bar — see the goal flag on the target.
             if (ladder != null) ...[
               const SizedBox(height: 12),
-              _LadderGauge(ladder),
+              _MilestoneChips(ladder),
             ],
             const SizedBox(height: 12),
             // Explain the two-tone bars once, only after mocks graduate the view.
@@ -286,135 +292,157 @@ class _PaceRow extends StatelessWidget {
   }
 }
 
-/// A horizontal gauge spanning New-grad→Staff with two pins: a filled "you"
-/// marker at the current inferred rung and a flag at the goal rung. Lets the
-/// user recalibrate — aim high, but see where they actually stand today.
-class _LadderGauge extends StatelessWidget {
-  const _LadderGauge(this.pos);
+/// Band colour for a readiness score: red (needs work) → amber (developing) →
+/// green (strong). Shared by the overall bar and the per-domain bars so the
+/// colour language is identical everywhere.
+Color _bandColor(double score) {
+  if (score >= 0.75) return const Color(0xFF4CC38A); // green
+  if (score >= 0.45) return const Color(0xFFE3B341); // amber
+  return const Color(0xFFF07178); // red
+}
+
+/// The overall progress bar. Its fill IS the headline % (so the number and the
+/// bar can never disagree), with a goal flag at the "Strong" line — the same
+/// bar widget and flag the per-domain rows use.
+class _OverallBar extends StatelessWidget {
+  const _OverallBar(this.r);
+
+  final Readiness r;
+
+  @override
+  Widget build(BuildContext context) {
+    return _TickedBar(
+        value: r.overall, color: _bandColor(r.overall), goal: 0.75);
+  }
+}
+
+/// Ladder standing as discrete **milestone chips** — one per seniority level,
+/// checked when cleared, outlined when in progress, muted when still locked,
+/// with a flag on the goal level. Deliberately NOT a fill bar: "levels
+/// unlocked" is a yes/no milestone, so it shouldn't read as a rival percentage
+/// competing with the headline. A caption spells out the current rung + goal.
+class _MilestoneChips extends StatelessWidget {
+  const _MilestoneChips(this.pos);
 
   final LadderPosition pos;
+
+  static const _levels = ['New-grad', 'Mid', 'Senior', 'Staff'];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final goalLevel = pos.goalIndex ~/ 2; // 2 rungs (Typical, FAANG) per level
     final goalLabel = readinessLadder[pos.goalIndex].label;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LayoutBuilder(
-          builder: (context, c) {
-            final w = c.maxWidth;
-            final youX = (pos.youFraction * w).clamp(7.0, w - 7.0);
-            final goalX = (pos.goalFraction * w).clamp(6.0, w - 6.0);
-            return SizedBox(
-              height: 34,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Track.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 20,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: Container(
-                        height: 6,
-                        color: theme.colorScheme.surfaceContainerHighest,
-                      ),
-                    ),
-                  ),
-                  // Filled up to the current position.
-                  Positioned(
-                    left: 0,
-                    top: 20,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: Container(
-                        height: 6,
-                        width: youX,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  // Rung dividers: level boundaries (New-grad|Mid|Senior|Staff)
-                  // taller/darker, the FAANG-within-level ticks lighter.
-                  for (var i = 1; i < readinessLadder.length; i++)
-                    Positioned(
-                      left: (i / readinessLadder.length) * w - 0.75,
-                      top: i.isEven ? 16 : 18,
-                      child: Container(
-                        width: 1.5,
-                        height: i.isEven ? 14 : 10,
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: i.isEven ? 0.6 : 0.3),
-                      ),
-                    ),
-                  // Goal: a flag above a tick line.
-                  Positioned(
-                    left: goalX - 6,
-                    top: 0,
-                    child: Icon(Icons.flag,
-                        size: 12, color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  Positioned(
-                    left: goalX - 1,
-                    top: 14,
-                    child: Container(
-                        width: 2,
-                        height: 16,
-                        color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  // You: a filled circle with a ring, on the track.
-                  Positioned(
-                    left: youX - 7,
-                    top: 16,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: theme.colorScheme.surfaceContainerHigh,
-                            width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        // One label per level, centred over its two-rung region.
-        Row(
+        Text('Ladder standing',
+            style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
-            for (final l in const ['New-grad', 'Mid', 'Senior', 'Staff'])
-              Expanded(
-                child: Text(l,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            for (var i = 0; i < _levels.length; i++)
+              _LevelChip(
+                label: _levels[i],
+                // Each level owns rungs [2i, 2i+1]; how many are cleared?
+                clearedInLevel: (pos.clearedCount - 2 * i).clamp(0, 2),
+                isFrontier:
+                    pos.clearedCount >= 2 * i && pos.clearedCount < 2 * (i + 1),
+                isGoal: i == goalLevel,
               ),
           ],
         ),
         const SizedBox(height: 6),
-        Text(_summary(goalLabel),
+        Text(_caption(goalLabel),
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurface)),
       ],
     );
   }
 
-  String _summary(String goalLabel) {
-    if (pos.clearedCount == 0) return 'Building your foundation.';
+  String _caption(String goalLabel) {
     if (pos.atOrAboveGoal) {
-      return 'At or above your $goalLabel goal — validate with mocks.';
+      return 'You clear your $goalLabel goal — validate it with mocks.';
     }
-    final n = pos.rungsToGo;
-    return 'Around ${pos.currentLabel} — $n ${n == 1 ? 'rung' : 'rungs'} '
-        'below $goalLabel.';
+    final where = pos.currentLabel == null
+        ? 'Building your foundation'
+        : 'Clears up to ${pos.currentLabel}';
+    return '$where · aiming $goalLabel.';
+  }
+}
+
+class _LevelChip extends StatelessWidget {
+  const _LevelChip({
+    required this.label,
+    required this.clearedInLevel,
+    required this.isFrontier,
+    required this.isGoal,
+  });
+
+  /// 0, 1 or 2 of this level's two rungs cleared.
+  final int clearedInLevel;
+
+  /// True when this is the level currently being worked on (all below cleared).
+  final bool isFrontier;
+  final bool isGoal;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final cleared = clearedInLevel >= 2;
+    final active = cleared || clearedInLevel >= 1 || isFrontier;
+
+    final Color bg, border, fg;
+    if (cleared) {
+      bg = primary.withValues(alpha: 0.16);
+      border = primary.withValues(alpha: 0.5);
+      fg = primary;
+    } else if (active) {
+      bg = Colors.transparent;
+      border = primary.withValues(alpha: 0.45);
+      fg = primary;
+    } else {
+      bg = Colors.transparent;
+      border = muted.withValues(alpha: 0.3);
+      fg = muted;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            cleared
+                ? Icons.check_circle
+                : (active ? Icons.radio_button_unchecked : Icons.lock_outline),
+            size: 12,
+            color: fg,
+          ),
+          const SizedBox(width: 4),
+          Text(label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                  color: fg,
+                  fontWeight: cleared ? FontWeight.w600 : FontWeight.w500)),
+          if (isGoal) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.flag, size: 11, color: fg),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -443,7 +471,7 @@ class _TickedBar extends StatelessWidget {
   final double? goal;
 
   static const _barHeight = 6.0;
-  static const _flagZone = 12.0; // clear space above the bar for the flag
+  static const _flagZone = 16.0; // clear space above the bar for the flag
 
   @override
   Widget build(BuildContext context) {
@@ -500,8 +528,8 @@ class _TickedBar extends StatelessWidget {
                 ),
               ),
               if (goalX != null) ...[
-                // Flag sits above the bar (matching the level gauge), with a
-                // thin tick connecting down through the track — no overlap.
+                // Flag sits above the bar, with a thin tick connecting down from
+                // just under the flag through the track — no overlap.
                 Positioned(
                   left: (goalX - 5).clamp(0.0, w - 10),
                   top: 0,
@@ -509,10 +537,10 @@ class _TickedBar extends StatelessWidget {
                 ),
                 Positioned(
                   left: (goalX - 0.75).clamp(0.0, w - 1.5),
-                  top: _flagZone - 3,
+                  top: 11,
                   child: Container(
                       width: 1.5,
-                      height: _barHeight + 5,
+                      height: _flagZone + _barHeight - 11,
                       color: muted.withValues(alpha: 0.55)),
                 ),
               ],
@@ -582,23 +610,30 @@ class _DomainRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Name (ellipsizes) + focus marker on the left; % on the right. Only two
-        // things in the row so it can't overflow at narrow widths.
+        // Name (ellipsizes) + focus marker on the left; % flush-right. The name
+        // group is a single Expanded so the % lands at the same x on every row
+        // (previously a Flexible + Spacer both flexed, drifting the % by title
+        // length).
         Row(
           children: [
-            Flexible(
-              child: Text(_pretty(d.domain),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(_pretty(d.domain),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                  ),
+                  if (focus) ...[
+                    const SizedBox(width: 6),
+                    Icon(Icons.my_location,
+                        size: 13, color: theme.colorScheme.primary),
+                  ],
+                ],
+              ),
             ),
-            if (focus) ...[
-              const SizedBox(width: 6),
-              Icon(Icons.my_location,
-                  size: 13, color: theme.colorScheme.primary),
-            ],
-            const Spacer(),
             const SizedBox(width: 8),
             Text(d.studied == 0 ? d.label : '${(d.score * 100).round()}%',
                 style: theme.textTheme.bodySmall
@@ -635,9 +670,7 @@ class _DomainRow extends StatelessWidget {
 
   Color _color(DomainReadiness d) {
     if (d.studied == 0) return const Color(0xFF8A8F98); // muted grey
-    if (d.score >= 0.75) return const Color(0xFF4CC38A); // green
-    if (d.score >= 0.45) return const Color(0xFFE3B341); // amber
-    return const Color(0xFFF07178); // red
+    return _bandColor(d.score);
   }
 
   String _pretty(String domain) {

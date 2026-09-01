@@ -40,3 +40,25 @@ Future<Clock> clock(Ref ref) async {
   final days = await ref.watch(devClockOffsetProvider.future);
   return Clock(Duration(days: days));
 }
+
+/// Dev-only counter of how many simulated "days of study" have been seeded, so
+/// the seeding action is cumulative (tap to build a week of progress and watch
+/// the dashboard evolve). Reset by "Reset local progress". Always 0 in release.
+@Riverpod(keepAlive: true)
+class DevSimDay extends _$DevSimDay {
+  static const prefKey = 'dev_sim_day';
+
+  @override
+  Future<int> build() async {
+    if (!isDevDataMode) return 0;
+    final raw = await ref.read(preferencesRepositoryProvider).get(prefKey);
+    return int.tryParse(raw ?? '') ?? 0;
+  }
+
+  Future<void> set(int day) async {
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$day');
+    state = AsyncData(day);
+  }
+
+  Future<void> reset() => set(0);
+}

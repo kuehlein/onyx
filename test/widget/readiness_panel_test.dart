@@ -87,11 +87,12 @@ void main() {
     expect(find.textContaining('recall only'), findsOneWidget);
     // Compact streak chip shows the current run.
     expect(find.text('5'), findsWidgets);
-    // Ladder level labels are present.
+    // Ladder standing is shown as discrete milestone chips, one per level.
+    expect(find.text('Ladder standing'), findsOneWidget);
     for (final l in ['New-grad', 'Mid', 'Senior', 'Staff']) {
       expect(find.text(l), findsOneWidget);
     }
-    // The recalibration summary names the inferred current rung.
+    // The caption names the current rung the user clears.
     expect(find.textContaining('Mid · FAANG'), findsWidgets);
     // No overflow / assertion errors surfaced during layout.
     expect(tester.takeException(), isNull);
