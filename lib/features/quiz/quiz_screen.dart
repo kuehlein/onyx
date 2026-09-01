@@ -11,12 +11,14 @@ import '../../shared/providers/coach.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/practice.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import 'rest_timer.dart';
 
 /// Study session: recall → reveal → self-grade, one section at a time.
 /// Interview-question cards lead with the problem statement as the cue; concept
@@ -44,11 +46,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final showProgress = s != null && !s.isDone && s.total > 0;
 
     final current = (s != null && !s.isDone) ? s.current : null;
+    // Gym mode: a rest timer, and the coach hidden — reviews are recall-only
+    // during a workout (research-backed); interview practice happens at the desk.
+    final gym = ref.watch(gymModeProvider).asData?.value;
+    final gymOn = gym?.enabled ?? false;
     // Keep the app-bar Coach button available throughout, matching Browse and
     // Learn. Before reveal the prominent "Answer the coach" action is the main
     // entry; this stays as the consistent secondary one (and the debrief entry
-    // after reveal).
-    final canCoach = current != null;
+    // after reveal). Hidden in gym mode.
+    final canCoach = current != null && !gymOn;
     // The coach's latest advisory grade for this section (only once revealed).
     final suggestedGrade = (current != null && _revealed)
         ? ref
@@ -92,14 +98,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         data: (s) {
           if (s.total == 0) return const _EmptyState();
           if (s.isDone) return _CompleteState(session: s);
-          return _ReviewView(
+          final review = _ReviewView(
             item: s.current!,
             position: s.index + 1,
             total: s.total,
             revealed: _revealed,
             suggestedGrade: suggestedGrade,
+            coachEnabled: !gymOn,
             onReveal: () => setState(() => _revealed = true),
             onGrade: _grade,
+          );
+          if (!gymOn) return review;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: RestTimer(restSeconds: gym!.restSeconds),
+                ),
+              ),
+              Expanded(child: review),
+            ],
           );
         },
       ),
@@ -116,6 +136,7 @@ class _ReviewView extends StatelessWidget {
     required this.suggestedGrade,
     required this.onReveal,
     required this.onGrade,
+    this.coachEnabled = true,
   });
 
   final ReviewItem item;
@@ -125,6 +146,9 @@ class _ReviewView extends StatelessWidget {
   final int? suggestedGrade;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
+
+  /// False in gym mode — reviews are recall-only (no coach).
+  final bool coachEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -171,11 +195,15 @@ class _ReviewView extends StatelessWidget {
                     if (!revealed) ...[
                       const SizedBox(height: 20),
                       Text(
-                        isInterview
-                            ? 'Recall your approach — talk it through with the '
-                                'coach, or reveal.'
-                            : 'Recall it — talk it through with the coach, or '
-                                'reveal.',
+                        !coachEnabled
+                            ? (isInterview
+                                ? 'Recall your approach, then reveal to check.'
+                                : 'Recall it, then reveal to check.')
+                            : isInterview
+                                ? 'Recall your approach — talk it through with '
+                                    'the coach, or reveal.'
+                                : 'Recall it — talk it through with the coach, '
+                                    'or reveal.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant),
                       ),
@@ -199,6 +227,7 @@ class _ReviewView extends StatelessWidget {
             _ActionBar(
               revealed: revealed,
               suggestedGrade: suggestedGrade,
+              showCoach: coachEnabled,
               onAnswerCoach: () => showCoachSheet(
                 context,
                 card: item.card,
@@ -224,6 +253,7 @@ class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,
     required this.suggestedGrade,
+    required this.showCoach,
     required this.onAnswerCoach,
     required this.onReveal,
     required this.onGrade,
@@ -231,6 +261,7 @@ class _ActionBar extends StatelessWidget {
 
   final bool revealed;
   final int? suggestedGrade;
+  final bool showCoach;
   final VoidCallback onAnswerCoach;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
@@ -266,28 +297,40 @@ class _ActionBar extends StatelessWidget {
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: onAnswerCoach,
-                      icon: const Icon(Icons.psychology_outlined),
-                      label: const Text('Answer the coach'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                  if (showCoach) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: onAnswerCoach,
+                        icon: const Icon(Icons.psychology_outlined),
+                        label: const Text('Answer the coach'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                  ],
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: onReveal,
-                      icon: const Icon(Icons.visibility_outlined),
-                      label: const Text('Reveal'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
+                    // In gym mode (no coach) Reveal is the primary action.
+                    child: showCoach
+                        ? OutlinedButton.icon(
+                            onPressed: onReveal,
+                            icon: const Icon(Icons.visibility_outlined),
+                            label: const Text('Reveal'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          )
+                        : FilledButton.icon(
+                            onPressed: onReveal,
+                            icon: const Icon(Icons.visibility_outlined),
+                            label: const Text('Reveal'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
                   ),
                 ],
               ),

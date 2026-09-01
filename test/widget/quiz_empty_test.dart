@@ -11,6 +11,7 @@ import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/practice.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/settings.dart';
 import 'package:onyx/shared/providers/srs.dart';
 
 CardSection _section(String s) =>
@@ -58,9 +59,16 @@ Widget _app({
           ]),
       readinessProvider.overrideWith((ref) async => _empty),
       practiceSetProvider('ds-a').overrideWith((ref) async => const []),
+      gymModeProvider.overrideWith(_DisabledGym.new),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
+}
+
+class _DisabledGym extends GymMode {
+  @override
+  Future<GymModeState> build() async =>
+      const GymModeState(enabled: false, restSeconds: 60);
 }
 
 // A minimal SrsState — the empty state only checks statesByKey.isNotEmpty.

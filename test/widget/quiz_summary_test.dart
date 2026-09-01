@@ -8,6 +8,7 @@ import 'package:onyx/core/srs/review_queue.dart';
 import 'package:onyx/features/quiz/quiz_screen.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/settings.dart';
 import 'package:onyx/shared/providers/srs.dart';
 
 CardSection _section(String h) =>
@@ -61,6 +62,12 @@ class _FakeTargetController extends ReadinessTargetController {
   Future<ReadinessTarget> build() async => ReadinessTarget.fallback;
 }
 
+class _DisabledGym extends GymMode {
+  @override
+  Future<GymModeState> build() async =>
+      const GymModeState(enabled: false, restSeconds: 60);
+}
+
 void main() {
   testWidgets('completion screen shows stats and an honest progress delta',
       (tester) async {
@@ -89,6 +96,7 @@ void main() {
           readinessProvider.overrideWith((ref) async => after),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
+          gymModeProvider.overrideWith(_DisabledGym.new),
         ],
         child: const MaterialApp(home: QuizScreen()),
       ),

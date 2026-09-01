@@ -67,12 +67,12 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 error: (e, _) => ListTile(
                   leading: const Icon(Icons.auto_stories_outlined),
-                  title: const Text('New sections per session'),
+                  title: const Text('New sections per day'),
                   subtitle: Text('Error: $e'),
                 ),
                 data: (limit) => ListTile(
                   leading: const Icon(Icons.auto_stories_outlined),
-                  title: const Text('New sections per session'),
+                  title: const Text('New sections per day'),
                   subtitle: Text(
                       '$limit new per day — ${_loadLabel(limit)}. Once you\'ve '
                       'learned this many, new material waits until tomorrow. '
@@ -84,6 +84,48 @@ class SettingsScreen extends ConsumerWidget {
                         ref.read(newCardLimitProvider.notifier).set(v),
                   ),
                 ),
+              ),
+          const _SectionHeader('Gym mode'),
+          ...ref.watch(gymModeProvider).when(
+                loading: () => const [
+                  ListTile(
+                      leading: Icon(Icons.fitness_center_outlined),
+                      title: Text('Gym mode'),
+                      subtitle: Text('Loading…')),
+                ],
+                error: (e, _) => [
+                  ListTile(
+                      leading: const Icon(Icons.fitness_center_outlined),
+                      title: const Text('Gym mode'),
+                      subtitle: Text('Error: $e')),
+                ],
+                data: (gym) => [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.fitness_center_outlined),
+                    title: const Text('Gym mode'),
+                    subtitle: const Text(
+                        'A between-sets rest timer on the review screen, coach '
+                        'hidden — quick recall reviews while you train. Mock '
+                        'interviews stay a separate, always-available activity.'),
+                    value: gym.enabled,
+                    onChanged: (v) =>
+                        ref.read(gymModeProvider.notifier).setEnabled(v),
+                  ),
+                  if (gym.enabled)
+                    ListTile(
+                      leading: const Icon(Icons.timer_outlined),
+                      title: const Text('Rest between sets'),
+                      subtitle: Text('${gym.restSeconds}s'),
+                      trailing: _Stepper(
+                        value: gym.restSeconds,
+                        min: GymMode.minRest,
+                        max: GymMode.maxRest,
+                        step: GymMode.step,
+                        onChanged: (v) =>
+                            ref.read(gymModeProvider.notifier).setRest(v),
+                      ),
+                    ),
+                ],
               ),
           const _SectionHeader('Progress'),
           ListTile(
@@ -440,10 +482,19 @@ String _loadLabel(int sections) {
 /// A compact −/value/+ stepper for an integer setting, clamped to the
 /// NewCardLimit range and moving in its step.
 class _Stepper extends StatelessWidget {
-  const _Stepper({required this.value, required this.onChanged});
+  const _Stepper({
+    required this.value,
+    required this.onChanged,
+    this.min = NewCardLimit.min,
+    this.max = NewCardLimit.max,
+    this.step = NewCardLimit.step,
+  });
 
   final int value;
   final void Function(int) onChanged;
+  final int min;
+  final int max;
+  final int step;
 
   @override
   Widget build(BuildContext context) {
@@ -453,12 +504,10 @@ class _Stepper extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.remove_circle_outline),
           visualDensity: VisualDensity.compact,
-          onPressed: value > NewCardLimit.min
-              ? () => onChanged(value - NewCardLimit.step)
-              : null,
+          onPressed: value > min ? () => onChanged(value - step) : null,
         ),
         SizedBox(
-          width: 26,
+          width: 34,
           child: Text('$value',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium),
@@ -466,9 +515,7 @@ class _Stepper extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
           visualDensity: VisualDensity.compact,
-          onPressed: value < NewCardLimit.max
-              ? () => onChanged(value + NewCardLimit.step)
-              : null,
+          onPressed: value < max ? () => onChanged(value + step) : null,
         ),
       ],
     );

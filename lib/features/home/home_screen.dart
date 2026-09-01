@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
+import '../../shared/providers/readiness.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import 'readiness_panel.dart';
@@ -23,6 +24,7 @@ class HomeScreen extends ConsumerWidget {
     final dueCount = reviewData?.queue.length;
     final hasProgress = reviewData?.statesByKey.isNotEmpty ?? false;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
+    final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
         apiKey.hasValue && (apiKey.value == null || apiKey.value!.isEmpty);
@@ -83,6 +85,17 @@ class HomeScreen extends ConsumerWidget {
                           ? 'Nothing new to learn'
                           : 'Learn — $newCount new',
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Mock interview — applied/transfer practice, always available
+                  // and independent of the FSRS due queue (so it never competes
+                  // with gym-time reviews). Targets the weakest domain.
+                  FilledButton.tonalIcon(
+                    onPressed: weakest == null
+                        ? null
+                        : () => context.push('/practice/$weakest'),
+                    icon: const Icon(Icons.psychology_outlined),
+                    label: const Text('Mock interview'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(

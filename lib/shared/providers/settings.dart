@@ -35,3 +35,43 @@ class NewCardLimit extends _$NewCardLimit {
     ref.invalidateSelf();
   }
 }
+
+/// Gym mode: a between-sets rest timer shown on the review screen, with the
+/// coach hidden (review-only). Research-backed — reviewing already-learned
+/// material in short bursts during rest is a fine use of time, while new
+/// learning and mock interviews need focus you don't have mid-workout.
+class GymModeState {
+  const GymModeState({required this.enabled, required this.restSeconds});
+
+  final bool enabled;
+  final int restSeconds;
+}
+
+@Riverpod(keepAlive: true)
+class GymMode extends _$GymMode {
+  static const _enabledKey = 'gym_mode_enabled';
+  static const _restKey = 'gym_rest_seconds';
+  static const defaultRest = 60;
+  static const minRest = 20;
+  static const maxRest = 180;
+  static const step = 10;
+
+  @override
+  Future<GymModeState> build() async {
+    final prefs = ref.watch(preferencesRepositoryProvider);
+    final enabled = (await prefs.get(_enabledKey)) == 'true';
+    final rest = int.tryParse(await prefs.get(_restKey) ?? '') ?? defaultRest;
+    return GymModeState(enabled: enabled, restSeconds: rest);
+  }
+
+  Future<void> setEnabled(bool value) async {
+    await ref.read(preferencesRepositoryProvider).set(_enabledKey, '$value');
+    ref.invalidateSelf();
+  }
+
+  Future<void> setRest(int seconds) async {
+    final clamped = seconds.clamp(minRest, maxRest);
+    await ref.read(preferencesRepositoryProvider).set(_restKey, '$clamped');
+    ref.invalidateSelf();
+  }
+}
