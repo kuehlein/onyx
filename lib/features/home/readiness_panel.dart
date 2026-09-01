@@ -85,6 +85,11 @@ class ReadinessPanel extends ConsumerWidget {
               _LadderGauge(ladder),
             ],
             const SizedBox(height: 12),
+            // Explain the two-tone bars once, only after mocks graduate the view.
+            if (r.interview) ...[
+              const _BarLegend(),
+              const SizedBox(height: 8),
+            ],
             for (final d in r.domains)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -420,11 +425,19 @@ class _TickedBar extends StatelessWidget {
   const _TickedBar({
     required this.value,
     required this.color,
+    this.recall,
     this.goal,
   });
 
+  /// The darker "proven" fill — the interview-adjusted score.
   final double value;
   final Color color;
+
+  /// The lighter recall "ceiling" the [value] fill sits inside. When it exceeds
+  /// [value] (i.e. mocks haven't yet proven all the recalled material), the gap
+  /// is drawn in a faded [color] — "you know this, prove it with mocks". Null or
+  /// ≤ [value] renders a single solid bar (the recall-only view).
+  final double? recall;
 
   /// Fraction (0..1) at which to place the goal flag, or null for no flag.
   final double? goal;
@@ -441,6 +454,8 @@ class _TickedBar extends StatelessWidget {
         final w = c.maxWidth;
         final radius = BorderRadius.circular(_barHeight / 2);
         final goalX = goal == null ? null : goal!.clamp(0.0, 1.0) * w;
+        final ceiling = (recall ?? value).clamp(0.0, 1.0);
+        final showCeiling = ceiling > value.clamp(0.0, 1.0) + 1e-6;
         return SizedBox(
           height: _flagZone + _barHeight + 1,
           child: Stack(
@@ -458,7 +473,21 @@ class _TickedBar extends StatelessWidget {
                       color: theme.colorScheme.surfaceContainerHighest),
                 ),
               ),
-              // Fill.
+              // Recall ceiling (lighter) — drawn first so the proven fill sits
+              // on top of it. Only visible where it extends past `value`.
+              if (showCeiling)
+                Positioned(
+                  left: 0,
+                  top: _flagZone,
+                  child: ClipRRect(
+                    borderRadius: radius,
+                    child: Container(
+                        height: _barHeight,
+                        width: ceiling * w,
+                        color: color.withValues(alpha: 0.32)),
+                  ),
+                ),
+              // Proven fill (darker).
               Positioned(
                 left: 0,
                 top: _flagZone,
@@ -491,6 +520,45 @@ class _TickedBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// A one-line key for the two-tone domain bars, shown only in interview mode:
+/// the darker fill is what mocks have proven, the lighter is recall you haven't
+/// yet applied. The gap between them is the value of doing more mocks.
+class _BarLegend extends StatelessWidget {
+  const _BarLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final ink = theme.colorScheme.onSurface;
+    Widget swatch(double alpha) => Container(
+          width: 12,
+          height: 6,
+          decoration: BoxDecoration(
+            color: ink.withValues(alpha: alpha),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        );
+    return Row(
+      children: [
+        swatch(0.85),
+        const SizedBox(width: 5),
+        Text('proven in mocks',
+            style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+        const SizedBox(width: 12),
+        swatch(0.28),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text('recall to prove',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+        ),
+      ],
     );
   }
 }
@@ -539,7 +607,9 @@ class _DomainRow extends StatelessWidget {
         ),
         const SizedBox(height: 3),
         // Goal flag at the "Strong" line (0.75) — the target for this domain.
-        _TickedBar(value: d.score, color: color, goal: 0.75),
+        // In interview mode the lighter portion is recall, the darker is what
+        // mocks have actually proven.
+        _TickedBar(value: d.score, recall: d.recall, color: color, goal: 0.75),
         // Evidence caption (interview mode only): mock count + contested flag.
         if (meta != null)
           Padding(

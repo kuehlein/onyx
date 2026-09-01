@@ -105,7 +105,8 @@ void main() {
           domain: 'system-design', // a longer label, to stress the row width
           coverage: 1,
           strength: 0.8,
-          score: 0.5,
+          score: 0.5, // interview-adjusted (proven) — the darker fill
+          recall: 0.72, // recall ceiling — the lighter fill it sits inside
           low: 0.38,
           high: 0.62,
           studied: 5,
@@ -150,6 +151,9 @@ void main() {
     // Graduated state: the header reads "interview-tested", not recall-only.
     expect(find.textContaining('interview-tested'), findsOneWidget);
     expect(find.textContaining('recall only'), findsNothing);
+    // The two-tone bar legend appears once mocks graduate the view.
+    expect(find.text('proven in mocks'), findsOneWidget);
+    expect(find.text('recall to prove'), findsOneWidget);
     // The evidence decomposition is surfaced per domain: mock count + contested.
     expect(find.textContaining('4 mocks'), findsOneWidget);
     expect(find.textContaining('1 contested'), findsOneWidget);

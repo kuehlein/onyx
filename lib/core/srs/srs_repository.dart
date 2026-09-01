@@ -112,6 +112,38 @@ class SrsRepository {
     });
   }
 
+  /// DEV/E2E: plant recall for the given sections at the caller-chosen stability
+  /// (days-to-90%), so coverage/strength exist for the dashboard. Unlike
+  /// [seedAllDueNow] these are scheduled out (not made due), modelling material
+  /// you've studied and retained — the recall base that mock evidence gates.
+  Future<void> seedStudied(
+    Iterable<({String cardId, String sectionSlug, double stability})> items, {
+    required DateTime at,
+  }) async {
+    await _db.batch((b) {
+      for (final it in items) {
+        b.insert(
+          _db.srsStates,
+          SrsStatesCompanion.insert(
+            cardId: it.cardId,
+            sectionSlug: it.sectionSlug,
+            stability: Value(it.stability),
+            difficulty: const Value(5),
+            state: const Value(2), // review
+            step: const Value(null),
+            dueAt: at.add(Duration(days: it.stability.round())),
+            lastReview: Value(at),
+            reviewCount: const Value(2),
+          ),
+          onConflict: DoUpdate((_) => SrsStatesCompanion(
+                stability: Value(it.stability),
+                lastReview: Value(at),
+              )),
+        );
+      }
+    });
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

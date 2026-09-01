@@ -27,14 +27,22 @@ class DomainReadiness {
     required this.high,
     required this.studied,
     required this.total,
+    double? recall,
     this.transfer,
     this.appliedN = 0,
-  });
+  }) : recall = recall ?? score;
 
   final String domain;
   final double coverage; // 0..1 — fraction of required sections started
   final double strength; // 0..1 — weakest-link-aware retention of studied ones
   final double score; // 0..1 — coverage^γ · strength · transfer factor
+
+  /// The recall-only score (`coverage^γ · strength`), *before* the transfer
+  /// factor gates it. Always ≥ [score] because `factor ∈ [τ, 1]`. In the
+  /// recall-only view this equals [score]; once mocks graduate the domain it's
+  /// the lighter "you know it" ceiling the darker "proven it" fill sits inside.
+  final double recall;
+
   final double low; // band lower bound
   final double high; // band upper bound
   final int studied;
@@ -182,6 +190,7 @@ Readiness computeReadiness({
       coverage: coverage,
       strength: strength,
       score: score.clamp(0, 1).toDouble(),
+      recall: recall.clamp(0, 1).toDouble(),
       low: low.clamp(0, 1).toDouble(),
       high: high.clamp(0, 1).toDouble(),
       studied: studied,
