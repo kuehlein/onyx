@@ -412,11 +412,13 @@ class SettingsScreen extends ConsumerWidget {
       final to = (day * perDay).clamp(0, total);
 
       // Re-seed EVERY studied-so-far section with an age-grown stability —
-      // modelling review-driven consolidation: the longer since first studied,
-      // the more it's been reviewed, the higher its FSRS stability (durability).
-      // Without this, strength is frozen at "just-learned" and overall readiness
-      // plateaus ~55% regardless of effort. Newest cards stay weak, so the p20
-      // floor still bites until coverage matures.
+      // modelling review-driven consolidation. FSRS stability ≈ your current
+      // review interval, so it climbs ~1 day per real day of successful spaced
+      // review: `stability ≈ 3 + age`. Reaching the ~90-day stability that reads
+      // as fully durable therefore takes ~3 months, not 2 weeks. (Without any
+      // growth, strength froze and readiness plateaued ~55%; with growth that's
+      // too fast, "ready" arrived unrealistically early.) Newest cards stay
+      // weak, so the p20 floor still bites until the deck matures.
       final startedDomains = <String>{};
       final studied =
           <({String cardId, String sectionSlug, double stability})>[];
@@ -426,7 +428,7 @@ class SettingsScreen extends ConsumerWidget {
         studied.add((
           cardId: order[i].cardId,
           sectionSlug: order[i].slug,
-          stability: (8.0 + 10.0 * age).clamp(6.0, 200.0),
+          stability: (3.0 + age).clamp(3.0, 200.0),
         ));
         startedDomains.add(order[i].domain);
       }
@@ -450,7 +452,9 @@ class SettingsScreen extends ConsumerWidget {
           source: 'dev-seed',
           occurredAt: simNow,
           assessment: AppliedAssessment(
-            appliedScore: (46 + 5 * day + di * 7).clamp(35, 93),
+            // Mock performance climbs slowly — reaching ~90% only around the
+            // two-month mark, not in the first fortnight.
+            appliedScore: (42 + 1.2 * day + di * 4).round().clamp(35, 92),
             rubric: const {'correctness': 3, 'communication': 4},
             novel: day.isOdd,
           ),
