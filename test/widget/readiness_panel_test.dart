@@ -26,14 +26,14 @@ void main() {
         domain: 'ds-a',
         coverage: 0.8,
         strength: 0.7,
-        score: 0.62,
+        score: 0.55,
         low: 0.5,
         high: 0.74,
         studied: 8,
         total: 10,
       ),
     ],
-    overall: 0.62,
+    overall: 0.62, // distinct from the domain score so "62%" is unambiguous
     low: 0.5,
     high: 0.74,
   );
@@ -80,10 +80,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Knowledge-base readiness'), findsOneWidget);
-    expect(find.text('Aiming at'), findsOneWidget);
-    // Streak line renders with the current run.
-    expect(find.textContaining('5-day streak'), findsOneWidget);
+    // Headline: the overall % and the tappable target it's measured against.
+    expect(find.text('62%'), findsOneWidget);
+    expect(find.text('Senior · FAANG · General'), findsOneWidget);
+    // Recall-only state (no mock evidence) is shown next to the band.
+    expect(find.textContaining('recall only'), findsOneWidget);
+    // Compact streak chip shows the current run.
+    expect(find.text('5'), findsWidgets);
     // Ladder level labels are present.
     for (final l in ['New-grad', 'Mid', 'Senior', 'Staff']) {
       expect(find.text(l), findsOneWidget);
@@ -99,7 +102,7 @@ void main() {
     const interviewReadiness = Readiness(
       domains: [
         DomainReadiness(
-          domain: 'ds-a',
+          domain: 'system-design', // a longer label, to stress the row width
           coverage: 1,
           strength: 0.8,
           score: 0.5,
@@ -127,13 +130,14 @@ void main() {
               .overrideWith(_FakeTargetController.new),
           studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
           appliedSummaryProvider.overrideWith(
-              (ref) async => {'ds-a': (attempts: 4, contested: 1)}),
+              (ref) async => {'system-design': (attempts: 4, contested: 1)}),
         ],
+        // A narrow phone width to guard against row overflow.
         child: const MaterialApp(
           home: Scaffold(
             body: Center(
               child: SizedBox(
-                width: 400,
+                width: 320,
                 child: SingleChildScrollView(child: ReadinessPanel()),
               ),
             ),
@@ -143,13 +147,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Interview readiness'), findsOneWidget);
-    expect(find.text('Knowledge-base readiness'), findsNothing);
-    // The transfer gate + evidence decomposition is surfaced per domain.
-    expect(find.textContaining('transfer 55%'), findsOneWidget);
+    // Graduated state: the header reads "interview-tested", not recall-only.
+    expect(find.textContaining('interview-tested'), findsOneWidget);
+    expect(find.textContaining('recall only'), findsNothing);
+    // The evidence decomposition is surfaced per domain: mock count + contested.
     expect(find.textContaining('4 mocks'), findsOneWidget);
     expect(find.textContaining('1 contested'), findsOneWidget);
-    expect(find.textContaining('Gated by applied evidence'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

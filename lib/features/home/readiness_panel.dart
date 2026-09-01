@@ -4,15 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
+import '../../core/readiness/target.dart';
 import '../../core/stats/streak.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/stats.dart';
 import 'target_sheet.dart';
 
-/// Home dashboard panel: honest **knowledge-base readiness** (Phase A) —
-/// per-domain recall strength × coverage, weakest domain flagged "focus here",
-/// reported as a band, with an explicit "this is recall, not interview
-/// readiness" caveat.
+/// Home dashboard panel: a compact readiness summary — a headline % toward the
+/// chosen target (recall-only until mock evidence graduates it to
+/// interview-tested), a level gauge, and per-domain bars with a goal flag.
+/// Deliberately tight so it fits without scrolling.
 class ReadinessPanel extends ConsumerWidget {
   const ReadinessPanel({super.key});
 
@@ -40,118 +41,57 @@ class ReadinessPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Headline: the % (or an icon before any study), the tappable target
+          // it's measured against, the evidence band + recall/interview state,
+          // and a compact streak.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.insights_outlined,
-                  size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                    r.interview
-                        ? 'Interview readiness'
-                        : 'Knowledge-base readiness',
-                    style: theme.textTheme.titleMedium),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            r.interview
-                ? 'Recall gated by how you actually perform on problems — not '
-                    'just what you remember.'
-                : 'How well your studied material is retained — recall, not '
-                    'problem-solving.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          if (showStreak) ...[
-            const SizedBox(height: 10),
-            _StreakRow(streak),
-          ],
-          const SizedBox(height: 12),
-          _TargetRow(label: target?.label ?? '—'),
-          if (pace != null) ...[
-            const SizedBox(height: 10),
-            _PaceRow(pace),
-          ],
-          const SizedBox(height: 14),
-          if (!anyStudied)
-            Text('Study some cards and this fills in.',
-                style: theme.textTheme.bodyMedium)
-          else ...[
-            // Headline: overall readiness toward the chosen target, labelled so
-            // it isn't confused with the level gauge below (a different scale).
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
+              if (anyStudied)
                 Text('${(r.overall * 100).round()}%',
                     style: theme.textTheme.headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(width: 8),
+                        ?.copyWith(fontWeight: FontWeight.w700, height: 1.0))
+              else
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Tooltip(
-                    message:
-                        'The likely range given how much evidence you have — it '
-                        'narrows as you study and do mock interviews.',
-                    child: Text(
-                      '${(r.low * 100).round()}–${(r.high * 100).round()}% likely',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ),
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(Icons.insights_outlined,
+                      size: 22, color: theme.colorScheme.primary),
                 ),
-              ],
-            ),
-            Text(
-              target == null
-                  ? 'overall readiness for your goal'
-                  : 'overall readiness for ${target.label}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            if (ladder != null) ...[
-              const SizedBox(height: 16),
-              Text('Current level',
-                  style: theme.textTheme.labelMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 6),
-              _LadderGauge(ladder),
-            ] else ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: r.overall,
-                  minHeight: 8,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _Headline(
+                    target: target, readiness: r, anyStudied: anyStudied),
               ),
+              if (showStreak) ...[
+                const SizedBox(width: 8),
+                _StreakChip(streak),
+              ],
             ],
-            const SizedBox(height: 16),
-            Text('By domain',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
+          ),
+          if (!anyStudied)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('Study some cards and this fills in.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            )
+          else ...[
+            if (pace != null) ...[
+              const SizedBox(height: 8),
+              _PaceRow(pace),
+            ],
+            if (ladder != null) ...[
+              const SizedBox(height: 12),
+              _LadderGauge(ladder),
+            ],
+            const SizedBox(height: 12),
             for (final d in r.domains)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: _DomainRow(d,
                     focus: identical(d, r.domains.first),
                     summary: appliedSummary[d.domain]),
               ),
-            const SizedBox(height: 4),
-            Text(
-              r.interview
-                  ? 'Gated by applied evidence — capped where you haven\'t '
-                      'proven transfer yet; the band tightens as you do more '
-                      'mock interviews.'
-                  : 'Recall only — solve novel problems and mock interviews to '
-                      'gauge true interview readiness.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic),
-            ),
           ],
         ],
       ),
@@ -159,11 +99,83 @@ class ReadinessPanel extends ConsumerWidget {
   }
 }
 
-/// The study-streak line: a flame + "N-day streak" with today's count, or a
-/// gentle "study today to keep it" nudge when the streak is still alive but
-/// today is empty.
-class _StreakRow extends StatelessWidget {
-  const _StreakRow(this.streak);
+/// The headline sub-block next to the big %: the tappable target line and the
+/// evidence band + recall/interview-tested state. Tapping opens the target
+/// sheet, so it's clear the % is measured against (and changes with) the target.
+class _Headline extends StatelessWidget {
+  const _Headline({
+    required this.target,
+    required this.readiness,
+    required this.anyStudied,
+  });
+
+  final ReadinessTarget? target;
+  final Readiness readiness;
+  final bool anyStudied;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    const green = Color(0xFF4CC38A);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () => showTargetSheet(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text('for ',
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+                Flexible(
+                  child: Text(target?.label ?? 'your goal',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                ),
+                Icon(Icons.chevron_right, size: 16, color: muted),
+              ],
+            ),
+            if (anyStudied)
+              Tooltip(
+                message: readiness.interview
+                    ? 'Interview readiness: recall gated by your mock-interview '
+                        'performance. The band narrows as you do more mocks.'
+                    : 'Recall readiness. Do mock interviews to prove you can '
+                        'apply it — that graduates this to interview-tested and '
+                        'narrows the band.',
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(
+                    text: '${(readiness.low * 100).round()}'
+                        '–${(readiness.high * 100).round()}% likely · ',
+                    style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                  ),
+                  TextSpan(
+                    text: readiness.interview
+                        ? 'interview-tested'
+                        : 'recall only',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: readiness.interview ? green : muted,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ])),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact streak chip (flame + current day count) for the header row.
+class _StreakChip extends StatelessWidget {
+  const _StreakChip(this.streak);
 
   final StreakInfo streak;
 
@@ -173,76 +185,20 @@ class _StreakRow extends StatelessWidget {
     const flame = Color(0xFFF2792B);
     const amber = Color(0xFFE3B341);
     final atRisk = !streak.studiedToday;
-    final detail = streak.studiedToday
-        ? '${streak.todayCount} studied today'
-        : 'study today to keep it';
-
-    return Row(
-      children: [
-        Icon(Icons.local_fire_department,
-            size: 16, color: atRisk ? amber : flame),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text.rich(
-            TextSpan(children: [
-              TextSpan(
-                text: '${streak.current}-day streak',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              TextSpan(
-                text: '  ·  $detail',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ]),
-          ),
-        ),
-        if (streak.best > streak.current && streak.best >= 3)
-          Text('best ${streak.best}',
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ],
-    );
-  }
-}
-
-/// The tappable "aiming at `target`" row that opens the target sheet.
-class _TargetRow extends StatelessWidget {
-  const _TargetRow({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => showTargetSheet(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          child: Row(
-            children: [
-              Icon(Icons.flag_outlined,
-                  size: 16, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('Aiming at',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(label,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-              ),
-              Icon(Icons.chevron_right,
-                  size: 18, color: theme.colorScheme.onSurfaceVariant),
-            ],
-          ),
-        ),
+    return Tooltip(
+      message: atRisk
+          ? 'Study today to keep your ${streak.current}-day streak'
+          : '${streak.todayCount} studied today · ${streak.current}-day streak',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.local_fire_department,
+              size: 18, color: atRisk ? amber : flame),
+          const SizedBox(width: 2),
+          Text('${streak.current}',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }
@@ -447,17 +403,13 @@ class _LadderGauge extends StatelessWidget {
   }
 
   String _summary(String goalLabel) {
-    if (pos.clearedCount == 0) {
-      return 'Building your foundation — not yet clearing '
-          '${readinessLadder.first.label} (recall).';
-    }
+    if (pos.clearedCount == 0) return 'Building your foundation.';
     if (pos.atOrAboveGoal) {
-      return 'Your knowledge base is at or above your $goalLabel goal '
-          '(recall) — validate it with mock interviews.';
+      return 'At or above your $goalLabel goal — validate with mocks.';
     }
     final n = pos.rungsToGo;
-    return 'Your knowledge base is around ${pos.currentLabel} — '
-        '$n ${n == 1 ? 'rung' : 'rungs'} below your $goalLabel goal.';
+    return 'Around ${pos.currentLabel} — $n ${n == 1 ? 'rung' : 'rungs'} '
+        'below $goalLabel.';
   }
 }
 
@@ -477,60 +429,62 @@ class _TickedBar extends StatelessWidget {
   /// Fraction (0..1) at which to place the goal flag, or null for no flag.
   final double? goal;
 
-  static const _height = 6.0;
+  static const _barHeight = 6.0;
+  static const _flagZone = 12.0; // clear space above the bar for the flag
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
-        const height = _height;
-        final radius = BorderRadius.circular(height / 2);
+        final radius = BorderRadius.circular(_barHeight / 2);
         final goalX = goal == null ? null : goal!.clamp(0.0, 1.0) * w;
         return SizedBox(
-          height: height + 8,
+          height: _flagZone + _barHeight + 1,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+              // Track.
               Positioned(
                 left: 0,
                 right: 0,
-                top: 6,
+                top: _flagZone,
                 child: ClipRRect(
                   borderRadius: radius,
                   child: Container(
-                      height: height,
+                      height: _barHeight,
                       color: theme.colorScheme.surfaceContainerHighest),
                 ),
               ),
+              // Fill.
               Positioned(
                 left: 0,
-                top: 6,
+                top: _flagZone,
                 child: ClipRRect(
                   borderRadius: radius,
                   child: Container(
-                      height: height,
+                      height: _barHeight,
                       width: value.clamp(0.0, 1.0) * w,
                       color: color),
                 ),
               ),
               if (goalX != null) ...[
-                // A little flag above a tick at the goal line.
+                // Flag sits above the bar (matching the level gauge), with a
+                // thin tick connecting down through the track — no overlap.
                 Positioned(
                   left: (goalX - 5).clamp(0.0, w - 10),
                   top: 0,
-                  child: Icon(Icons.flag,
-                      size: 11, color: theme.colorScheme.onSurfaceVariant),
+                  child: Icon(Icons.flag, size: 11, color: muted),
                 ),
                 Positioned(
                   left: (goalX - 0.75).clamp(0.0, w - 1.5),
-                  top: 4,
+                  top: _flagZone - 3,
                   child: Container(
                       width: 1.5,
-                      height: height + 4,
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.55)),
+                      height: _barHeight + 5,
+                      color: muted.withValues(alpha: 0.55)),
                 ),
               ],
             ],
@@ -553,60 +507,59 @@ class _DomainRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final color = _color(d);
 
+    final meta = _meta;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Name (ellipsizes) + focus marker on the left; % on the right. Only two
+        // things in the row so it can't overflow at narrow widths.
         Row(
           children: [
-            Expanded(
+            Flexible(
               child: Text(_pretty(d.domain),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w600)),
             ),
             if (focus) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text('Focus here',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.primary)),
-              ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              Icon(Icons.my_location,
+                  size: 13, color: theme.colorScheme.primary),
             ],
+            const Spacer(),
+            const SizedBox(width: 8),
             Text(d.studied == 0 ? d.label : '${(d.score * 100).round()}%',
                 style: theme.textTheme.bodySmall
-                    ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+                    ?.copyWith(color: color, fontWeight: FontWeight.w700)),
           ],
         ),
-        const SizedBox(height: 4),
-        // Ticks mark the Developing (45%) and Strong (75%) thresholds.
+        const SizedBox(height: 3),
         // Goal flag at the "Strong" line (0.75) — the target for this domain.
         _TickedBar(value: d.score, color: color, goal: 0.75),
-        const SizedBox(height: 2),
-        Text(
-            '${d.studied}/${d.total} started · ${d.label}'
-            '${_transferNote(d)}',
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        // Evidence caption (interview mode only): mock count + contested flag.
+        if (meta != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(meta,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+          ),
       ],
     );
   }
 
-  /// In interview mode, surface the transfer gate per domain: the proven
-  /// transfer %, the mock count, and any contested grades (adversarial critic
-  /// disagreed) — honest evidence strength. Empty in the recall-only view.
-  String _transferNote(DomainReadiness d) {
-    if (d.transfer == null) return '';
+  /// In interview mode, a compact evidence caption — mock count and any contested
+  /// grades (the adversarial critic disagreed). Null in the recall-only view.
+  String? get _meta {
+    if (d.transfer == null) return null;
     final n = summary?.attempts ?? 0;
-    if (n == 0) return ' · no mocks yet';
+    if (n == 0) return 'no mocks yet';
     final contested = summary?.contested ?? 0;
-    final base = ' · transfer ${(d.transfer! * 100).round()}%'
-        ' · $n mock${n == 1 ? '' : 's'}';
+    final base = '$n mock${n == 1 ? '' : 's'} · transfer '
+        '${((d.transfer ?? 0) * 100).round()}%';
     return contested > 0 ? '$base · $contested contested' : base;
   }
 

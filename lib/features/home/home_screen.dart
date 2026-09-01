@@ -38,14 +38,10 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(20),
             children: [
               const ReadinessPanel(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Ready to study',
-                      style: theme.textTheme.headlineSmall,
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 8),
                   index.when(
                     loading: () => const Text('Indexing vault…',
                         textAlign: TextAlign.center),
@@ -61,7 +57,7 @@ class HomeScreen extends ConsumerWidget {
                           ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
                   FilledButton.icon(
                     // Always tappable; the label tracks where you are in the
                     // day's loop, and /quiz guides you (learn first → review →

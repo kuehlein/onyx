@@ -354,11 +354,20 @@ class SettingsScreen extends ConsumerWidget {
         seeded++;
       }
     }
+    // Refresh the derived dashboard providers so the Home panel graduates to
+    // interview readiness immediately on return.
     ref.invalidate(appliedTransferProvider);
     ref.invalidate(appliedSummaryProvider);
+    ref.invalidate(readinessProvider);
+    ref.invalidate(readinessLadderPositionProvider);
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
-      SnackBar(content: Text('Seeded $seeded mock attempts')),
+      SnackBar(
+        content: Text(seeded == 0
+            ? 'No domains found — configure a vault first'
+            : 'Seeded $seeded mock attempts across ${byDomain.length} '
+                'domains — check Home for interview-tested readiness'),
+      ),
     );
   }
 
