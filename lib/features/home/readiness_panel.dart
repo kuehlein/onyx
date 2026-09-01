@@ -315,18 +315,23 @@ const _readyLine = 0.75;
   const red = Color(0xFFF07178);
   if (!r.interview) {
     // Recall-only: never "ready" (unproven). Describe recall strength instead.
-    if (r.overall >= _readyLine)
+    if (r.overall >= _readyLine) {
       return (label: 'Strong recall', color: amber, ready: false);
-    if (r.overall >= 0.45)
+    }
+    if (r.overall >= 0.45) {
       return (label: 'Building recall', color: amber, ready: false);
+    }
     return (label: 'Getting started', color: red, ready: false);
   }
-  if (r.low >= _readyLine)
+  if (r.low >= _readyLine) {
     return (label: 'Interview-ready', color: green, ready: true);
-  if (r.overall >= _readyLine)
+  }
+  if (r.overall >= _readyLine) {
     return (label: 'Almost ready', color: green, ready: false);
-  if (r.overall >= 0.5)
+  }
+  if (r.overall >= 0.5) {
     return (label: 'Developing', color: amber, ready: false);
+  }
   return (label: 'Building', color: red, ready: false);
 }
 
