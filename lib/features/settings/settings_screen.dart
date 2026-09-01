@@ -401,33 +401,38 @@ class SettingsScreen extends ConsumerWidget {
     }
     final total = order.length;
 
-    const stabilities = [10.0, 22.0, 14.0, 30.0, 18.0]; // "just learned" spread
     var mocks = 0, studiedNew = 0;
     for (var k = 1; k <= days; k++) {
       final day = startDay + k;
       final simNow = clock0.now().add(Duration(days: k));
 
-      // The next `perDay` sections in the global order (only the new slice, so
-      // earlier material keeps its own review date and can fall due over time).
+      // Sections come online at `perDay`/day against the global order. A section
+      // at index i was first studied on day (i ~/ perDay) + 1.
       final from = ((day - 1) * perDay).clamp(0, total);
       final to = (day * perDay).clamp(0, total);
+
+      // Re-seed EVERY studied-so-far section with an age-grown stability —
+      // modelling review-driven consolidation: the longer since first studied,
+      // the more it's been reviewed, the higher its FSRS stability (durability).
+      // Without this, strength is frozen at "just-learned" and overall readiness
+      // plateaus ~55% regardless of effort. Newest cards stay weak, so the p20
+      // floor still bites until coverage matures.
       final startedDomains = <String>{};
       final studied =
           <({String cardId, String sectionSlug, double stability})>[];
-      for (var i = from; i < to; i++) {
+      for (var i = 0; i < to; i++) {
+        final firstDay = (i ~/ perDay) + 1;
+        final age = day - firstDay; // >= 0
         studied.add((
           cardId: order[i].cardId,
           sectionSlug: order[i].slug,
-          stability: stabilities[i % stabilities.length],
+          stability: (8.0 + 10.0 * age).clamp(6.0, 200.0),
         ));
+        startedDomains.add(order[i].domain);
       }
       if (studied.isNotEmpty) {
         await srsRepo.seedStudied(studied, at: simNow);
-        studiedNew += studied.length;
-      }
-      // Which domains have any studied material by now (mock only those).
-      for (var i = 0; i < to; i++) {
-        startedDomains.add(order[i].domain);
+        studiedNew += (to - from);
       }
 
       // One mock per already-started domain this day; score climbs with time and
