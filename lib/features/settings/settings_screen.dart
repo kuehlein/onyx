@@ -225,13 +225,13 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.science_outlined),
                     title: const Text('Simulate study progress'),
                     subtitle: Text(day == 0
-                        ? 'Build a realistic history: each step adds a day of '
-                            'studying + a mock, so recall coverage and interview '
-                            'evidence accumulate. Tap to watch the dashboard '
-                            'evolve; the clock advances in step.'
+                        ? 'Build a realistic history: each step = one day at '
+                            'your "New sections per day" pace (learns that many '
+                            'new sections + a mock, clock advances a day). Tap '
+                            'to watch the dashboard evolve at true speed.'
                         : 'Day $day simulated — cumulative recall + mock '
-                            'evidence. Keep tapping to advance; "Reset local '
-                            'progress" clears it.'),
+                            'evidence at your real daily pace. Keep tapping to '
+                            'advance; "Reset local progress" clears it.'),
                     trailing: Wrap(
                       spacing: 4,
                       children: [
@@ -345,17 +345,19 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   /// Dev/E2E: simulate [days] more days of study — **cumulative**, so repeated
-  /// taps build a believable history and the dashboard visibly evolves. Each
-  /// day widens recall coverage (new sections come online) and adds a mock
-  /// attempt per domain with a gradually climbing score; the dev clock advances
-  /// in step, so recency behaves and earlier low-stability material eventually
-  /// falls due. Interview readiness *gates* recall by proven transfer, so
-  /// planting recall first (it's logically prior) is what lets the graduated
-  /// dashboard actually populate.
+  /// taps build a believable history and the dashboard visibly evolves. A
+  /// simulated day mirrors a *real* day at the configured pace: it learns
+  /// exactly `New sections per day` new sections (globally, round-robin across
+  /// domains — not a fraction of the corpus), adds a mock per already-started
+  /// domain with a gradually climbing score, and advances the dev clock a day
+  /// so recency behaves and earlier low-stability material eventually falls due.
+  /// Interview readiness *gates* recall by proven transfer, so planting recall
+  /// first (it's logically prior) is what lets the graduated dashboard populate.
   Future<void> _simulate(BuildContext context, WidgetRef ref, int days) async {
     final messenger = ScaffoldMessenger.of(context);
     final index = await ref.read(vaultIndexProvider.future);
     final clock0 = ref.read(clockProvider).asData?.value ?? Clock.real;
+    final perDay = await ref.read(newCardLimitProvider.future); // real cadence
     final repo = ref.read(appliedRepositoryProvider);
     final srsRepo = ref.read(srsRepositoryProvider);
     final startDay = ref.read(devSimDayProvider).asData?.value ?? 0;
@@ -381,41 +383,58 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
 
-    const rampDays = 7; // reach full coverage after ~a week
-    const stabilities = [10.0, 22.0, 14.0, 30.0, 18.0]; // "just learned" spread
-    int coverCount(int day, int total) =>
-        ((day / rampDays).clamp(0.0, 1.0) * total).ceil().clamp(0, total);
+    // One global learn order, round-robin across domains so both progress
+    // together (a fair proxy for the tier-interleaved real learn queue). New
+    // sections come online at `perDay`/day against THIS list, so a simulated
+    // day covers the same slice a real day would — not 1/7 of the whole corpus.
+    final order = <({String domain, String cardId, String slug})>[];
+    for (var i = 0; true; i++) {
+      var added = false;
+      for (final d in domains) {
+        final list = sectionsByDomain[d]!;
+        if (i < list.length) {
+          order.add((domain: d, cardId: list[i].cardId, slug: list[i].slug));
+          added = true;
+        }
+      }
+      if (!added) break;
+    }
+    final total = order.length;
 
+    const stabilities = [10.0, 22.0, 14.0, 30.0, 18.0]; // "just learned" spread
     var mocks = 0, studiedNew = 0;
     for (var k = 1; k <= days; k++) {
       final day = startDay + k;
       final simNow = clock0.now().add(Duration(days: k));
 
-      // Bring the day's newly-covered sections online (only the new slice, so
+      // The next `perDay` sections in the global order (only the new slice, so
       // earlier material keeps its own review date and can fall due over time).
-      for (final entry in sectionsByDomain.entries) {
-        final all = entry.value;
-        final from = coverCount(day - 1, all.length);
-        final to = coverCount(day, all.length);
-        final studied =
-            <({String cardId, String sectionSlug, double stability})>[];
-        for (var i = from; i < to; i++) {
-          studied.add((
-            cardId: all[i].cardId,
-            sectionSlug: all[i].slug,
-            stability: stabilities[i % stabilities.length],
-          ));
-        }
-        if (studied.isNotEmpty) {
-          await srsRepo.seedStudied(studied, at: simNow);
-          studiedNew += studied.length;
-        }
+      final from = ((day - 1) * perDay).clamp(0, total);
+      final to = (day * perDay).clamp(0, total);
+      final startedDomains = <String>{};
+      final studied =
+          <({String cardId, String sectionSlug, double stability})>[];
+      for (var i = from; i < to; i++) {
+        studied.add((
+          cardId: order[i].cardId,
+          sectionSlug: order[i].slug,
+          stability: stabilities[i % stabilities.length],
+        ));
+      }
+      if (studied.isNotEmpty) {
+        await srsRepo.seedStudied(studied, at: simNow);
+        studiedNew += studied.length;
+      }
+      // Which domains have any studied material by now (mock only those).
+      for (var i = 0; i < to; i++) {
+        startedDomains.add(order[i].domain);
       }
 
-      // One mock per domain this day; score climbs with the week and varies by
-      // domain so the per-domain bars diverge.
+      // One mock per already-started domain this day; score climbs with time and
+      // varies by domain so the per-domain bars diverge.
       for (var di = 0; di < domains.length; di++) {
         final d = domains[di];
+        if (!startedDomains.contains(d)) continue;
         final card = byDomain[d]!;
         await repo.record(
           cardId: card.id,
