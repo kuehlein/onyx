@@ -12,8 +12,9 @@ import 'target_sheet.dart';
 
 /// Home dashboard panel: a compact readiness summary — a headline % toward the
 /// chosen target (recall-only until mock evidence graduates it to
-/// interview-tested), a level gauge, and per-domain bars with a goal flag.
-/// Deliberately tight so it fits without scrolling.
+/// interview-tested) shown as one bar, ladder standing as milestone chips, and
+/// per-domain bars with a goal flag. Deliberately tight so it fits without
+/// scrolling.
 class ReadinessPanel extends ConsumerWidget {
   const ReadinessPanel({super.key});
 
