@@ -65,6 +65,23 @@ class SrsRepository {
     return row.read(count) ?? 0;
   }
 
+  /// Recent review success ("true retention"): the number of graded reviews
+  /// since [since] and how many were recalled (grade >= 2, i.e. not "Again").
+  /// The coach uses the ratio to spot overload — at a ~0.90 desired-retention
+  /// target, sustained success well below that means cards are too hard or new
+  /// material is arriving faster than it sticks. Returns (0, 0) for an empty
+  /// window (caller should require a minimum sample before trusting the ratio).
+  Future<({int total, int retained})> recentReviewStats(DateTime since) async {
+    final total = _db.reviews.id.count();
+    final retained =
+        _db.reviews.id.count(filter: _db.reviews.grade.isBiggerThanValue(1));
+    final row = await (_db.selectOnly(_db.reviews)
+          ..addColumns([total, retained])
+          ..where(_db.reviews.reviewedAt.isBiggerOrEqualValue(since)))
+        .getSingle();
+    return (total: row.read(total) ?? 0, retained: row.read(retained) ?? 0);
+  }
+
   /// Timestamps of every study action since [since] — graded reviews plus
   /// newly learned sections (`'learn'` events). Used to compute the study
   /// streak. Reviews sync via the snapshot; `activity_log` is device-local, so

@@ -8,6 +8,7 @@ import '../../shared/providers/learn.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
+import 'coach_badge.dart';
 import 'readiness_panel.dart';
 
 /// Landing screen: what's ready to review, what's new to learn, and the ways in.
@@ -125,6 +126,9 @@ class HomeScreen extends ConsumerWidget {
                   ],
                 ],
               ),
+              const SizedBox(height: 16),
+              // Ambient coach nudge — one prioritised, task-level line.
+              const CoachBadge(),
             ],
           ),
         ),
