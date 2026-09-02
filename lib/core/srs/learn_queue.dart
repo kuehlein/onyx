@@ -20,14 +20,22 @@ class LearnItem {
 ///  1. keep only cards with at least one un-seeded quizzable section;
 ///  2. cluster them into families via the wikilink graph (connected components);
 ///  3. within a family, foundational-first (lowest tier, then title);
-///  4. most-foundational family first;
+///  4. most-foundational family first, then — among equally-foundational
+///     families — the one more relevant to the user's target ([priorityOf]);
 ///  5. flatten to sections and cap at [newSectionLimit] so a session doesn't
 ///     introduce too much at once.
+///
+/// [priorityOf] returns a target-relevance weight for a card (e.g. a senior
+/// system-design goal weights system-design cards higher). It is a SECONDARY
+/// key — foundational-first still wins — so a senior learns foundational
+/// system-design before foundational DS&A, without advanced material jumping
+/// ahead of the basics. Defaults to equal weight (no target influence).
 List<LearnItem> buildLearnQueue({
   required List<Card> cards,
   required Set<String> seededKeys,
   required Map<String, Set<String>> adjacency,
   int newSectionLimit = 20,
+  double Function(Card card)? priorityOf,
 }) {
   final byId = {for (final c in cards) c.id: c};
 
@@ -58,6 +66,9 @@ List<LearnItem> buildLearnQueue({
 
   int minTier(Card c) => c.tiers.isEmpty ? 99 : c.tiers.values.reduce(min);
   int familyTier(List<Card> f) => f.map(minTier).reduce(min);
+  double priority(Card c) => priorityOf?.call(c) ?? 1.0;
+  // A family's target relevance = its most-relevant card.
+  double familyPriority(List<Card> f) => f.map(priority).reduce(max);
 
   for (final family in components) {
     family.sort((a, b) {
@@ -67,7 +78,10 @@ List<LearnItem> buildLearnQueue({
   }
   components.sort((a, b) {
     final byTier = familyTier(a).compareTo(familyTier(b));
-    return byTier != 0 ? byTier : b.length.compareTo(a.length);
+    if (byTier != 0) return byTier; // foundational-first (primary)
+    final byPriority = familyPriority(b).compareTo(familyPriority(a));
+    if (byPriority != 0) return byPriority; // target-relevant next
+    return b.length.compareTo(a.length);
   });
 
   final items = <LearnItem>[];

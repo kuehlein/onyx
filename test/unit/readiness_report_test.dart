@@ -25,6 +25,7 @@ void main() {
             mocks: 2,
             contested: 1,
             topics: ['Load balancing', 'Caching'],
+            concepts: ['consistent-hashing', 'cap-theorem'],
           ),
           const DomainReportRow(
             name: 'DS & A',
@@ -46,10 +47,14 @@ void main() {
       expect(sys.toLowerCase(), contains('honest'));
       expect(sys, contains('level × company × track'));
     });
-    test('centres scope-gap reasoning and the recall-vs-transfer distinction',
-        () {
-      expect(sys.toUpperCase(), contains('SCOPE GAP'));
+    test('leads with LEARNING gaps and keeps CONTENT gaps soft/secondary', () {
+      expect(sys.toUpperCase(), contains('LEARNING GAP'));
       expect(sys.toUpperCase(), contains('APPLIED TRANSFER'));
+      // Content/missing-card gaps are explicitly secondary + soft (the deck is
+      // still being built), not the headline.
+      expect(sys.toUpperCase(), contains('CONTENT'));
+      expect(sys.toLowerCase(), contains('secondary'));
+      expect(sys.toLowerCase(), contains('still being built'));
       // Asks for the four narrative sections.
       for (final s in ['Verdict', 'Strengths', 'Gaps', 'Do next']) {
         expect(sys, contains(s));
@@ -69,6 +74,8 @@ void main() {
       expect(u, contains('3/10 sections started'));
       expect(u, contains('Load balancing, Caching'));
       expect(u, contains('1 grade(s) the critic disputed'));
+      // Finer concepts are surfaced so the model reasons about learning coverage.
+      expect(u, contains('consistent-hashing, cap-theorem'));
     });
 
     test('flags recall-only (unproven) when there is no mock evidence', () {

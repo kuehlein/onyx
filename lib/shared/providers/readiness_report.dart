@@ -101,12 +101,15 @@ class ReadinessReport extends _$ReadinessReport {
     final summary = await ref.read(appliedSummaryProvider.future);
     final index = await ref.read(vaultIndexProvider.future);
 
-    // Per-domain deck topics (card titles), so the model can reason about scope.
+    // Per-domain deck topics (card titles) + the finer concepts the cards tag,
+    // so the model can reason about learning coverage within the deck.
     final topicsByDomain = <String, List<String>>{};
+    final conceptsByDomain = <String, Set<String>>{};
     for (final c in index.cards) {
       final d = c.domain;
       if (d == null) continue;
       topicsByDomain.putIfAbsent(d, () => []).add(c.title);
+      conceptsByDomain.putIfAbsent(d, () => {}).addAll(c.concepts);
     }
 
     int? daysToInterview;
@@ -131,6 +134,7 @@ class ReadinessReport extends _$ReadinessReport {
           mocks: summary[dr.domain]?.attempts ?? 0,
           contested: summary[dr.domain]?.contested ?? 0,
           topics: topicsByDomain[dr.domain] ?? const [],
+          concepts: conceptsByDomain[dr.domain]?.toList() ?? const [],
         ),
     ];
 

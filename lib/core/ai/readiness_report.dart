@@ -1,8 +1,9 @@
 /// Builds the prompt for the AI interview-readiness report (task #24) — an
 /// honest, on-demand assessment that turns the readiness *number* into a
-/// narrative: where you stand for your specific target, what your deck is likely
-/// missing for that bar (scope gaps the metric itself can't see, since it only
-/// knows your cards), and what to do next.
+/// narrative: where you stand for your target, and — its primary job — the
+/// LEARNING gaps in the material you already have (topics you haven't studied,
+/// haven't retained, or haven't proven under mock pressure), plus what to do
+/// next. Missing-content notes are kept soft; the deck is still being built.
 library;
 
 /// One domain's evidence, as fed to the model.
@@ -17,6 +18,7 @@ class DomainReportRow {
     required this.mocks,
     required this.contested,
     required this.topics,
+    this.concepts = const [],
     this.transfer,
   });
 
@@ -30,6 +32,7 @@ class DomainReportRow {
   final int mocks; // applied attempts backing transfer
   final int contested; // attempts the adversarial critic disputed
   final List<String> topics; // card titles in this domain (the deck's scope)
+  final List<String> concepts; // finer-grained concepts the cards tag
 }
 
 /// Everything the report reasons over. Assembled by the provider from the same
@@ -86,25 +89,32 @@ String buildReadinessReportSystem() {
         'TRANSFER (they proved they can use it under interview pressure, via '
         'mocks). If there is little or no mock evidence, say plainly that '
         'readiness is unproven — recall alone does not clear an interview.')
-    ..writeln('- SCOPE GAPS are your highest-value contribution. You can see '
-        'only the topics in their deck (listed per domain). Compare that to '
-        'what a strong candidate FOR THIS TARGET is expected to know, and call '
-        'out concretely what looks missing or thin (name the specific topics — '
-        'e.g. "no cards on consistent hashing, rate limiting, or CAP '
-        'trade-offs"). Note this is inferred from card titles, so a topic may '
-        'be covered under another name — frame gaps as "appears missing".')
+    ..writeln(
+        '- LEARNING GAPS are your primary focus: within the material they '
+        'ALREADY have (topics/concepts listed per domain), what have they not '
+        'yet studied (low coverage), not retained (low strength), or not proven '
+        'under pressure (no/weak mock transfer)? Name the specific domains and '
+        'topics and what to do about each. This — not missing content — is what '
+        'the learner wants help with.')
+    ..writeln(
+        '- CONTENT gaps are SECONDARY and SOFT. Their deck is still being '
+        'built, so do NOT alarm about missing cards. You may add at most a brief '
+        'note if something clearly essential for this target seems absent from '
+        'the listed topics/concepts — framed as "as you build out the deck, '
+        'consider adding X" — but this is inferred from titles/concepts and may '
+        'already be covered under another name, so keep it tentative and short.')
     ..writeln('- If an interview date is given, factor the time remaining into '
         'what is realistic to fix.')
     ..writeln('- End with a short, PRIORITISED action list ordered by impact '
-        'toward this target (what to study, what to mock, what to add to the '
-        'deck).')
+        'toward this target — mostly what to STUDY, STRENGTHEN, or MOCK.')
     ..writeln()
     ..writeln('Format as concise Markdown with these sections, in order:')
     ..writeln('## Verdict — 1–2 sentences: are they on track for this target, '
         'and a rough sense of how far off.')
     ..writeln('## Strengths — the domains/evidence that are genuinely solid.')
-    ..writeln('## Gaps & risks — weak domains, unproven transfer, and SCOPE '
-        'GAPS (missing/thin topics for this target).')
+    ..writeln('## Gaps & risks — lead with LEARNING gaps (unstudied, weak, or '
+        'unproven topics they already have); a brief, soft content note only if '
+        'clearly warranted.')
     ..writeln('## Do next — a numbered, prioritised list (3–6 items).')
     ..writeln('Keep it tight — no preamble, no restating these instructions.');
   return b.toString();
@@ -146,9 +156,13 @@ String buildReadinessReportUser(ReadinessReportData d) {
           '${r.contested > 0 ? ' (${r.contested} grade(s) the critic '
               'disputed)' : ''}');
     if (r.topics.isEmpty) {
-      b.writeln('- Deck topics: (none)');
+      b.writeln('- Deck cards: (none)');
     } else {
-      b.writeln('- Deck topics (${r.topics.length}): ${r.topics.join(', ')}');
+      b.writeln('- Deck cards (${r.topics.length}): ${r.topics.join(', ')}');
+    }
+    if (r.concepts.isNotEmpty) {
+      b.writeln('- Concepts tagged (${r.concepts.length}): '
+          '${r.concepts.join(', ')}');
     }
   }
 
