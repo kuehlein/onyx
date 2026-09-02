@@ -24,6 +24,7 @@ Future<void> showCoachSheet(
   CardSection? section,
   required bool revealed,
   required bool grading,
+  String? interviewContext,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -39,6 +40,7 @@ Future<void> showCoachSheet(
       section: section,
       revealed: revealed,
       grading: grading,
+      interviewContext: interviewContext,
     ),
   );
 }
@@ -75,12 +77,17 @@ class CoachSheet extends ConsumerStatefulWidget {
     required this.section,
     required this.revealed,
     required this.grading,
+    this.interviewContext,
   });
 
   final Card card;
   final CardSection? section;
   final bool revealed;
   final bool grading;
+
+  /// When set (a themed mock from a prep goal), the interviewer tailors the mock
+  /// to this role, e.g. "Google · Senior · Backend".
+  final String? interviewContext;
 
   @override
   ConsumerState<CoachSheet> createState() => _CoachSheetState();
@@ -164,6 +171,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
           section: widget.section,
           revealed: widget.revealed,
           grading: widget.grading,
+          interviewContext: widget.interviewContext,
         );
     _scrollToEnd();
   }

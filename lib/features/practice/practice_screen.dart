@@ -16,9 +16,14 @@ import '../../shared/widgets/fading_scroll_edges.dart';
 /// problems (interview questions) first for attempt + coach, and never records
 /// an FSRS review, so it can't corrupt the spaced-repetition schedule.
 class PracticeScreen extends ConsumerStatefulWidget {
-  const PracticeScreen({super.key, required this.domain});
+  const PracticeScreen(
+      {super.key, required this.domain, this.interviewContext});
 
   final String domain;
+
+  /// When set (launched from a prep goal), themes the mock coach to that
+  /// interview, e.g. "Google · Senior · Backend".
+  final String? interviewContext;
 
   @override
   ConsumerState<PracticeScreen> createState() => _PracticeScreenState();
@@ -54,6 +59,7 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
                 section: practiceAnswerSection(card),
                 revealed: _revealed,
                 grading: true,
+                interviewContext: widget.interviewContext,
               ),
             ),
         ],
@@ -80,6 +86,7 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
             total: set.length,
             revealed: _revealed,
             isLast: _index == set.length - 1,
+            interviewContext: widget.interviewContext,
             onReveal: () => setState(() => _revealed = true),
             onNext: () => _next(set.length),
           );
@@ -98,6 +105,7 @@ class _PracticeCard extends StatelessWidget {
     required this.isLast,
     required this.onReveal,
     required this.onNext,
+    this.interviewContext,
   });
 
   final Card card;
@@ -107,6 +115,7 @@ class _PracticeCard extends StatelessWidget {
   final bool isLast;
   final VoidCallback onReveal;
   final VoidCallback onNext;
+  final String? interviewContext;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +168,7 @@ class _PracticeCard extends StatelessWidget {
               card: card,
               revealed: revealed,
               isLast: isLast,
+              interviewContext: interviewContext,
               onReveal: onReveal,
               onNext: onNext,
             ),
@@ -176,6 +186,7 @@ class _PracticeActions extends StatelessWidget {
     required this.isLast,
     required this.onReveal,
     required this.onNext,
+    this.interviewContext,
   });
 
   final Card card;
@@ -183,6 +194,7 @@ class _PracticeActions extends StatelessWidget {
   final bool isLast;
   final VoidCallback onReveal;
   final VoidCallback onNext;
+  final String? interviewContext;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +224,7 @@ class _PracticeActions extends StatelessWidget {
                         section: practiceAnswerSection(card),
                         revealed: false,
                         grading: true,
+                        interviewContext: interviewContext,
                       ),
                       icon: const Icon(Icons.psychology_outlined),
                       label: const Text('Answer the coach'),

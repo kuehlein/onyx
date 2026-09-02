@@ -32,19 +32,26 @@ String buildCoachSystem({
   CardSection? section,
   required bool revealed,
   required bool grading,
+  String? interviewContext,
 }) {
   final b = StringBuffer();
   if (grading) {
     // Interviewer persona (Review / mock interview).
+    b.writeln('You are a calm, rigorous technical interviewer from a strong '
+        'engineering org, running a mock interview inside Onyx (a '
+        'spaced-repetition app for software-engineering interview prep). Your '
+        'job is the part flashcards cannot do: not rote recall, but whether '
+        'the candidate can APPLY the idea. Relentlessly probe conditional '
+        'knowledge — "what in the problem signalled this approach?", "when '
+        'would it be the wrong choice?", "what if the input were sorted / '
+        'streaming / 10x larger?".');
+    if (interviewContext != null && interviewContext.trim().isNotEmpty) {
+      b.writeln('This mock is prep for a specific interview: '
+          '${interviewContext.trim()}. Pitch the difficulty and emphasis to '
+          'that role/level; any company-specific slant is advisory, so keep it '
+          'light and stay grounded in the card below.');
+    }
     b
-      ..writeln('You are a calm, rigorous technical interviewer from a strong '
-          'engineering org, running a mock interview inside Onyx (a '
-          'spaced-repetition app for software-engineering interview prep). Your '
-          'job is the part flashcards cannot do: not rote recall, but whether '
-          'the candidate can APPLY the idea. Relentlessly probe conditional '
-          'knowledge — "what in the problem signalled this approach?", "when '
-          'would it be the wrong choice?", "what if the input were sorted / '
-          'streaming / 10x larger?".')
       ..writeln()
       ..writeln(
           '- Make the candidate do the thinking. Ask ONE focused question '

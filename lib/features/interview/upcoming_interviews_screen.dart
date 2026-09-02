@@ -162,7 +162,8 @@ class _GoalRow extends ConsumerWidget {
                     child: FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        context.push('/practice/$topDomain');
+                        context.push('/practice/$topDomain'
+                            '?for=${Uri.encodeComponent(goal.label)}');
                       },
                       icon: const Icon(Icons.psychology_outlined),
                       label: const Text('Practice for this interview'),

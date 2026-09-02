@@ -85,6 +85,7 @@ class Coach extends _$Coach {
     CardSection? section,
     required bool revealed,
     required bool grading,
+    String? interviewContext,
   }) async {
     final current = state.asData?.value ?? const CoachState();
     final trimmed = text.trim();
@@ -111,6 +112,7 @@ class Coach extends _$Coach {
           section: section,
           revealed: revealed,
           grading: grading,
+          interviewContext: interviewContext,
         ),
         messages: [
           for (final m in history)

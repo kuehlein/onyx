@@ -33,8 +33,11 @@ GoRouter createRouter() => GoRouter(
         // A short, non-grading practice run on a domain (`/practice/ds-a`).
         GoRoute(
           path: '/practice/:domain',
-          builder: (_, state) =>
-              PracticeScreen(domain: state.pathParameters['domain']!),
+          builder: (_, state) => PracticeScreen(
+            domain: state.pathParameters['domain']!,
+            // `?for=Google · Senior · Backend` themes the mock to a prep goal.
+            interviewContext: state.uri.queryParameters['for'],
+          ),
         ),
         // The AI interview-readiness report, launched from Home.
         GoRoute(

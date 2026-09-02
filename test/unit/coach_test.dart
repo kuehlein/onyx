@@ -103,6 +103,28 @@ void main() {
       expect(prompt, contains('## Pitfalls'));
       expect(prompt, isNot(contains('suggest-grade')));
     });
+
+    test('a themed mock injects the interview context (grading only)', () {
+      final themed = buildCoachSystem(
+        card: _card(),
+        section: null,
+        revealed: false,
+        grading: true,
+        interviewContext: 'Google · Senior · Backend',
+      );
+      expect(themed, contains('Google · Senior · Backend'));
+      expect(themed.toLowerCase(), contains('prep for a specific interview'));
+
+      // Ignored by the tutor persona (non-grading).
+      final tutor = buildCoachSystem(
+        card: _card(),
+        section: null,
+        revealed: true,
+        grading: false,
+        interviewContext: 'Google · Senior · Backend',
+      );
+      expect(tutor, isNot(contains('Google · Senior · Backend')));
+    });
   });
 
   group('parseCoachReply', () {
