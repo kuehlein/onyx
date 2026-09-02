@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/interview/interview_debrief_screen.dart';
 import '../features/interview/interview_planner_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
@@ -50,6 +51,12 @@ GoRouter createRouter() => GoRouter(
         GoRoute(
             path: '/interviews',
             builder: (_, __) => const UpcomingInterviewsScreen()),
+        // Post-interview debrief for one goal (`/debrief/goal-123`).
+        GoRoute(
+          path: '/debrief/:goalId',
+          builder: (_, state) =>
+              InterviewDebriefScreen(goalId: state.pathParameters['goalId']!),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
           branches: [

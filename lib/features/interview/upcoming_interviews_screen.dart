@@ -170,6 +170,18 @@ class _GoalRow extends ConsumerWidget {
                     ),
                   ),
                 const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.push('/debrief/${goal.id}');
+                    },
+                    icon: const Icon(Icons.rate_review_outlined),
+                    label: const Text('Debrief — how did it go?'),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
