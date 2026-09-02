@@ -29,10 +29,16 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
       .recentReviewStats(clock.now().subtract(const Duration(days: 14)));
 
   final weakest = readiness.weakestDomain;
+  // Overall coverage = studied sections / all in-scope sections.
+  final totalSections = readiness.domains.fold(0, (a, d) => a + d.total);
+  final studiedSections = readiness.domains.fold(0, (a, d) => a + d.studied);
+  final coverage = totalSections == 0 ? 0.0 : studiedSections / totalSections;
+
   final signals = CoachSignals(
     anyStudied: readiness.domains.any((d) => d.studied > 0),
     studiedToday: streak.studiedToday,
     overall: readiness.overall,
+    coverage: coverage,
     interviewTested: readiness.interview,
     dueCount: review.queue.length,
     newCardLimit: newLimit,

@@ -18,6 +18,7 @@ enum CoachInsightKind {
   gettingStarted,
   overloaded,
   behindPace,
+  building,
   unproven,
   onTrack,
 }
@@ -54,6 +55,7 @@ class CoachSignals {
     required this.anyStudied,
     required this.studiedToday,
     required this.overall,
+    required this.coverage,
     required this.interviewTested,
     required this.dueCount,
     required this.newCardLimit,
@@ -71,6 +73,7 @@ class CoachSignals {
   final bool anyStudied;
   final bool studiedToday;
   final double overall; // 0..1 readiness
+  final double coverage; // 0..1 fraction of all in-scope sections started
   final bool interviewTested; // mocks exist → transfer measured
   final int dueCount; // reviews due now (backlog proxy)
   final int newCardLimit; // configured new sections/day
@@ -96,6 +99,14 @@ class CoachSignals {
   /// A due backlog at/above this is "piling up" — the dominant SRS failure mode.
   int get backlogThreshold => newCardLimit * 3 < 60 ? 60 : newCardLimit * 3;
 
+  /// Below this coverage there's still substantial material to learn — building
+  /// the base outranks proving transfer or affirming "on track".
+  static const coverageBar = 0.85;
+
+  /// Overall readiness at/above this counts as solid enough to affirm (absent an
+  /// explicit on-pace-for-a-date signal).
+  static const solidBar = 0.55;
+
   bool get retentionLow =>
       retention != null &&
       reviewsInWindow >= minReviewSample &&
@@ -106,6 +117,13 @@ class CoachSignals {
   bool get behind =>
       paceStatus == PaceStatus.behind ||
       paceStatus == PaceStatus.slightlyBehind;
+
+  /// An interview date is set, so pace/deadline reasoning applies.
+  bool get hasDate => paceStatus != null;
+
+  bool get onPace =>
+      paceStatus == PaceStatus.onTrack ||
+      paceStatus == PaceStatus.coverageComplete;
 }
 
 String _rate(double v) {
@@ -179,7 +197,23 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     );
   }
 
-  // Covered but unproven — recall isn't the interview bar; a mock is.
+  // Still substantial material uncovered → build the base. This ranks above
+  // proving/affirming: you can't be "ready" from a sliver, and (with no date)
+  // you can't be "behind" — but you can always keep learning.
+  if (s.coverage < CoachSignals.coverageBar) {
+    return CoachUpdate(
+      kind: CoachInsightKind.building,
+      tone: CoachTone.info,
+      headline: "You've covered ~${_pct(s.coverage)}% — keep learning.",
+      why: 'Only ~${_pct(s.coverage)}% of your material has been started, so '
+          'readiness (~${_pct(s.overall)}%) can’t climb far yet. The highest-'
+          'value move is to keep learning new sections a few at a time.',
+      actionLabel: 'Learn now',
+      actionRoute: '/learn',
+    );
+  }
+
+  // Covered but never mock-tested — recall isn't the interview bar; a mock is.
   if (!s.interviewTested) {
     final hasDomain = s.weakestDomain != null;
     return CoachUpdate(
@@ -196,20 +230,37 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     );
   }
 
-  // On track — affirm briefly (rotating), never manufacture urgency.
-  const affirms = [
-    'On track — steady daily reps are doing the work.',
-    'Nicely paced. Keep the daily habit going.',
-    'Solid — your consistency is compounding.',
-  ];
+  // Genuinely on track: on pace toward a set date, or solid readiness. Only
+  // here do we affirm — never at low readiness just because nothing's on fire.
+  if ((s.hasDate && s.onPace) || s.overall >= CoachSignals.solidBar) {
+    const affirms = [
+      'On track — steady daily reps are doing the work.',
+      'Nicely paced. Keep the daily habit going.',
+      'Solid — your consistency is compounding.',
+    ];
+    return CoachUpdate(
+      kind: CoachInsightKind.onTrack,
+      tone: CoachTone.positive,
+      headline: s.studiedToday
+          ? affirms[s.affirmSeed % affirms.length]
+          : 'On track — a quick session today keeps it that way.',
+      why: 'Readiness is ~${_pct(s.overall)}% and your pace looks healthy. '
+          'Nothing needs fixing — keep showing up.',
+      actionLabel: s.dueCount > 0 ? 'Review now' : null,
+      actionRoute: s.dueCount > 0 ? '/quiz' : null,
+    );
+  }
+
+  // Covered + mock-tested, but readiness is still soft and there's no deadline
+  // pressure → deepen recall via review rather than falsely affirm "on track".
   return CoachUpdate(
-    kind: CoachInsightKind.onTrack,
-    tone: CoachTone.positive,
-    headline: s.studiedToday
-        ? affirms[s.affirmSeed % affirms.length]
-        : 'On track — a quick session today keeps it that way.',
-    why: 'Readiness is ~${_pct(s.overall)}% and your pace looks healthy. '
-        'Nothing needs fixing — keep showing up.',
+    kind: CoachInsightKind.building,
+    tone: CoachTone.info,
+    headline: 'Readiness ~${_pct(s.overall)}% — deepen it with review.',
+    why: 'You’ve covered the material but recall and transfer are still '
+        'building (readiness ~${_pct(s.overall)}%). Keep reviewing to '
+        'strengthen it${s.hasDate ? '' : '; set a target date if you want pace '
+            'tracking'}.',
     actionLabel: s.dueCount > 0 ? 'Review now' : null,
     actionRoute: s.dueCount > 0 ? '/quiz' : null,
   );

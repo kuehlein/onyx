@@ -2,11 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/coach/coach_update.dart';
 import 'package:onyx/core/readiness/pace.dart';
 
-/// A healthy, on-track, mock-tested learner — override fields per test.
+/// A healthy, well-covered, on-track, mock-tested learner — override per test.
 CoachSignals sig({
   bool anyStudied = true,
   bool studiedToday = true,
   bool interviewTested = true,
+  double overall = 0.6,
+  double coverage = 0.9,
   int dueCount = 0,
   int newCardLimit = 20,
   int reviewsInWindow = 30,
@@ -21,7 +23,8 @@ CoachSignals sig({
     CoachSignals(
       anyStudied: anyStudied,
       studiedToday: studiedToday,
-      overall: 0.6,
+      overall: overall,
+      coverage: coverage,
       interviewTested: interviewTested,
       dueCount: dueCount,
       newCardLimit: newCardLimit,
@@ -111,6 +114,60 @@ void main() {
       ))!;
       expect(u.kind, CoachInsightKind.unproven);
       expect(u.hasAction, isFalse);
+    });
+
+    test('low coverage → building, even when mock-tested and nominally on pace',
+        () {
+      final u = buildCoachUpdate(sig(coverage: 0.1))!;
+      expect(u.kind, CoachInsightKind.building);
+      expect(u.headline, contains('10%'));
+      expect(u.actionRoute, '/learn');
+    });
+
+    test('building (learn the base) outranks unproven', () {
+      final u = buildCoachUpdate(sig(coverage: 0.1, interviewTested: false))!;
+      expect(u.kind, CoachInsightKind.building);
+      expect(u.actionRoute, '/learn');
+    });
+
+    test('barely studied + no date is "building", NOT "on track"', () {
+      // The reported bug: one day of progress then a big clock jump.
+      final u = buildCoachUpdate(sig(
+        coverage: 0.07,
+        overall: 0.1,
+        paceStatus: null,
+      ))!;
+      expect(u.kind, CoachInsightKind.building);
+      expect(u.kind, isNot(CoachInsightKind.onTrack));
+    });
+
+    test(
+        'covered but soft readiness + no date → deepen with review, not affirm',
+        () {
+      final u = buildCoachUpdate(sig(
+        coverage: 0.9,
+        overall: 0.3,
+        paceStatus: null,
+        dueCount: 5,
+      ))!;
+      expect(u.kind, CoachInsightKind.building);
+      expect(u.headline.toLowerCase(), contains('deepen'));
+      expect(u.actionRoute, '/quiz');
+    });
+
+    test('on pace for a set date affirms even at early readiness', () {
+      final u = buildCoachUpdate(sig(
+        coverage: 0.9,
+        overall: 0.2,
+        paceStatus: PaceStatus.onTrack,
+      ))!;
+      expect(u.kind, CoachInsightKind.onTrack);
+    });
+
+    test('solid readiness (no date) affirms', () {
+      final u =
+          buildCoachUpdate(sig(coverage: 0.9, overall: 0.6, paceStatus: null))!;
+      expect(u.kind, CoachInsightKind.onTrack);
     });
 
     test('healthy + mock-tested → on-track affirmation', () {
