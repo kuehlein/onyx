@@ -90,10 +90,13 @@ class InterviewDebrief extends _$InterviewDebrief {
       final concepts = <String>{
         for (final c in index.cards) ...c.concepts,
       };
+      final freq = deckFrequencySignal(index.cards);
       final system = buildDebriefSystem(
         goal: goal,
         deckDomains: domains.toList(),
         deckConcepts: concepts.toList(),
+        highFrequency: freq.high,
+        lowFrequency: freq.low,
       );
 
       final raw = await claude.chat(
