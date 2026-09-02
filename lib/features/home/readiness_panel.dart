@@ -336,9 +336,9 @@ const _readyLine = 0.75;
 }
 
 /// The overall progress bar + calibrated ready status. The fill IS the headline
-/// % (so the number and the bar can never disagree); a shaded "ready zone" runs
-/// from the flag at the interview-ready line to 100%, and a status word under
-/// the bar names where you stand (Building → Developing → Interview-ready).
+/// % (so the number and the bar can never disagree), with a goal flag at the
+/// interview-ready line and a status word under the bar naming where you stand
+/// (Building → Developing → Interview-ready).
 class _OverallBar extends StatelessWidget {
   const _OverallBar(this.r);
 
@@ -355,7 +355,6 @@ class _OverallBar extends StatelessWidget {
           value: r.overall,
           color: _bandColor(r.overall),
           goal: _readyLine,
-          readyFrom: _readyLine,
         ),
         const SizedBox(height: 3),
         Row(
@@ -514,7 +513,6 @@ class _TickedBar extends StatelessWidget {
     required this.color,
     this.recall,
     this.goal,
-    this.readyFrom,
   });
 
   /// The darker "proven" fill — the interview-adjusted score.
@@ -530,13 +528,8 @@ class _TickedBar extends StatelessWidget {
   /// Fraction (0..1) at which to place the goal flag, or null for no flag.
   final double? goal;
 
-  /// Fraction (0..1) from which to shade a faint-green "ready zone" to the end
-  /// of the track, or null for none. Marks interview-ready territory.
-  final double? readyFrom;
-
   static const _barHeight = 6.0;
   static const _flagZone = 16.0; // clear space above the bar for the flag
-  static const _ready = Color(0xFF4CC38A);
 
   @override
   Widget build(BuildContext context) {
@@ -566,29 +559,6 @@ class _TickedBar extends StatelessWidget {
                       color: theme.colorScheme.surfaceContainerHighest),
                 ),
               ),
-              // Ready zone: a faint-green band from readyFrom → end, clipped to
-              // the rounded track so its right corner stays round. Sits under the
-              // fill, so it only shows in the not-yet-filled part of the zone.
-              if (readyFrom != null)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: _flagZone,
-                  child: ClipRRect(
-                    borderRadius: radius,
-                    child: SizedBox(
-                      height: _barHeight,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: FractionallySizedBox(
-                          widthFactor: (1 - readyFrom!.clamp(0.0, 1.0)),
-                          child:
-                              Container(color: _ready.withValues(alpha: 0.18)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               // Recall ceiling (lighter) — drawn first so the proven fill sits
               // on top of it. Only visible where it extends past `value`.
               if (showCeiling)
