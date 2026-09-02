@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';
-import '../../core/readiness/target.dart';
 import '../../core/srs/learn_queue.dart';
 import '../models/card.dart';
 import 'clock.dart';
@@ -38,18 +37,16 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   final states = await repo.loadStates();
   final remaining = await ref.watch(dailyNewRemainingProvider.future);
   if (remaining <= 0) return const [];
-  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final targeting = await ref.watch(targetingProvider.future);
   return buildLearnQueue(
     cards: index.cards,
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(index.cards),
     newSectionLimit: remaining,
-    // Bias new material toward the target's heavier domains (secondary to
-    // foundational-first), so what matters for THIS interview surfaces sooner.
-    priorityOf: (card) {
-      final d = card.domain;
-      return d == null ? 1.0 : domainWeight(target, d);
-    },
+    // Bias new material toward the domains/concepts the active target + prep
+    // goals weight most (secondary to foundational-first), so what matters for
+    // the interview(s) surfaces sooner.
+    priorityOf: targeting.weightForCard,
   );
 }
 

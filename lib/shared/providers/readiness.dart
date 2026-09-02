@@ -9,6 +9,7 @@ import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
+import '../../core/readiness/targeting.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
@@ -167,6 +168,20 @@ class PrepGoals extends _$PrepGoals {
       ]);
 }
 
+/// The effective study targeting: the base target combined with the ACTIVE prep
+/// goals. Consumers (learn order, readiness weighting, pace) read this, so a
+/// specific interview biases study. Identical to the base target when no goal is
+/// active.
+@riverpod
+Future<Targeting> targeting(Ref ref) async {
+  final base = await ref.watch(readinessTargetControllerProvider.future);
+  final goals = await ref.watch(prepGoalsProvider.future);
+  return Targeting(base: base, goals: [
+    for (final g in goals)
+      if (g.active) g,
+  ]);
+}
+
 /// Knowledge-base readiness (Phase A), derived from the indexed cards + current
 /// FSRS stability, weighted toward the chosen target. Nothing extra is stored:
 /// it recomputes from `srs_state` (already synced to the vault snapshot) and the
@@ -175,15 +190,20 @@ class PrepGoals extends _$PrepGoals {
 Future<Readiness> readiness(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final targeting = await ref.watch(targetingProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
-  return computeReadinessForTarget(
+  final domains = <String>{
+    for (final c in index.cards)
+      if (c.domain != null) c.domain!,
+  };
+  return computeReadiness(
     cards: index.cards,
     stabilityByKey: stabilityByKey,
-    target: target,
+    stabilityTarget: targeting.stabilityTarget,
+    domainWeights: {for (final d in domains) d: targeting.weightForDomain(d)},
     transferByDomain: applied.interview ? applied.byDomain : null,
   );
 }
@@ -208,12 +228,12 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   );
 }
 
-/// Coverage pace toward the target's interview date, or null when no date is
-/// set. Projects from the recent new-sections-per-day rate over a 14-day window.
+/// Coverage pace toward the soonest interview date (base target or an active
+/// prep goal), or null when nothing is scheduled. Projects from the recent
+/// new-sections-per-day rate over a 14-day window.
 @riverpod
 Future<PaceEstimate?> readinessPace(Ref ref) async {
-  final target = await ref.watch(readinessTargetControllerProvider.future);
-  final date = target.interviewDate;
+  final date = (await ref.watch(targetingProvider.future)).governingDate;
   if (date == null) return null;
 
   final r = await ref.watch(readinessProvider.future);

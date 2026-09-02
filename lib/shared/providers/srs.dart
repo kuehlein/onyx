@@ -126,13 +126,23 @@ class StudySession extends _$StudySession {
     Readiness? before;
     try {
       final index = await ref.read(vaultIndexProvider.future);
-      final target = await ref.read(readinessTargetControllerProvider.future);
-      before = computeReadinessForTarget(
+      final targeting = await ref.read(targetingProvider.future);
+      final domains = <String>{
+        for (final c in index.cards)
+          if (c.domain != null) c.domain!,
+      };
+      // Match readinessProvider's weighting (targeting layer) so the before/
+      // after delta on the completion screen stays consistent once prep goals
+      // are active. Recall-only here (no transfer), same as the "after" base.
+      before = computeReadiness(
         cards: index.cards,
         stabilityByKey: {
           for (final e in data.statesByKey.entries) e.key: e.value.stability,
         },
-        target: target,
+        stabilityTarget: targeting.stabilityTarget,
+        domainWeights: {
+          for (final d in domains) d: targeting.weightForDomain(d),
+        },
       );
     } catch (_) {
       before = null; // summary just omits the delta
