@@ -96,4 +96,61 @@ void main() {
       expect(t.governingDate, isNull);
     });
   });
+
+  group('desiredRetentionForCard (FSRS-safe interview lever)', () {
+    final today = DateTime(2026, 1, 1);
+    // A goal that boosts ds-a, dated relative to `today`.
+    PrepGoal goalOn(DateTime date) => PrepGoal(
+          id: 'g',
+          tier: CompanyTier.faang,
+          level: SeniorityLevel.senior,
+          track: Track.general,
+          date: date,
+          domainWeights: const {'ds-a': 5.0},
+        );
+
+    test('no goals → the card base (its priority) unchanged', () {
+      const t = Targeting(base: _base, goals: []);
+      // default card priority is normal → 0.90.
+      expect(t.desiredRetentionForCard(_card('ds-a'), today: today), 0.90);
+    });
+
+    test('a near-term goal on the day pushes a targeted card to the cap', () {
+      final t = Targeting(base: _base, goals: [goalOn(today)]);
+      expect(t.desiredRetentionForCard(_card('ds-a'), today: today),
+          closeTo(Targeting.retentionCap, 1e-9));
+    });
+
+    test('the bump ramps with proximity (partway between base and cap)', () {
+      final t = Targeting(
+          base: _base, goals: [goalOn(today.add(const Duration(days: 10)))]);
+      final r = t.desiredRetentionForCard(_card('ds-a'), today: today);
+      expect(r, greaterThan(0.90));
+      expect(r, lessThan(Targeting.retentionCap));
+    });
+
+    test('outside the window (too far, or past) → base, no bump', () {
+      final far = Targeting(
+          base: _base, goals: [goalOn(today.add(const Duration(days: 40)))]);
+      final past = Targeting(
+          base: _base,
+          goals: [goalOn(today.subtract(const Duration(days: 1)))]);
+      expect(far.desiredRetentionForCard(_card('ds-a'), today: today), 0.90);
+      expect(past.desiredRetentionForCard(_card('ds-a'), today: today), 0.90);
+    });
+
+    test('a card the goal does not emphasise is not bumped', () {
+      final t = Targeting(base: _base, goals: [goalOn(today)]); // boosts ds-a
+      // system-design isn't boosted and the role weights it same as base.
+      expect(t.desiredRetentionForCard(_card('system-design'), today: today),
+          0.90);
+    });
+
+    test('never exceeds the cap and never drops below base', () {
+      final t = Targeting(base: _base, goals: [goalOn(today)]);
+      final r = t.desiredRetentionForCard(_card('ds-a'), today: today);
+      expect(r, lessThanOrEqualTo(Targeting.retentionCap));
+      expect(r, greaterThanOrEqualTo(0.90));
+    });
+  });
 }

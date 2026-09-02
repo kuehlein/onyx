@@ -117,11 +117,18 @@ class LearnSession extends _$LearnSession {
       final scheduler = ref.read(srsSchedulerProvider);
       final repo = ref.read(srsRepositoryProvider);
       final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
-      // A fresh section: no prior state, so this seeds the initial FSRS values.
+      // A near-term prep goal raises target retention (scheduling only); base
+      // otherwise. Seeds the initial FSRS values for this fresh section.
+      final retention = ref
+              .read(targetingProvider)
+              .asData
+              ?.value
+              .desiredRetentionForCard(item.card, today: clock.today()) ??
+          item.card.priority.desiredRetention;
       final outcome = scheduler.review(
         grade: grade,
         reviewedAt: clock.now(),
-        desiredRetention: item.card.priority.desiredRetention,
+        desiredRetention: retention,
       );
       await repo.seedState(
         cardId: item.card.id,

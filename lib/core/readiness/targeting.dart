@@ -6,7 +6,9 @@ import 'target.dart';
 /// combined with the ACTIVE interview [PrepGoal]s that layer on top. Consumers
 /// (learn order, readiness weighting, pace) read this instead of the raw target,
 /// so a specific interview can bias what you study — while FSRS state stays pure
-/// (see the fsrs-exam-targeting memory; desired-retention/cram come later).
+/// (see the fsrs-exam-targeting memory: it biases learn order, readiness, pace,
+/// and per-card desired-retention only; an optional non-rescheduling cram is a
+/// later add).
 ///
 /// With no active goals this is behaviourally identical to reading the base
 /// target directly (weights reduce to `domainWeight(base, …)`).
@@ -60,4 +62,48 @@ class Targeting {
 
   /// The readiness "durability" bar (unchanged from the base target for now).
   double get stabilityTarget => base.stabilityTarget;
+
+  /// How many days out a goal's date starts pulling target-card retention up.
+  static const peakWindowDays = 21;
+
+  /// The retention ceiling — above this, FSRS workload explodes for little gain
+  /// (see fsrs-exam-targeting). We never push a card past this.
+  static const retentionCap = 0.95;
+
+  /// The FSRS-safe interview lever: the card's base desired-retention (from its
+  /// priority) raised toward [retentionCap] for cards a NEAR-TERM active goal
+  /// emphasises, ramping up as the interview nears. This ONLY changes scheduling
+  /// (shorter intervals → fresher on the date), never the fitted
+  /// stability/difficulty, and reverts to base once the goal passes / is toggled
+  /// off. [today] anchors the proximity ramp.
+  double desiredRetentionForCard(Card card, {required DateTime today}) {
+    final base = card.priority.desiredRetention;
+    var best = base;
+    for (final g in goals) {
+      final date = g.date;
+      if (date == null) continue;
+      final daysLeft =
+          DateTime(date.year, date.month, date.day).difference(today).inDays;
+      if (daysLeft < 0 || daysLeft > peakWindowDays) continue;
+      if (!_goalTargets(g, card)) continue;
+      final proximity =
+          1 - daysLeft / peakWindowDays; // 0 at edge → 1 on the day
+      final bumped = base + (retentionCap - base) * proximity;
+      if (bumped > best) best = bumped;
+    }
+    return best;
+  }
+
+  /// Whether [g] emphasises this card — an explicit domain/concept boost, or a
+  /// role whose heuristic weights the card's domain above the base aim.
+  bool _goalTargets(PrepGoal g, Card card) {
+    final dom = card.domain;
+    if (dom != null) {
+      if (g.domainWeights.containsKey(dom)) return true;
+      if (domainWeight(g.toTarget(), dom) > domainWeight(base, dom) + 1e-9) {
+        return true;
+      }
+    }
+    return card.concepts.any((c) => g.conceptWeights.containsKey(c));
+  }
 }
