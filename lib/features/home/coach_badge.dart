@@ -2,8 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/clock.dart';
 import '../../core/coach/coach_update.dart';
+import '../../core/readiness/readiness.dart';
+import '../../core/readiness/target.dart';
+import '../../shared/providers/clock.dart';
 import '../../shared/providers/coach_update.dart';
+import '../../shared/providers/readiness.dart';
+import 'coach_chat_sheet.dart';
+
+/// The numbers that seed the "talk about it" chat.
+typedef _ChatSeed = ({
+  int overallPct,
+  int coveragePct,
+  String targetLabel,
+  int? days,
+});
 
 const _green = Color(0xFF4CC38A);
 const _amber = Color(0xFFE3B341);
@@ -19,6 +33,12 @@ class CoachBadge extends ConsumerWidget {
     final update = ref.watch(coachUpdateProvider).asData?.value;
     if (update == null) return const SizedBox.shrink();
 
+    final seed = _chatSeed(
+      ref.watch(readinessProvider).asData?.value,
+      ref.watch(readinessTargetControllerProvider).asData?.value,
+      ref.watch(clockProvider).asData?.value,
+    );
+
     final theme = Theme.of(context);
     final color = _toneColor(update.tone, theme);
     return Material(
@@ -26,7 +46,7 @@ class CoachBadge extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showDetail(context, update, color),
+        onTap: () => _showDetail(context, update, color, seed),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -56,7 +76,27 @@ class CoachBadge extends ConsumerWidget {
     );
   }
 
-  void _showDetail(BuildContext context, CoachUpdate u, Color color) {
+  _ChatSeed _chatSeed(Readiness? r, ReadinessTarget? t, Clock? clock) {
+    final total = r == null ? 0 : r.domains.fold(0, (a, d) => a + d.total);
+    final studied = r == null ? 0 : r.domains.fold(0, (a, d) => a + d.studied);
+    int? days;
+    final date = t?.interviewDate;
+    if (date != null && clock != null) {
+      days = DateTime(date.year, date.month, date.day)
+          .difference(clock.today())
+          .inDays;
+      if (days < 0) days = 0;
+    }
+    return (
+      overallPct: r == null ? 0 : (r.overall * 100).round(),
+      coveragePct: total == 0 ? 0 : (studied / total * 100).round(),
+      targetLabel: t?.label ?? 'your goal',
+      days: days,
+    );
+  }
+
+  void _showDetail(
+      BuildContext context, CoachUpdate u, Color color, _ChatSeed seed) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -96,6 +136,25 @@ class CoachBadge extends ConsumerWidget {
                       child: Text(u.actionLabel!),
                     ),
                   ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      showCoachChatSheet(
+                        context,
+                        update: u,
+                        overallPct: seed.overallPct,
+                        coveragePct: seed.coveragePct,
+                        targetLabel: seed.targetLabel,
+                        daysToInterview: seed.days,
+                      );
+                    },
+                    icon: const Icon(Icons.forum_outlined, size: 18),
+                    label: const Text('Talk about it'),
+                  ),
+                ),
                 // The deep dive lives here (progressive disclosure) rather than
                 // as its own Home button.
                 Align(
