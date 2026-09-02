@@ -7,14 +7,34 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness_report.dart';
 import '../../shared/widgets/card_markdown.dart';
 
-/// The AI interview-readiness report (task #24): an on-demand, honest narrative
-/// assessment for the chosen target — strengths, gaps (including scope gaps the
-/// readiness number can't see), and prioritised next steps.
-class ReadinessReportScreen extends ConsumerWidget {
+/// The AI interview-readiness report (task #24): an honest narrative assessment
+/// for the chosen target — strengths, gaps (including scope gaps the readiness
+/// number can't see), and prioritised next steps.
+///
+/// The report is persisted and reused until the data changes: opening this screen
+/// reuses the cached report for free if nothing has moved, and auto-regenerates
+/// only after new study/reviews/mocks or an interview change (see [ReadinessReport]).
+class ReadinessReportScreen extends ConsumerStatefulWidget {
   const ReadinessReportScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReadinessReportScreen> createState() =>
+      _ReadinessReportScreenState();
+}
+
+class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Reuse-or-regenerate on open: free if the data is unchanged, a fresh call
+    // only when it has moved.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(readinessReportProvider.notifier).ensureFresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasKey = ref.watch(claudeServiceProvider) != null;
     final report = ref.watch(readinessReportProvider);
@@ -123,8 +143,9 @@ class _Intro extends ConsumerWidget {
           ],
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () =>
-                ref.read(readinessReportProvider.notifier).generate(),
+            onPressed: () => ref
+                .read(readinessReportProvider.notifier)
+                .generate(force: true),
             icon: const Icon(Icons.auto_awesome_outlined),
             label: const Text('Generate report'),
           ),
@@ -167,8 +188,9 @@ class _Report extends ConsumerWidget {
               ],
               const SizedBox(width: 8),
               TextButton.icon(
-                onPressed: () =>
-                    ref.read(readinessReportProvider.notifier).generate(),
+                onPressed: () => ref
+                    .read(readinessReportProvider.notifier)
+                    .generate(force: true),
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Regenerate'),
               ),
