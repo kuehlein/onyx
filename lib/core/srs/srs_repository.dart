@@ -168,6 +168,29 @@ class SrsRepository {
     });
   }
 
+  /// DEV/E2E: log `'learn'` activity events for the given sections at [at], so
+  /// the coverage-pace signal (which counts `'learn'` events over a recent
+  /// window) reflects simulated study. Caller must log each section only once —
+  /// on the day it is first covered — to avoid inflating the count.
+  Future<void> seedLearnEvents(
+    Iterable<({String cardId, String sectionSlug})> items, {
+    required DateTime at,
+  }) async {
+    await _db.batch((b) {
+      for (final it in items) {
+        b.insert(
+          _db.activityLog,
+          ActivityLogCompanion.insert(
+            occurredAt: at,
+            eventType: 'learn',
+            cardId: Value(it.cardId),
+            sectionSlug: Value(it.sectionSlug),
+          ),
+        );
+      }
+    });
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

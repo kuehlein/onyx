@@ -16,7 +16,9 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/database.dart';
 import '../../shared/providers/interview.dart';
 import '../../shared/providers/learn.dart';
+import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/stats.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -436,6 +438,17 @@ class SettingsScreen extends ConsumerWidget {
         await srsRepo.seedStudied(studied, at: simNow);
         studiedNew += (to - from);
       }
+      // Log a 'learn' event for THIS day's newly-covered slice only (once per
+      // section), so the coverage-pace signal reflects the simulated study rate.
+      if (to > from) {
+        await srsRepo.seedLearnEvents(
+          [
+            for (var i = from; i < to; i++)
+              (cardId: order[i].cardId, sectionSlug: order[i].slug)
+          ],
+          at: simNow,
+        );
+      }
 
       // One mock per already-started domain this day; score climbs with time and
       // varies by domain so the per-domain bars diverge.
@@ -476,6 +489,9 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(appliedSummaryProvider);
     ref.invalidate(readinessProvider);
     ref.invalidate(readinessLadderPositionProvider);
+    ref.invalidate(readinessPaceProvider); // now fed by the seeded learn events
+    ref.invalidate(studyStreakProvider);
+    ref.invalidate(coachUpdateProvider);
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
       SnackBar(
