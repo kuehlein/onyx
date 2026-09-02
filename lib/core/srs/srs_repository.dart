@@ -133,12 +133,18 @@ class SrsRepository {
   /// (days-to-90%), so coverage/strength exist for the dashboard. Unlike
   /// [seedAllDueNow] these are scheduled out (not made due), modelling material
   /// you've studied and retained — the recall base that mock evidence gates.
+  ///
+  /// Re-seeding (on conflict) reschedules `dueAt` forward too, so a section
+  /// re-planted on a later simulated day is treated as "reviewed on schedule,"
+  /// not left stale-overdue. Without this, cards first seeded early accumulate
+  /// as a fake due-backlog as the dev clock advances.
   Future<void> seedStudied(
     Iterable<({String cardId, String sectionSlug, double stability})> items, {
     required DateTime at,
   }) async {
     await _db.batch((b) {
       for (final it in items) {
+        final due = at.add(Duration(days: it.stability.round()));
         b.insert(
           _db.srsStates,
           SrsStatesCompanion.insert(
@@ -148,13 +154,14 @@ class SrsRepository {
             difficulty: const Value(5),
             state: const Value(2), // review
             step: const Value(null),
-            dueAt: at.add(Duration(days: it.stability.round())),
+            dueAt: due,
             lastReview: Value(at),
             reviewCount: const Value(2),
           ),
           onConflict: DoUpdate((_) => SrsStatesCompanion(
                 stability: Value(it.stability),
                 lastReview: Value(at),
+                dueAt: Value(due),
               )),
         );
       }

@@ -84,8 +84,8 @@ class CoachBadge extends ConsumerWidget {
                 Text(u.why,
                     style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface, height: 1.4)),
-                if (u.hasAction) ...[
-                  const SizedBox(height: 20),
+                const SizedBox(height: 20),
+                if (u.hasAction)
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -96,7 +96,19 @@ class CoachBadge extends ConsumerWidget {
                       child: Text(u.actionLabel!),
                     ),
                   ),
-                ],
+                // The deep dive lives here (progressive disclosure) rather than
+                // as its own Home button.
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.push('/report');
+                    },
+                    icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                    label: const Text('Full readiness report'),
+                  ),
+                ),
               ],
             ),
           ),
