@@ -2,8 +2,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/interview/critic.dart';
 import '../../core/interview/transfer.dart';
+import '../../core/readiness/goals_service.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
+import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
@@ -111,6 +113,58 @@ class ReadinessTargetController extends _$ReadinessTargetController {
     if (source != null) await TargetService(source).save(target);
     state = AsyncData(target);
   }
+}
+
+/// The learner's interview-prep goals — specific upcoming interviews that LAYER
+/// on top of the base [ReadinessTargetController] aim (company + date + AI-plan
+/// weight boosts, each toggleable). Persisted to the vault (cross-device) with a
+/// device-local preferences mirror. Starts empty; the targeting layer combines
+/// the ACTIVE ones with the base target. Not yet consumed — this is the Phase 0
+/// substrate the interview-targeting feature writes to.
+@Riverpod(keepAlive: true)
+class PrepGoals extends _$PrepGoals {
+  static const _prefKey = 'prep_goals';
+
+  @override
+  Future<List<PrepGoal>> build() async {
+    final source = ref.watch(vaultSourceProvider);
+    if (source != null) {
+      final fromVault = await GoalsService(source).load();
+      if (fromVault.isNotEmpty) return fromVault;
+    }
+    final raw = await ref.read(preferencesRepositoryProvider).get(_prefKey);
+    return PrepGoal.decodeList(raw);
+  }
+
+  List<PrepGoal> get _current => state.asData?.value ?? const [];
+
+  Future<void> _persist(List<PrepGoal> goals) async {
+    await ref
+        .read(preferencesRepositoryProvider)
+        .set(_prefKey, PrepGoal.encodeList(goals));
+    final source = ref.read(vaultSourceProvider);
+    if (source != null) await GoalsService(source).save(goals);
+    state = AsyncData(goals);
+  }
+
+  /// Add a new goal or replace an existing one (matched by id).
+  Future<void> upsert(PrepGoal goal) async {
+    final goals = [..._current];
+    final i = goals.indexWhere((g) => g.id == goal.id);
+    if (i >= 0) {
+      goals[i] = goal;
+    } else {
+      goals.add(goal);
+    }
+    await _persist(goals);
+  }
+
+  Future<void> remove(String id) async =>
+      _persist([..._current]..removeWhere((g) => g.id == id));
+
+  Future<void> setActive(String id, bool active) async => _persist([
+        for (final g in _current) g.id == id ? g.copyWith(active: active) : g,
+      ]);
 }
 
 /// Knowledge-base readiness (Phase A), derived from the indexed cards + current
