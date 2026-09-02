@@ -94,6 +94,14 @@ class HomeScreen extends ConsumerWidget {
                     label: const Text('Mock interview'),
                   ),
                   const SizedBox(height: 12),
+                  // AI readiness report — an honest assessment of where you
+                  // stand for your target, incl. scope gaps the number can't see.
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/report'),
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: const Text('AI readiness report'),
+                  ),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => context.go('/browse'),
                     icon: const Icon(Icons.grid_view_outlined),

@@ -8,6 +8,7 @@ import '../features/learn/learn_screen.dart';
 import '../features/practice/practice_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/reader/reader_screen.dart';
+import '../features/report/readiness_report_screen.dart';
 import '../features/settings/settings_screen.dart';
 
 /// Builds the app router: a persistent bottom-nav shell (indexed stack, so each
@@ -33,6 +34,9 @@ GoRouter createRouter() => GoRouter(
           builder: (_, state) =>
               PracticeScreen(domain: state.pathParameters['domain']!),
         ),
+        // The AI interview-readiness report, launched from Home.
+        GoRoute(
+            path: '/report', builder: (_, __) => const ReadinessReportScreen()),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
           branches: [
