@@ -95,6 +95,13 @@ class HomeScreen extends ConsumerWidget {
                     label: const Text('Mock interview'),
                   ),
                   const SizedBox(height: 12),
+                  // Upcoming interviews — plan/toggle prep goals that bias study.
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/interviews'),
+                    icon: const Icon(Icons.event_note_outlined),
+                    label: const Text('Upcoming interviews'),
+                  ),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => context.go('/browse'),
                     icon: const Icon(Icons.grid_view_outlined),

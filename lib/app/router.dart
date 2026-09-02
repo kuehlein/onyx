@@ -5,6 +5,7 @@ import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/interview/interview_planner_screen.dart';
+import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/practice/practice_screen.dart';
 import '../features/quiz/quiz_screen.dart';
@@ -42,6 +43,10 @@ GoRouter createRouter() => GoRouter(
         GoRoute(
             path: '/plan-interview',
             builder: (_, __) => const InterviewPlannerScreen()),
+        // The upcoming-interviews list — toggle/remove/practise for prep goals.
+        GoRoute(
+            path: '/interviews',
+            builder: (_, __) => const UpcomingInterviewsScreen()),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),
           branches: [
