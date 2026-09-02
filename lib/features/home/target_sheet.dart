@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
@@ -123,6 +124,19 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                   if (context.mounted) Navigator.of(context).pop();
                 },
                 child: const Text('Save target'),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // The base aim above is your general target; a specific interview
+            // (company + date) layers on top via the AI planner.
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.push('/plan-interview');
+                },
+                icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                label: const Text('Plan for a specific interview'),
               ),
             ),
           ],
