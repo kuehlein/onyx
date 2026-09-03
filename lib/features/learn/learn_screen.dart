@@ -64,10 +64,18 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           },
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.tips_and_updates_outlined),
-            tooltip: 'Study tips',
-            onPressed: () => showStudyTipsSheet(context),
+          // A labelled accent button so it pairs cleanly with the Coach button
+          // (rather than a lone bare icon).
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: TextButton.icon(
+              onPressed: () => showStudyTipsSheet(context),
+              icon: const Icon(Icons.tips_and_updates_outlined, size: 20),
+              label: const Text('Tips'),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
           if (current != null)
             CoachButton(

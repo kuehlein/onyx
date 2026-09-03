@@ -41,9 +41,4 @@ const studyTips = <StudyTip>[
     'Tie a new idea to something familiar or a concrete example. Elaborating on '
         'a fact deepens the memory more than repeating it.',
   ),
-  StudyTip(
-    'Cards build the library; problems build transfer',
-    'Flashcards make patterns fast to recall. To learn to apply them to novel '
-        'problems, pair Onyx with real practice (LeetCode, mock interviews).',
-  ),
 ];
