@@ -65,6 +65,18 @@ class SrsRepository {
     return row.read(count) ?? 0;
   }
 
+  /// The earliest `'learn'` event date, or null if none. Used to average the
+  /// recent learn rate over the ACTUAL days of history (capped at the pace
+  /// window) — a 5-day-old history shouldn't read as if spread across 14 days.
+  Future<DateTime?> firstLearnDate() async {
+    final min = _db.activityLog.occurredAt.min();
+    final row = await (_db.selectOnly(_db.activityLog)
+          ..addColumns([min])
+          ..where(_db.activityLog.eventType.equals('learn')))
+        .getSingle();
+    return row.read(min);
+  }
+
   /// Recent review success ("true retention"): the number of graded reviews
   /// since [since] and how many were recalled (grade >= 2, i.e. not "Again").
   /// The coach uses the ratio to spot overload — at a ~0.90 desired-retention

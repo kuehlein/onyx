@@ -241,14 +241,22 @@ Future<PaceEstimate?> readinessPace(Ref ref) async {
 
   const window = 14;
   final today = (await ref.watch(clockProvider.future)).today();
-  final started = await ref
-      .watch(srsRepositoryProvider)
+  final repo = ref.watch(srsRepositoryProvider);
+  final started = await repo
       .sectionsStartedSince(today.subtract(const Duration(days: window)));
+  // Average over the ACTUAL days of history (capped at the window), not a flat
+  // 14 — otherwise a short history (e.g. 5 days in) reads at a fraction of its
+  // real daily rate and falsely trips "behind".
+  final first = await repo.firstLearnDate();
+  final historyDays = first == null
+      ? window
+      : today.difference(DateTime(first.year, first.month, first.day)).inDays;
+  final denom = historyDays.clamp(1, window);
 
   return computePace(
     today: today,
     interviewDate: DateTime(date.year, date.month, date.day),
     remainingSections: remaining,
-    recentPerDay: started / window,
+    recentPerDay: started / denom,
   );
 }
