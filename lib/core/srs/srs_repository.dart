@@ -82,6 +82,16 @@ class SrsRepository {
     return (total: row.read(total) ?? 0, retained: row.read(retained) ?? 0);
   }
 
+  /// Per-review grades since [since] (cardId + grade), for grouping retention by
+  /// domain in memory (joined to the vault index, which knows each card's tag).
+  Future<List<({String cardId, int grade})>> reviewGradesSince(
+      DateTime since) async {
+    final rows = await (_db.select(_db.reviews)
+          ..where((r) => r.reviewedAt.isBiggerOrEqualValue(since)))
+        .get();
+    return [for (final r in rows) (cardId: r.cardId, grade: r.grade)];
+  }
+
   /// Timestamps of every study action since [since] — graded reviews plus
   /// newly learned sections (`'learn'` events). Used to compute the study
   /// streak. Reviews sync via the snapshot; `activity_log` is device-local, so

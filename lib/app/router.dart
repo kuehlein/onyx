@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
 import '../features/interview/interview_planner_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
@@ -81,6 +82,11 @@ GoRouter createRouter() => GoRouter(
             ]),
             StatefulShellBranch(routes: [
               GoRoute(
+                  path: '/insights',
+                  builder: (_, __) => const InsightsScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
                   path: '/settings',
                   builder: (_, __) => const SettingsScreen()),
             ]),
@@ -109,6 +115,11 @@ class _ShellScaffold extends StatelessWidget {
       icon: Icon(Icons.school_outlined),
       selectedIcon: Icon(Icons.school),
       label: 'Study',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.query_stats_outlined),
+      selectedIcon: Icon(Icons.query_stats),
+      label: 'Insights',
     ),
     NavigationDestination(
       icon: Icon(Icons.settings_outlined),

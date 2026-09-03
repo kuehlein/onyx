@@ -78,12 +78,12 @@ void main() {
     skipped: 0,
   );
 
-  testWidgets('shell renders the four bottom-nav destinations', (tester) async {
+  testWidgets('shell renders the five bottom-nav destinations', (tester) async {
     await tester.pumpWidget(app(populated));
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    for (final label in ['Home', 'Browse', 'Study', 'Settings']) {
+    for (final label in ['Home', 'Browse', 'Study', 'Insights', 'Settings']) {
       expect(find.text(label), findsOneWidget);
     }
     // Home reflects the (empty) review + learn queues.
