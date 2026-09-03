@@ -1,3 +1,4 @@
+import '../dev.dart';
 import '../vault/vault_source.dart';
 import 'prep_goal.dart';
 
@@ -10,7 +11,10 @@ class GoalsService {
 
   final VaultSource _source;
 
-  static const fileName = 'onyx-goals.json';
+  /// Dev builds use a separate file so device/desktop testing can't pollute the
+  /// real synced interviews (mirrors the study snapshot's dev isolation).
+  static String get fileName =>
+      isDevDataMode ? 'onyx-goals.dev.json' : 'onyx-goals.json';
 
   Future<List<PrepGoal>> load() async =>
       PrepGoal.decodeList(await _source.readMeta(fileName));
