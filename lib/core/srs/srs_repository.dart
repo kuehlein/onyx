@@ -65,6 +65,26 @@ class SrsRepository {
     return row.read(count) ?? 0;
   }
 
+  /// Lapses (grade == "Again") and total reviews per card, all-time — for
+  /// surfacing "struggling" cards (leeches worth reformulating). Grouped by
+  /// cardId (a card's sections are drilled together in practice).
+  Future<List<({String cardId, int lapses, int total})>> lapsesByCard() async {
+    final total = _db.reviews.id.count();
+    final lapses = _db.reviews.id.count(filter: _db.reviews.grade.equals(1));
+    final rows = await (_db.selectOnly(_db.reviews)
+          ..addColumns([_db.reviews.cardId, total, lapses])
+          ..groupBy([_db.reviews.cardId]))
+        .get();
+    return [
+      for (final r in rows)
+        (
+          cardId: r.read(_db.reviews.cardId)!,
+          lapses: r.read(lapses) ?? 0,
+          total: r.read(total) ?? 0,
+        ),
+    ];
+  }
+
   /// The earliest `'learn'` event date, or null if none. Used to average the
   /// recent learn rate over the ACTUAL days of history (capped at the pace
   /// window) — a 5-day-old history shouldn't read as if spread across 14 days.

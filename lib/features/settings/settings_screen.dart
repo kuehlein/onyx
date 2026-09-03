@@ -509,8 +509,12 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(readinessPaceProvider); // now fed by the seeded learn events
     ref.invalidate(studyStreakProvider);
     ref.invalidate(coachUpdateProvider);
-    ref.invalidate(
-        retentionByDomainProvider); // new review rows → refresh Insights
+    // Refresh the Insights sections (new review rows, states, and mocks).
+    ref.invalidate(retentionByDomainProvider);
+    ref.invalidate(mockSkillsProvider);
+    ref.invalidate(dueForecastProvider);
+    ref.invalidate(strugglingCardsProvider);
+    ref.invalidate(studyConsistencyProvider);
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
       SnackBar(
