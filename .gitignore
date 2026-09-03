@@ -7,10 +7,9 @@ build/
 *.freezed.dart
 
 # Dev-only: app-written state files in the staged vault at runtime — the SRS
-# snapshot and the readiness-target selection (real + dev-isolated variants).
+# snapshot, the readiness target, and prep goals (real + dev-isolated variants).
 # (The glossary note under _meta is authored content and stays tracked.)
-staging/**/_meta/onyx-state*.json
-staging/**/_meta/onyx-target*.json
+staging/**/_meta/onyx-*.json
 
 # iOS
 ios/Pods/
