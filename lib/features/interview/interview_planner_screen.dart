@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
+import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -222,27 +223,13 @@ class _ChipRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: color.withValues(alpha: 0.4)),
                 ),
-                child: Text(prettyLabel(it),
+                child: Text(prettyDomain(it),
                     style: theme.textTheme.labelSmall?.copyWith(color: color)),
               ),
           ],
         ),
       ],
     );
-  }
-
-  /// A readable label for a domain/concept key (ds-a → "DS & A").
-  String prettyLabel(String key) {
-    switch (key) {
-      case 'ds-a':
-        return 'DS & A';
-      case 'system-design':
-        return 'System design';
-    }
-    return key
-        .split(RegExp(r'[-_]'))
-        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-        .join(' ');
   }
 }
 

@@ -678,7 +678,7 @@ class _DomainRow extends StatelessWidget {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(_pretty(d.domain),
+                    child: Text(prettyDomain(d.domain),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium
@@ -729,18 +729,5 @@ class _DomainRow extends StatelessWidget {
   Color _color(DomainReadiness d) {
     if (d.studied == 0) return const Color(0xFF8A8F98); // muted gray
     return _bandColor(d.score);
-  }
-
-  String _pretty(String domain) {
-    switch (domain) {
-      case 'ds-a':
-        return 'DS & A';
-      case 'system-design':
-        return 'System design';
-    }
-    return domain
-        .split(RegExp(r'[-_]'))
-        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-        .join(' ');
   }
 }
