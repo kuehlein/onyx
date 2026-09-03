@@ -201,6 +201,33 @@ class SrsRepository {
     });
   }
 
+  /// DEV/E2E: append graded rows to the review log so retention analytics have
+  /// data to aggregate. The simulator seeds these alongside [seedStudied] (which
+  /// only writes FSRS state) — without them the reviews table stays empty and
+  /// per-domain recall can't be computed.
+  Future<void> seedReviews(
+    Iterable<({String cardId, String sectionSlug, int grade, double stability})>
+        items, {
+    required DateTime at,
+  }) async {
+    await _db.batch((b) {
+      for (final it in items) {
+        b.insert(
+          _db.reviews,
+          ReviewsCompanion.insert(
+            cardId: it.cardId,
+            sectionSlug: it.sectionSlug,
+            reviewedAt: at,
+            grade: it.grade,
+            stability: it.stability,
+            difficulty: 5,
+            elapsedDays: 0,
+          ),
+        );
+      }
+    });
+  }
+
   /// Persist a graded review: upsert the section's FSRS state and append a row
   /// to the immutable review log, in one transaction.
   Future<void> recordReview({

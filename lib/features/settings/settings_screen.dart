@@ -11,6 +11,7 @@ import '../../core/dev.dart';
 import '../../core/interview/assessment.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
+import '../../shared/providers/analytics.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/database.dart';
@@ -448,6 +449,22 @@ class SettingsScreen extends ConsumerWidget {
           ],
           at: simNow,
         );
+        // Also append graded review rows for the day's slice, so retention
+        // analytics have data (seedStudied only writes FSRS state). A ~87% recall
+        // pattern (every 8th "Again", then every 3rd "Hard") reads realistically
+        // against the ~90% target rather than a suspicious 100%.
+        await srsRepo.seedReviews(
+          [
+            for (var i = from; i < to; i++)
+              (
+                cardId: order[i].cardId,
+                sectionSlug: order[i].slug,
+                grade: i % 8 == 0 ? 1 : (i % 3 == 0 ? 2 : 3),
+                stability: 3.0,
+              )
+          ],
+          at: simNow,
+        );
       }
 
       // One mock per already-started domain this day; score climbs with time and
@@ -492,6 +509,8 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(readinessPaceProvider); // now fed by the seeded learn events
     ref.invalidate(studyStreakProvider);
     ref.invalidate(coachUpdateProvider);
+    ref.invalidate(
+        retentionByDomainProvider); // new review rows → refresh Insights
     await ref.read(backupProvider.notifier).flush();
     messenger.showSnackBar(
       SnackBar(
