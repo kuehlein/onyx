@@ -8,6 +8,7 @@
 library;
 
 import 'dart:convert';
+import '../util.dart';
 
 import '../readiness/prep_goal.dart';
 import '../readiness/target.dart';
@@ -140,9 +141,9 @@ InterviewPlan? _parsePlan(String json) {
       company: company,
       role: (m['role'] as String?)?.trim() ?? '',
       level:
-          _enumByName(SeniorityLevel.values, m['level']) ?? SeniorityLevel.mid,
-      tier: _enumByName(CompanyTier.values, m['tier']) ?? CompanyTier.typical,
-      track: _enumByName(Track.values, m['track']) ?? Track.general,
+          enumByName(SeniorityLevel.values, m['level']) ?? SeniorityLevel.mid,
+      tier: enumByName(CompanyTier.values, m['tier']) ?? CompanyTier.typical,
+      track: enumByName(Track.values, m['track']) ?? Track.general,
       date: _parseDate(m['date']),
       domainWeights: _weights(m['domainWeights']),
       conceptWeights: _weights(m['conceptWeights']),
@@ -176,12 +177,4 @@ List<String> _strings(Object? v) {
 DateTime? _parseDate(Object? v) {
   if (v is! String || v.isEmpty) return null;
   return DateTime.tryParse(v);
-}
-
-T? _enumByName<T extends Enum>(List<T> values, Object? name) {
-  if (name is! String) return null;
-  for (final v in values) {
-    if (v.name == name) return v;
-  }
-  return null;
 }

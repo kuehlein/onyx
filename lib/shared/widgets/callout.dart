@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../status_colors.dart';
 
 /// Visual spec for a callout type: an accent color, an icon, and a default
 /// title. Colors are muted so they read as semantic signals on the dark
@@ -14,9 +15,9 @@ class CalloutSpec {
 // Muted, dark-surface-friendly accents. A small vocabulary: color maps to
 // meaning (info/positive/attention/danger), aliases share a color + icon.
 const _info = Color(0xFF5AA7E6);
-const _tip = Color(0xFF4CC38A);
-const _amber = Color(0xFFE3B341);
-const _red = Color(0xFFF07178);
+const _tip = statusGood;
+const _amber = statusWarn;
+const _red = statusBad;
 const _violet = Color(0xFFB39DFF);
 const _cyan = Color(0xFF56C7D4);
 

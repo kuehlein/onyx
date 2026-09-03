@@ -12,6 +12,7 @@
 library;
 
 import '../readiness/pace.dart';
+import '../util.dart';
 
 /// Which insight the coach chose to surface. Ordered loosely by urgency.
 enum CoachInsightKind {
@@ -132,8 +133,6 @@ String _rate(double v) {
   return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
 }
 
-int _pct(double v) => (v.clamp(0, 1) * 100).round();
-
 /// Picks the single highest-value update to show, or null to stay quiet.
 /// Priority: getting-started → overloaded → behind pace → unproven → on-track.
 CoachUpdate? buildCoachUpdate(CoachSignals s) {
@@ -155,9 +154,9 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     return CoachUpdate(
       kind: CoachInsightKind.overloaded,
       tone: CoachTone.caution,
-      headline: "Recall's slipping (~${_pct(s.retention!)}%) — ease off new "
+      headline: "Recall's slipping (~${pct(s.retention!)}%) — ease off new "
           'cards.',
-      why: 'Your recent review success is ~${_pct(s.retention!)}% (aim ~90%). '
+      why: 'Your recent review success is ~${pct(s.retention!)}% (aim ~90%). '
           "That usually means new material is arriving faster than it's "
           'sticking. Lower your new-cards/day in Settings and clear today’s '
           'reviews first — it settles quickly.',
@@ -204,9 +203,9 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     return CoachUpdate(
       kind: CoachInsightKind.building,
       tone: CoachTone.info,
-      headline: "You've covered ~${_pct(s.coverage)}% — keep learning.",
-      why: 'Only ~${_pct(s.coverage)}% of your material has been started, so '
-          'readiness (~${_pct(s.overall)}%) can’t climb far yet. The highest-'
+      headline: "You've covered ~${pct(s.coverage)}% — keep learning.",
+      why: 'Only ~${pct(s.coverage)}% of your material has been started, so '
+          'readiness (~${pct(s.overall)}%) can’t climb far yet. The highest-'
           'value move is to keep learning new sections a few at a time.',
       actionLabel: 'Learn now',
       actionRoute: '/learn',
@@ -244,7 +243,7 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
       headline: s.studiedToday
           ? affirms[s.affirmSeed % affirms.length]
           : 'On track — a quick session today keeps it that way.',
-      why: 'Readiness is ~${_pct(s.overall)}% and your pace looks healthy. '
+      why: 'Readiness is ~${pct(s.overall)}% and your pace looks healthy. '
           'Nothing needs fixing — keep showing up.',
       actionLabel: s.dueCount > 0 ? 'Review now' : null,
       actionRoute: s.dueCount > 0 ? '/quiz' : null,
@@ -256,9 +255,9 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
   return CoachUpdate(
     kind: CoachInsightKind.building,
     tone: CoachTone.info,
-    headline: 'Readiness ~${_pct(s.overall)}% — deepen it with review.',
+    headline: 'Readiness ~${pct(s.overall)}% — deepen it with review.',
     why: 'You’ve covered the material but recall and transfer are still '
-        'building (readiness ~${_pct(s.overall)}%). Keep reviewing to '
+        'building (readiness ~${pct(s.overall)}%). Keep reviewing to '
         'strengthen it${s.hasDate ? '' : '; set a target date if you want pace '
             'tracking'}.',
     actionLabel: s.dueCount > 0 ? 'Review now' : null,

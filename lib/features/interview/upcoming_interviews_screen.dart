@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -268,7 +269,7 @@ class _OutcomeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final passed = outcome == GoalOutcome.passed;
-    final color = passed ? const Color(0xFF4CC38A) : theme.colorScheme.error;
+    final color = passed ? statusGood : theme.colorScheme.error;
     return Container(
       margin: const EdgeInsets.only(right: 6),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

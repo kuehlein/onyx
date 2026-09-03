@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'status_colors.dart';
 
 /// The four FSRS self-grades, with their labels and accent colors. Shared so
 /// the study action bar and the coach's advisory highlight stay in sync.
 /// Values map to the `fsrs` package's Rating (1=Again … 4=Easy).
 const studyGrades = <({int value, String label, Color color})>[
-  (value: 1, label: 'Again', color: Color(0xFFF07178)),
-  (value: 2, label: 'Hard', color: Color(0xFFE3B341)),
-  (value: 3, label: 'Good', color: Color(0xFF4CC38A)),
+  (value: 1, label: 'Again', color: statusBad),
+  (value: 2, label: 'Hard', color: statusWarn),
+  (value: 3, label: 'Good', color: statusGood),
   (value: 4, label: 'Easy', color: Color(0xFF5AA7E6)),
 ];
 
@@ -16,9 +17,9 @@ const studyGrades = <({int value, String label, Color color})>[
 /// most. Review mode keeps the full set (Easy included) for genuinely mastered
 /// cards.
 const learnGrades = <({int value, String label, Color color})>[
-  (value: 1, label: 'Again', color: Color(0xFFF07178)),
-  (value: 2, label: 'Hard', color: Color(0xFFE3B341)),
-  (value: 3, label: 'Good', color: Color(0xFF4CC38A)),
+  (value: 1, label: 'Again', color: statusBad),
+  (value: 2, label: 'Hard', color: statusWarn),
+  (value: 3, label: 'Good', color: statusGood),
 ];
 
 /// The label for a grade value (1–4), or empty for an unknown value.

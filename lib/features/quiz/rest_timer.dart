@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../shared/status_colors.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,7 +63,7 @@ class _RestTimerState extends State<RestTimer> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const green = Color(0xFF4CC38A);
+    const green = statusGood;
     final scheme = theme.colorScheme;
 
     final (label, color, icon) = _done

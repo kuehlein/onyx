@@ -6,6 +6,8 @@
 /// next. Missing-content notes are kept soft; the deck is still being built.
 library;
 
+import '../util.dart';
+
 /// One domain's evidence, as fed to the model.
 class DomainReportRow {
   const DomainReportRow({
@@ -63,8 +65,6 @@ class ReadinessReportData {
   final int? daysToInterview; // null when no date set
   final List<DomainReportRow> domains; // weakest-first
 }
-
-int _pct(double v) => (v.clamp(0, 1) * 100).round();
 
 /// The system prompt for the report Q&A chat: the learner just read the
 /// assessment below and wants to discuss it. Grounded in that report,
@@ -168,8 +168,8 @@ String buildReadinessReportUser(ReadinessReportData d) {
   b
     ..writeln()
     ..writeln('# Overall readiness')
-    ..writeln('${_pct(d.overall)}% (plausible range ${_pct(d.low)}–'
-        '${_pct(d.high)}%). Evidence: '
+    ..writeln('${pct(d.overall)}% (plausible range ${pct(d.low)}–'
+        '${pct(d.high)}%). Evidence: '
         '${d.interviewTested ? 'mock-tested (transfer measured)' : 'recall-only '
             '— no mock-interview evidence yet, so this is unproven'}.');
 
@@ -179,10 +179,10 @@ String buildReadinessReportUser(ReadinessReportData d) {
   for (final r in d.domains) {
     b
       ..writeln('## ${r.name}')
-      ..writeln('- Readiness: ${_pct(r.score)}%'
-          '${r.transfer != null ? ' (transfer ${_pct(r.transfer!)}%)' : ''}')
+      ..writeln('- Readiness: ${pct(r.score)}%'
+          '${r.transfer != null ? ' (transfer ${pct(r.transfer!)}%)' : ''}')
       ..writeln('- Coverage: ${r.studied}/${r.total} sections started '
-          '(${_pct(r.coverage)}%); retention strength ${_pct(r.strength)}%')
+          '(${pct(r.coverage)}%); retention strength ${pct(r.strength)}%')
       ..writeln('- Mock interviews: ${r.mocks}'
           '${r.contested > 0 ? ' (${r.contested} grade(s) the critic '
               'disputed)' : ''}');

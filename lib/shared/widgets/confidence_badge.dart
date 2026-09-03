@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../status_colors.dart';
 
 import '../models/card.dart';
 
@@ -16,20 +17,20 @@ class ConfidenceBadge extends StatelessWidget {
     final (Color color, IconData icon, String label, String tip) =
         switch (confidence) {
       Confidence.high => (
-          const Color(0xFF4CC38A),
+          statusGood,
           Icons.verified_outlined,
           'High confidence',
           'Passed a clean verification — study with confidence.',
         ),
       Confidence.medium => (
-          const Color(0xFFE3B341),
+          statusWarn,
           Icons.info_outline,
           'Medium confidence',
           'Minor issues were flagged at authoring — cross-check the card '
               'against its Resources.',
         ),
       Confidence.low => (
-          const Color(0xFFF07178),
+          statusBad,
           Icons.warning_amber_outlined,
           'Low confidence',
           'Major issues were auto-corrected by an AI verifier — read the '

@@ -12,6 +12,7 @@
 library;
 
 import 'dart:convert';
+import '../util.dart';
 
 enum SeniorityLevel { newGrad, mid, senior, staff }
 
@@ -102,10 +103,10 @@ class ReadinessTarget {
   String encode() => jsonEncode(toJson());
 
   static ReadinessTarget fromJson(Map<String, dynamic> m) => ReadinessTarget(
-        level: _enumByName(SeniorityLevel.values, m['level']) ?? fallback.level,
+        level: enumByName(SeniorityLevel.values, m['level']) ?? fallback.level,
         company:
-            _enumByName(CompanyTier.values, m['company']) ?? fallback.company,
-        track: _enumByName(Track.values, m['track']) ?? fallback.track,
+            enumByName(CompanyTier.values, m['company']) ?? fallback.company,
+        track: enumByName(Track.values, m['track']) ?? fallback.track,
         interviewDate: _parseDate(m['interviewDate']),
       );
 
@@ -122,13 +123,6 @@ class ReadinessTarget {
 }
 
 const _unset = Object();
-
-T? _enumByName<T extends Enum>(List<T> values, Object? name) {
-  for (final v in values) {
-    if (v.name == name) return v;
-  }
-  return null;
-}
 
 DateTime? _parseDate(Object? v) {
   if (v is! String) return null;

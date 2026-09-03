@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analytics/retention.dart';
@@ -220,13 +221,11 @@ class _StripAxis extends StatelessWidget {
   }
 }
 
-Color _recallColor(double r, ColorScheme cs) => r >= 0.85
-    ? const Color(0xFF4CC38A)
-    : (r >= 0.65 ? const Color(0xFFE3B341) : cs.error);
+Color _recallColor(double r, ColorScheme cs) =>
+    r >= 0.85 ? statusGood : (r >= 0.65 ? statusWarn : cs.error);
 
-Color _dimColor(double v /* 1..5 */, ColorScheme cs) => v >= 4
-    ? const Color(0xFF4CC38A)
-    : (v >= 3 ? const Color(0xFFE3B341) : cs.error);
+Color _dimColor(double v /* 1..5 */, ColorScheme cs) =>
+    v >= 4 ? statusGood : (v >= 3 ? statusWarn : cs.error);
 
 // ── 1. Mock-interview skills ────────────────────────────────────────────────
 

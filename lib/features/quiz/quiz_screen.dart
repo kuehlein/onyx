@@ -1,5 +1,6 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -652,8 +653,8 @@ class _DeltaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final p = change * 100;
     final steady = p.abs() < 0.05;
-    const green = Color(0xFF4CC38A);
-    const amber = Color(0xFFE3B341);
+    const green = statusGood;
+    const amber = statusWarn;
     final color =
         steady ? theme.colorScheme.onSurfaceVariant : (p > 0 ? green : amber);
     final text = steady

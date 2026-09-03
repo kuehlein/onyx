@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../util.dart';
 
 import 'target.dart';
 
@@ -135,16 +136,16 @@ class PrepGoal {
     return PrepGoal(
       id: id,
       companyName: m['companyName'] is String ? m['companyName'] as String : '',
-      tier: _enumByName(CompanyTier.values, m['tier']) ?? CompanyTier.typical,
+      tier: enumByName(CompanyTier.values, m['tier']) ?? CompanyTier.typical,
       level:
-          _enumByName(SeniorityLevel.values, m['level']) ?? SeniorityLevel.mid,
-      track: _enumByName(Track.values, m['track']) ?? Track.general,
+          enumByName(SeniorityLevel.values, m['level']) ?? SeniorityLevel.mid,
+      track: enumByName(Track.values, m['track']) ?? Track.general,
       date: _parseDate(m['date']),
       active: m['active'] is bool ? m['active'] as bool : true,
       domainWeights: _weightMap(m['domainWeights']),
       conceptWeights: _weightMap(m['conceptWeights']),
       outcome:
-          _enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+          enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
       outcomeNotes:
           m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
       notes: m['notes'] is String ? m['notes'] as String : null,
@@ -189,12 +190,4 @@ Map<String, double> _weightMap(Object? v) {
     if (val is num) out[e.key.toString()] = val.toDouble();
   }
   return out;
-}
-
-T? _enumByName<T extends Enum>(List<T> values, Object? name) {
-  if (name is! String) return null;
-  for (final v in values) {
-    if (v.name == name) return v;
-  }
-  return null;
 }

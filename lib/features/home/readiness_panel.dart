@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/readiness/ladder.dart';
@@ -129,7 +130,7 @@ class _Headline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    const green = Color(0xFF4CC38A);
+    const green = statusGood;
 
     return InkWell(
       borderRadius: BorderRadius.circular(6),
@@ -195,7 +196,7 @@ class _StreakChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     const flame = Color(0xFFF2792B);
-    const amber = Color(0xFFE3B341);
+    const amber = statusWarn;
     final atRisk = !streak.studiedToday;
     return Tooltip(
       message: atRisk
@@ -246,9 +247,9 @@ class _PaceRow extends StatelessWidget {
     final days = pace.daysLeft;
     final inDays =
         days == 0 ? 'today' : 'in $days ${days == 1 ? 'day' : 'days'}';
-    const green = Color(0xFF4CC38A);
-    const amber = Color(0xFFE3B341);
-    const red = Color(0xFFF07178);
+    const green = statusGood;
+    const amber = statusWarn;
+    const red = statusBad;
     switch (pace.status) {
       case PaceStatus.coverageComplete:
         return (
@@ -297,9 +298,9 @@ class _PaceRow extends StatelessWidget {
 /// green (strong). Shared by the overall bar and the per-domain bars so the
 /// color language is identical everywhere.
 Color _bandColor(double score) {
-  if (score >= 0.75) return const Color(0xFF4CC38A); // green
-  if (score >= 0.45) return const Color(0xFFE3B341); // amber
-  return const Color(0xFFF07178); // red
+  if (score >= 0.75) return statusGood; // green
+  if (score >= 0.45) return statusWarn; // amber
+  return statusBad; // red
 }
 
 /// The score at/above which (once mock-tested) you're in interview-ready
@@ -310,9 +311,9 @@ const _readyLine = 0.75;
 /// construction: "Interview-ready" needs mock evidence AND even the pessimistic
 /// band bound clearing the line — recall alone can never claim it.
 ({String label, Color color, bool ready}) _readyStatus(Readiness r) {
-  const green = Color(0xFF4CC38A);
-  const amber = Color(0xFFE3B341);
-  const red = Color(0xFFF07178);
+  const green = statusGood;
+  const amber = statusWarn;
+  const red = statusBad;
   if (!r.interview) {
     // Recall-only: never "ready" (unproven). Describe recall strength instead.
     if (r.overall >= _readyLine) {
@@ -727,7 +728,7 @@ class _DomainRow extends StatelessWidget {
   }
 
   Color _color(DomainReadiness d) {
-    if (d.studied == 0) return const Color(0xFF8A8F98); // muted gray
+    if (d.studied == 0) return statusMuted; // muted gray
     return _bandColor(d.score);
   }
 }

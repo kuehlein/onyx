@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +11,7 @@ import '../../shared/providers/interview_planner.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
 
-const _amber = Color(0xFFE3B341);
+const _amber = statusWarn;
 
 /// The "plan an interview" chat: describe an upcoming interview, answer any
 /// clarifying questions, review the proposed plan, and save it as an active
