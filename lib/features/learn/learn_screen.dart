@@ -1,15 +1,19 @@
+import 'dart:math';
+
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/srs/learn_queue.dart';
+import '../../core/study/study_tips.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import 'study_tips_sheet.dart';
 
 /// Learn mode: first exposure to never-studied sections, grouped by family.
 /// Conditional sections use a guess-then-reveal attempt; declarative sections
@@ -24,6 +28,9 @@ class LearnScreen extends ConsumerStatefulWidget {
 
 class _LearnScreenState extends ConsumerState<LearnScreen> {
   bool _attempted = false;
+  // One rotating tip per session, dismissible; picked once when Learn opens.
+  late final int _tipIndex = Random().nextInt(studyTips.length);
+  bool _tipShown = true;
 
   void _grade(int grade) {
     setState(() => _attempted = false);
@@ -56,6 +63,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           },
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tips_and_updates_outlined),
+            tooltip: 'Study tips',
+            onPressed: () => showStudyTipsSheet(context),
+          ),
           if (current != null)
             CoachButton(
               onPressed: () => showCoachSheet(
@@ -91,6 +103,9 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
             graduated: s.graduated,
             total: s.total,
             attempted: _attempted,
+            tip: _tipShown ? studyTips[_tipIndex] : null,
+            onDismissTip: () => setState(() => _tipShown = false),
+            onMoreTips: () => showStudyTipsSheet(context),
             onReveal: () => setState(() => _attempted = true),
             onGrade: _grade,
           );
@@ -106,6 +121,9 @@ class _LearnView extends StatelessWidget {
     required this.graduated,
     required this.total,
     required this.attempted,
+    required this.tip,
+    required this.onDismissTip,
+    required this.onMoreTips,
     required this.onReveal,
     required this.onGrade,
   });
@@ -114,6 +132,9 @@ class _LearnView extends StatelessWidget {
   final int graduated;
   final int total;
   final bool attempted;
+  final StudyTip? tip;
+  final VoidCallback onDismissTip;
+  final VoidCallback onMoreTips;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
 
@@ -135,6 +156,12 @@ class _LearnView extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
+                    if (tip != null)
+                      StudyTipBanner(
+                        tip: tip!,
+                        onDismiss: onDismissTip,
+                        onMore: onMoreTips,
+                      ),
                     Row(
                       children: [
                         Text('${graduated + 1} / $total',
