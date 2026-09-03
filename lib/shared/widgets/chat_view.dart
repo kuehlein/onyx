@@ -66,6 +66,19 @@ class _ChatViewState extends State<ChatView> {
   final _focus = FocusNode();
 
   @override
+  void didUpdateWidget(ChatView old) {
+    super.didUpdateWidget(old);
+    // Scroll the newest content into view when a reply arrives (the list grew)
+    // or when the "Thinking…" indicator appears — not just when the learner
+    // sends. Replies here are short (2–4 sentences), so the bottom-align makes
+    // the whole response visible.
+    if (widget.messages.length != old.messages.length ||
+        (widget.busy && !old.busy)) {
+      _scrollToEnd();
+    }
+  }
+
+  @override
   void dispose() {
     _input.dispose();
     _scroll.dispose();
