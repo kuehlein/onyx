@@ -84,28 +84,30 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Mock interview — applied/transfer practice, always available
-                  // and independent of the FSRS due queue (so it never competes
-                  // with gym-time reviews). Targets the weakest domain.
-                  FilledButton.tonalIcon(
-                    onPressed: weakest == null
-                        ? null
-                        : () => context.push('/practice/$weakest'),
-                    icon: const Icon(Icons.psychology_outlined),
-                    label: const Text('Mock interview'),
-                  ),
-                  const SizedBox(height: 12),
-                  // Upcoming interviews — plan/toggle prep goals that bias study.
-                  OutlinedButton.icon(
-                    onPressed: () => context.push('/interviews'),
-                    icon: const Icon(Icons.event_note_outlined),
-                    label: const Text('Upcoming interviews'),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/browse'),
-                    icon: const Icon(Icons.grid_view_outlined),
-                    label: const Text('Browse cards'),
+                  // Secondary actions as a compact pair (Browse lives in the
+                  // bottom-nav, so it isn't duplicated here). Mock interview is
+                  // applied/transfer practice, independent of the FSRS due queue
+                  // (never competes with reviews); it targets the weakest domain.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: weakest == null
+                              ? null
+                              : () => context.push('/practice/$weakest'),
+                          icon: const Icon(Icons.psychology_outlined),
+                          label: const Text('Mock'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/interviews'),
+                          icon: const Icon(Icons.event_note_outlined),
+                          label: const Text('Interviews'),
+                        ),
+                      ),
+                    ],
                   ),
                   if (needsKey) ...[
                     const SizedBox(height: 24),
@@ -126,7 +128,7 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              // Ambient coach nudge — one prioritised, task-level line.
+              // Ambient coach nudge — one prioritized, task-level line.
               const CoachBadge(),
             ],
           ),

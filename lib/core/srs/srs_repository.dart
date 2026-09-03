@@ -131,7 +131,7 @@ class SrsRepository {
 
   /// DEV/E2E: plant recall for the given sections at the caller-chosen stability
   /// (days-to-90%), so coverage/strength exist for the dashboard. Unlike
-  /// [seedAllDueNow] these are scheduled out (not made due), modelling material
+  /// [seedAllDueNow] these are scheduled out (not made due), modeling material
   /// you've studied and retained — the recall base that mock evidence gates.
   ///
   /// Re-seeding (on conflict) reschedules `dueAt` forward too, so a section

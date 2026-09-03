@@ -10,7 +10,7 @@ import 'target.dart';
 /// and per-card desired-retention only; an optional non-rescheduling cram is a
 /// later add).
 ///
-/// With no active goals this is behaviourally identical to reading the base
+/// With no active goals this is behaviorally identical to reading the base
 /// target directly (weights reduce to `domainWeight(base, …)`).
 class Targeting {
   const Targeting({required this.base, required this.goals});
@@ -72,7 +72,7 @@ class Targeting {
 
   /// The FSRS-safe interview lever: the card's base desired-retention (from its
   /// priority) raised toward [retentionCap] for cards a NEAR-TERM active goal
-  /// emphasises, ramping up as the interview nears. This ONLY changes scheduling
+  /// emphasizes, ramping up as the interview nears. This ONLY changes scheduling
   /// (shorter intervals → fresher on the date), never the fitted
   /// stability/difficulty, and reverts to base once the goal passes / is toggled
   /// off. [today] anchors the proximity ramp.
@@ -94,7 +94,7 @@ class Targeting {
     return best;
   }
 
-  /// Whether [g] emphasises this card — an explicit domain/concept boost, or a
+  /// Whether [g] emphasizes this card — an explicit domain/concept boost, or a
   /// role whose heuristic weights the card's domain above the base aim.
   bool _goalTargets(PrepGoal g, Card card) {
     final dom = card.domain;

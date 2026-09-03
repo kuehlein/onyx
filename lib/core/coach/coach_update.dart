@@ -1,4 +1,4 @@
-/// The ambient "coach update" — a single, prioritised, task-level nudge shown on
+/// The ambient "coach update" — a single, prioritized, task-level nudge shown on
 /// Home. Pure triage logic, kept out of the providers so it is fully testable.
 ///
 /// Design is grounded in research (see the coach-feedback-design memory):
@@ -23,7 +23,7 @@ enum CoachInsightKind {
   onTrack,
 }
 
-/// Visual tone for the badge (mapped to colour by the widget).
+/// Visual tone for the badge (mapped to color by the widget).
 enum CoachTone { info, caution, positive }
 
 /// A rendered coach update: the one-liner, an expandable "why now", and an
@@ -88,7 +88,7 @@ class CoachSignals {
   /// Rotates affirmation copy so the on-track message isn't identical daily.
   final int affirmSeed;
 
-  // --- Grounded thresholds (labelled heuristics; see memory) ---
+  // --- Grounded thresholds (labeled heuristics; see memory) ---
   /// Below this recent review success, cards are running too hard / load too
   /// high (target is ~0.90; ~10% lapse is expected there).
   static const retentionFloor = 0.80;

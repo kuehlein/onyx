@@ -20,8 +20,8 @@ class FadingScrollEdges extends StatefulWidget {
   /// Height of each fade gradient.
   final double extent;
 
-  /// The colour the content dissolves into. Defaults to the scaffold
-  /// background; pass the surface colour when used over a sheet/panel so the
+  /// The color the content dissolves into. Defaults to the scaffold
+  /// background; pass the surface color when used over a sheet/panel so the
   /// fade blends into it instead of the page behind.
   final Color? color;
 

@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness_report.dart';
+import '../../shared/providers/readiness_report_chat.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/chat_view.dart';
 
 /// The AI interview-readiness report (task #24): an honest narrative assessment
 /// for the chosen target — strengths, gaps (including scope gaps the readiness
-/// number can't see), and prioritised next steps.
+/// number can't see), and prioritized next steps. Below it, a chat to ask
+/// follow-up questions about the assessment.
 ///
 /// The report is persisted and reused until the data changes: opening this screen
 /// reuses the cached report for free if nothing has moved, and auto-regenerates
@@ -40,7 +44,19 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
     final report = ref.watch(readinessReportProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Readiness report')),
+      appBar: AppBar(
+        title: const Text('Readiness report'),
+        actions: [
+          if (report.hasReport)
+            IconButton(
+              tooltip: 'Regenerate',
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref
+                  .read(readinessReportProvider.notifier)
+                  .generate(force: true),
+            ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -49,7 +65,7 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
               : report.busy
                   ? const _Busy()
                   : report.hasReport
-                      ? _Report(report)
+                      ? _ReportChat(report: report)
                       : _Intro(error: report.error),
         ),
       ),
@@ -105,7 +121,7 @@ class _Busy extends StatelessWidget {
             height: 28,
             child: CircularProgressIndicator(strokeWidth: 3)),
         SizedBox(height: 16),
-        Text('Analysing your progress and deck…'),
+        Text('Analyzing your progress and deck…'),
       ],
     );
   }
@@ -155,48 +171,52 @@ class _Intro extends ConsumerWidget {
   }
 }
 
-class _Report extends ConsumerWidget {
-  const _Report(this.report);
+/// The generated report, pinned at the top of a chat so the learner can ask
+/// follow-up questions about it.
+class _ReportChat extends ConsumerWidget {
+  const _ReportChat({required this.report});
+  final ReadinessReportState report;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chat = ref.watch(readinessReportChatProvider);
+    return ChatView(
+      messages: [
+        for (final m in chat.messages)
+          ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
+      ],
+      busy: chat.busy,
+      error: chat.error ?? report.error,
+      hintText: 'Ask about your report…',
+      header: _ReportHeader(report: report),
+      opener: const _AskHint(),
+      onSend: (t) => ref
+          .read(readinessReportChatProvider.notifier)
+          .send(t, reportText: report.text!),
+    );
+  }
+}
+
+class _ReportHeader extends ConsumerWidget {
+  const _ReportHeader({required this.report});
   final ReadinessReportState report;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: CardMarkdown(report.text!),
-          ),
+        CardMarkdown(report.text!),
+        const SizedBox(height: 6),
+        Text(
+          _footer(ref, report),
+          style: theme.textTheme.labelSmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 8),
         const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _footer(ref, report),
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ),
-              if (report.error != null) ...[
-                const SizedBox(width: 8),
-                Flexible(child: _ErrorNote(report.error!, compact: true)),
-              ],
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () => ref
-                    .read(readinessReportProvider.notifier)
-                    .generate(force: true),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Regenerate'),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -214,21 +234,46 @@ class _Report extends ConsumerWidget {
   }
 }
 
+/// The prompt shown before any question is asked.
+class _AskHint extends StatelessWidget {
+  const _AskHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Row(
+        children: [
+          Icon(Icons.forum_outlined,
+              size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Ask a follow-up about your assessment — where to focus, why a '
+              'domain scored low, what to do next.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ErrorNote extends StatelessWidget {
-  const _ErrorNote(this.message, {this.compact = false});
+  const _ErrorNote(this.message);
   final String message;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Text(
       message,
-      maxLines: compact ? 2 : null,
-      overflow: compact ? TextOverflow.ellipsis : null,
-      textAlign: compact ? TextAlign.start : TextAlign.center,
-      style: (compact ? theme.textTheme.labelSmall : theme.textTheme.bodySmall)
-          ?.copyWith(color: theme.colorScheme.error),
+      textAlign: TextAlign.center,
+      style:
+          theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
     );
   }
 }

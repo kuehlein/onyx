@@ -111,7 +111,7 @@ bool matchesFilter(Card card, CardFilter filter, Set<MasteryFilter> mastery) {
 }
 
 /// Splits a raw query into a filter (from `key:value` operators) and the
-/// remaining free-text terms. Unrecognised operators fall through to free text.
+/// remaining free-text terms. Unrecognized operators fall through to free text.
 ({CardFilter filter, String text}) parseSearchQuery(String query) {
   final types = <CardType>{};
   final domains = <String>{};

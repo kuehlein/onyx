@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// The four FSRS self-grades, with their labels and accent colours. Shared so
+/// The four FSRS self-grades, with their labels and accent colors. Shared so
 /// the study action bar and the coach's advisory highlight stay in sync.
 /// Values map to the `fsrs` package's Rating (1=Again … 4=Easy).
 const studyGrades = <({int value, String label, Color color})>[

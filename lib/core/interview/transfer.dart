@@ -17,7 +17,7 @@ import 'dart:math';
 ///     most information (Pan & Rickard 2018); older attempts decay exponentially
 ///     (skill fades); hint-reliance is already reflected in the coach's score.
 
-/// One applied attempt, normalised for the transfer estimate.
+/// One applied attempt, normalized for the transfer estimate.
 class AppliedSample {
   const AppliedSample({
     required this.score,

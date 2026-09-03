@@ -47,7 +47,7 @@ GoRouter createRouter() => GoRouter(
         GoRoute(
             path: '/plan-interview',
             builder: (_, __) => const InterviewPlannerScreen()),
-        // The upcoming-interviews list — toggle/remove/practise for prep goals.
+        // The upcoming-interviews list — toggle/remove/practice for prep goals.
         GoRoute(
             path: '/interviews',
             builder: (_, __) => const UpcomingInterviewsScreen()),

@@ -21,7 +21,7 @@ class CoachMessage {
 /// card (and, in a study session, the specific section being recalled) so the
 /// coach can reason about the exact material without another round-trip.
 ///
-/// Two levers change its behaviour:
+/// Two levers change its behavior:
 /// - [grading]: selects the persona. true → the mock-interview *interviewer*
 ///   (Review): probes, and may append an advisory grade tag. false → the
 ///   *tutor* (Learn/Browse): explains to build understanding, no grade tag.

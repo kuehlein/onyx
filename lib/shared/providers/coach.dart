@@ -77,7 +77,7 @@ class Coach extends _$Coach {
 
   /// Send [text] as the learner's turn and append the coach's reply, persisting
   /// both. [card] and [section] supply the material; [revealed] and [grading]
-  /// shape the coach's behaviour (hint vs. discuss; whether an advisory grade
+  /// shape the coach's behavior (hint vs. discuss; whether an advisory grade
   /// may be offered).
   Future<void> send(
     String text, {

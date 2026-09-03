@@ -7,12 +7,13 @@ import '../../core/ai/interview_plan.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/chat_view.dart';
 
 const _amber = Color(0xFFE3B341);
 
 /// The "plan an interview" chat: describe an upcoming interview, answer any
 /// clarifying questions, review the proposed plan, and save it as an active
-/// prep goal (which then reprioritises study via the targeting layer).
+/// prep goal (which then reprioritizes study via the targeting layer).
 class InterviewPlannerScreen extends ConsumerStatefulWidget {
   const InterviewPlannerScreen({super.key});
 
@@ -23,35 +24,12 @@ class InterviewPlannerScreen extends ConsumerStatefulWidget {
 
 class _InterviewPlannerScreenState
     extends ConsumerState<InterviewPlannerScreen> {
-  final _input = TextEditingController();
-  final _scroll = ScrollController();
-
-  @override
-  void dispose() {
-    _input.dispose();
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _input.text;
-    if (text.trim().isEmpty) return;
-    _input.clear();
-    await ref.read(interviewPlannerProvider.notifier).send(text);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(_scroll.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-      }
-    });
-  }
-
   Future<void> _accept() async {
     final messenger = ScaffoldMessenger.of(context);
     final goal = await ref.read(interviewPlannerProvider.notifier).accept();
     if (goal == null) return;
     messenger.showSnackBar(SnackBar(
-        content: Text('Prep goal saved — study is now prioritised for '
+        content: Text('Prep goal saved — study is now prioritized for '
             '${goal.companyName}.')));
     if (mounted) context.pop();
   }
@@ -66,48 +44,19 @@ class _InterviewPlannerScreenState
       appBar: AppBar(title: const Text('Plan an interview')),
       body: !hasKey
           ? _NeedsKey(theme)
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    children: [
-                      if (state.isEmpty) const _Opener(),
-                      for (final m in state.messages)
-                        _Bubble(isUser: m.role == CoachRole.user, text: m.text),
-                      if (state.plan != null) _PlanCard(state.plan!, _accept),
-                      if (state.busy)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2)),
-                              SizedBox(width: 10),
-                              Text('Thinking…'),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (state.error != null)
-                  Container(
-                    width: double.infinity,
-                    color: theme.colorScheme.errorContainer,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    child: Text(state.error!,
-                        style: TextStyle(
-                            color: theme.colorScheme.onErrorContainer)),
-                  ),
-                _InputBar(controller: _input, busy: state.busy, onSend: _send),
+          : ChatView(
+              messages: [
+                for (final m in state.messages)
+                  ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
               ],
+              busy: state.busy,
+              error: state.error,
+              hintText: 'e.g. Google, senior backend, Maps, in 2 weeks…',
+              opener: const _Opener(),
+              trailing:
+                  state.plan != null ? _PlanCard(state.plan!, _accept) : null,
+              onSend: (t) =>
+                  ref.read(interviewPlannerProvider.notifier).send(t),
             ),
     );
   }
@@ -189,7 +138,7 @@ class _PlanCard extends StatelessWidget {
           if (domains.isNotEmpty) ...[
             const SizedBox(height: 12),
             _ChipRow(
-                label: 'Prioritise',
+                label: 'Prioritize',
                 items: domains,
                 color: theme.colorScheme.primary),
           ],
@@ -231,7 +180,7 @@ class _PlanCard extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onSave,
               icon: const Icon(Icons.check),
-              label: Text('Save & activate — prioritise for ${plan.company}'),
+              label: Text('Save & activate — prioritize for ${plan.company}'),
             ),
           ),
         ],
@@ -294,99 +243,6 @@ class _ChipRow extends StatelessWidget {
         .split(RegExp(r'[-_]'))
         .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
         .join(' ');
-  }
-}
-
-class _Bubble extends StatelessWidget {
-  const _Bubble({required this.isUser, required this.text});
-
-  final bool isUser;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment:
-          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: [
-        Flexible(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.82),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: isUser
-                  ? Text(text,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                          fontSize: 16,
-                          height: 1.4,
-                          color: theme.colorScheme.onPrimaryContainer))
-                  : CardMarkdown(text, compact: true),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InputBar extends StatelessWidget {
-  const _InputBar(
-      {required this.controller, required this.busy, required this.onSend});
-
-  final TextEditingController controller;
-  final bool busy;
-  final VoidCallback onSend;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: busy ? null : (_) => onSend(),
-                decoration: InputDecoration(
-                  hintText: 'e.g. Google, senior backend, Maps, in 2 weeks…',
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: busy ? null : onSend,
-              icon: const Icon(Icons.arrow_upward),
-              style: IconButton.styleFrom(
-                  fixedSize: const Size(40, 40), padding: EdgeInsets.zero),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

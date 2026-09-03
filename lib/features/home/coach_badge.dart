@@ -22,7 +22,7 @@ typedef _ChatSeed = ({
 const _green = Color(0xFF4CC38A);
 const _amber = Color(0xFFE3B341);
 
-/// The ambient coach update on Home: one prioritised, task-level line. Tap to
+/// The ambient coach update on Home: one prioritized, task-level line. Tap to
 /// expand the "why now" and take the single suggested action. Renders nothing
 /// while loading, on error, or when the coach has nothing worth saying.
 class CoachBadge extends ConsumerWidget {

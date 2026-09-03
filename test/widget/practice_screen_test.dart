@@ -64,7 +64,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Finish'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('practised'), findsOneWidget);
+    expect(find.textContaining('practiced'), findsOneWidget);
     expect(find.textContaining('nothing recorded'), findsOneWidget);
   });
 

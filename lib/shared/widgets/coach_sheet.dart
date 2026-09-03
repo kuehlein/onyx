@@ -33,7 +33,7 @@ Future<void> showCoachSheet(
     // the framework handle, which reserves ~36px and leaves the header floating.
     showDragHandle: false,
     // Set explicitly so the transcript's fade edges can blend into the same
-    // colour (see FadingScrollEdges below).
+    // color (see FadingScrollEdges below).
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => CoachSheet(
       card: card,
@@ -45,7 +45,7 @@ Future<void> showCoachSheet(
   );
 }
 
-/// The app-bar entry point to the coach: an accent-coloured icon + label, used
+/// The app-bar entry point to the coach: an accent-colored icon + label, used
 /// on both the study and card-detail screens so it reads the same everywhere.
 class CoachButton extends StatelessWidget {
   const CoachButton({super.key, required this.onPressed});
@@ -96,6 +96,7 @@ class CoachSheet extends ConsumerStatefulWidget {
 class _CoachSheetState extends ConsumerState<CoachSheet> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _focus = FocusNode();
   final _speech = SpeechToText();
   bool _sttAvailable = false;
   bool _listening = false;
@@ -156,6 +157,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
     _speech.cancel();
     _input.dispose();
     _scroll.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -163,6 +165,8 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
     final text = _input.text;
     if (text.trim().isEmpty) return;
     _input.clear();
+    // Keep focus so the learner can keep typing without re-tapping the field.
+    _focus.requestFocus();
     await ref
         .read(coachProvider(_scope.cardId, _scope.sectionSlug).notifier)
         .send(
@@ -271,6 +275,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                 ),
               _InputBar(
                 controller: _input,
+                focusNode: _focus,
                 busy: state.busy || !ready,
                 grading: widget.grading,
                 listening: _listening,
@@ -526,7 +531,7 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-/// The coach's advisory grade, shown as a labelled chip. Purely informational —
+/// The coach's advisory grade, shown as a labeled chip. Purely informational —
 /// the learner still taps their own grade in the action bar.
 class _GradeSuggestion extends StatelessWidget {
   const _GradeSuggestion({required this.grade});
@@ -576,6 +581,7 @@ class _Thinking extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   const _InputBar({
     required this.controller,
+    required this.focusNode,
     required this.busy,
     required this.grading,
     required this.listening,
@@ -585,6 +591,7 @@ class _InputBar extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool busy;
   final bool grading;
   final bool listening;
@@ -595,7 +602,7 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Separate mic / field / send, vertically centred. Buttons are a fixed 44
+    // Separate mic / field / send, vertically centered. Buttons are a fixed 44
     // so the filled circle actually fills them; the dense field lands close to
     // the same height, and centring keeps everything visually level. 8px gaps
     // plus the outer padding keep it off the edges.
@@ -627,6 +634,7 @@ class _InputBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                focusNode: focusNode,
                 minLines: 1,
                 maxLines: 4,
                 textInputAction: TextInputAction.send,

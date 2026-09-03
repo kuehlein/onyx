@@ -122,7 +122,7 @@ String buildDebriefSystem({
         'question. Probe whether it is a pattern before you weight it.')
     ..writeln('- Separate a learnable CONTENT gap from nerves, communication, '
         'time pressure, or bad luck. Only reweight the content gap; for the rest, '
-        'coach the behaviour and leave the plan alone.')
+        'coach the behavior and leave the plan alone.')
     ..writeln(
         '- Counter recency bias: have them recall the WHOLE interview, not '
         'just the worst moment. The vivid problem they blanked on may matter less '
@@ -144,7 +144,7 @@ String buildDebriefSystem({
         '- Be autonomy-supportive: suggest, don\'t command; 2–4 sentences, '
         'plain Markdown, no headings.');
   if (highFrequency.isNotEmpty) {
-    b.writeln('Common in real interviews (safe to prioritise): '
+    b.writeln('Common in real interviews (safe to prioritize): '
         '${highFrequency.join(', ')}.');
   }
   if (lowFrequency.isNotEmpty) {

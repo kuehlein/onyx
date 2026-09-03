@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/ai/coach_update_chat.dart';
+import '../../core/ai/coach_update_chat.dart'
+    show CoachRole, buildCoachChatSystem;
 import '../../core/coach/coach_update.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/coach_chat.dart';
-import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/chat_view.dart';
 
 /// Opens the "talk about it" strategist chat for a coach [update], seeded with
 /// the learner's current numbers so it can advise without a round-trip.
@@ -33,44 +34,14 @@ Future<void> showCoachChatSheet(
   );
 }
 
-class _CoachChatSheet extends ConsumerStatefulWidget {
+class _CoachChatSheet extends ConsumerWidget {
   const _CoachChatSheet({required this.system, required this.seed});
 
   final String system;
   final String seed;
 
   @override
-  ConsumerState<_CoachChatSheet> createState() => _CoachChatSheetState();
-}
-
-class _CoachChatSheetState extends ConsumerState<_CoachChatSheet> {
-  final _input = TextEditingController();
-  final _scroll = ScrollController();
-
-  @override
-  void dispose() {
-    _input.dispose();
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _input.text;
-    if (text.trim().isEmpty) return;
-    _input.clear();
-    await ref
-        .read(coachChatProvider.notifier)
-        .send(text, system: widget.system);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(_scroll.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final state = ref.watch(coachChatProvider);
     final hasKey = ref.watch(claudeServiceProvider) != null;
@@ -97,43 +68,22 @@ class _CoachChatSheetState extends ConsumerState<_CoachChatSheet> {
             Expanded(
               child: !hasKey
                   ? const _NoKey()
-                  : ListView(
-                      controller: _scroll,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      children: [
-                        if (state.isEmpty) _Opener(seed: widget.seed),
-                        for (final m in state.messages) _Bubble(m),
-                        if (state.busy)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2)),
-                                SizedBox(width: 10),
-                                Text('Thinking…'),
-                              ],
-                            ),
-                          ),
+                  : ChatView(
+                      messages: [
+                        for (final m in state.messages)
+                          ChatTurn(
+                              isUser: m.role == CoachRole.user, text: m.text),
                       ],
+                      busy: state.busy,
+                      error: state.error,
+                      hintText: 'Ask the coach…',
+                      fadeColor: theme.colorScheme.surfaceContainerLow,
+                      opener: _Opener(seed: seed),
+                      onSend: (t) => ref
+                          .read(coachChatProvider.notifier)
+                          .send(t, system: system),
                     ),
             ),
-            if (state.error != null)
-              Container(
-                width: double.infinity,
-                color: theme.colorScheme.errorContainer,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Text(state.error!,
-                    style:
-                        TextStyle(color: theme.colorScheme.onErrorContainer)),
-              ),
-            if (hasKey)
-              _InputBar(controller: _input, busy: state.busy, onSend: _send),
           ],
         ),
       ),
@@ -165,98 +115,6 @@ class _Opener extends StatelessWidget {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Bubble extends StatelessWidget {
-  const _Bubble(this.message);
-  final CoachMessage message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isUser = message.role == CoachRole.user;
-    return Row(
-      mainAxisAlignment:
-          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: [
-        Flexible(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.82),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: isUser
-                  ? Text(message.text,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                          fontSize: 16,
-                          height: 1.4,
-                          color: theme.colorScheme.onPrimaryContainer))
-                  : CardMarkdown(message.text, compact: true),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InputBar extends StatelessWidget {
-  const _InputBar(
-      {required this.controller, required this.busy, required this.onSend});
-
-  final TextEditingController controller;
-  final bool busy;
-  final VoidCallback onSend;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 18),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: busy ? null : (_) => onSend(),
-                decoration: InputDecoration(
-                  hintText: 'Ask the coach…',
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: busy ? null : onSend,
-              icon: const Icon(Icons.arrow_upward),
-              style: IconButton.styleFrom(
-                  fixedSize: const Size(40, 40), padding: EdgeInsets.zero),
-            ),
-          ],
-        ),
       ),
     );
   }

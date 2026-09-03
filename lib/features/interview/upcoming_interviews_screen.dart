@@ -9,7 +9,7 @@ import '../../shared/widgets/card_markdown.dart';
 
 /// The learner's upcoming interviews — the prep goals, soonest first. Toggle each
 /// on/off (active goals bias study via the targeting layer), remove, view its
-/// plan, or practise for it. The front door for the interview-targeting feature.
+/// plan, or practice for it. The front door for the interview-targeting feature.
 class UpcomingInterviewsScreen extends ConsumerWidget {
   const UpcomingInterviewsScreen({super.key});
 
@@ -34,6 +34,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             children: [
+              const _ToggleExplainer(),
               for (final g in sorted) _GoalRow(goal: g, today: today),
             ],
           );
@@ -101,11 +102,18 @@ class _GoalRow extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Switch(
-                  value: active,
-                  onChanged: (v) => ref
-                      .read(prepGoalsProvider.notifier)
-                      .setActive(goal.id, v),
+                Tooltip(
+                  message: active
+                      ? 'On — study is prioritized for this interview. '
+                          'Turn off to stop biasing toward it.'
+                      : 'Off — turn on to prioritize your study for this '
+                          'interview.',
+                  child: Switch(
+                    value: active,
+                    onChanged: (v) => ref
+                        .read(prepGoalsProvider.notifier)
+                        .setActive(goal.id, v),
+                  ),
                 ),
               ],
             ),
@@ -203,7 +211,7 @@ class _GoalRow extends ConsumerWidget {
     );
   }
 
-  /// The goal's highest-weighted domain (for a quick "practise this" jump).
+  /// The goal's highest-weighted domain (for a quick "practice this" jump).
   String? _topDomain() {
     if (goal.domainWeights.isEmpty) return null;
     final keys = goal.domainWeights.keys.toList()
@@ -218,6 +226,37 @@ class _GoalRow extends ConsumerWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
     ];
     return '${months[d.month - 1]} ${d.day}';
+  }
+}
+
+/// A one-line explainer above the list: what the per-interview toggle does. A
+/// bare switch is ambiguous, so this makes its effect discoverable without a
+/// long-press on the tooltip.
+class _ToggleExplainer extends StatelessWidget {
+  const _ToggleExplainer();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline,
+              size: 16, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Toggle an interview on to prioritize your study for it — active '
+              'ones bias which cards come up. Turn others off to focus.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -264,7 +303,7 @@ class _Empty extends StatelessWidget {
                 textAlign: TextAlign.center),
             const SizedBox(height: 6),
             Text(
-              'Plan one and Onyx will prioritise your study for it — and flag '
+              'Plan one and Onyx will prioritize your study for it — and flag '
               'what to prep elsewhere.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall

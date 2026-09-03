@@ -553,7 +553,7 @@ class _CompleteState extends ConsumerWidget {
   }
 }
 
-/// The grade mix for the session — plain counts, coloured by grade. Honest
+/// The grade mix for the session — plain counts, colored by grade. Honest
 /// session info, not a score to chase.
 class _GradeBreakdown extends StatelessWidget {
   const _GradeBreakdown(this.grades);

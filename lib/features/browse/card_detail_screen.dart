@@ -172,7 +172,7 @@ class _SectionPanel extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      // Material (not a bare coloured Container) so the ExpansionTile's inner
+      // Material (not a bare colored Container) so the ExpansionTile's inner
       // ListTile has a Material ancestor to paint its background/ink onto.
       child: Material(
         color: scheme.surfaceContainerHigh,

@@ -10,7 +10,7 @@ import 'stats.dart';
 
 part 'coach_update.g.dart';
 
-/// The ambient coach update for Home — a single prioritised nudge (or null to
+/// The ambient coach update for Home — a single prioritized nudge (or null to
 /// stay quiet). Gathers the same signals the dashboard uses (readiness, pace,
 /// streak, due backlog, recent review success, new-card load) and runs the pure
 /// [buildCoachUpdate] triage over them.

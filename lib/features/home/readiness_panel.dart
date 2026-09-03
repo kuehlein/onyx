@@ -293,9 +293,9 @@ class _PaceRow extends StatelessWidget {
   }
 }
 
-/// Band colour for a readiness score: red (needs work) → amber (developing) →
+/// Band color for a readiness score: red (needs work) → amber (developing) →
 /// green (strong). Shared by the overall bar and the per-domain bars so the
-/// colour language is identical everywhere.
+/// color language is identical everywhere.
 Color _bandColor(double score) {
   if (score >= 0.75) return const Color(0xFF4CC38A); // green
   if (score >= 0.45) return const Color(0xFFE3B341); // amber
@@ -727,7 +727,7 @@ class _DomainRow extends StatelessWidget {
   }
 
   Color _color(DomainReadiness d) {
-    if (d.studied == 0) return const Color(0xFF8A8F98); // muted grey
+    if (d.studied == 0) return const Color(0xFF8A8F98); // muted gray
     return _bandColor(d.score);
   }
 

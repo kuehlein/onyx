@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/interview/assessment.dart';
+import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -38,6 +39,13 @@ Card _card(String id, String domain) => Card(
       filePath: '$id.md',
     );
 
+/// A prep-goals notifier with no goals, so readiness reflects only the base
+/// target — decoupled from whatever is saved in the real dev vault.
+class _NoGoals extends PrepGoals {
+  @override
+  Future<List<PrepGoal>> build() async => const [];
+}
+
 void main() {
   // Strong DS&A, weak system design — the case where re-weighting between levels
   // should visibly move the overall roll-up.
@@ -65,6 +73,10 @@ void main() {
         appDatabaseProvider.overrideWithValue(db),
         vaultIndexProvider.overrideWith((ref) async => index),
         srsStatesProvider.overrideWith((ref) async => states),
+        // Isolate from any real on-disk prep goals in the dev vault — otherwise
+        // an active goal's domain weights would override the base target's
+        // level-weighting this test is asserting on.
+        prepGoalsProvider.overrideWith(_NoGoals.new),
       ]);
 
   test('changing the target level moves the overall readiness', () async {
@@ -72,6 +84,9 @@ void main() {
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     final c = make(db);
     addTearDown(c.dispose);
+    // Keep the autodispose readiness graph alive across the two reads (a target
+    // change invalidates it in between), the way the Home panel's ref.watch does.
+    c.listen(readinessProvider, (_, __) {});
 
     // New-grad weights DS&A (strong) heavily → higher overall.
     await c.read(readinessTargetControllerProvider.notifier).save(

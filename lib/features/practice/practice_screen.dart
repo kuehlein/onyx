@@ -266,7 +266,7 @@ class _PracticeDone extends StatelessWidget {
             Icon(Icons.check_circle_outline,
                 size: 44, color: theme.colorScheme.primary),
             const SizedBox(height: 12),
-            Text('Nice — $count practised',
+            Text('Nice — $count practiced',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(

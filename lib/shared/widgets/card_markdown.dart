@@ -258,7 +258,7 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         fontWeight: FontWeight.w700,
       ),
       em: body.copyWith(fontStyle: FontStyle.italic),
-      // Links (glossary terms + external): the accent colour — the standard link
+      // Links (glossary terms + external): the accent color — the standard link
       // affordance, bright enough to read on the dark surface and the tinted
       // callout panels (the faint tone washed out). Stays native so links flow,
       // select, and tap; no underline means no clipping of the caps.
@@ -273,7 +273,7 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
         color: scheme.onSurface,
       ),
       // CodeBlockBuilder draws the whole code panel itself, so the <pre>
-      // wrapper must add nothing — otherwise it paints a grey box with padding
+      // wrapper must add nothing — otherwise it paints a gray box with padding
       // around the real (dark) panel. Zero padding + a transparent decoration.
       codeblockPadding: EdgeInsets.zero,
       codeblockDecoration: const BoxDecoration(),

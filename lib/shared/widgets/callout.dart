@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Visual spec for a callout type: an accent colour, an icon, and a default
-/// title. Colours are muted so they read as semantic signals on the dark
+/// Visual spec for a callout type: an accent color, an icon, and a default
+/// title. Colors are muted so they read as semantic signals on the dark
 /// surface, not decoration.
 class CalloutSpec {
   const CalloutSpec(this.color, this.icon, this.label);
@@ -11,8 +11,8 @@ class CalloutSpec {
   final String label;
 }
 
-// Muted, dark-surface-friendly accents. A small vocabulary: colour maps to
-// meaning (info/positive/attention/danger), aliases share a colour + icon.
+// Muted, dark-surface-friendly accents. A small vocabulary: color maps to
+// meaning (info/positive/attention/danger), aliases share a color + icon.
 const _info = Color(0xFF5AA7E6);
 const _tip = Color(0xFF4CC38A);
 const _amber = Color(0xFFE3B341);
@@ -47,7 +47,7 @@ const Map<String, CalloutSpec> _specs = {
   'quote': CalloutSpec(_info, Icons.format_quote_outlined, 'Quote'),
 };
 
-/// Look up a callout's spec, or null for an unrecognised type (the widget then
+/// Look up a callout's spec, or null for an unrecognized type (the widget then
 /// falls back to the theme accent and a title-cased type name).
 CalloutSpec? calloutSpecFor(String type) => _specs[type.toLowerCase()];
 

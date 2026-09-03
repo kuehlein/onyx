@@ -414,7 +414,7 @@ class SettingsScreen extends ConsumerWidget {
       final to = (day * perDay).clamp(0, total);
 
       // Re-seed EVERY studied-so-far section with an age-grown stability —
-      // modelling review-driven consolidation. FSRS stability ≈ your current
+      // modeling review-driven consolidation. FSRS stability ≈ your current
       // review interval, so it climbs ~1 day per real day of successful spaced
       // review: `stability ≈ 3 + age`. Reaching the ~90-day stability that reads
       // as fully durable therefore takes ~3 months, not 2 weeks. (Without any
