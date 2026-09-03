@@ -49,13 +49,17 @@ Future<MockSkills> mockSkills(Ref ref) async {
   await ref.watch(appliedTransferProvider.future); // refresh on new mocks
   final attempts = await ref.watch(appliedRepositoryProvider).attempts();
   return computeMockSkills([
+    // Exclude self-reported external solves — this section is the coach-mock
+    // rubric breakdown, and external solves carry no rubric. They still count
+    // as applied evidence toward readiness.
     for (final a in attempts)
-      (
-        appliedScore: a.appliedScore,
-        hintLevel: a.hintLevel,
-        novel: a.novel,
-        rubric: AppliedAssessment.decodeRubric(a.rubric),
-      ),
+      if (a.source != 'external')
+        (
+          appliedScore: a.appliedScore,
+          hintLevel: a.hintLevel,
+          novel: a.novel,
+          rubric: AppliedAssessment.decodeRubric(a.rubric),
+        ),
   ]);
 }
 

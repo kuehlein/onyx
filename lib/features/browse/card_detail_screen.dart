@@ -10,6 +10,7 @@ import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import '../../shared/widgets/log_solve_sheet.dart';
 
 /// Read-only view of a single card: its overview plus each H2 section, rendered
 /// as Markdown with syntax-highlighted code. Reached from Browse; the card is
@@ -132,6 +133,17 @@ class _CardDetail extends ConsumerWidget {
                 if (card.overview.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   CardMarkdown(card.overview),
+                ],
+                if (isInterview) ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => showLogSolveSheet(context, card: card),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Log a solve'),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 for (final section in card.sections)
