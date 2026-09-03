@@ -98,69 +98,60 @@ class _TipRow extends StatelessWidget {
   }
 }
 
-/// A compact, dismissible single-tip banner shown at the top of a Learn session.
-/// Tapping it opens the full [showStudyTipsSheet]; the × dismisses it for the
-/// session.
-class StudyTipBanner extends StatelessWidget {
-  const StudyTipBanner({
+/// A single-slide reminder shown once before a Learn session starts — one
+/// rotating tip to prime the learner, then a Start button into the cards. A
+/// brief priming moment (not clutter during study), consistent with keeping the
+/// study screen itself focused.
+class StudyTipIntro extends StatelessWidget {
+  const StudyTipIntro({
     super.key,
     required this.tip,
-    required this.onDismiss,
+    required this.onStart,
     required this.onMore,
   });
 
   final StudyTip tip;
-  final VoidCallback onDismiss;
+  final VoidCallback onStart;
   final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onMore,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Icon(Icons.tips_and_updates_outlined,
-                  size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tip · ${tip.title}',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text(tip.body,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            height: 1.35,
-                            color: theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 2),
-                    Text('More tips',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600)),
-                  ],
-                ),
+                  size: 40, color: theme.colorScheme.primary),
+              const SizedBox(height: 20),
+              Text('Before you start',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelLarge
+                      ?.copyWith(color: theme.colorScheme.primary)),
+              const SizedBox(height: 12),
+              Text(tip.title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Text(tip.body,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                      height: 1.45, color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 28),
+              FilledButton(
+                onPressed: onStart,
+                style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16)),
+                child: const Text('Start learning'),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                iconSize: 18,
-                icon: const Icon(Icons.close),
-                tooltip: 'Dismiss',
-                onPressed: onDismiss,
-              ),
+              const SizedBox(height: 4),
+              TextButton(onPressed: onMore, child: const Text('More tips')),
             ],
           ),
         ),

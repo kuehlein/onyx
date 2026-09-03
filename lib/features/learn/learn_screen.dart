@@ -28,9 +28,10 @@ class LearnScreen extends ConsumerStatefulWidget {
 
 class _LearnScreenState extends ConsumerState<LearnScreen> {
   bool _attempted = false;
-  // One rotating tip per session, dismissible; picked once when Learn opens.
+  // A one-slide tip reminder before the first card. Picked once when Learn opens;
+  // dismissed by tapping "Start learning".
   late final int _tipIndex = Random().nextInt(studyTips.length);
-  bool _tipShown = true;
+  bool _started = false;
 
   void _grade(int grade) {
     setState(() => _attempted = false);
@@ -98,14 +99,19 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
         data: (s) {
           if (s.total == 0) return const _EmptyState();
           if (s.isDone) return _CompleteState(learned: s.graduated);
+          // A single priming slide before the first card of the session.
+          if (!_started) {
+            return StudyTipIntro(
+              tip: studyTips[_tipIndex],
+              onStart: () => setState(() => _started = true),
+              onMore: () => showStudyTipsSheet(context),
+            );
+          }
           return _LearnView(
             item: s.current!,
             graduated: s.graduated,
             total: s.total,
             attempted: _attempted,
-            tip: _tipShown ? studyTips[_tipIndex] : null,
-            onDismissTip: () => setState(() => _tipShown = false),
-            onMoreTips: () => showStudyTipsSheet(context),
             onReveal: () => setState(() => _attempted = true),
             onGrade: _grade,
           );
@@ -121,9 +127,6 @@ class _LearnView extends StatelessWidget {
     required this.graduated,
     required this.total,
     required this.attempted,
-    required this.tip,
-    required this.onDismissTip,
-    required this.onMoreTips,
     required this.onReveal,
     required this.onGrade,
   });
@@ -132,9 +135,6 @@ class _LearnView extends StatelessWidget {
   final int graduated;
   final int total;
   final bool attempted;
-  final StudyTip? tip;
-  final VoidCallback onDismissTip;
-  final VoidCallback onMoreTips;
   final VoidCallback onReveal;
   final void Function(int grade) onGrade;
 
@@ -156,12 +156,6 @@ class _LearnView extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    if (tip != null)
-                      StudyTipBanner(
-                        tip: tip!,
-                        onDismiss: onDismissTip,
-                        onMore: onMoreTips,
-                      ),
                     Row(
                       children: [
                         Text('${graduated + 1} / $total',

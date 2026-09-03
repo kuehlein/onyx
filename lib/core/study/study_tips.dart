@@ -32,16 +32,6 @@ const studyTips = <StudyTip>[
         'the fact.',
   ),
   StudyTip(
-    'Let the mixing happen',
-    'Onyx interleaves topics on purpose. The effort of switching between them '
-        'feels harder but makes the learning stick — don’t batch one topic.',
-  ),
-  StudyTip(
-    'Trust the schedule — don’t cram',
-    'Spacing reviews out beats massing them. Coming back tomorrow, when it’s a '
-        'little harder to recall, is exactly the point.',
-  ),
-  StudyTip(
     'A little struggle is good',
     'If recall feels effortful, it’s working. Don’t mark something easy just '
         'because it looks familiar — recognising isn’t the same as recalling.',
