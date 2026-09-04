@@ -194,6 +194,18 @@ class _LearnView extends StatelessWidget {
                     if (revealed) ...[
                       const SizedBox(height: 12),
                       CardMarkdown(section.content),
+                      // Reference sections (e.g. the implementation) aren't
+                      // quizzed — read them here without leaving the flow.
+                      if (item.card.sections.any((s) => !s.quizzable))
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () =>
+                                context.push('/card/${item.card.id}'),
+                            icon: const Icon(Icons.article_outlined, size: 18),
+                            label: const Text('View full card'),
+                          ),
+                        ),
                     ],
                   ],
                 ),

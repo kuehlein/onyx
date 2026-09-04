@@ -41,6 +41,11 @@ class CardParser {
     'background',
     'resources',
     'follow-up questions',
+    // Code/implementation is study REFERENCE, not a recall target — you should
+    // reconstruct it from the approach, not memorise it verbatim (see
+    // docs/learning-science.md). Kept in the card and viewable in-flow via
+    // "View full card"; actual implementation practice is the Solve loop.
+    ...implementationHeadings,
   };
 
   Card? parse(String content, {required String filePath}) {

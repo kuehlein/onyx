@@ -41,6 +41,13 @@ GoRouter createRouter() => GoRouter(
             interviewContext: state.uri.queryParameters['for'],
           ),
         ),
+        // A card's full detail, pushable from Learn/Review ("View full card") to
+        // read reference sections (e.g. the implementation) that aren't quizzed.
+        GoRoute(
+          path: '/card/:id',
+          builder: (_, state) =>
+              CardDetailScreen(cardId: state.pathParameters['id']!),
+        ),
         // The AI interview-readiness report, launched from Home.
         GoRoute(
             path: '/report', builder: (_, __) => const ReadinessReportScreen()),

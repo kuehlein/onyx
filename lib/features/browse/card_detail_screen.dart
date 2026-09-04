@@ -68,9 +68,14 @@ class CardDetailScreen extends ConsumerWidget {
 /// collapsed; a quizzable section opens if it's new (never studied) or due, and
 /// collapses once it's been reviewed and scheduled into the future (mastered).
 bool _expandByDefault(CardSection section, SrsState? state, DateTime now) {
-  if (!section.quizzable) return false;
-  if (state == null) return true;
-  return !state.dueAt.isAfter(now);
+  if (section.quizzable) {
+    if (state == null) return true;
+    return !state.dueAt.isAfter(now);
+  }
+  // Non-quizzable: expand the implementation/code reference (the reason to open
+  // the full card); keep other supplementary sections (resources, related)
+  // collapsed.
+  return implementationHeadings.contains(section.heading.trim().toLowerCase());
 }
 
 class _CardDetail extends ConsumerWidget {

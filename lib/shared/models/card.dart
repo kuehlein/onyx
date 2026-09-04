@@ -60,6 +60,18 @@ enum Priority {
   }
 }
 
+/// Section headings that hold study REFERENCE code rather than a recall target.
+/// Kept in the card but never quizzed (reconstruct code from the approach, don't
+/// memorise it verbatim — see docs/learning-science.md), and expanded by default
+/// in the full-card view since they're the reason to open it.
+const implementationHeadings = <String>{
+  'implementation',
+  'implementation notes',
+  'code',
+  'solution',
+  'reference implementation',
+};
+
 /// One H2 section of a card. Each *quizzable* section is an independent SRS
 /// unit, scheduled by its `(cardId, slug)` pair — see `srs_state` in the schema.
 class CardSection {

@@ -164,8 +164,15 @@ All `##` (H2) sections are quizzable by default, except those matching the
 
 ```
 Related, Related Concepts, References, Notes, See Also, Links, Overview,
-Background, Resources, Follow-up Questions
+Background, Resources, Follow-up Questions,
+Implementation, Implementation Notes, Code, Solution, Reference Implementation
 ```
+
+The implementation/code sections are deliberately blocklisted: code is study
+*reference*, not a recall target (reconstruct it from the approach, don't
+memorise it verbatim — see learning-science.md). It stays in the card and is
+reachable in-flow via "View full card" (Learn/Review reveal); real implementation
+practice is solving the problem on your own machine.
 
 Configurable in app settings. Blocklist matching is case-insensitive.
 

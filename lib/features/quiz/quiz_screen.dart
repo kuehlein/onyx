@@ -232,6 +232,17 @@ class _ReviewView extends StatelessWidget {
                           ),
                         ),
                       ],
+                      // Reference sections (e.g. the implementation) aren't
+                      // quizzed — reach them here without leaving the flow.
+                      if (card.sections.any((s) => !s.quizzable))
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => context.push('/card/${card.id}'),
+                            icon: const Icon(Icons.article_outlined, size: 18),
+                            label: const Text('View full card'),
+                          ),
+                        ),
                     ],
                   ],
                 ),
