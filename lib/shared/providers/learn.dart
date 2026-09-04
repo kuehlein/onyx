@@ -39,7 +39,11 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   if (remaining <= 0) return const [];
   final targeting = await ref.watch(targetingProvider.future);
   return buildLearnQueue(
-    cards: index.cards,
+    // Algorithm cards are practised on their own track, not learned here.
+    cards: [
+      for (final c in index.cards)
+        if (c.type != CardType.algorithm) c,
+    ],
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(index.cards),
     newSectionLimit: remaining,

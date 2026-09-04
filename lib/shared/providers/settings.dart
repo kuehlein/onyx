@@ -36,6 +36,30 @@ class NewCardLimit extends _$NewCardLimit {
   }
 }
 
+/// The daily target for the Algorithms track — how many problems to (re)solve or
+/// explain per day. Paces the algo queue so you get a consistent, achievable
+/// session instead of "0 some days, a pile on others". Persisted; defaults to 3.
+@Riverpod(keepAlive: true)
+class AlgoDailyGoal extends _$AlgoDailyGoal {
+  static const prefKey = 'algo_daily_goal';
+  static const defaultValue = 3;
+  static const min = 1;
+  static const max = 15;
+  static const step = 1;
+
+  @override
+  Future<int> build() async {
+    final raw = await ref.watch(preferencesRepositoryProvider).get(prefKey);
+    return int.tryParse(raw ?? '') ?? defaultValue;
+  }
+
+  Future<void> set(int value) async {
+    final clamped = value.clamp(min, max);
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
+    ref.invalidateSelf();
+  }
+}
+
 /// Gym mode: a between-sets rest timer shown on the review screen, with the
 /// coach hidden (review-only). Research-backed — reviewing already-learned
 /// material in short bursts during rest is a fine use of time, while new
