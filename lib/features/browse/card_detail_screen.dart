@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/database.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
+import '../../shared/url.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
@@ -136,13 +137,22 @@ class _CardDetail extends ConsumerWidget {
                 ],
                 if (isInterview) ...[
                   const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => showLogSolveSheet(context, card: card),
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Log a solve'),
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (card.practiceUrl != null)
+                        FilledButton.icon(
+                          onPressed: () => openExternalUrl(card.practiceUrl!),
+                          icon: const Icon(Icons.open_in_new),
+                          label: const Text('Solve the problem'),
+                        ),
+                      FilledButton.tonalIcon(
+                        onPressed: () => showLogSolveSheet(context, card: card),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('Log a solve'),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 16),

@@ -8,6 +8,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
+import '../../shared/url.dart';
 import '../../shared/providers/coach.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/practice.dart';
@@ -220,6 +221,17 @@ class _ReviewView extends StatelessWidget {
                                 color: theme.colorScheme.primary)),
                       if (isInterview) const SizedBox(height: 6),
                       CardMarkdown(item.section.content),
+                      if (isInterview && card.practiceUrl != null) ...[
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => openExternalUrl(card.practiceUrl!),
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                            label: const Text('Solve the problem'),
+                          ),
+                        ),
+                      ],
                     ],
                   ],
                 ),
