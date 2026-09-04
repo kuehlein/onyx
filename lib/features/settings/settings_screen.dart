@@ -341,10 +341,23 @@ class SettingsScreen extends ConsumerWidget {
     } else {
       await notifier.advance(days);
     }
+    // Refresh EVERYTHING clock-derived — a partial list left readiness/pace/
+    // streak/insights stale after advancing (they can't be trusted to recompute
+    // off the watch chain alone when kept alive by Home).
     ref.invalidate(reviewQueueProvider);
+    ref.invalidate(learnQueueProvider);
     ref.invalidate(dailyNewRemainingProvider);
     ref.invalidate(srsStatesProvider);
     ref.invalidate(appliedTransferProvider);
+    ref.invalidate(appliedSummaryProvider);
+    ref.invalidate(readinessProvider);
+    ref.invalidate(readinessPaceProvider);
+    ref.invalidate(readinessLadderPositionProvider);
+    ref.invalidate(studyStreakProvider);
+    ref.invalidate(coachUpdateProvider);
+    ref.invalidate(dueForecastProvider);
+    ref.invalidate(retentionByDomainProvider);
+    ref.invalidate(studyConsistencyProvider);
   }
 
   /// Dev/E2E: simulate [days] more days of study — **cumulative**, so repeated
