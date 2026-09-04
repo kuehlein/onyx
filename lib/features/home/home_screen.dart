@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/providers/ai.dart';
+import '../../shared/providers/algo.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/readiness.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
     final dueCount = reviewData?.queue.length;
     final hasProgress = reviewData?.statesByKey.isNotEmpty ?? false;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
+    final algoDue = ref.watch(algoDueCountProvider).asData?.value;
     final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
@@ -82,6 +84,16 @@ class HomeScreen extends ConsumerWidget {
                           ? 'Nothing new to learn'
                           : 'Learn — $newCount new',
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Algorithms — its own paced daily track; always tappable
+                  // (there are always new problems to start).
+                  FilledButton.tonalIcon(
+                    onPressed: () => context.push('/algorithms'),
+                    icon: const Icon(Icons.terminal_outlined),
+                    label: Text((algoDue ?? 0) > 0
+                        ? 'Algorithms — $algoDue due'
+                        : 'Algorithms'),
                   ),
                   const SizedBox(height: 12),
                   // Secondary actions as a compact pair (Browse lives in the

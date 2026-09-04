@@ -68,17 +68,17 @@ void main() {
   });
 
   test('ignores non-algorithm cards', () {
-    final concept = Card(
+    const concept = Card(
       id: 'bfs',
       type: CardType.flashcard,
       title: 'BFS',
       overview: '',
-      tags: const ['ds-a'],
-      tiers: const {},
-      sections: const [
+      tags: ['ds-a'],
+      tiers: {},
+      sections: [
         CardSection(heading: 'k', slug: 'k', content: 'x', quizzable: true),
       ],
-      wikilinks: const [],
+      wikilinks: [],
       filePath: 'bfs.md',
     );
     final q = buildAlgoQueue(

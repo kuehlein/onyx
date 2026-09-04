@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/algorithms/algo_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
@@ -26,6 +27,8 @@ GoRouter createRouter() => GoRouter(
       routes: [
         // Full-screen, focused flow launched from Home (outside the tab shell).
         GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
+        // The daily Algorithms session (separate paced track).
+        GoRoute(path: '/algorithms', builder: (_, __) => const AlgoScreen()),
         // In-app reader for a recommended-reading link (`/read?url=…`).
         GoRoute(
           path: '/read',
