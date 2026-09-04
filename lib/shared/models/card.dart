@@ -1,9 +1,15 @@
-/// The two card types Onyx indexes from the vault. A file whose frontmatter
-/// `type` is neither of these is not an Onyx card and is skipped by the indexer
-/// (this is how `_meta/` files and ordinary vault notes are ignored).
+/// The card types Onyx indexes from the vault. A file whose frontmatter `type`
+/// is none of these is not an Onyx card and is skipped by the indexer (this is
+/// how `_meta/` files and ordinary vault notes are ignored).
+///
+/// [algorithm] cards drive the separate Algorithms practice track: the card is a
+/// pattern (e.g. "Two Pointers"), each H2 section is one problem (name +
+/// `practice_url`). They're scheduled on their own paced queue, not the main
+/// review/learn queues — see docs/algorithm-track-design.md.
 enum CardType {
   flashcard('flashcard'),
-  interviewQuestion('interview-question');
+  interviewQuestion('interview-question'),
+  algorithm('algorithm');
 
   const CardType(this.value);
 

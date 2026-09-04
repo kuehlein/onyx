@@ -126,6 +126,9 @@ class CardParser {
     final bool quizzable;
     if (quizOverride != null && quizOverride.isNotEmpty) {
       quizzable = quizOverride.contains(slug);
+    } else if (type == CardType.algorithm) {
+      // Algorithm cards: every section is a problem = its own practice unit.
+      quizzable = true;
     } else if (type == CardType.interviewQuestion) {
       // Interview questions default to quizzing only the Approach section.
       quizzable = slug == 'approach';

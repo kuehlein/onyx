@@ -16,6 +16,7 @@ extension CardTypeLabel on CardType {
   String get label => switch (this) {
         CardType.flashcard => 'Flashcard',
         CardType.interviewQuestion => 'Interview question',
+        CardType.algorithm => 'Algorithm',
       };
 }
 
@@ -174,6 +175,7 @@ CardType? _parseType(String v) => switch (v) {
       'question' =>
         CardType.interviewQuestion,
       'flashcard' || 'concept' || 'card' => CardType.flashcard,
+      'algorithm' || 'algo' || 'problem' => CardType.algorithm,
       _ => null,
     };
 
