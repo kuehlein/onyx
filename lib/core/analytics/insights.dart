@@ -60,6 +60,68 @@ MockSkills computeMockSkills(
 
 // ── Upcoming review load ───────────────────────────────────────────────────
 
+// ── Algorithm practice ─────────────────────────────────────────────────────
+
+/// Progress in the separate Algorithms track: how many problems you've picked
+/// up, how reliably you're solving them cold, and recent momentum. Distinct from
+/// [MockSkills] (that's the coach rubric); this is the execution-clock signal —
+/// solving under your own power. All solves also count toward readiness via the
+/// ds-a transfer factor.
+class AlgoStats {
+  const AlgoStats({
+    required this.logged,
+    required this.distinctProblems,
+    required this.patterns,
+    required this.cleanRate,
+    required this.last7,
+  });
+
+  final int logged; // total re-solves logged
+  final int distinctProblems; // unique problems touched
+  final int patterns; // unique patterns touched
+  final double cleanRate; // 0..1 — fraction solved cleanly (no hint)
+  final int last7; // solves in the last 7 days
+
+  bool get isEmpty => logged == 0;
+}
+
+/// Aggregates the `source: algo` applied attempts into [AlgoStats]. A solve is
+/// "clean" when it was logged as "solved it cleanly" (appliedScore ≥ 80, i.e.
+/// no hint and not a struggle/fail).
+AlgoStats computeAlgoStats(
+  List<
+          ({
+            int appliedScore,
+            DateTime occurredAt,
+            String problem,
+            String pattern
+          })>
+      solves,
+  DateTime now,
+) {
+  if (solves.isEmpty) {
+    return const AlgoStats(
+        logged: 0, distinctProblems: 0, patterns: 0, cleanRate: 0, last7: 0);
+  }
+  final problems = <String>{};
+  final patterns = <String>{};
+  var clean = 0, last7 = 0;
+  final weekAgo = now.subtract(const Duration(days: 7));
+  for (final s in solves) {
+    problems.add(s.problem);
+    patterns.add(s.pattern);
+    if (s.appliedScore >= 80) clean++;
+    if (s.occurredAt.isAfter(weekAgo)) last7++;
+  }
+  return AlgoStats(
+    logged: solves.length,
+    distinctProblems: problems.length,
+    patterns: patterns.length,
+    cleanRate: clean / solves.length,
+    last7: last7,
+  );
+}
+
 /// Count of cards falling due on each of the next [days] days. Anything overdue
 /// folds into today (index 0), so the first bar is "due now or past".
 List<int> computeDueForecast({

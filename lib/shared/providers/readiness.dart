@@ -10,6 +10,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
 import '../../core/readiness/targeting.dart';
+import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
@@ -195,12 +196,18 @@ Future<Readiness> readiness(Ref ref) async {
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
+  // Algorithms are a separate execution-clock track: solving them counts toward
+  // readiness through the ds-a *transfer* factor (they record applied attempts),
+  // not the recall-coverage denominator — so they don't drag knowledge-base
+  // coverage down as unlearned "concept" sections.
+  final conceptCards =
+      index.cards.where((c) => c.type != CardType.algorithm).toList();
   final domains = <String>{
-    for (final c in index.cards)
+    for (final c in conceptCards)
       if (c.domain != null) c.domain!,
   };
   return computeReadiness(
-    cards: index.cards,
+    cards: conceptCards,
     stabilityByKey: stabilityByKey,
     stabilityTarget: targeting.stabilityTarget,
     domainWeights: {for (final d in domains) d: targeting.weightForDomain(d)},
@@ -221,7 +228,8 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
   return computeLadderPosition(
-    cards: index.cards,
+    // Concept cards only — algorithms feed readiness via transfer, not coverage.
+    cards: index.cards.where((c) => c.type != CardType.algorithm).toList(),
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,

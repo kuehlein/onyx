@@ -63,6 +63,27 @@ Future<MockSkills> mockSkills(Ref ref) async {
   ]);
 }
 
+/// Algorithms-track progress: problems picked up, clean-solve rate, momentum.
+/// Recomputes when a solve is logged (which invalidates appliedTransfer).
+@riverpod
+Future<AlgoStats> algoStats(Ref ref) async {
+  await ref.watch(appliedTransferProvider.future); // refresh on new solves
+  final index = await ref.watch(vaultIndexProvider.future);
+  final clock = await ref.watch(clockProvider.future);
+  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+  final patternByCard = {for (final c in index.cards) c.id: c.title};
+  return computeAlgoStats([
+    for (final a in attempts)
+      if (a.source == 'algo')
+        (
+          appliedScore: a.appliedScore,
+          occurredAt: a.occurredAt,
+          problem: '${a.cardId}::${a.sectionSlug}',
+          pattern: patternByCard[a.cardId] ?? a.cardId,
+        ),
+  ], clock.now());
+}
+
 /// How many cards come due on each of the next 14 days (from FSRS `dueAt`).
 @riverpod
 Future<List<int>> dueForecast(Ref ref) async {

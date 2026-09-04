@@ -31,6 +31,45 @@ void main() {
     });
   });
 
+  group('computeAlgoStats', () {
+    final now = DateTime(2026, 9, 10);
+    test('counts distinct problems/patterns, clean rate, and last-7 momentum',
+        () {
+      final a = computeAlgoStats([
+        // clean, recent
+        (
+          appliedScore: 90,
+          occurredAt: DateTime(2026, 9, 9),
+          problem: 'arr::two-sum',
+          pattern: 'Arrays & Hashing'
+        ),
+        // hinted (not clean), recent, same problem re-solved
+        (
+          appliedScore: 65,
+          occurredAt: DateTime(2026, 9, 8),
+          problem: 'arr::two-sum',
+          pattern: 'Arrays & Hashing'
+        ),
+        // clean, but old (outside 7 days)
+        (
+          appliedScore: 90,
+          occurredAt: DateTime(2026, 9, 1),
+          problem: 'stk::valid-parens',
+          pattern: 'Stack'
+        ),
+      ], now);
+      expect(a.logged, 3);
+      expect(a.distinctProblems, 2);
+      expect(a.patterns, 2);
+      expect(a.cleanRate, 2 / 3); // two of three ≥ 80
+      expect(a.last7, 2); // the Sep 1 solve is older than 7 days
+    });
+
+    test('empty → isEmpty', () {
+      expect(computeAlgoStats(const [], now).isEmpty, isTrue);
+    });
+  });
+
   group('computeDueForecast', () {
     final today = DateTime(2026, 9, 3);
     test('buckets by day offset; overdue folds into today', () {

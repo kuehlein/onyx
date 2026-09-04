@@ -21,7 +21,10 @@ class InsightsScreen extends ConsumerWidget {
     // sparse case) so the page is never a wall of placeholders.
     final retention = ref.watch(retentionByDomainProvider).asData?.value;
     final mocks = ref.watch(mockSkillsProvider).asData?.value;
-    final bare = (retention?.isEmpty ?? true) && (mocks?.isEmpty ?? true);
+    final algo = ref.watch(algoStatsProvider).asData?.value;
+    final bare = (retention?.isEmpty ?? true) &&
+        (mocks?.isEmpty ?? true) &&
+        (algo?.isEmpty ?? true);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
@@ -31,6 +34,7 @@ class InsightsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: const [
                 _MockSkillsSection(),
+                _AlgoSection(),
                 _RetentionSection(),
                 _DueForecastSection(),
                 _StrugglingSection(),
@@ -271,6 +275,54 @@ class _MockSkillsSection extends ConsumerWidget {
                   value: m.dims[k]!.toStringAsFixed(1),
                   color: _dimColor(m.dims[k]!, theme.colorScheme),
                 ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── 1b. Algorithm practice ──────────────────────────────────────────────────
+
+class _AlgoSection extends ConsumerWidget {
+  const _AlgoSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final async = ref.watch(algoStatsProvider);
+    return _Section(
+      title: 'Algorithm practice',
+      subtitle: 'Solving problems cold — the execution clock. Counts toward '
+          'readiness alongside recall.',
+      child: async.when(
+        loading: () => const _NoData('Loading…'),
+        error: (e, _) => _NoData('Error: $e'),
+        data: (a) {
+          if (a.isEmpty) {
+            return const _NoData(
+                'No problems logged yet — work the Algorithms track.');
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${a.distinctProblems} problem${a.distinctProblems == 1 ? '' : 's'} '
+                'across ${a.patterns} pattern${a.patterns == 1 ? '' : 's'} · '
+                '${a.logged} solve${a.logged == 1 ? '' : 's'} logged · '
+                '${a.last7} this week',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              _StatBar(
+                label: 'Clean-solve rate',
+                fraction: a.cleanRate,
+                value: '${(a.cleanRate * 100).round()}%',
+                color: _recallColor(a.cleanRate, theme.colorScheme),
+                subtitle: 'Solved without a hint or a struggle.',
+              ),
             ],
           );
         },

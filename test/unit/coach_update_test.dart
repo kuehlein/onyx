@@ -13,6 +13,7 @@ CoachSignals sig({
   int newCardLimit = 20,
   int reviewsInWindow = 30,
   double? retention = 0.9,
+  int algoDue = 0,
   PaceStatus? paceStatus = PaceStatus.onTrack,
   double? recentPerDay = 5,
   double? requiredPerDay = 5,
@@ -30,6 +31,7 @@ CoachSignals sig({
       newCardLimit: newCardLimit,
       reviewsInWindow: reviewsInWindow,
       retention: retention,
+      algoDue: algoDue,
       paceStatus: paceStatus,
       recentPerDay: recentPerDay,
       requiredPerDay: requiredPerDay,
@@ -122,6 +124,29 @@ void main() {
       expect(u.kind, CoachInsightKind.building);
       expect(u.headline, contains('10%'));
       expect(u.actionRoute, '/learn');
+    });
+
+    test('algorithms due → surfaces the re-solve nudge to /algorithms', () {
+      final u = buildCoachUpdate(sig(algoDue: 4))!;
+      expect(u.kind, CoachInsightKind.algoDue);
+      expect(u.headline, contains('4 algorithms'));
+      expect(u.actionRoute, '/algorithms');
+    });
+
+    test('building the base outranks due algorithms', () {
+      final u = buildCoachUpdate(sig(coverage: 0.1, algoDue: 5))!;
+      expect(u.kind, CoachInsightKind.building);
+    });
+
+    test('due algorithms outrank the mock nudge', () {
+      final u = buildCoachUpdate(sig(algoDue: 2, interviewTested: false))!;
+      expect(u.kind, CoachInsightKind.algoDue);
+    });
+
+    test('health (overload) still outranks due algorithms', () {
+      final u = buildCoachUpdate(
+          sig(algoDue: 9, retention: 0.6, reviewsInWindow: 30))!;
+      expect(u.kind, CoachInsightKind.overloaded);
     });
 
     test('building (learn the base) outranks unproven', () {

@@ -20,6 +20,7 @@ enum CoachInsightKind {
   overloaded,
   behindPace,
   building,
+  algoDue,
   unproven,
   onTrack,
 }
@@ -62,6 +63,7 @@ class CoachSignals {
     required this.newCardLimit,
     required this.reviewsInWindow,
     required this.retention,
+    this.algoDue = 0,
     this.paceStatus,
     this.recentPerDay,
     this.requiredPerDay,
@@ -80,6 +82,7 @@ class CoachSignals {
   final int newCardLimit; // configured new sections/day
   final int reviewsInWindow; // sample size behind [retention]
   final double? retention; // recent review success 0..1, null if sample tiny
+  final int algoDue; // algorithm problems due for a spaced re-solve
   final PaceStatus? paceStatus; // null when no interview date set
   final double? recentPerDay;
   final double? requiredPerDay;
@@ -209,6 +212,25 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
           'value move is to keep learning new sections a few at a time.',
       actionLabel: 'Learn now',
       actionRoute: '/learn',
+    );
+  }
+
+  // Spaced algorithm re-solves have come due — the execution clock. Honor them
+  // like reviews: re-solving on schedule is what turns "I recall the trick"
+  // into "I can produce it cold", and each solve feeds readiness.
+  if (s.algoDue > 0) {
+    return CoachUpdate(
+      kind: CoachInsightKind.algoDue,
+      tone: CoachTone.info,
+      headline: '${s.algoDue} algorithm${s.algoDue == 1 ? '' : 's'} due for a '
+          're-solve — keep the patterns sharp.',
+      why:
+          'Spaced re-solving is what makes a pattern automatic under pressure. '
+          '${s.algoDue} ${s.algoDue == 1 ? 'problem is' : 'problems are'} due '
+          'for a re-solve; a short session now keeps them on schedule and '
+          'counts toward your readiness.',
+      actionLabel: 'Solve now',
+      actionRoute: '/algorithms',
     );
   }
 

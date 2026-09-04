@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart';
 import '../../core/readiness/readiness.dart';
+import 'algo.dart';
 import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
@@ -27,6 +28,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   final stats = await ref
       .watch(srsRepositoryProvider)
       .recentReviewStats(clock.now().subtract(const Duration(days: 14)));
+  final algoDue = await ref.watch(algoDueCountProvider.future);
 
   final weakest = readiness.weakestDomain;
   // Overall coverage = studied sections / all in-scope sections.
@@ -44,6 +46,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     newCardLimit: newLimit,
     reviewsInWindow: stats.total,
     retention: stats.total > 0 ? stats.retained / stats.total : null,
+    algoDue: algoDue,
     paceStatus: pace?.status,
     recentPerDay: pace?.recentPerDay,
     requiredPerDay: pace?.requiredPerDay,
