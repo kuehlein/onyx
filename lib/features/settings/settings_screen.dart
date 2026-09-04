@@ -341,9 +341,13 @@ class SettingsScreen extends ConsumerWidget {
     } else {
       await notifier.advance(days);
     }
-    // Refresh EVERYTHING clock-derived — a partial list left readiness/pace/
-    // streak/insights stale after advancing (they can't be trusted to recompute
-    // off the watch chain alone when kept alive by Home).
+    // Force the CLOCK itself to recompute with the new offset first — its watch
+    // of devClockOffset doesn't reliably re-fire, so without this the consumers
+    // below rebuild but read a stale clock (the "clock moves, app doesn't" bug).
+    ref.invalidate(clockProvider);
+    // Then refresh everything clock-derived — a partial list left readiness/
+    // pace/streak/insights stale (they can't be trusted to recompute off the
+    // watch chain alone when kept alive by Home).
     ref.invalidate(reviewQueueProvider);
     ref.invalidate(learnQueueProvider);
     ref.invalidate(dailyNewRemainingProvider);
@@ -511,6 +515,8 @@ class SettingsScreen extends ConsumerWidget {
     await ref.read(devSimDayProvider.notifier).set(startDay + days);
 
     // Refresh everything time/evidence-derived so Home reflects the new history.
+    ref.invalidate(
+        clockProvider); // recompute the clock with the new offset first
     ref.invalidate(srsStatesProvider);
     ref.invalidate(reviewQueueProvider);
     ref.invalidate(learnQueueProvider);
