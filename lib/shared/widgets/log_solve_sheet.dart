@@ -16,9 +16,13 @@ import '../status_colors.dart';
 /// the truest transfer evidence toward readiness.
 typedef _Outcome = ({String label, int score, int hint, Color color});
 
+// Four distinct colors matching the FSRS grade scale (Easy→Again) so the
+// outcomes read as a gradient, not two amber twins.
+const _grade4 = Color(0xFF5AA7E6); // blue — cleanest, like "Easy"
+
 const _outcomes = <_Outcome>[
-  (label: 'Solved it cleanly', score: 90, hint: 0, color: statusGood),
-  (label: 'Solved, needed a hint', score: 65, hint: 2, color: statusWarn),
+  (label: 'Solved it cleanly', score: 90, hint: 0, color: _grade4),
+  (label: 'Solved, needed a hint', score: 65, hint: 2, color: statusGood),
   (label: 'Struggled through it', score: 45, hint: 3, color: statusWarn),
   (label: 'Couldn’t solve it', score: 20, hint: 5, color: statusBad),
 ];

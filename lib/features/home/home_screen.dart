@@ -26,7 +26,7 @@ class HomeScreen extends ConsumerWidget {
     final dueCount = reviewData?.queue.length;
     final hasProgress = reviewData?.statesByKey.isNotEmpty ?? false;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length;
-    final algoDue = ref.watch(algoDueCountProvider).asData?.value;
+    final algoToday = ref.watch(algoTodayCountProvider).asData?.value;
     final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
@@ -62,15 +62,15 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 14),
                   FilledButton.icon(
-                    // Always tappable; the label tracks where you are in the
-                    // day's loop, and /quiz guides you (learn first → review →
-                    // extra practice) from its context-aware empty state.
+                    // Always tappable; the label tracks the day's concept-recall
+                    // work, and /quiz guides you (learn first → review → extra
+                    // practice) from its context-aware empty state.
                     onPressed: () => context.go('/quiz'),
                     icon: const Icon(Icons.school_outlined),
                     label: Text(
                       (dueCount ?? 0) > 0
                           ? 'Review — $dueCount due'
-                          : (hasProgress ? 'Study more' : 'Study now'),
+                          : (hasProgress ? 'Review' : 'Get started'),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -91,8 +91,8 @@ class HomeScreen extends ConsumerWidget {
                   FilledButton.tonalIcon(
                     onPressed: () => context.push('/algorithms'),
                     icon: const Icon(Icons.terminal_outlined),
-                    label: Text((algoDue ?? 0) > 0
-                        ? 'Algorithms — $algoDue due'
+                    label: Text((algoToday ?? 0) > 0
+                        ? 'Algorithms — $algoToday today'
                         : 'Algorithms'),
                   ),
                   const SizedBox(height: 12),

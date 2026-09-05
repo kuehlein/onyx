@@ -26,6 +26,14 @@ const learnGrades = <({int value, String label, Color color})>[
 String gradeLabel(int value) =>
     studyGrades.where((g) => g.value == value).map((g) => g.label).firstOr('');
 
+/// The accent color for a grade value (1–4), falling back to muted gray. Lets
+/// other graded flows (e.g. the algorithm solve outcomes, which map onto FSRS
+/// grades) reuse the same 4-color scale as the study action bar.
+Color gradeColor(int value) => studyGrades
+    .where((g) => g.value == value)
+    .map((g) => g.color)
+    .firstOr(statusMuted);
+
 extension _FirstOr<T> on Iterable<T> {
   T firstOr(T fallback) => isEmpty ? fallback : first;
 }

@@ -78,14 +78,16 @@ void main() {
     skipped: 0,
   );
 
-  testWidgets('shell renders the five bottom-nav destinations', (tester) async {
+  testWidgets('shell renders the four bottom-nav destinations', (tester) async {
     await tester.pumpWidget(app(populated));
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    for (final label in ['Home', 'Browse', 'Study', 'Insights', 'Settings']) {
+    // Study sessions (Review/Learn/Algorithms) are Home actions, not tabs.
+    for (final label in ['Home', 'Browse', 'Insights', 'Settings']) {
       expect(find.text(label), findsOneWidget);
     }
+    expect(find.text('Study'), findsNothing);
     // Home reflects the (empty) review + learn queues.
     expect(find.text('All caught up'), findsOneWidget);
   });

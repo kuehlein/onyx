@@ -36,15 +36,23 @@ class NewCardLimit extends _$NewCardLimit {
   }
 }
 
-/// The daily target for the Algorithms track — how many problems to (re)solve or
-/// explain per day. Paces the algo queue so you get a consistent, achievable
-/// session instead of "0 some days, a pile on others". Persisted; defaults to 3.
+/// The Algorithms track's daily size as a RANGE, paced against both clocks:
+/// - [AlgoDailyMin] is the floor — a light or quiet day still gets at least this
+///   many, topped up with new problems (and, only if the deck is exhausted, a
+///   soonest-due re-solve pulled slightly early) so you're never left with a
+///   near-empty session.
+/// - [AlgoDailyMax] is the ceiling — the most that's scheduled on a heavy day,
+///   so a pile of due re-solves can't blow up into an unsustainable session.
+///
+/// Bounds are grounded in interview-prep guidance: ~1–2 problems/day is
+/// sustainable long-term, 3–4 is intense, 5+ risks burnout and shallow retention
+/// (mitigated here by spaced re-solving). See docs/algorithm-track-design.md.
 @Riverpod(keepAlive: true)
-class AlgoDailyGoal extends _$AlgoDailyGoal {
-  static const prefKey = 'algo_daily_goal';
-  static const defaultValue = 3;
+class AlgoDailyMin extends _$AlgoDailyMin {
+  static const prefKey = 'algo_daily_min';
+  static const defaultValue = 2;
   static const min = 1;
-  static const max = 15;
+  static const max = 10;
   static const step = 1;
 
   @override
@@ -56,6 +64,38 @@ class AlgoDailyGoal extends _$AlgoDailyGoal {
   Future<void> set(int value) async {
     final clamped = value.clamp(min, max);
     await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
+    // Keep the ceiling at or above the floor.
+    final currentMax = await ref.read(algoDailyMaxProvider.future);
+    if (currentMax < clamped) {
+      await ref.read(algoDailyMaxProvider.notifier).set(clamped);
+    }
+    ref.invalidateSelf();
+  }
+}
+
+/// The daily ceiling for the Algorithms track (see [AlgoDailyMin]).
+@Riverpod(keepAlive: true)
+class AlgoDailyMax extends _$AlgoDailyMax {
+  static const prefKey = 'algo_daily_max';
+  static const defaultValue = 5;
+  static const min = 1;
+  static const max = 12;
+  static const step = 1;
+
+  @override
+  Future<int> build() async {
+    final raw = await ref.watch(preferencesRepositoryProvider).get(prefKey);
+    return int.tryParse(raw ?? '') ?? defaultValue;
+  }
+
+  Future<void> set(int value) async {
+    final clamped = value.clamp(min, max);
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
+    // Keep the floor at or below the ceiling.
+    final currentMin = await ref.read(algoDailyMinProvider.future);
+    if (currentMin > clamped) {
+      await ref.read(algoDailyMinProvider.notifier).set(clamped);
+    }
     ref.invalidateSelf();
   }
 }

@@ -29,6 +29,10 @@ GoRouter createRouter() => GoRouter(
         GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
         // The daily Algorithms session (separate paced track).
         GoRoute(path: '/algorithms', builder: (_, __) => const AlgoScreen()),
+        // The concept-card review session. A full-screen flow launched from
+        // Home (like Learn / Algorithms), not a bottom-nav tab — the tabs are
+        // app SECTIONS, the study sessions are actions.
+        GoRoute(path: '/quiz', builder: (_, __) => const QuizScreen()),
         // In-app reader for a recommended-reading link (`/read?url=…`).
         GoRoute(
           path: '/read',
@@ -88,9 +92,6 @@ GoRouter createRouter() => GoRouter(
               ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/quiz', builder: (_, __) => const QuizScreen()),
-            ]),
-            StatefulShellBranch(routes: [
               GoRoute(
                   path: '/insights',
                   builder: (_, __) => const InsightsScreen()),
@@ -120,11 +121,6 @@ class _ShellScaffold extends StatelessWidget {
       icon: Icon(Icons.grid_view_outlined),
       selectedIcon: Icon(Icons.grid_view),
       label: 'Browse',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.school_outlined),
-      selectedIcon: Icon(Icons.school),
-      label: 'Study',
     ),
     NavigationDestination(
       icon: Icon(Icons.query_stats_outlined),

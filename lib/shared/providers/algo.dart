@@ -24,7 +24,8 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
   final repo = ref.watch(srsRepositoryProvider);
   final recognitionRepo = ref.watch(recognitionRepositoryProvider);
   final clock = await ref.watch(clockProvider.future);
-  final goal = await ref.watch(algoDailyGoalProvider.future);
+  final min = await ref.watch(algoDailyMinProvider.future);
+  final max = await ref.watch(algoDailyMaxProvider.future);
   final states = await repo.loadStates();
   final recog = await recognitionRepo.loadStates();
   return buildAlgoQueue(
@@ -35,7 +36,8 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
     dueByKey: {for (final e in states.entries) e.key: e.value.dueAt},
     explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
     now: clock.now(),
-    goal: goal,
+    min: min,
+    max: max,
   );
 }
 
@@ -85,8 +87,13 @@ extension SolveOutcomeSpec on SolveOutcome {
 /// Drives an Algorithms session. Logging a solve does BOTH: schedules the next
 /// re-solve via FSRS (the execution clock) AND records an applied-transfer
 /// attempt (`source: algo`) so real solves count toward readiness — then
-/// advances. Kept alive across tab switches; invalidate [algoQueueProvider] to
-/// start fresh.
+/// advances.
+///
+/// Autodisposes: leaving the screen drops the in-memory cursor, and re-entering
+/// rebuilds the queue fresh from the DB — so you pick up where you left off
+/// (solved problems are rescheduled and drop out; the rest, plus any new ones to
+/// the floor, come back). Exiting logs nothing, so it never touches FSRS state
+/// or marks the day "done"; only tapping an outcome does.
 @riverpod
 class AlgoSession extends _$AlgoSession {
   @override
@@ -158,6 +165,7 @@ class AlgoSession extends _$AlgoSession {
     ref.invalidate(appliedSummaryProvider);
     ref.invalidate(readinessProvider);
     ref.invalidate(algoDueCountProvider);
+    ref.invalidate(algoTodayCountProvider);
     ref.invalidate(
         algoRecognitionProvider); // a solve refreshes recognition too
     state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
@@ -178,6 +186,7 @@ class AlgoSession extends _$AlgoSession {
           now: clock.now(),
         );
     ref.invalidate(algoRecognitionProvider);
+    ref.invalidate(algoTodayCountProvider);
     state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
   }
 }
@@ -209,8 +218,34 @@ Future<({int due, int maintained})> algoRecognition(Ref ref) async {
   return (due: due, maintained: maintained);
 }
 
-/// How many algorithm problems are due for a re-solve right now (for a Home
-/// badge / "N due" affordance). Ignores the daily-goal cap.
+/// The size of today's actual Algorithms session — what the Home entry shows so
+/// it matches the in-session "N / total" exactly (due re-solves + new-to-floor +
+/// due explains, capped at the max). Recomputed fresh from the DB and
+/// invalidated on each log, so Home tracks remaining work. Distinct from
+/// [algoDueCount], which is just the raw due-re-solve count the coach nudges on.
+@riverpod
+Future<int> algoTodayCount(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final srs = await ref.watch(srsRepositoryProvider).loadStates();
+  final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
+  final clock = await ref.watch(clockProvider.future);
+  final min = await ref.watch(algoDailyMinProvider.future);
+  final max = await ref.watch(algoDailyMaxProvider.future);
+  return buildAlgoQueue(
+    cards: [
+      for (final c in index.cards)
+        if (c.type == CardType.algorithm) c,
+    ],
+    dueByKey: {for (final e in srs.entries) e.key: e.value.dueAt},
+    explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
+    now: clock.now(),
+    min: min,
+    max: max,
+  ).length;
+}
+
+/// How many algorithm problems are due for a re-solve right now (drives the
+/// coach's re-solve nudge). Ignores the daily min/max — it's the raw due count.
 @riverpod
 Future<int> algoDueCount(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);

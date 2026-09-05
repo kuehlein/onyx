@@ -88,6 +88,8 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+          const _SectionHeader('Algorithms'),
+          const _AlgoDailySetting(),
           const _SectionHeader('Gym mode'),
           ...ref.watch(gymModeProvider).when(
                 loading: () => const [
@@ -659,6 +661,68 @@ String _loadLabel(int sections) {
   if (sections <= 10) return 'a light load';
   if (sections <= 25) return 'a moderate load';
   return 'a heavy load';
+}
+
+/// A plain-language load rating for a daily problems-per-day target, grounded in
+/// interview-prep guidance: ~1–2/day is sustainable, 3–4 is intense, 5+ risks
+/// burnout and shallow retention (mitigated here by spaced re-solving).
+String _algoLoadLabel(int perDay) {
+  if (perDay <= 2) return 'light';
+  if (perDay <= 4) return 'moderate';
+  if (perDay <= 6) return 'heavy';
+  return 'very heavy';
+}
+
+/// The Algorithms daily range (min floor / max ceiling), each a compact stepper
+/// with a plain-language load read on the ceiling.
+class _AlgoDailySetting extends ConsumerWidget {
+  const _AlgoDailySetting();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final min = ref.watch(algoDailyMinProvider).asData?.value;
+    final max = ref.watch(algoDailyMaxProvider).asData?.value;
+    if (min == null || max == null) {
+      return const ListTile(
+        leading: Icon(Icons.terminal_outlined),
+        title: Text('Problems per day'),
+        subtitle: Text('Loading…'),
+      );
+    }
+    return Column(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.terminal_outlined),
+          title: const Text('Problems per day'),
+          subtitle: Text(
+              '$min–$max per day — up to $max is a ${_algoLoadLabel(max)} load. '
+              'A quiet day still gets at least $min (topped up with new '
+              'problems); a busy day is capped at $max so due re-solves can’t '
+              'pile up.'),
+        ),
+        ListTile(
+          title: const Text('Fewest per day'),
+          trailing: _Stepper(
+            value: min,
+            min: AlgoDailyMin.min,
+            max: AlgoDailyMin.max,
+            step: AlgoDailyMin.step,
+            onChanged: (v) => ref.read(algoDailyMinProvider.notifier).set(v),
+          ),
+        ),
+        ListTile(
+          title: const Text('Most per day'),
+          trailing: _Stepper(
+            value: max,
+            min: AlgoDailyMax.min,
+            max: AlgoDailyMax.max,
+            step: AlgoDailyMax.step,
+            onChanged: (v) => ref.read(algoDailyMaxProvider.notifier).set(v),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// A compact −/value/+ stepper for an integer setting, clamped to the

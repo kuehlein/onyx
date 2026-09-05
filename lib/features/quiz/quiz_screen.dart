@@ -68,7 +68,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Study'),
+        title: const Text('Review'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.go('/'),
+        ),
         actions: [
           if (canCoach)
             CoachButton(

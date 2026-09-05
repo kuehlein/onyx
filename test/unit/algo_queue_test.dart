@@ -27,7 +27,8 @@ void main() {
     _pattern('stack', ['valid-parens']),
   ];
 
-  test('fills the goal with due re-solves first, most-overdue first', () {
+  test('due re-solves first (most-overdue first), then new problems to the min',
+      () {
     final q = buildAlgoQueue(
       cards: cards,
       dueByKey: {
@@ -36,17 +37,17 @@ void main() {
         'stack::valid-parens': DateTime(2026, 10, 1), // not due
       },
       now: today,
-      goal: 3,
+      min: 3,
+      max: 5,
     );
-    // Two due (most-overdue first), then one new to fill the goal of 3.
+    // Two due (most-overdue first), then one new to reach the floor of 3.
     expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
-    // Due re-solves and new problems both nudge toward solving.
     expect(q.every((t) => t.mode == AlgoMode.solve), isTrue);
     expect(q[0].reason, 'Due for a re-solve');
     expect(q[2].reason, 'New problem');
   });
 
-  test('caps at the daily goal even when more are due', () {
+  test('caps at the max even when more are due', () {
     final q = buildAlgoQueue(
       cards: cards,
       dueByKey: {
@@ -56,24 +57,27 @@ void main() {
         'stack::valid-parens': DateTime(2026, 9, 3),
       },
       now: today,
-      goal: 2,
+      min: 2,
+      max: 2,
     );
     expect(q.length, 2);
     expect(_slugs(q), ['two-sum', 'contains-dup']);
   });
 
-  test('all-new deck introduces problems in progression order', () {
+  test('new problems fill only to the min, not the max', () {
+    // No due work; only the floor of new problems is introduced (steady intake).
     final q = buildAlgoQueue(
       cards: cards,
       dueByKey: const {},
       now: today,
-      goal: 3,
+      min: 2,
+      max: 5,
     );
-    expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
+    expect(_slugs(q), ['two-sum', 'contains-dup']); // floor of 2, not 5
+    expect(q.every((t) => t.reason == 'New problem'), isTrue);
   });
 
-  test('explain-due problems (solve not due) surface as explain, after solves',
-      () {
+  test('explain-due fills leftover capacity after the new-problem floor', () {
     final q = buildAlgoQueue(
       cards: [
         _pattern('arrays', ['two-sum', 'contains-dup', 'product'])
@@ -87,14 +91,39 @@ void main() {
         'arrays::contains-dup': DateTime(2026, 9, 2), // explain due
       },
       now: today,
-      goal: 5,
+      min: 2,
+      max: 5,
     );
-    // solve-due first, then the explain-due one, then the new problem.
-    expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
+    // due-solve → new-to-floor(2) → explain fills the rest.
+    expect(q[0].item.section.slug, 'two-sum');
     expect(q[0].mode, AlgoMode.solve);
-    expect(q[1].mode, AlgoMode.explain);
-    expect(q[1].reason, 'Due to explain');
-    expect(q[2].mode, AlgoMode.solve); // new
+    expect(q[1].item.section.slug, 'product');
+    expect(q[1].mode, AlgoMode.solve); // new, to reach the floor of 2
+    expect(q[2].item.section.slug, 'contains-dup');
+    expect(q[2].mode, AlgoMode.explain);
+    expect(q[2].reason, 'Due to explain');
+  });
+
+  test('pulls upcoming re-solves forward when the deck is exhausted below min',
+      () {
+    // Every problem already solved & scheduled in the future; nothing due, no
+    // new. The floor is met by pulling the soonest-due re-solves forward.
+    final q = buildAlgoQueue(
+      cards: [
+        _pattern('arrays', ['two-sum', 'contains-dup', 'product'])
+      ],
+      dueByKey: {
+        'arrays::two-sum': DateTime(2026, 9, 8), // +4d (soonest)
+        'arrays::contains-dup': DateTime(2026, 9, 20), // +16d
+        'arrays::product': DateTime(2026, 9, 30), // +26d
+      },
+      now: today,
+      min: 2,
+      max: 5,
+    );
+    expect(q.length, 2); // pulled to the floor, not the whole deck
+    expect(_slugs(q), ['two-sum', 'contains-dup']); // soonest-due first
+    expect(q.every((t) => t.reason == 'Practicing ahead'), isTrue);
   });
 
   test('solve wins ties: a problem due on both clocks appears once, as solve',
@@ -106,7 +135,8 @@ void main() {
       dueByKey: {'arrays::two-sum': DateTime(2026, 9, 1)},
       explainDueByKey: {'arrays::two-sum': DateTime(2026, 9, 1)},
       now: today,
-      goal: 5,
+      min: 1,
+      max: 5,
     );
     expect(q.length, 1);
     expect(q.single.mode, AlgoMode.solve);
@@ -127,7 +157,7 @@ void main() {
       filePath: 'bfs.md',
     );
     final q = buildAlgoQueue(
-        cards: [concept], dueByKey: const {}, now: today, goal: 5);
+        cards: [concept], dueByKey: const {}, now: today, min: 2, max: 5);
     expect(q, isEmpty);
   });
 }

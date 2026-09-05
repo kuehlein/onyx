@@ -23,29 +23,36 @@ class AlgoTask {
   String get key => '${item.card.id}::${item.section.slug}';
 }
 
-/// Builds the day's Algorithms session (task #33) across BOTH clocks. Priority,
-/// all capped at the daily [goal]:
+/// Builds the day's Algorithms session (task #33) across BOTH clocks, sized to a
+/// [min]/[max] range. Priority, everything capped at [max]:
 ///
 ///  1. **Solve-due re-solves** (FSRS due, most overdue first) → nudged to solve.
-///  2. **Explain-due** problems whose solve clock is NOT due (recognition due,
-///     most overdue first) → nudged to explain (phone-doable on a computerless
-///     day).
-///  3. **New** problems in NeetCode-150 progression order → nudged to solve.
+///  2. **New** problems (progression order) until the session reaches [min] — a
+///     steady daily intake, so a quiet day still grows your repertoire.
+///  3. **Explain-due** problems whose solve clock is NOT due (recognition due,
+///     most overdue first) → nudged to explain (phone-doable), filling whatever
+///     capacity is left up to [max].
+///  4. If still below [min] because the deck is exhausted, **pull the soonest
+///     upcoming re-solves forward** (mildly early — a minor spacing cost worth a
+///     kept daily habit) so you're never left with a near-empty session.
 ///
 /// Solving always wins ties: a problem due on both clocks appears once, as a
 /// solve. A problem with no scheduling state yet is "new"; the first solve seeds
 /// its state. [explainDueByKey] maps `"$cardId::$sectionSlug"` → recognition due
-/// date (empty before Phase 2 has any explains).
+/// date. [min] is clamped to [max] defensively.
 List<AlgoTask> buildAlgoQueue({
   required List<Card> cards,
   required Map<String, DateTime> dueByKey,
   required DateTime now,
-  required int goal,
+  required int min,
+  required int max,
   Map<String, DateTime> explainDueByKey = const {},
 }) {
+  final floor = min > max ? max : min;
   final solveDue = <({ReviewItem item, DateTime dueAt})>[];
   final explainDue = <({ReviewItem item, DateTime dueAt})>[];
   final fresh = <ReviewItem>[];
+  final upcoming = <({ReviewItem item, DateTime dueAt})>[];
 
   for (final card in cards) {
     if (card.type != CardType.algorithm) continue;
@@ -61,31 +68,45 @@ List<AlgoTask> buildAlgoQueue({
         solveDue.add((item: item, dueAt: solveAt)); // solve wins ties
         continue;
       }
-      // Solve not due — surface it only if its explain clock has come due.
+      // Solve not due — an explain may be due; otherwise it's a pull-forward
+      // candidate (last resort to reach the floor).
       final explainAt = explainDueByKey[key];
       if (explainAt != null && !explainAt.isAfter(now)) {
         explainDue.add((item: item, dueAt: explainAt));
+      } else {
+        upcoming.add((item: item, dueAt: solveAt));
       }
     }
   }
 
   solveDue.sort((a, b) => a.dueAt.compareTo(b.dueAt)); // most overdue first
   explainDue.sort((a, b) => a.dueAt.compareTo(b.dueAt));
+  upcoming.sort((a, b) => a.dueAt.compareTo(b.dueAt)); // soonest-due first
 
-  final result = <AlgoTask>[
-    for (final d in solveDue)
-      AlgoTask(
-          item: d.item, mode: AlgoMode.solve, reason: 'Due for a re-solve'),
-  ];
-  for (final d in explainDue) {
-    if (result.length >= goal) break;
-    result.add(AlgoTask(
-        item: d.item, mode: AlgoMode.explain, reason: 'Due to explain'));
+  final result = <AlgoTask>[];
+  void add(ReviewItem item, AlgoMode mode, String reason) {
+    if (result.length < max) {
+      result.add(AlgoTask(item: item, mode: mode, reason: reason));
+    }
   }
+
+  // 1. Due re-solves (time-sensitive execution).
+  for (final d in solveDue) {
+    add(d.item, AlgoMode.solve, 'Due for a re-solve');
+  }
+  // 2. New problems, but only enough to reach the floor (steady daily intake).
   for (final item in fresh) {
-    if (result.length >= goal) break;
-    result
-        .add(AlgoTask(item: item, mode: AlgoMode.solve, reason: 'New problem'));
+    if (result.length >= floor) break;
+    add(item, AlgoMode.solve, 'New problem');
   }
-  return result.length > goal ? result.sublist(0, goal) : result;
+  // 3. Due explains fill remaining capacity up to max.
+  for (final d in explainDue) {
+    add(d.item, AlgoMode.explain, 'Due to explain');
+  }
+  // 4. Last resort: pull upcoming re-solves forward to reach the floor.
+  for (final d in upcoming) {
+    if (result.length >= floor) break;
+    add(d.item, AlgoMode.solve, 'Practicing ahead');
+  }
+  return result;
 }

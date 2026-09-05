@@ -6,23 +6,18 @@ import 'package:go_router/go_router.dart';
 import '../../core/srs/algo_queue.dart';
 import '../../shared/providers/algo.dart';
 import '../../shared/status_colors.dart';
+import '../../shared/study_grades.dart' show gradeColor;
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
 import 'explain_sheet.dart';
 
-const _outcomes = <({SolveOutcome outcome, String label, Color color})>[
-  (outcome: SolveOutcome.clean, label: 'Solved it cleanly', color: statusGood),
-  (
-    outcome: SolveOutcome.hinted,
-    label: 'Solved, needed a hint',
-    color: statusWarn
-  ),
-  (
-    outcome: SolveOutcome.struggled,
-    label: 'Struggled through it',
-    color: statusWarn
-  ),
-  (outcome: SolveOutcome.failed, label: 'Couldn’t solve it', color: statusBad),
+// Colour comes from each outcome's FSRS grade (clean=4 … failed=1) via
+// [gradeColor], so these buttons share the quiz's four-colour grade scale.
+const _outcomes = <({SolveOutcome outcome, String label})>[
+  (outcome: SolveOutcome.clean, label: 'Solved it cleanly'),
+  (outcome: SolveOutcome.hinted, label: 'Solved, needed a hint'),
+  (outcome: SolveOutcome.struggled, label: 'Struggled through it'),
+  (outcome: SolveOutcome.failed, label: 'Couldn’t solve it'),
 ];
 
 final _urlRe = RegExp(r'https?://\S+');
@@ -40,6 +35,11 @@ class AlgoScreen extends ConsumerStatefulWidget {
 
 class _AlgoScreenState extends ConsumerState<AlgoScreen> {
   final _note = TextEditingController();
+
+  /// For an explain-nudged problem, the key the learner tapped "solve instead"
+  /// on — so we reveal the solve controls only for that problem. Cleared
+  /// implicitly when the session advances to a new key.
+  String? _solveForKey;
 
   @override
   void dispose() {
@@ -69,7 +69,11 @@ class _AlgoScreenState extends ConsumerState<AlgoScreen> {
             task: task,
             position: '${s.index + 1} / ${s.total}',
             note: _note,
+            // In explain mode the solve controls stay hidden until asked for,
+            // so the nudged mode isn't drowned out by four solve buttons.
+            showSolve: task.mode == AlgoMode.solve || _solveForKey == task.key,
             onLog: _log,
+            onWantSolve: () => setState(() => _solveForKey = task.key),
             onExplain: () => showExplainSheet(
               context,
               card: task.item.card,
@@ -87,14 +91,18 @@ class _ProblemView extends StatelessWidget {
     required this.task,
     required this.position,
     required this.note,
+    required this.showSolve,
     required this.onLog,
+    required this.onWantSolve,
     required this.onExplain,
   });
 
   final AlgoTask task;
   final String position;
   final TextEditingController note;
+  final bool showSolve;
   final void Function(SolveOutcome) onLog;
+  final VoidCallback onWantSolve;
   final VoidCallback onExplain;
 
   @override
@@ -147,8 +155,10 @@ class _ProblemView extends StatelessWidget {
             ),
             _ActionArea(
               mode: task.mode,
+              showSolve: showSolve,
               note: note,
               onLog: onLog,
+              onWantSolve: onWantSolve,
               onExplain: onExplain,
             ),
           ],
@@ -158,26 +168,55 @@ class _ProblemView extends StatelessWidget {
   }
 }
 
-/// The bottom action area. Both paths are always available; the preferred
-/// [mode] decides which is prominent and which is the quiet alternative — the
-/// nudge. Solve = execution clock (needs a computer); explain = recognition
-/// clock (phone-doable).
+/// The bottom action area. The preferred [mode] decides which path leads; the
+/// other is a quiet one-line alternative — the nudge. Solve = execution clock
+/// (needs a computer); explain = recognition clock (phone-doable). In explain
+/// mode the four solve buttons stay hidden until [showSolve] (the learner tapped
+/// "solve instead"), so the nudged mode isn't buried under them.
 class _ActionArea extends StatelessWidget {
   const _ActionArea({
     required this.mode,
+    required this.showSolve,
     required this.note,
     required this.onLog,
+    required this.onWantSolve,
     required this.onExplain,
   });
 
   final AlgoMode mode;
+  final bool showSolve;
   final TextEditingController note;
   final void Function(SolveOutcome) onLog;
+  final VoidCallback onWantSolve;
   final VoidCallback onExplain;
 
   @override
   Widget build(BuildContext context) {
-    final explainFirst = mode == AlgoMode.explain;
+    final List<Widget> children;
+    if (mode == AlgoMode.explain) {
+      children = [
+        _ExplainCta(prominent: true, onExplain: onExplain),
+        const SizedBox(height: 10),
+        if (showSolve)
+          _SolveBlock(note: note, onLog: onLog)
+        else
+          _AltButton(
+            icon: Icons.computer_outlined,
+            label: 'At a computer? Solve it instead',
+            onPressed: onWantSolve,
+          ),
+      ];
+    } else {
+      children = [
+        _SolveBlock(note: note, onLog: onLog),
+        const SizedBox(height: 4),
+        _AltButton(
+          icon: Icons.record_voice_over_outlined,
+          label: 'Away from a computer? Explain it instead',
+          onPressed: onExplain,
+        ),
+      ];
+    }
     return SafeArea(
       top: false,
       child: Padding(
@@ -185,36 +224,43 @@ class _ActionArea extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: explainFirst
-              ? [
-                  _ExplainCta(prominent: true, onExplain: onExplain),
-                  const SizedBox(height: 12),
-                  _SolveBlock(note: note, onLog: onLog, dimmed: true),
-                ]
-              : [
-                  _SolveBlock(note: note, onLog: onLog, dimmed: false),
-                  const SizedBox(height: 8),
-                  _ExplainCta(prominent: false, onExplain: onExplain),
-                ],
+          children: children,
         ),
       ),
     );
   }
 }
 
+/// A quiet, full-width text button for the non-preferred mode.
+class _AltButton extends StatelessWidget {
+  const _AltButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+      );
+}
+
 /// The solve-and-log block: an optional insight note + the four outcome
-/// buttons. [dimmed] tucks it under a quieter label when explaining is the
-/// nudged mode.
+/// buttons, coloured by the FSRS grade they map to.
 class _SolveBlock extends StatelessWidget {
   const _SolveBlock({
     required this.note,
     required this.onLog,
-    required this.dimmed,
   });
 
   final TextEditingController note;
   final void Function(SolveOutcome) onLog;
-  final bool dimmed;
 
   @override
   Widget build(BuildContext context) {
@@ -240,29 +286,29 @@ class _SolveBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-            dimmed
-                ? 'At a computer? Solve it and log:'
-                : 'Solve it, then log how it went:',
+        Text('Solve it, then log how it went:',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 6),
         for (final o in _outcomes) ...[
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => onLog(o.outcome),
-              style: FilledButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                backgroundColor: o.color.withValues(alpha: 0.16),
-                foregroundColor: o.color,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          () {
+            final color = gradeColor(o.outcome.spec.grade);
+            return SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => onLog(o.outcome),
+                style: FilledButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  backgroundColor: color.withValues(alpha: 0.16),
+                  foregroundColor: color,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                child: Text(o.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
-              child: Text(o.label,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ),
+            );
+          }(),
           const SizedBox(height: 6),
         ],
       ],
@@ -270,24 +316,16 @@ class _SolveBlock extends StatelessWidget {
   }
 }
 
-/// The explain-mode call to action. [prominent] renders a full button ("no
-/// computer needed" — the nudge on an explain-due day); otherwise a quiet text
-/// button under the solve block.
+/// The explain-mode call to action: the phone-doable primary on an explain-due
+/// day.
 class _ExplainCta extends StatelessWidget {
   const _ExplainCta({required this.prominent, required this.onExplain});
 
-  final bool prominent;
+  final bool prominent; // reserved; currently always the prominent form
   final VoidCallback onExplain;
 
   @override
   Widget build(BuildContext context) {
-    if (!prominent) {
-      return TextButton.icon(
-        onPressed: onExplain,
-        icon: const Icon(Icons.record_voice_over_outlined, size: 18),
-        label: const Text('Away from a computer? Explain it instead'),
-      );
-    }
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
