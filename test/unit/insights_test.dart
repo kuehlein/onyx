@@ -70,6 +70,49 @@ void main() {
     });
   });
 
+  group('computePatternMastery', () {
+    test('coverage-gates: all problems solved & strong → mastered', () {
+      final m = computePatternMastery([
+        (pattern: 'Stack', strengths: [0.8, 0.7]),
+      ]).single;
+      expect(m.started, 2);
+      expect(m.total, 2);
+      expect(m.mastered, isTrue);
+      expect(m.coverage, 1.0);
+    });
+
+    test('an unsolved problem blocks mastery even if the rest are strong', () {
+      final m = computePatternMastery([
+        (pattern: 'Arrays', strengths: [0.9, 0.9, null]),
+      ]).single;
+      expect(m.started, 2);
+      expect(m.total, 3);
+      expect(m.mastered, isFalse); // coverage < 1
+      // score is coverage (2/3) * mean strength (0.9) = 0.6.
+      expect(m.score, closeTo(0.6, 1e-9));
+    });
+
+    test('all solved but weak → not mastered', () {
+      final m = computePatternMastery([
+        (pattern: 'DP', strengths: [0.3, 0.4]),
+      ]).single;
+      expect(m.mastered, isFalse); // mean 0.35 < 0.6 bar
+    });
+
+    test('sorted weakest-first', () {
+      final ms = computePatternMastery([
+        (pattern: 'Strong', strengths: [0.9, 0.9]),
+        (pattern: 'Weak', strengths: [0.1, null]),
+      ]);
+      expect(ms.map((m) => m.pattern).toList(), ['Weak', 'Strong']);
+    });
+
+    test('empty pattern (no problems) is dropped', () {
+      expect(
+          computePatternMastery([(pattern: 'Empty', strengths: [])]), isEmpty);
+    });
+  });
+
   group('computeDueForecast', () {
     final today = DateTime(2026, 9, 3);
     test('buckets by day offset; overdue folds into today', () {

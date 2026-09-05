@@ -3,6 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/analytics/insights.dart';
 import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart' show AppliedAssessment;
+import '../../core/readiness/readiness.dart' show durability;
+import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';
@@ -82,6 +84,28 @@ Future<AlgoStats> algoStats(Ref ref) async {
           pattern: patternByCard[a.cardId] ?? a.cardId,
         ),
   ], clock.now());
+}
+
+/// Per-pattern mastery for the Algorithms track — how much of each pattern you
+/// can durably solve (execution clock). Recomputes after solves change FSRS.
+@riverpod
+Future<List<PatternMastery>> patternMastery(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final states = await ref.watch(srsStatesProvider.future);
+  return computePatternMastery([
+    for (final c in index.cards)
+      if (c.type == CardType.algorithm)
+        (
+          pattern: c.title,
+          strengths: [
+            for (final s in c.quizzableSections)
+              switch (states.byKey['${c.id}::${s.slug}']?.stability) {
+                null => null,
+                final stability => durability(stability),
+              },
+          ],
+        ),
+  ]);
 }
 
 /// How many cards come due on each of the next 14 days (from FSRS `dueAt`).

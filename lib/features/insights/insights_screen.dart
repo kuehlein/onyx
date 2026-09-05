@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/insights.dart' show PatternMastery;
 import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart'
     show rubricLabel, sweRubricDimensions;
@@ -36,6 +37,7 @@ class InsightsScreen extends ConsumerWidget {
               children: const [
                 _MockSkillsSection(),
                 _AlgoSection(),
+                _PatternsSection(),
                 _RetentionSection(),
                 _DueForecastSection(),
                 _StrugglingSection(),
@@ -337,6 +339,60 @@ class _AlgoSection extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// ── 1c. Patterns mastered ───────────────────────────────────────────────────
+
+class _PatternsSection extends ConsumerWidget {
+  const _PatternsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final async = ref.watch(patternMasteryProvider);
+    return _Section(
+      title: 'Patterns mastered',
+      subtitle: 'How much of each pattern you can durably solve — the goal is '
+          'breadth across patterns, not depth on a few.',
+      child: async.when(
+        loading: () => const _NoData('Loading…'),
+        error: (e, _) => _NoData('Error: $e'),
+        data: (patterns) {
+          if (patterns.isEmpty) {
+            return const _NoData(
+                'No algorithm patterns yet — add some to your vault.');
+          }
+          final mastered = patterns.where((p) => p.mastered).length;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$mastered of ${patterns.length} '
+                'pattern${patterns.length == 1 ? '' : 's'} mastered',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              for (final p in patterns) _patternBar(context, p),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _patternBar(BuildContext context, PatternMastery p) {
+    final cs = Theme.of(context).colorScheme;
+    final color = p.mastered ? statusGood : _recallColor(p.score, cs);
+    return _StatBar(
+      label: p.pattern,
+      fraction: p.score,
+      value: p.mastered ? '✓' : '${(p.score * 100).round()}%',
+      color: color,
+      subtitle: '${p.started}/${p.total} problems solved'
+          '${p.mastered ? ' · mastered' : (p.started == 0 ? ' · not started' : '')}',
     );
   }
 }

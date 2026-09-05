@@ -122,6 +122,63 @@ AlgoStats computeAlgoStats(
   );
 }
 
+/// Per-pattern mastery for the Algorithms track: of a pattern's problems (an
+/// algorithm card's sections), how many you can *durably solve*. [strength] is
+/// the mean execution durability (0..1, from FSRS stability) over the problems
+/// you've started; a pattern is [mastered] once every problem is started and
+/// that mean clears [_masteryBar]. Execution-based on purpose — solving is the
+/// real bar; the recognition clock is maintenance, not mastery.
+class PatternMastery {
+  const PatternMastery({
+    required this.pattern,
+    required this.total,
+    required this.started,
+    required this.strength,
+  });
+
+  final String pattern; // the card title
+  final int total; // problems in the pattern
+  final int started; // problems solved at least once
+  final double strength; // 0..1 mean durability over started problems
+
+  static const _masteryBar = 0.6;
+
+  double get coverage => total == 0 ? 0 : started / total;
+
+  /// Coverage-gated so grinding one problem can't fake a mastered pattern.
+  double get score => coverage * strength;
+
+  bool get mastered => total > 0 && started == total && strength >= _masteryBar;
+}
+
+/// Aggregates per-pattern mastery. Each input pattern carries one entry per
+/// problem: its execution durability (0..1) or null if never solved. Sorted
+/// weakest-first so the UI flags where to work next.
+List<PatternMastery> computePatternMastery(
+  List<({String pattern, List<double?> strengths})> patterns,
+) {
+  final out = [
+    for (final p in patterns)
+      if (p.strengths.isNotEmpty)
+        () {
+          final started = [
+            for (final s in p.strengths)
+              if (s != null) s
+          ];
+          final strength = started.isEmpty
+              ? 0.0
+              : started.reduce((a, b) => a + b) / started.length;
+          return PatternMastery(
+            pattern: p.pattern,
+            total: p.strengths.length,
+            started: started.length,
+            strength: strength,
+          );
+        }(),
+  ]..sort((a, b) => a.score.compareTo(b.score));
+  return out;
+}
+
 /// Count of cards falling due on each of the next [days] days. Anything overdue
 /// folds into today (index 0), so the first bar is "due now or past".
 List<int> computeDueForecast({
