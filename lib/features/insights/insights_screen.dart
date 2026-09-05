@@ -6,6 +6,7 @@ import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart'
     show rubricLabel, sweRubricDimensions;
 import '../../core/readiness/readiness.dart' show prettyDomain;
+import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 
 /// Insights (task #27+): how well memory is holding and how mock performance is
@@ -292,6 +293,7 @@ class _AlgoSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final async = ref.watch(algoStatsProvider);
+    final recognition = ref.watch(algoRecognitionProvider).asData?.value;
     return _Section(
       title: 'Algorithm practice',
       subtitle: 'Solving problems cold — the execution clock. Counts toward '
@@ -323,6 +325,14 @@ class _AlgoSection extends ConsumerWidget {
                 color: _recallColor(a.cleanRate, theme.colorScheme),
                 subtitle: 'Solved without a hint or a struggle.',
               ),
+              if (recognition != null && recognition.maintained > 0)
+                Text(
+                  'Explain clock: ${recognition.maintained} '
+                  'problem${recognition.maintained == 1 ? '' : 's'} kept sharp'
+                  '${recognition.due > 0 ? ' · ${recognition.due} due to explain' : ''}.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
             ],
           );
         },

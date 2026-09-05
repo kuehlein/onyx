@@ -158,6 +158,8 @@ class AlgoSession extends _$AlgoSession {
     ref.invalidate(appliedSummaryProvider);
     ref.invalidate(readinessProvider);
     ref.invalidate(algoDueCountProvider);
+    ref.invalidate(
+        algoRecognitionProvider); // a solve refreshes recognition too
     state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
   }
 
@@ -175,8 +177,36 @@ class AlgoSession extends _$AlgoSession {
           outcome: outcome,
           now: clock.now(),
         );
+    ref.invalidate(algoRecognitionProvider);
     state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
   }
+}
+
+/// The recognition ("explain") clock at a glance: how many problems are being
+/// maintained on it, and how many are due to explain *right now* while their
+/// solve clock is NOT due (so the count is the phone-doable maintenance the
+/// queue would surface as explain, never double-counting a solve-due problem).
+@riverpod
+Future<({int due, int maintained})> algoRecognition(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final srs = await ref.watch(srsRepositoryProvider).loadStates();
+  final rec = await ref.watch(recognitionRepositoryProvider).loadStates();
+  final now = (await ref.watch(clockProvider.future)).now();
+  var due = 0;
+  var maintained = 0;
+  for (final c in index.cards) {
+    if (c.type != CardType.algorithm) continue;
+    for (final s in c.quizzableSections) {
+      final key = '${c.id}::${s.slug}';
+      final r = rec[key];
+      if (r == null) continue;
+      maintained++;
+      final solveAt = srs[key]?.dueAt;
+      final solveDue = solveAt != null && !solveAt.isAfter(now);
+      if (!r.dueAt.isAfter(now) && !solveDue) due++;
+    }
+  }
+  return (due: due, maintained: maintained);
 }
 
 /// How many algorithm problems are due for a re-solve right now (for a Home

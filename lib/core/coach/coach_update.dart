@@ -21,6 +21,7 @@ enum CoachInsightKind {
   behindPace,
   building,
   algoDue,
+  explainDue,
   unproven,
   onTrack,
 }
@@ -64,6 +65,7 @@ class CoachSignals {
     required this.reviewsInWindow,
     required this.retention,
     this.algoDue = 0,
+    this.algoExplainDue = 0,
     this.paceStatus,
     this.recentPerDay,
     this.requiredPerDay,
@@ -83,6 +85,7 @@ class CoachSignals {
   final int reviewsInWindow; // sample size behind [retention]
   final double? retention; // recent review success 0..1, null if sample tiny
   final int algoDue; // algorithm problems due for a spaced re-solve
+  final int algoExplainDue; // problems due to explain (solve not due) — phone
   final PaceStatus? paceStatus; // null when no interview date set
   final double? recentPerDay;
   final double? requiredPerDay;
@@ -230,6 +233,26 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
           'for a re-solve; a short session now keeps them on schedule and '
           'counts toward your readiness.',
       actionLabel: 'Solve now',
+      actionRoute: '/algorithms',
+    );
+  }
+
+  // Nothing solve-due, but patterns have come due to *explain* — the
+  // phone-doable maintenance rep. Lower priority than solving (the stronger
+  // mode), but a great away-from-a-computer next action.
+  if (s.algoExplainDue > 0) {
+    return CoachUpdate(
+      kind: CoachInsightKind.explainDue,
+      tone: CoachTone.info,
+      headline:
+          '${s.algoExplainDue} pattern${s.algoExplainDue == 1 ? '' : 's'} due '
+          'to explain — no computer needed.',
+      why:
+          'Away from your machine? Talk a problem through with the coach — the '
+          'recognition trigger, approach, complexity, and edge cases. It keeps '
+          "the pattern sharp between full solves; it won't replace solving, but "
+          'it stops the recognition from fading.',
+      actionLabel: 'Explain now',
       actionRoute: '/algorithms',
     );
   }

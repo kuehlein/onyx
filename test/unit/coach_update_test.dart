@@ -14,6 +14,7 @@ CoachSignals sig({
   int reviewsInWindow = 30,
   double? retention = 0.9,
   int algoDue = 0,
+  int algoExplainDue = 0,
   PaceStatus? paceStatus = PaceStatus.onTrack,
   double? recentPerDay = 5,
   double? requiredPerDay = 5,
@@ -32,6 +33,7 @@ CoachSignals sig({
       reviewsInWindow: reviewsInWindow,
       retention: retention,
       algoDue: algoDue,
+      algoExplainDue: algoExplainDue,
       paceStatus: paceStatus,
       recentPerDay: recentPerDay,
       requiredPerDay: requiredPerDay,
@@ -147,6 +149,18 @@ void main() {
       final u = buildCoachUpdate(
           sig(algoDue: 9, retention: 0.6, reviewsInWindow: 30))!;
       expect(u.kind, CoachInsightKind.overloaded);
+    });
+
+    test('explain-due (no solves due) → phone-doable explain nudge', () {
+      final u = buildCoachUpdate(sig(algoExplainDue: 3))!;
+      expect(u.kind, CoachInsightKind.explainDue);
+      expect(u.headline, contains('3 patterns'));
+      expect(u.actionRoute, '/algorithms');
+    });
+
+    test('due solves outrank due explains (solve is the stronger mode)', () {
+      final u = buildCoachUpdate(sig(algoDue: 1, algoExplainDue: 5))!;
+      expect(u.kind, CoachInsightKind.algoDue);
     });
 
     test('building (learn the base) outranks unproven', () {

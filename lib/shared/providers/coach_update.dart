@@ -29,6 +29,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
       .watch(srsRepositoryProvider)
       .recentReviewStats(clock.now().subtract(const Duration(days: 14)));
   final algoDue = await ref.watch(algoDueCountProvider.future);
+  final algoRecognition = await ref.watch(algoRecognitionProvider.future);
 
   final weakest = readiness.weakestDomain;
   // Overall coverage = studied sections / all in-scope sections.
@@ -47,6 +48,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     reviewsInWindow: stats.total,
     retention: stats.total > 0 ? stats.retained / stats.total : null,
     algoDue: algoDue,
+    algoExplainDue: algoRecognition.due,
     paceStatus: pace?.status,
     recentPerDay: pace?.recentPerDay,
     requiredPerDay: pace?.requiredPerDay,

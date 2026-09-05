@@ -189,6 +189,7 @@ class CoachBadge extends ConsumerWidget {
         CoachInsightKind.behindPace => Icons.schedule,
         CoachInsightKind.building => Icons.trending_up,
         CoachInsightKind.algoDue => Icons.terminal_outlined,
+        CoachInsightKind.explainDue => Icons.record_voice_over_outlined,
         CoachInsightKind.unproven => Icons.psychology_outlined,
         CoachInsightKind.onTrack => Icons.check_circle_outline,
       };
