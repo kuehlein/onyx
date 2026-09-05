@@ -4,7 +4,7 @@ import '../../core/clock.dart';
 import '../../core/database/database.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/srs/algo_queue.dart';
-import '../../core/srs/review_queue.dart' show ReviewItem;
+import '../../core/srs/recognition.dart';
 import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
@@ -19,18 +19,21 @@ part 'algo.g.dart';
 /// [algoDailyGoalProvider]. Built from `type: algorithm` cards only; the main
 /// review/learn queues exclude those, so the two tracks never mix.
 @riverpod
-Future<List<ReviewItem>> algoQueue(Ref ref) async {
+Future<List<AlgoTask>> algoQueue(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
+  final recognitionRepo = ref.watch(recognitionRepositoryProvider);
   final clock = await ref.watch(clockProvider.future);
   final goal = await ref.watch(algoDailyGoalProvider.future);
   final states = await repo.loadStates();
+  final recog = await recognitionRepo.loadStates();
   return buildAlgoQueue(
     cards: [
       for (final c in index.cards)
         if (c.type == CardType.algorithm) c,
     ],
     dueByKey: {for (final e in states.entries) e.key: e.value.dueAt},
+    explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
     now: clock.now(),
     goal: goal,
   );
@@ -46,7 +49,7 @@ class AlgoSessionState {
     this.done = 0,
   });
 
-  final List<ReviewItem> queue;
+  final List<AlgoTask> queue;
   final Map<String, SrsState> statesByKey;
   final int index;
 
@@ -55,7 +58,7 @@ class AlgoSessionState {
 
   bool get isDone => index >= queue.length;
   int get total => queue.length;
-  ReviewItem? get current => isDone ? null : queue[index];
+  AlgoTask? get current => isDone ? null : queue[index];
 
   AlgoSessionState copyWith({int? index, int? done}) => AlgoSessionState(
         queue: queue,
@@ -97,7 +100,7 @@ class AlgoSession extends _$AlgoSession {
   Future<void> logSolve(SolveOutcome outcome, {String? note}) async {
     final s = state.asData?.value;
     if (s == null || s.isDone) return;
-    final item = s.current!;
+    final item = s.current!.item;
     final spec = outcome.spec;
     final scheduler = ref.read(srsSchedulerProvider);
     final repo = ref.read(srsRepositoryProvider);
@@ -137,12 +140,41 @@ class AlgoSession extends _$AlgoSession {
           ),
         );
 
+    // Solving is the strongest recognition signal too — refresh the explain
+    // clock so we don't nag you to explain a problem you just solved. A clean
+    // or hinted solve is "solid"; a struggle/fail only holds (never "lost",
+    // since you engaged the real problem).
+    await ref.read(recognitionRepositoryProvider).recordExplain(
+          cardId: item.card.id,
+          sectionSlug: item.section.slug,
+          outcome:
+              spec.grade >= 3 ? ExplainOutcome.solid : ExplainOutcome.shaky,
+          now: clock.now(),
+        );
+
     // Refresh everything this touches so the dashboard/insights/coach reflect it.
     ref.invalidate(srsStatesProvider);
     ref.invalidate(appliedTransferProvider);
     ref.invalidate(appliedSummaryProvider);
     ref.invalidate(readinessProvider);
     ref.invalidate(algoDueCountProvider);
+    state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
+  }
+
+  /// Log how an explanation went. Touches ONLY the recognition clock — never the
+  /// solve schedule or readiness ("explain never substitutes for solve") — then
+  /// advances.
+  Future<void> logExplain(ExplainOutcome outcome) async {
+    final s = state.asData?.value;
+    if (s == null || s.isDone) return;
+    final item = s.current!.item;
+    final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
+    await ref.read(recognitionRepositoryProvider).recordExplain(
+          cardId: item.card.id,
+          sectionSlug: item.section.slug,
+          outcome: outcome,
+          now: clock.now(),
+        );
     state = AsyncData(s.copyWith(index: s.index + 1, done: s.done + 1));
   }
 }

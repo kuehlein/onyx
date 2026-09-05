@@ -17,6 +17,9 @@ Card _pattern(String id, List<String> problems) => Card(
       filePath: '$id.md',
     );
 
+List<String> _slugs(List<AlgoTask> q) =>
+    q.map((e) => e.item.section.slug).toList();
+
 void main() {
   final today = DateTime(2026, 9, 4);
   final cards = [
@@ -36,8 +39,11 @@ void main() {
       goal: 3,
     );
     // Two due (most-overdue first), then one new to fill the goal of 3.
-    expect(q.map((e) => e.section.slug).toList(),
-        ['two-sum', 'contains-dup', 'product']);
+    expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
+    // Due re-solves and new problems both nudge toward solving.
+    expect(q.every((t) => t.mode == AlgoMode.solve), isTrue);
+    expect(q[0].reason, 'Due for a re-solve');
+    expect(q[2].reason, 'New problem');
   });
 
   test('caps at the daily goal even when more are due', () {
@@ -53,7 +59,7 @@ void main() {
       goal: 2,
     );
     expect(q.length, 2);
-    expect(q.map((e) => e.section.slug).toList(), ['two-sum', 'contains-dup']);
+    expect(_slugs(q), ['two-sum', 'contains-dup']);
   });
 
   test('all-new deck introduces problems in progression order', () {
@@ -63,8 +69,47 @@ void main() {
       now: today,
       goal: 3,
     );
-    expect(q.map((e) => e.section.slug).toList(),
-        ['two-sum', 'contains-dup', 'product']);
+    expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
+  });
+
+  test('explain-due problems (solve not due) surface as explain, after solves',
+      () {
+    final q = buildAlgoQueue(
+      cards: [
+        _pattern('arrays', ['two-sum', 'contains-dup', 'product'])
+      ],
+      dueByKey: {
+        'arrays::two-sum': DateTime(2026, 9, 1), // solve due
+        'arrays::contains-dup': DateTime(2026, 10, 1), // solve not due
+        // 'product' has no solve state → it's new.
+      },
+      explainDueByKey: {
+        'arrays::contains-dup': DateTime(2026, 9, 2), // explain due
+      },
+      now: today,
+      goal: 5,
+    );
+    // solve-due first, then the explain-due one, then the new problem.
+    expect(_slugs(q), ['two-sum', 'contains-dup', 'product']);
+    expect(q[0].mode, AlgoMode.solve);
+    expect(q[1].mode, AlgoMode.explain);
+    expect(q[1].reason, 'Due to explain');
+    expect(q[2].mode, AlgoMode.solve); // new
+  });
+
+  test('solve wins ties: a problem due on both clocks appears once, as solve',
+      () {
+    final q = buildAlgoQueue(
+      cards: [
+        _pattern('arrays', ['two-sum'])
+      ],
+      dueByKey: {'arrays::two-sum': DateTime(2026, 9, 1)},
+      explainDueByKey: {'arrays::two-sum': DateTime(2026, 9, 1)},
+      now: today,
+      goal: 5,
+    );
+    expect(q.length, 1);
+    expect(q.single.mode, AlgoMode.solve);
   });
 
   test('ignores non-algorithm cards', () {

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/clock.dart';
 import '../../core/database/database.dart';
 import '../../core/readiness/readiness.dart';
+import '../../core/srs/recognition_repository.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../models/card.dart';
@@ -23,6 +24,11 @@ SrsScheduler srsScheduler(Ref ref) => SrsScheduler();
 @Riverpod(keepAlive: true)
 SrsRepository srsRepository(Ref ref) =>
     SrsRepository(ref.watch(appDatabaseProvider));
+
+/// Reads/writes the recognition ("explain") clock for the algorithm track.
+@Riverpod(keepAlive: true)
+RecognitionRepository recognitionRepository(Ref ref) =>
+    RecognitionRepository(ref.watch(appDatabaseProvider));
 
 /// All per-section scheduling state, keyed by `"$cardId::$sectionSlug"`.
 ///

@@ -64,7 +64,7 @@ class _AlgoScreenState extends ConsumerState<AlgoScreen> {
           if (s.total == 0) return const _Empty();
           if (s.isDone) return _Complete(done: s.done);
           return _ProblemView(
-            item: s.current!,
+            item: s.current!.item,
             position: '${s.index + 1} / ${s.total}',
             note: _note,
             onLog: _log,
