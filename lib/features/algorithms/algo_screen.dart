@@ -3,11 +3,12 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/srs/review_queue.dart' show ReviewItem;
+import '../../core/srs/algo_queue.dart';
 import '../../shared/providers/algo.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
+import 'explain_sheet.dart';
 
 const _outcomes = <({SolveOutcome outcome, String label, Color color})>[
   (outcome: SolveOutcome.clean, label: 'Solved it cleanly', color: statusGood),
@@ -63,11 +64,17 @@ class _AlgoScreenState extends ConsumerState<AlgoScreen> {
         data: (s) {
           if (s.total == 0) return const _Empty();
           if (s.isDone) return _Complete(done: s.done);
+          final task = s.current!;
           return _ProblemView(
-            item: s.current!.item,
+            task: task,
             position: '${s.index + 1} / ${s.total}',
             note: _note,
             onLog: _log,
+            onExplain: () => showExplainSheet(
+              context,
+              card: task.item.card,
+              section: task.item.section,
+            ),
           );
         },
       ),
@@ -77,20 +84,23 @@ class _AlgoScreenState extends ConsumerState<AlgoScreen> {
 
 class _ProblemView extends StatelessWidget {
   const _ProblemView({
-    required this.item,
+    required this.task,
     required this.position,
     required this.note,
     required this.onLog,
+    required this.onExplain,
   });
 
-  final ReviewItem item;
+  final AlgoTask task;
   final String position;
   final TextEditingController note;
   final void Function(SolveOutcome) onLog;
+  final VoidCallback onExplain;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final item = task.item;
     final url = _urlRe
         .firstMatch(item.section.content)
         ?.group(0)
@@ -112,6 +122,8 @@ class _ProblemView extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant)),
                       const SizedBox(width: 8),
                       _Pill(item.card.title), // the pattern
+                      const Spacer(),
+                      _ReasonChip(task.reason, task.mode),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -133,7 +145,12 @@ class _ProblemView extends StatelessWidget {
                 ],
               ),
             ),
-            _ActionBar(note: note, onLog: onLog),
+            _ActionArea(
+              mode: task.mode,
+              note: note,
+              onLog: onLog,
+              onExplain: onExplain,
+            ),
           ],
         ),
       ),
@@ -141,15 +158,26 @@ class _ProblemView extends StatelessWidget {
   }
 }
 
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.note, required this.onLog});
+/// The bottom action area. Both paths are always available; the preferred
+/// [mode] decides which is prominent and which is the quiet alternative — the
+/// nudge. Solve = execution clock (needs a computer); explain = recognition
+/// clock (phone-doable).
+class _ActionArea extends StatelessWidget {
+  const _ActionArea({
+    required this.mode,
+    required this.note,
+    required this.onLog,
+    required this.onExplain,
+  });
 
+  final AlgoMode mode;
   final TextEditingController note;
   final void Function(SolveOutcome) onLog;
+  final VoidCallback onExplain;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final explainFirst = mode == AlgoMode.explain;
     return SafeArea(
       top: false,
       child: Padding(
@@ -157,49 +185,150 @@ class _ActionBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: note,
-              minLines: 1,
-              maxLines: 2,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: 'Key insight / what tripped you (optional)',
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest,
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text('Solve it, then log how it went:',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            for (final o in _outcomes) ...[
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => onLog(o.outcome),
-                  style: FilledButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    backgroundColor: o.color.withValues(alpha: 0.16),
-                    foregroundColor: o.color,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                  child: Text(o.label,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ),
-              const SizedBox(height: 6),
-            ],
-          ],
+          children: explainFirst
+              ? [
+                  _ExplainCta(prominent: true, onExplain: onExplain),
+                  const SizedBox(height: 12),
+                  _SolveBlock(note: note, onLog: onLog, dimmed: true),
+                ]
+              : [
+                  _SolveBlock(note: note, onLog: onLog, dimmed: false),
+                  const SizedBox(height: 8),
+                  _ExplainCta(prominent: false, onExplain: onExplain),
+                ],
         ),
       ),
+    );
+  }
+}
+
+/// The solve-and-log block: an optional insight note + the four outcome
+/// buttons. [dimmed] tucks it under a quieter label when explaining is the
+/// nudged mode.
+class _SolveBlock extends StatelessWidget {
+  const _SolveBlock({
+    required this.note,
+    required this.onLog,
+    required this.dimmed,
+  });
+
+  final TextEditingController note;
+  final void Function(SolveOutcome) onLog;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: note,
+          minLines: 1,
+          maxLines: 2,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            hintText: 'Key insight / what tripped you (optional)',
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+            dimmed
+                ? 'At a computer? Solve it and log:'
+                : 'Solve it, then log how it went:',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 6),
+        for (final o in _outcomes) ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => onLog(o.outcome),
+              style: FilledButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                backgroundColor: o.color.withValues(alpha: 0.16),
+                foregroundColor: o.color,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: Text(o.label,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ],
+    );
+  }
+}
+
+/// The explain-mode call to action. [prominent] renders a full button ("no
+/// computer needed" — the nudge on an explain-due day); otherwise a quiet text
+/// button under the solve block.
+class _ExplainCta extends StatelessWidget {
+  const _ExplainCta({required this.prominent, required this.onExplain});
+
+  final bool prominent;
+  final VoidCallback onExplain;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!prominent) {
+      return TextButton.icon(
+        onPressed: onExplain,
+        icon: const Icon(Icons.record_voice_over_outlined, size: 18),
+        label: const Text('Away from a computer? Explain it instead'),
+      );
+    }
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Due to explain — no computer needed.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 6),
+        FilledButton.icon(
+          onPressed: onExplain,
+          icon: const Icon(Icons.record_voice_over_outlined),
+          label: const Text('Explain to the coach'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A small color-coded chip showing why this problem surfaced today.
+class _ReasonChip extends StatelessWidget {
+  const _ReasonChip(this.reason, this.mode);
+  final String reason;
+  final AlgoMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = mode == AlgoMode.explain ? statusWarn : statusGood;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(reason,
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall
+              ?.copyWith(color: color, fontWeight: FontWeight.w600)),
     );
   }
 }
