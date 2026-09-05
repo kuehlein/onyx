@@ -153,6 +153,29 @@ class AppliedAttempts extends Table {
   BoolColumn get verified => boolean().nullable()();
 }
 
+/// The recognition ("explain") clock for algorithm problems — a lightweight
+/// SECOND clock alongside FSRS, one row per `(cardId, sectionSlug)` you've
+/// explained out loud. Deliberately NOT an FSRS curve: a simple expanding
+/// interval (see core/srs/recognition.dart), so a phone-only day can still keep
+/// a pattern recognizable between solves. It never touches the solve clock
+/// (`srs_state`) and, for now, carries no readiness weight — it is purely a
+/// scheduling signal.
+class RecognitionStates extends Table {
+  TextColumn get cardId => text()();
+  TextColumn get sectionSlug => text()();
+  DateTimeColumn get lastExplainedAt => dateTime()();
+  DateTimeColumn get dueAt => dateTime()();
+
+  /// Current spacing in days (the last interval applied).
+  IntColumn get intervalDays => integer()();
+
+  /// Consecutive "solid" explanations; resets to 0 on a "lost" outcome.
+  IntColumn get streak => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {cardId, sectionSlug};
+}
+
 /// Key/value app preferences (vault bookmark, settings).
 class Preferences extends Table {
   TextColumn get key => text()();

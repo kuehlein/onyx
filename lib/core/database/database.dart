@@ -20,6 +20,7 @@ part 'database.g.dart';
     Preferences,
     CoachMessages,
     AppliedAttempts,
+    RecognitionStates,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -30,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 1;
 
   /// Deletes all study progress — schedule, review log, activity, coach chats,
   /// and applied (mock) attempts — while leaving preferences (settings/target)
@@ -42,27 +43,17 @@ class AppDatabase extends _$AppDatabase {
         await delete(activityLog).go();
         await delete(coachMessages).go();
         await delete(appliedAttempts).go();
+        await delete(recognitionStates).go();
       });
 
+  // Pre-release: no databases exist in the wild, and this SQLite file is a
+  // derived cache — the real study progress lives in the vault snapshot
+  // (srs_state / reviews / applied attempts) and is restored on an empty DB. So
+  // there's nothing to migrate: schema v1 just creates every table fresh. Add
+  // incremental onUpgrade steps only once there are real users to carry forward.
   @override
-  MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          // v2: FSRS learning-state columns on srs_state.
-          if (from < 2) {
-            await m.addColumn(srsStates, srsStates.state);
-            await m.addColumn(srsStates, srsStates.step);
-          }
-          // v3: persisted coach conversations.
-          if (from < 3) {
-            await m.createTable(coachMessages);
-          }
-          // v4: Phase B applied / mock-interview attempts.
-          if (from < 4) {
-            await m.createTable(appliedAttempts);
-          }
-        },
-      );
+  MigrationStrategy get migration =>
+      MigrationStrategy(onCreate: (m) => m.createAll());
 }
 
 LazyDatabase _openConnection() {

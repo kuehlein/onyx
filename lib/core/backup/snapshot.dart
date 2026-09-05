@@ -12,10 +12,11 @@ import '../vault/vault_source.dart';
 /// if the local database is lost.
 ///
 /// Snapshots `srs_state` (your schedule — the essential thing), `reviews` (your
-/// history — for future stats / FSRS tuning), and `applied_attempts` (the Phase
-/// B mock-interview evidence behind interview readiness), so all of it follows
-/// you across devices. `activity_log` is excluded; it is debug/analytics only
-/// and not needed to resume.
+/// history — for future stats / FSRS tuning), `applied_attempts` (the Phase B
+/// mock-interview evidence behind interview readiness), and `recognition_state`
+/// (the algorithm track's explain clock), so all of it follows you across
+/// devices. `activity_log` is excluded; it is debug/analytics only and not
+/// needed to resume.
 class SnapshotService {
   SnapshotService(this._db, this._source);
 
@@ -26,9 +27,9 @@ class SnapshotService {
   /// overwrites the real, synced snapshot.
   static String get fileName =>
       isDevDataMode ? 'onyx-state.dev.json' : 'onyx-state.json';
-  // v2 adds appliedAttempts. Older (v1) snapshots restore fine — the key is
-  // simply absent, so no attempts are restored.
-  static const _version = 2;
+  // Bumped as tables join the snapshot (v2: appliedAttempts, v3: recognition).
+  // Older snapshots restore fine — a missing key just restores nothing for it.
+  static const _version = 3;
 
   Future<bool> isDbEmpty() async =>
       (await (_db.select(_db.srsStates)..limit(1)).get()).isEmpty;
@@ -41,12 +42,14 @@ class SnapshotService {
     final states = await _db.select(_db.srsStates).get();
     final reviews = await _db.select(_db.reviews).get();
     final applied = await _db.select(_db.appliedAttempts).get();
+    final recognition = await _db.select(_db.recognitionStates).get();
     final json = jsonEncode({
       'version': _version,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'srsStates': [for (final s in states) _srsToJson(s)],
       'reviews': [for (final r in reviews) _reviewToJson(r)],
       'appliedAttempts': [for (final a in applied) _appliedToJson(a)],
+      'recognitionStates': [for (final r in recognition) _recognitionToJson(r)],
     });
     await _source.writeMeta(fileName, json);
   }
@@ -64,16 +67,21 @@ class SnapshotService {
         (data['reviews'] as List? ?? const []).cast<Map<String, dynamic>>();
     final applied = (data['appliedAttempts'] as List? ?? const [])
         .cast<Map<String, dynamic>>();
+    final recognition = (data['recognitionStates'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
 
     await _db.transaction(() async {
       await _db.delete(_db.srsStates).go();
       await _db.delete(_db.reviews).go();
       await _db.delete(_db.appliedAttempts).go();
+      await _db.delete(_db.recognitionStates).go();
       await _db.batch((b) {
         b.insertAll(_db.srsStates, [for (final s in states) _srsFromJson(s)]);
         b.insertAll(_db.reviews, [for (final r in reviews) _reviewFromJson(r)]);
         b.insertAll(_db.appliedAttempts,
             [for (final a in applied) _appliedFromJson(a)]);
+        b.insertAll(_db.recognitionStates,
+            [for (final r in recognition) _recognitionFromJson(r)]);
       });
     });
     return states.length;
@@ -115,6 +123,25 @@ class SnapshotService {
         'difficulty': r.difficulty,
         'elapsedDays': r.elapsedDays,
       };
+
+  Map<String, dynamic> _recognitionToJson(RecognitionState r) => {
+        'cardId': r.cardId,
+        'sectionSlug': r.sectionSlug,
+        'lastExplainedAt': r.lastExplainedAt.toUtc().toIso8601String(),
+        'dueAt': r.dueAt.toUtc().toIso8601String(),
+        'intervalDays': r.intervalDays,
+        'streak': r.streak,
+      };
+
+  RecognitionStatesCompanion _recognitionFromJson(Map<String, dynamic> m) =>
+      RecognitionStatesCompanion.insert(
+        cardId: m['cardId'] as String,
+        sectionSlug: m['sectionSlug'] as String,
+        lastExplainedAt: DateTime.parse(m['lastExplainedAt'] as String),
+        dueAt: DateTime.parse(m['dueAt'] as String),
+        intervalDays: m['intervalDays'] as int,
+        streak: Value(m['streak'] as int? ?? 0),
+      );
 
   ReviewsCompanion _reviewFromJson(Map<String, dynamic> m) =>
       ReviewsCompanion.insert(
