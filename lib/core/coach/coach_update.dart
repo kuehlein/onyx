@@ -23,14 +23,34 @@ enum CoachInsightKind {
   algoDue,
   explainDue,
   unproven,
+  readyToPush,
   onTrack,
 }
 
 /// Visual tone for the badge (mapped to color by the widget).
 enum CoachTone { info, caution, positive }
 
-/// A rendered coach update: the one-liner, an expandable "why now", and an
-/// optional single action (a route to push).
+/// A daily-load setting the coach can offer to change for the learner. The
+/// triage names the change; the widget applies it (with an undo) on confirm —
+/// the coach never mutates settings silently.
+enum CoachSetting { newCardsPerDay, algoMin }
+
+/// A proposed setting change carried by a [CoachUpdate]. [delta] is signed
+/// (e.g. +3 or -5); [applyLabel] is the button text (e.g. "Add 3 new/day").
+class CoachProposal {
+  const CoachProposal({
+    required this.setting,
+    required this.delta,
+    required this.applyLabel,
+  });
+
+  final CoachSetting setting;
+  final int delta;
+  final String applyLabel;
+}
+
+/// A rendered coach update: the one-liner, an expandable "why now", and either a
+/// single navigation action (a route to push) or a [proposal] to apply.
 class CoachUpdate {
   const CoachUpdate({
     required this.kind,
@@ -39,6 +59,7 @@ class CoachUpdate {
     required this.why,
     this.actionLabel,
     this.actionRoute,
+    this.proposal,
   });
 
   final CoachInsightKind kind;
@@ -47,6 +68,10 @@ class CoachUpdate {
   final String why;
   final String? actionLabel;
   final String? actionRoute;
+
+  /// A one-tap setting change the coach offers (adaptive load). Mutually
+  /// exclusive with a navigation action in practice — keeps one button.
+  final CoachProposal? proposal;
 
   bool get hasAction => actionLabel != null && actionRoute != null;
 }
@@ -113,6 +138,25 @@ class CoachSignals {
   /// Overall readiness at/above this counts as solid enough to affirm (absent an
   /// explicit on-pace-for-a-date signal).
   static const solidBar = 0.55;
+
+  /// Recent review success strong enough that adding a little load is safe.
+  static const pushRetentionBar = 0.90;
+
+  /// The coach won't nudge new-cards/day above this (manual can go higher).
+  static const newCardPushCeiling = 20;
+
+  /// Everything's green with headroom while still building the base: strong
+  /// retention, zero backlog, engaged today, and new/day below the ceiling. The
+  /// moment to *offer* a small load increase rather than just "keep learning".
+  bool get readyToPush =>
+      anyStudied &&
+      coverage < coverageBar &&
+      dueCount == 0 &&
+      studiedToday &&
+      newCardLimit < newCardPushCeiling &&
+      retention != null &&
+      reviewsInWindow >= minReviewSample &&
+      retention! >= pushRetentionBar;
 
   bool get retentionLow =>
       retention != null &&
@@ -199,6 +243,29 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
           'call. Steady daily wins beat last-minute cramming.',
       actionLabel: 'Learn now',
       actionRoute: '/learn',
+    );
+  }
+
+  // Building the base AND thriving (strong retention, no backlog) → offer a
+  // small, reversible load increase instead of a plain "keep learning". Ranked
+  // just above the generic building nudge so the good-news path wins when it's
+  // genuinely earned.
+  if (s.readyToPush) {
+    return CoachUpdate(
+      kind: CoachInsightKind.readyToPush,
+      tone: CoachTone.positive,
+      headline: "Retention's strong (~${pct(s.retention!)}%) with no backlog — "
+          'room to add a little.',
+      why:
+          "You're holding ~${pct(s.retention!)}% and reviews aren't piling up, "
+          'so there’s headroom to learn a bit more each day. Small steps keep '
+          'it sustainable — try a few more new cards and see how next week '
+          'feels. You can always ease back.',
+      proposal: const CoachProposal(
+        setting: CoachSetting.newCardsPerDay,
+        delta: 3,
+        applyLabel: 'Add 3 new/day',
+      ),
     );
   }
 

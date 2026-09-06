@@ -21,6 +21,7 @@ import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/stats.dart';
 import '../../shared/providers/settings.dart';
+import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 
@@ -62,6 +63,13 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const _SectionHeader('Learning'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('How much should I study?'),
+            subtitle: const Text(
+                'What the daily levers mean + a start-slow ramp plan.'),
+            onTap: () => showStudyLoadHelp(context),
+          ),
           ref.watch(newCardLimitProvider).when(
                 loading: () => const ListTile(
                   leading: Icon(Icons.auto_stories_outlined),

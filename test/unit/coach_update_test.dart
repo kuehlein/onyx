@@ -128,6 +128,34 @@ void main() {
       expect(u.actionRoute, '/learn');
     });
 
+    test('thriving mid-build → readyToPush with a new-cards proposal', () {
+      final u = buildCoachUpdate(
+          sig(coverage: 0.5, newCardLimit: 15, retention: 0.95, dueCount: 0))!;
+      expect(u.kind, CoachInsightKind.readyToPush);
+      expect(u.proposal?.setting, CoachSetting.newCardsPerDay);
+      expect(u.proposal?.delta, 3);
+      expect(u.tone, CoachTone.positive);
+    });
+
+    test('only-ok retention while building → plain building, no push', () {
+      final u = buildCoachUpdate(
+          sig(coverage: 0.5, newCardLimit: 15, retention: 0.85, dueCount: 0))!;
+      expect(u.kind, CoachInsightKind.building);
+      expect(u.proposal, isNull);
+    });
+
+    test('no push at the new-card ceiling', () {
+      final u = buildCoachUpdate(
+          sig(coverage: 0.5, newCardLimit: 20, retention: 0.95, dueCount: 0))!;
+      expect(u.kind, CoachInsightKind.building);
+    });
+
+    test('no push with a backlog (health first)', () {
+      final u = buildCoachUpdate(
+          sig(coverage: 0.5, newCardLimit: 15, retention: 0.95, dueCount: 3))!;
+      expect(u.kind, isNot(CoachInsightKind.readyToPush));
+    });
+
     test('algorithms due → surfaces the re-solve nudge to /algorithms', () {
       final u = buildCoachUpdate(sig(algoDue: 4))!;
       expect(u.kind, CoachInsightKind.algoDue);

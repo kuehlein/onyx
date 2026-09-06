@@ -10,6 +10,7 @@ import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/settings.dart';
 import 'coach_chat_sheet.dart';
 
 /// The numbers that seed the "talk about it" chat.
@@ -47,7 +48,7 @@ class CoachBadge extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showDetail(context, update, color, seed),
+        onTap: () => _showDetail(context, ref, update, color, seed),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -96,8 +97,8 @@ class CoachBadge extends ConsumerWidget {
     );
   }
 
-  void _showDetail(
-      BuildContext context, CoachUpdate u, Color color, _ChatSeed seed) {
+  void _showDetail(BuildContext context, WidgetRef ref, CoachUpdate u,
+      Color color, _ChatSeed seed) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -126,7 +127,19 @@ class CoachBadge extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface, height: 1.4)),
                 const SizedBox(height: 20),
-                if (u.hasAction)
+                if (u.proposal != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _applyProposal(context, ref, u.proposal!);
+                      },
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(u.proposal!.applyLabel),
+                    ),
+                  )
+                else if (u.hasAction)
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -177,6 +190,39 @@ class CoachBadge extends ConsumerWidget {
     );
   }
 
+  /// Apply a proposed load change, then offer a one-tap Undo. Never silent —
+  /// only reached from the sheet's explicit Apply button.
+  Future<void> _applyProposal(
+      BuildContext context, WidgetRef ref, CoachProposal p) async {
+    final messenger = ScaffoldMessenger.of(context);
+    switch (p.setting) {
+      case CoachSetting.newCardsPerDay:
+        final before = await ref.read(newCardLimitProvider.future);
+        await ref.read(newCardLimitProvider.notifier).set(before + p.delta);
+        final after = await ref.read(newCardLimitProvider.future);
+        messenger.showSnackBar(SnackBar(
+          content: Text('New cards/day: $before → $after'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () =>
+                ref.read(newCardLimitProvider.notifier).set(before),
+          ),
+        ));
+      case CoachSetting.algoMin:
+        final before = await ref.read(algoDailyMinProvider.future);
+        await ref.read(algoDailyMinProvider.notifier).set(before + p.delta);
+        final after = await ref.read(algoDailyMinProvider.future);
+        messenger.showSnackBar(SnackBar(
+          content: Text('Algorithms/day floor: $before → $after'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () =>
+                ref.read(algoDailyMinProvider.notifier).set(before),
+          ),
+        ));
+    }
+  }
+
   Color _toneColor(CoachTone tone, ThemeData theme) => switch (tone) {
         CoachTone.caution => _amber,
         CoachTone.positive => _green,
@@ -187,10 +233,11 @@ class CoachBadge extends ConsumerWidget {
         CoachInsightKind.gettingStarted => Icons.rocket_launch_outlined,
         CoachInsightKind.overloaded => Icons.warning_amber_rounded,
         CoachInsightKind.behindPace => Icons.schedule,
-        CoachInsightKind.building => Icons.trending_up,
+        CoachInsightKind.building => Icons.menu_book_outlined,
         CoachInsightKind.algoDue => Icons.terminal_outlined,
         CoachInsightKind.explainDue => Icons.record_voice_over_outlined,
         CoachInsightKind.unproven => Icons.psychology_outlined,
+        CoachInsightKind.readyToPush => Icons.trending_up,
         CoachInsightKind.onTrack => Icons.check_circle_outline,
       };
 }
