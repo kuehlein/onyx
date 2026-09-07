@@ -23,6 +23,11 @@ String buildCoachChatSystem({
   required int coveragePct,
   required String targetLabel,
   int? daysToInterview,
+  required int newPerDay,
+  int? retentionPct,
+  required int reviewBacklog,
+  required int algoMin,
+  required int algoMax,
 }) {
   final b = StringBuffer();
   b
@@ -38,6 +43,27 @@ String buildCoachChatSystem({
         'material coverage ~$coveragePct%'
         '${daysToInterview != null ? '; interview in $daysToInterview day'
             '${daysToInterview == 1 ? '' : 's'}' : '; no interview date set'}.')
+    ..writeln()
+    ..writeln(
+        'There are two independently-paced tracks, each with its own daily '
+        'load you can adjust for them:')
+    ..writeln(
+        '  1. Concept/review track (data-structures & systems knowledge): '
+        '$newPerDay new cards/day'
+        '${retentionPct != null ? ', recent recall ~$retentionPct%' : ''}, '
+        '$reviewBacklog reviews due now.')
+    ..writeln('  2. Algorithms track (problem-solving practice): $algoMin–'
+        '$algoMax problems/day (a floor and a ceiling).')
+    ..writeln()
+    ..writeln('You can CHANGE either track for them. When you and the learner '
+        'land on a specific change, end that reply with ONE tag on its own '
+        'final line: <set setting="new-per-day|algo-min|algo-max" delta="±N"/> '
+        '(small steps, e.g. +3, -1). The app turns it into an "Apply" button — '
+        'so OFFER, then let them tap. Never claim you already changed a setting; '
+        'you are proposing. Grounding for load moves: ~1–2 algorithms/day is '
+        'light, 3–4 intense, 5+ heavy; for concepts, ~90% recall with no '
+        'backlog means there\'s room to add a few new/day, while low recall or a '
+        'backlog means ease off. Adjust the two tracks independently.')
     ..writeln()
     ..writeln('Your job is to help them ACT on this — not to lecture. Rules:')
     ..writeln('- Be concrete and task-focused. Anchor advice to their numbers; '
@@ -61,6 +87,36 @@ String buildCoachChatSystem({
         '- Never invent data you weren\'t given. If you need something to '
         'advise well, ask for it.');
   return b.toString();
+}
+
+final _setTag = RegExp(
+    r'<set\s+setting="(new-per-day|algo-min|algo-max)"\s+delta="([+-]?\d+)"\s*/>',
+    caseSensitive: false);
+
+/// Splits a strategist reply into the display text and an optional proposed load
+/// change (parsed from a `<set .../>` tag, which is stripped from the text so it
+/// never shows). The app renders the proposal as an "Apply" button.
+({String text, CoachProposal? proposal}) parseCoachChatReply(String raw) {
+  final m = _setTag.firstMatch(raw);
+  CoachProposal? proposal;
+  if (m != null) {
+    final setting = switch (m.group(1)!.toLowerCase()) {
+      'new-per-day' => CoachSetting.newCardsPerDay,
+      'algo-min' => CoachSetting.algoMin,
+      'algo-max' => CoachSetting.algoMax,
+      _ => null,
+    };
+    final delta = int.tryParse(m.group(2)!);
+    if (setting != null && delta != null && delta != 0) {
+      final sign = delta > 0 ? '+' : '';
+      proposal = CoachProposal(
+        setting: setting,
+        delta: delta,
+        applyLabel: 'Apply: $sign$delta',
+      );
+    }
+  }
+  return (text: raw.replaceAll(_setTag, '').trim(), proposal: proposal);
 }
 
 /// Formats the running chat into Anthropic message turns (alternating, starting

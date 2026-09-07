@@ -35,19 +35,31 @@ ClaudeService _replying(String text, {void Function(String body)? onBody}) =>
 
 void main() {
   group('buildCoachChatSystem', () {
-    test('seeds the nudge, the numbers, and the strategist rules', () {
+    test('seeds the nudge, the numbers, both tracks, and the rules', () {
       final s = buildCoachChatSystem(
         update: _update,
         overallPct: 42,
         coveragePct: 30,
         targetLabel: 'Senior · FAANG · General',
         daysToInterview: 21,
+        newPerDay: 12,
+        retentionPct: 88,
+        reviewBacklog: 40,
+        algoMin: 2,
+        algoMax: 5,
       );
       expect(s, contains('Reviews are piling up')); // the nudge
       expect(s, contains('42%'));
       expect(s, contains('30%'));
       expect(s, contains('Senior · FAANG · General'));
       expect(s, contains('interview in 21 days'));
+      // Both adjustable tracks are described with current load.
+      expect(s, contains('12 new cards/day'));
+      expect(s, contains('88%'));
+      expect(s, contains('40 reviews due'));
+      expect(s, contains('2–5 problems/day'));
+      // It knows how to propose a change.
+      expect(s, contains('<set setting='));
       // Research-grounded coaching stance.
       expect(s, contains('implementation intention'));
       expect(s.toLowerCase(), contains('autonomy-supportive'));
@@ -60,8 +72,48 @@ void main() {
         overallPct: 42,
         coveragePct: 30,
         targetLabel: 'goal',
+        newPerDay: 12,
+        reviewBacklog: 0,
+        algoMin: 2,
+        algoMax: 5,
       );
       expect(s, contains('no interview date set'));
+    });
+  });
+
+  group('parseCoachChatReply', () {
+    test('extracts a proposed change and strips the tag', () {
+      final r = parseCoachChatReply('Sounds good — I\'ll bump the floor.\n'
+          '<set setting="algo-min" delta="+1"/>');
+      expect(r.text, 'Sounds good — I\'ll bump the floor.');
+      expect(r.proposal?.setting, CoachSetting.algoMin);
+      expect(r.proposal?.delta, 1);
+    });
+
+    test('handles negative deltas and each setting', () {
+      expect(
+          parseCoachChatReply('x <set setting="new-per-day" delta="-5"/>')
+              .proposal,
+          isA<CoachProposal>()
+              .having((p) => p.setting, 'setting', CoachSetting.newCardsPerDay)
+              .having((p) => p.delta, 'delta', -5));
+      expect(
+          parseCoachChatReply('<set setting="algo-max" delta="+2"/>')
+              .proposal
+              ?.setting,
+          CoachSetting.algoMax);
+    });
+
+    test('no tag → no proposal, text untouched', () {
+      final r = parseCoachChatReply('Just some advice, no change.');
+      expect(r.proposal, isNull);
+      expect(r.text, 'Just some advice, no change.');
+    });
+
+    test('a zero delta is ignored', () {
+      expect(
+          parseCoachChatReply('<set setting="algo-min" delta="0"/>').proposal,
+          isNull);
     });
   });
 

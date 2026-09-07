@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart';
+import '../../core/coach/coach_update.dart';
 import 'ai.dart';
 
 part 'coach_chat.g.dart';
@@ -11,11 +12,15 @@ part 'coach_chat.g.dart';
 /// the sheet opens (autodispose, held alive only while the sheet is on screen).
 class CoachChatState {
   const CoachChatState(
-      {this.messages = const [], this.busy = false, this.error});
+      {this.messages = const [], this.busy = false, this.error, this.proposal});
 
   final List<CoachMessage> messages;
   final bool busy;
   final String? error;
+
+  /// The latest load change the strategist offered (from a `<set .../>` tag),
+  /// pending an Apply tap. Cleared once applied or dismissed.
+  final CoachProposal? proposal;
 
   bool get isEmpty => messages.isEmpty;
 
@@ -24,11 +29,14 @@ class CoachChatState {
     bool? busy,
     String? error,
     bool clearError = false,
+    CoachProposal? proposal,
+    bool clearProposal = false,
   }) =>
       CoachChatState(
         messages: messages ?? this.messages,
         busy: busy ?? this.busy,
         error: clearError ? null : (error ?? this.error),
+        proposal: clearProposal ? null : (proposal ?? this.proposal),
       );
 }
 
@@ -64,9 +72,13 @@ class CoachChat extends _$CoachChat {
         maxTokens: 700,
         messages: coachChatTurns(history),
       );
+      final parsed = parseCoachChatReply(reply);
       state = state.copyWith(
-        messages: [...history, CoachMessage(CoachRole.assistant, reply)],
+        messages: [...history, CoachMessage(CoachRole.assistant, parsed.text)],
         busy: false,
+        // A new proposal replaces a stale one; keep the prior if none offered.
+        proposal: parsed.proposal,
+        clearProposal: parsed.proposal == null,
       );
     } on ClaudeException catch (e) {
       state = state.copyWith(busy: false, error: e.message);
@@ -74,4 +86,7 @@ class CoachChat extends _$CoachChat {
       state = state.copyWith(busy: false, error: 'Something went wrong: $e');
     }
   }
+
+  /// Clear the pending proposal (after it's applied or the learner passes).
+  void dismissProposal() => state = state.copyWith(clearProposal: true);
 }

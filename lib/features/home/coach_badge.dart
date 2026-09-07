@@ -7,10 +7,12 @@ import '../../core/clock.dart';
 import '../../core/coach/coach_update.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
+import '../../shared/coach_settings.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
+import '../../shared/providers/srs.dart';
 import 'coach_chat_sheet.dart';
 
 /// The numbers that seed the "talk about it" chat.
@@ -20,6 +22,10 @@ typedef _ChatSeed = ({
   String targetLabel,
   int? days,
 });
+
+/// The current per-track daily load, so the chat can reason about (and offer to
+/// change) either flow.
+typedef _Load = ({int newPerDay, int backlog, int algoMin, int algoMax});
 
 const _green = statusGood;
 const _amber = statusWarn;
@@ -40,6 +46,15 @@ class CoachBadge extends ConsumerWidget {
       ref.watch(readinessTargetControllerProvider).asData?.value,
       ref.watch(clockProvider).asData?.value,
     );
+    final load = (
+      newPerDay: ref.watch(newCardLimitProvider).asData?.value ??
+          NewCardLimit.defaultValue,
+      backlog: ref.watch(reviewQueueProvider).asData?.value.queue.length ?? 0,
+      algoMin: ref.watch(algoDailyMinProvider).asData?.value ??
+          AlgoDailyMin.defaultValue,
+      algoMax: ref.watch(algoDailyMaxProvider).asData?.value ??
+          AlgoDailyMax.defaultValue,
+    );
 
     final theme = Theme.of(context);
     final color = _toneColor(update.tone, theme);
@@ -48,7 +63,7 @@ class CoachBadge extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showDetail(context, ref, update, color, seed),
+        onTap: () => _showDetail(context, ref, update, color, seed, load),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -98,7 +113,7 @@ class CoachBadge extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, WidgetRef ref, CoachUpdate u,
-      Color color, _ChatSeed seed) {
+      Color color, _ChatSeed seed, _Load load) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -163,6 +178,10 @@ class CoachBadge extends ConsumerWidget {
                         coveragePct: seed.coveragePct,
                         targetLabel: seed.targetLabel,
                         daysToInterview: seed.days,
+                        newPerDay: load.newPerDay,
+                        reviewBacklog: load.backlog,
+                        algoMin: load.algoMin,
+                        algoMax: load.algoMax,
                       );
                     },
                     icon: const Icon(Icons.forum_outlined, size: 18),
@@ -195,32 +214,15 @@ class CoachBadge extends ConsumerWidget {
   Future<void> _applyProposal(
       BuildContext context, WidgetRef ref, CoachProposal p) async {
     final messenger = ScaffoldMessenger.of(context);
-    switch (p.setting) {
-      case CoachSetting.newCardsPerDay:
-        final before = await ref.read(newCardLimitProvider.future);
-        await ref.read(newCardLimitProvider.notifier).set(before + p.delta);
-        final after = await ref.read(newCardLimitProvider.future);
-        messenger.showSnackBar(SnackBar(
-          content: Text('New cards/day: $before → $after'),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () =>
-                ref.read(newCardLimitProvider.notifier).set(before),
-          ),
-        ));
-      case CoachSetting.algoMin:
-        final before = await ref.read(algoDailyMinProvider.future);
-        await ref.read(algoDailyMinProvider.notifier).set(before + p.delta);
-        final after = await ref.read(algoDailyMinProvider.future);
-        messenger.showSnackBar(SnackBar(
-          content: Text('Algorithms/day floor: $before → $after'),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () =>
-                ref.read(algoDailyMinProvider.notifier).set(before),
-          ),
-        ));
-    }
+    final r = await applyCoachSetting(ref, p.setting, p.delta);
+    messenger.showSnackBar(SnackBar(
+      content:
+          Text('${coachSettingLabel(p.setting)}: ${r.before} → ${r.after}'),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () => setCoachSetting(ref, p.setting, r.before),
+      ),
+    ));
   }
 
   Color _toneColor(CoachTone tone, ThemeData theme) => switch (tone) {

@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachRole, buildCoachChatSystem;
 import '../../core/coach/coach_update.dart';
+import '../../shared/coach_settings.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/coach_chat.dart';
 import '../../shared/widgets/chat_view.dart';
 
 /// Opens the "talk about it" strategist chat for a coach [update], seeded with
-/// the learner's current numbers so it can advise without a round-trip.
+/// the learner's current numbers (readiness + both tracks' load) so it can
+/// advise — and offer one-tap load changes — without a round-trip.
 Future<void> showCoachChatSheet(
   BuildContext context, {
   required CoachUpdate update,
@@ -17,6 +19,11 @@ Future<void> showCoachChatSheet(
   required int coveragePct,
   required String targetLabel,
   int? daysToInterview,
+  required int newPerDay,
+  int? retentionPct,
+  required int reviewBacklog,
+  required int algoMin,
+  required int algoMax,
 }) {
   final system = buildCoachChatSystem(
     update: update,
@@ -24,6 +31,11 @@ Future<void> showCoachChatSheet(
     coveragePct: coveragePct,
     targetLabel: targetLabel,
     daysToInterview: daysToInterview,
+    newPerDay: newPerDay,
+    retentionPct: retentionPct,
+    reviewBacklog: reviewBacklog,
+    algoMin: algoMin,
+    algoMax: algoMax,
   );
   return showModalBottomSheet<void>(
     context: context,
@@ -79,6 +91,15 @@ class _CoachChatSheet extends ConsumerWidget {
                       hintText: 'Ask the coach…',
                       fadeColor: theme.colorScheme.surfaceContainerLow,
                       opener: _Opener(seed: seed),
+                      trailing: state.proposal == null
+                          ? null
+                          : _ProposalCard(
+                              proposal: state.proposal!,
+                              onApply: () => _apply(context, ref),
+                              onDismiss: () => ref
+                                  .read(coachChatProvider.notifier)
+                                  .dismissProposal(),
+                            ),
                       onSend: (t) => ref
                           .read(coachChatProvider.notifier)
                           .send(t, system: system),
@@ -86,6 +107,74 @@ class _CoachChatSheet extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+Future<void> _apply(BuildContext context, WidgetRef ref) async {
+  final proposal = ref.read(coachChatProvider).proposal;
+  if (proposal == null) return;
+  final messenger = ScaffoldMessenger.of(context);
+  ref.read(coachChatProvider.notifier).dismissProposal();
+  final r = await applyCoachSetting(ref, proposal.setting, proposal.delta);
+  messenger.showSnackBar(SnackBar(
+    content: Text(
+        '${coachSettingLabel(proposal.setting)}: ${r.before} → ${r.after}'),
+    action: SnackBarAction(
+      label: 'Undo',
+      onPressed: () => setCoachSetting(ref, proposal.setting, r.before),
+    ),
+  ));
+}
+
+/// The strategist's proposed load change, shown at the foot of the transcript
+/// with Apply / Not now. Applying is the only thing that changes a setting.
+class _ProposalCard extends StatelessWidget {
+  const _ProposalCard({
+    required this.proposal,
+    required this.onApply,
+    required this.onDismiss,
+  });
+
+  final CoachProposal proposal;
+  final VoidCallback onApply;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sign = proposal.delta > 0 ? '+' : '';
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${coachSettingLabel(proposal.setting)}  $sign${proposal.delta}',
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: onApply,
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Apply'),
+              ),
+              const SizedBox(width: 8),
+              TextButton(onPressed: onDismiss, child: const Text('Not now')),
+            ],
+          ),
+        ],
       ),
     );
   }

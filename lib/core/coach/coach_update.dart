@@ -30,10 +30,11 @@ enum CoachInsightKind {
 /// Visual tone for the badge (mapped to color by the widget).
 enum CoachTone { info, caution, positive }
 
-/// A daily-load setting the coach can offer to change for the learner. The
-/// triage names the change; the widget applies it (with an undo) on confirm —
-/// the coach never mutates settings silently.
-enum CoachSetting { newCardsPerDay, algoMin }
+/// A daily-load setting the coach can offer to change for the learner — one per
+/// independently-paced track: the concept/review track ([newCardsPerDay]) and
+/// the algorithms track ([algoMin]/[algoMax]). The triage (or the chat) names
+/// the change; the UI applies it with an undo on confirm — never silently.
+enum CoachSetting { newCardsPerDay, algoMin, algoMax }
 
 /// A proposed setting change carried by a [CoachUpdate]. [delta] is signed
 /// (e.g. +3 or -5); [applyLabel] is the button text (e.g. "Add 3 new/day").
