@@ -164,9 +164,13 @@ All `##` (H2) sections are quizzable by default, except those matching the
 
 ```
 Related, Related Concepts, References, Notes, See Also, Links, Overview,
-Background, Resources, Follow-up Questions,
+Background, Resources, Follow-up Questions, Variants,
 Implementation, Implementation Notes, Code, Solution, Reference Implementation
 ```
+
+`Variants` is blocklisted because it's an enumeration (a list of subtypes), not
+an atomic recall target — "name every variant" is a weak, hard-to-self-grade
+prompt. It stays in the card as browse/reference.
 
 The implementation/code sections are deliberately blocklisted: code is study
 *reference*, not a recall target (reconstruct it from the approach, don't

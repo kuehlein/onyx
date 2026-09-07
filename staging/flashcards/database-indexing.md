@@ -101,6 +101,16 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 **Hot spot risk:**
 - Monotonically increasing PKs avoid page splits but concentrate writes on the rightmost leaf page (hot spot in distributed databases). In CockroachDB / Spanner, use hash-sharded indexes or random UUIDs (v4) to spread write load. Note: UUID v7 is time-ordered (k-sortable) and still concentrates recent inserts on the same key range in a distributed system — it solves InnoDB page splits for single-node databases but does not eliminate hot spots in range-partitioned distributed databases.
 
+## Common Pitfalls
+
+- **Non-sargable predicates defeat the index.** Wrapping an indexed column in a function or expression in the `WHERE` clause — `WHERE UPPER(email) = ?`, `WHERE created_at + interval '1 day' > now()`, `WHERE col * 2 = 10` — forces a full scan. Rewrite to keep the bare column on one side, or add a matching functional/expression index.
+- **Implicit type coercion.** Comparing an indexed `VARCHAR` column to a number (`WHERE phone = 12345`) makes the engine cast every row, skipping the index. Match the literal's type to the column.
+- **Composite-index leftmost-prefix rule.** An index on `(a, b, c)` serves queries filtering on `a`, `a+b`, or `a+b+c` — but *not* on `b` alone or `c` alone. Order columns equality-first, then the range/sort column; a range predicate "stops" the usable prefix (columns after the first range column can't be used for seeking).
+- **Leading-wildcard `LIKE`.** `LIKE '%term'` can't use a B-tree index (no known prefix); only `LIKE 'term%'` can. For infix/full-text search use a trigram or full-text index instead.
+- **Over-indexing.** Every extra index taxes writes and storage, and redundant/overlapping indexes (e.g. `(a)` when `(a, b)` already exists) waste space and can push the planner toward worse plans. Drop unused indexes; measure before adding.
+- **Stale statistics.** The planner chooses whether to use an index from row-count/selectivity estimates; after a bulk load or big data shift, out-of-date stats lead it to ignore a good index or pick a bad plan. Run `ANALYZE` / update statistics.
+- **`ORDER BY` that doesn't match index order.** An index only avoids a sort if the query's ordering matches the index's column order *and* direction; a mismatched sort direction on a multi-column sort still forces a separate sort step.
+
 ## Implementation Notes
 
 **Index selection process (interview pattern):**

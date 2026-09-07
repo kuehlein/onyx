@@ -41,6 +41,11 @@ class CardParser {
     'background',
     'resources',
     'follow-up questions',
+    // A "Variants" list is an enumeration, not an atomic recall target —
+    // testing "name every variant" is a weak, hard-to-self-grade prompt (see
+    // docs/learning-science.md, minimum-information principle). Kept in the card
+    // as browse/reference (visible in-flow via "View full card").
+    'variants',
     // Code/implementation is study REFERENCE, not a recall target — you should
     // reconstruct it from the approach, not memorise it verbatim (see
     // docs/learning-science.md). Kept in the card and viewable in-flow via

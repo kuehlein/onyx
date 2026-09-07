@@ -7,6 +7,7 @@ tags:
 tiers:
   ds-a: 1
 created: 2026-09-04
+confidence: high
 ---
 
 # Sliding Window
