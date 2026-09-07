@@ -9,7 +9,7 @@ tags:
 tiers:
   blockchain: 1
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: low
 ---
 
@@ -71,9 +71,9 @@ Space: O(h · n) for full node storing all blocks and transactions. Bitcoin's [U
 
 **Confusing block hash with transaction hash.** A block hash is the digest of the block *header* only, not the transactions. Transactions are committed via the Merkle root in the header — they are not directly hashed into the block hash.
 
-**Assuming longest chain = canonical chain.** Bitcoin uses "heaviest chain" (most cumulative proof-of-work), not strictly the longest by block count. An attacker with 51% hash power can produce a shorter chain with more work if they mine faster.
+**Assuming longest chain = canonical chain.** Bitcoin uses "heaviest chain" (most cumulative proof-of-work), not strictly the longest by block count. Because cumulative work weights each block by its difficulty, a chain with fewer but higher-difficulty blocks can outweigh a longer one — block count alone is not the tiebreaker.
 
-**Merkle tree second-preimage attack.** In a naive binary Merkle tree, an internal node and a leaf node of the same digest can be confused if the tree is not depth-prefixed. Bitcoin prevents this by different hash functions for leaves vs. internal nodes. Do not implement a Merkle tree without this distinction.
+**Merkle tree second-preimage attack.** In a naive binary Merkle tree, two internal-node digests can masquerade as a single 64-byte leaf, letting an attacker forge a tree with the same root. The fix is domain separation — prefixing a distinct byte before hashing leaves vs. internal nodes, as Certificate Transparency (RFC 6962) does with `0x00`/`0x01`. Bitcoin does *not* do this (it hashes both the same way with double-SHA-256), which is why it was vulnerable to CVE-2012-2459; do not copy Bitcoin's Merkle construction without adding this distinction.
 
 **Finality is probabilistic on PoW chains.** Six confirmations on Bitcoin gives ~99.9% practical finality, but it is never absolute. Ethereum [PoS](_meta/glossary.md#pos) has economic finality after two justified checkpoints (~12.8 min) — a materially different guarantee; know which you are discussing.
 

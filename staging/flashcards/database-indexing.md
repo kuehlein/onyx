@@ -8,7 +8,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: normal
 ---
 
@@ -68,7 +68,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 
 | Operation | Without index | With B-tree index |
 |---|---|---|
-| Point lookup (PK) | O(1) via clustered index | O(1) |
+| Point lookup (PK) | O(log n) via clustered index | O(log n) |
 | Point lookup (secondary) | O(n) full scan | O(log n) |
 | Range scan | O(n) | O(log n + k) where k = rows returned |
 | INSERT / UPDATE / DELETE | O(log n) for PK tree | O(log n) × (1 + number of secondary indexes) |

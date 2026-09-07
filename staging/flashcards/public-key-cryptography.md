@@ -8,7 +8,7 @@ tags:
 tiers:
   blockchain: 1
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: low
 ---
 
@@ -41,7 +41,7 @@ Given `Q = k · G` (scalar multiplication of generator point `G` by private scal
 
 **Bitcoin and Ethereum both use secp256k1:**
 - 256-bit private key `k` chosen uniformly at random from `[1, n-1]` where `n` is the curve order (~2²⁵⁶)
-- Public key `Q = k · G` is an (x, y) point on the curve — 64 bytes uncompressed (with `04` prefix) or 33 bytes compressed (with `02`/`03` prefix indicating y parity)
+- Public key `Q = k · G` is an (x, y) point on the curve — 65 bytes uncompressed (`04` prefix + 32-byte x + 32-byte y) or 33 bytes compressed (with `02`/`03` prefix indicating y parity)
 
 **Address derivation is one-way and lossy:**
 - **Ethereum:** `address = keccak256(publicKey[1:])[12:]` — drop the `04` prefix byte, hash the 64-byte key, take the last 20 bytes. The address discards 44 bytes of the public key; the public key cannot be recovered from the address alone (only from a transaction signature).

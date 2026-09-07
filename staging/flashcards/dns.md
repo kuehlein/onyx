@@ -8,7 +8,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: normal
 ---
 
@@ -43,7 +43,7 @@ priority: normal
 
 | Property | Typical Value |
 |---|---|
-| Root name servers | 13 logical roots (hundreds of anycast instances) |
+| Root name servers | 13 logical roots (~1,900+ anycast instances) |
 | Recursive resolver cache hit rate | ~80–95% (most queries never reach authoritative servers) |
 | Authoritative lookup latency | 10–100 ms round-trip |
 | Cached lookup latency | <1 ms (OS resolver cache) |

@@ -9,7 +9,7 @@ tags:
 tiers:
   ds-a: 2
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: high
 ---
 
@@ -52,7 +52,7 @@ priority: high
 | Graph BFS | O(V + E) | O(V) — visited set + queue |
 | Grid BFS (r×c) | O(r·c) | O(r·c) |
 
-**Why O(V + E):** every vertex is enqueued exactly once (visited set prevents re-enqueuing), and every edge is examined exactly once when its source vertex is dequeued. The queue never holds more than one full "frontier level" at a time, hence O(V) space in the worst case (a star graph where all nodes are neighbors of the root).
+**Why O(V + E):** every vertex is enqueued exactly once (visited set prevents re-enqueuing), and every edge is examined exactly once when its source vertex is dequeued. The queue holds at most the current and next frontier levels, so its size is O(V) in the worst case (a star graph where all nodes are neighbors of the root).
 
 ## Key Properties
 

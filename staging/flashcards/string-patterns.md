@@ -9,7 +9,7 @@ tags:
 tiers:
   ds-a: 1
 created: 2026-08-19
-confidence: low
+confidence: high
 priority: normal
 ---
 
@@ -62,7 +62,7 @@ In-place reversal / rotation:
 | Anagram detection (sort) | O(n log n) | O(n) | Sorting dominates; sorted copy is the only extra allocation |
 | Anagram detection (frequency) | O(n) | O(1) | Single pass; map bounded by alphabet size (26) regardless of n |
 | Group anagrams | O(n · k log k) | O(n · k) | Each of n strings is sorted in O(k log k); all strings stored in output groups |
-| Stack-based decode string | O(n) | O(n) | Each character pushed/popped once; stack depth proportional to nesting, worst case n |
+| Stack-based decode string | O(N) | O(N) | N = decoded output length (can exceed input n, e.g. `10[10[a]]`); stack depth is proportional to nesting |
 | Triple-reverse rotation | O(n) | O(1) | Three linear passes; reversal is done in-place with pointer swap |
 
 ## Key Properties

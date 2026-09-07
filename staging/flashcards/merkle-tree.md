@@ -2,7 +2,7 @@
 id: 596f0cea-b598-46c6-bbfd-9e0de0ce0008
 type: flashcard
 created: 2026-08-21
-confidence: medium
+confidence: high
 tiers:
   blockchain: 1
 tags:

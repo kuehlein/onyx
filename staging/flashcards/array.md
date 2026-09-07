@@ -8,7 +8,7 @@ tags:
 tiers:
   ds-a: 1
 created: 2026-08-19
-confidence: medium
+confidence: high
 priority: high
 ---
 
@@ -58,13 +58,13 @@ Space: O(n) — one contiguous allocation proportional to the number of elements
 
 - **Contiguous memory layout**: enables cache-line prefetching; sequential reads are significantly faster in practice than the asymptotic analysis suggests
 - **Zero-indexed (most languages)**: element at logical position k lives at memory offset k from the base pointer
-- **Fixed vs. dynamic**: C arrays are fixed; Python `list`, Java `ArrayList`, and Rust `Vec` are dynamic arrays that reallocate (typically doubling) when capacity is exceeded
+- **Fixed vs. dynamic**: C arrays are fixed; Python `list`, Java `ArrayList`, and Rust `Vec` are dynamic arrays that reallocate by a growth factor when capacity is exceeded (Rust `Vec` doubles; Java `ArrayList` grows ~1.5×; CPython `list` overallocates ~1.125×) — the factor is constant, giving O(1) amortized append
 - **Two-dimensional arrays**: stored in row-major order in most languages; `matrix[r][c]` in Python is a list-of-lists, not a true 2D array — has pointer indirection at each row
 
 ## Common Pitfalls
 
 - **Off-by-one errors on bounds**: writing `for i in range(n+1)` or accessing `arr[n]` is the single most common array bug in interviews; always verify the loop boundary against example inputs
-- **Modifying a list while iterating over it**: inserting or deleting during `for x in arr` skips elements or raises `IndexError`; iterate over a copy or collect indices to modify after the loop
+- **Modifying a list while iterating over it**: inserting or deleting during `for x in arr` silently skips elements (index-based iterators don't track the shift); iterate over a copy or collect indices to modify after the loop
 - **Shallow copy vs. deep copy for 2D arrays**: `matrix_copy = matrix[:]` copies the outer list but the inner row lists are still shared references; mutations to `matrix_copy[0][0]` affect the original. Use `copy.deepcopy` or a list comprehension `[row[:] for row in matrix]`
 - **Assuming sort is free**: interviewers will ask about the pre-sort cost; a solution that sorts then binary-searches is O(n log n) total, not O(log n)
 - **Integer overflow in index arithmetic**: mid-point calculation `(lo + hi) // 2` is safe in Python (arbitrary precision), but `(lo + hi) >> 1` and C-style `(lo + hi) / 2` overflow 32-bit signed integers when both are large — use `lo + (hi - lo) // 2`

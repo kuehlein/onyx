@@ -10,7 +10,7 @@ tags:
 tiers:
   ds-a: 2
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: high
 ---
 
@@ -215,7 +215,7 @@ function backtrack(start, current, result, candidates /* problem-specific params
 - **Using iterative DFS and expecting BFS-like level order:** iterative DFS with a stack gives DFS order, not BFS — use a queue for BFS
 - **Stack overflow on very deep graphs:** recursive DFS on a path graph of 10⁵ nodes will blow the JS call stack — switch to iterative with an explicit stack
 - **Off-by-one on the visited mark timing:** mark a node visited *before* pushing its neighbors (not after), or you may push the same node onto the stack multiple times in iterative DFS
-- **Three-color vs. two-color cycle detection:** for undirected graphs, a simple visited boolean suffices; for directed graphs, you need three colors (unvisited / in-stack / done) to distinguish back edges from cross edges
+- **Three-color vs. two-color cycle detection:** for undirected graphs, a visited boolean plus skipping the edge back to the parent suffices; for directed graphs, you need three colors (unvisited / in-stack / done) to distinguish back edges from cross edges
 
 ## Variants
 

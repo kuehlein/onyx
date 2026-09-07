@@ -7,7 +7,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: normal
 ---
 
@@ -52,7 +52,7 @@ A load balancer distributes incoming traffic across multiple backend servers so 
 | Weighted round-robin | Mixed-capacity backends | Requires manual weight tuning |
 | Least connections | Variable-duration requests (file upload, long polls) | Overhead of tracking active connections |
 | IP hash | Session affinity without shared state | Uneven distribution if client IPs cluster |
-| Random with two choices (Power of Two) | High-throughput, low-overhead | Used in Envoy; not a standard built-in in NGINX |
+| Random with two choices (Power of Two) | High-throughput, low-overhead | Used in Envoy; built into NGINX via `random two` |
 | Consistent hashing | Caching layers, sharded backends | Complex to implement; see consistent hashing card |
 
 **Health checks:** Active (LB polls `/health` every 5–30 s, 2–3 failures = remove) vs. passive (detect errors in live traffic). Always configure both in production.
@@ -117,7 +117,7 @@ Edge LB handles SSL offload, [WAF](_meta/glossary.md#waf), DDoS mitigation. Inte
 
 ## Common Pitfalls
 
-- **Thundering herd on backend restart:** when a backend comes up after a crash, the LB immediately routes full traffic before the instance has warmed its in-process caches — use a slow-start mode (Nginx: `slow_start=30s`) to ramp traffic linearly
+- **Thundering herd on backend restart:** when a backend comes up after a crash, the LB immediately routes full traffic before the instance has warmed its in-process caches — use a slow-start mode (NGINX Plus: `slow_start=30s`) to ramp traffic linearly
 - **Health check too shallow:** `/health` returns 200 but the DB connection pool is exhausted — health checks should verify critical dependencies, not just process liveness
 - **Hitting ALB throughput limits:** AWS ALB is elastic and scales automatically, but at extreme scale (millions of RPS) you may need to request a limit increase via AWS Support or switch to NLB for pure L4 throughput; NLB handles millions of connections with lower per-connection overhead
 - **Sticky sessions masking state problems:** relying on stickiness instead of externalizing session state means a single instance failure causes user-visible session loss

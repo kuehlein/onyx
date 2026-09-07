@@ -9,7 +9,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: normal
 ---
 
@@ -50,7 +50,7 @@ A [CDN](_meta/glossary.md#cdn) is a geographically distributed network of edge s
 | Cache hit rate (well-tuned) | 80–95% of requests |
 | Origin offload | 85–99% for static assets |
 | TTL range | 0 s (bypass) to 1 year (immutable assets) |
-| PoP count (major CDNs) | 70–1,000+ cities globally (Fastly ≈70, Cloudflare ≈330+, Akamai ≈1,000+) |
+| PoP count (major CDNs) | ~150 to thousands globally (Fastly ≈165, Cloudflare ≈330+ cities, Akamai 4,100+ edge PoPs) |
 
 **How a request resolves:**
 1. User's [DNS](_meta/glossary.md#dns) query routes to the nearest CDN PoP via Anycast or latency-based DNS.

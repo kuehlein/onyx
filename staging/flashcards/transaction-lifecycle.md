@@ -9,7 +9,7 @@ tags:
 tiers:
   blockchain: 1
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: low
 ---
 
@@ -104,7 +104,7 @@ The block producer executes transactions sequentially against the state. If a tr
 |---|---|---|
 | Bitcoin | 1 block (~10 min) | Probabilistic: 6 blocks (~1 hr) conventional |
 | Ethereum (post-Merge) | 1 block (~12 sec) | Explicit: 2 epochs (~12.8 min) via Casper [FFG](_meta/glossary.md#ffg) |
-| Solana | ~400 ms slot | Optimistic: 32 slots; max lockout after ~13 s |
+| Solana | ~350 ms slot (SIMD-0525, Aug 2026) | Optimistic: 32 slots; rooted/finalized after ~11 s |
 
 **Probabilistic finality** (Bitcoin): the probability of a block being reorged out decreases exponentially with each subsequent block. After 6 confirmations, reorg cost exceeds any rational attacker's incentive for typical transaction values.
 

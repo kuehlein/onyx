@@ -8,7 +8,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: low
+confidence: high
 priority: normal
 ---
 
@@ -46,7 +46,7 @@ HTTP (Hypertext Transfer Protocol) is a stateless, request-response protocol for
 | Transport | TCP | TCP | QUIC (UDP) |
 | Multiplexing | No (head-of-line blocking) | Yes (streams) | Yes (independent streams) |
 | Header compression | No | HPACK | [QPACK](_meta/glossary.md#qpack) |
-| Server push | No | Deprecated (removed from all major browsers 2022) | No |
+| Server push | No | Deprecated (Chrome disabled by default 2022, Firefox removed 2024) | Defined (RFC 9114) but effectively unused |
 | TLS | Optional | Required in practice | Always (QUIC mandates TLS 1.3) |
 | Typical latency (TLS handshake) | TLS 1.2: 2 [RTT](_meta/glossary.md#rtt) / TLS 1.3: 1 RTT | TLS 1.2: 2 RTT / TLS 1.3: 1 RTT | 1 RTT initial; 0-RTT resumption |
 

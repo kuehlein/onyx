@@ -8,7 +8,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: normal
 ---
 
@@ -71,7 +71,7 @@ Clients cannot tell whether they are talking to the origin server, a CDN edge no
 | Dimension | REST | GraphQL | gRPC |
 |-----------|------|---------|------|
 | Cacheability | Native HTTP caching (CDN-friendly) | Difficult — all queries are POST | None (HTTP/2 binary, no CDN cache) |
-| Overfetch / underfetch | Common — fixed response shapes | Eliminated — clients select fields | Eliminated via Protobuf schemas |
+| Overfetch / underfetch | Common — fixed response shapes | Eliminated — clients select fields | Common — fixed Protobuf message shapes (FieldMask can trim) |
 | Type safety | Weak (JSON) — OpenAPI helps | Strong schema | Strong (Protobuf IDL) |
 | Browser support | Native | Native | Requires grpc-web proxy |
 | Streaming | Limited (SSE for server push) | Subscriptions | Full bidirectional streaming |

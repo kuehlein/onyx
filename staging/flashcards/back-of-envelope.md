@@ -7,7 +7,7 @@ tags:
 tiers:
   system-design: 1
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: normal
 ---
 
@@ -71,7 +71,7 @@ Rough-order-of-magnitude calculations that translate vague scale requirements in
 | Typical metadata row | 100–500 bytes |
 | Compressed image (thumbnail) | 50–200 KB |
 | Full-resolution photo | 1–5 MB |
-| 1-minute 720p video | ~50–100 MB |
+| 1-minute 720p video | ~20–50 MB |
 | 1 TB | 10^12 bytes |
 | 1 PB | 10^15 bytes |
 

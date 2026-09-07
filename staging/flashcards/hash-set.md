@@ -8,7 +8,7 @@ tags:
 tiers:
   ds-a: 2
 created: 2026-08-20
-confidence: medium
+confidence: high
 priority: normal
 ---
 
@@ -51,7 +51,7 @@ A hash set stores an unordered collection of unique values with O(1) average-cas
 | Delete (average) | O(1) |
 | Lookup (worst case) | O(n) — all keys collide into one bucket |
 | Space | O(n) |
-| Ordering | None (insertion order preserved in JS `Set`, but not guaranteed by spec for all engines) |
+| Ordering | Hash sets are conceptually unordered, but JS `Set` iterates in insertion order (guaranteed by the ECMAScript spec) — this is NOT sorted order |
 | Duplicates | Not stored — adding an existing value is a no-op |
 
 JS `Set` uses SameValueZero equality: `NaN === NaN` is true in a Set (unlike `===`), and `-0` and `+0` are treated as equal.
@@ -70,7 +70,7 @@ A pathological hash function (or deliberate hash-flooding attack) can map all n 
 
 - **Object identity vs. value equality:** JS `Set` uses reference equality for objects. `new Set([{a:1}, {a:1}])` has size 2, not 1. Serialize to a primitive key (e.g., JSON string) if you need structural equality.
 - **Mutating elements after insertion:** If you store objects and mutate them, the set's internal state becomes inconsistent. Treat stored objects as immutable.
-- **Assuming sorted output:** `Set` preserves insertion order in modern JS engines, but this is an implementation detail for primitive values — do not rely on it for sorted output.
+- **Assuming sorted output:** `Set` iterates in insertion order (guaranteed by spec), NOT sorted order — do not rely on it for sorted output.
 - **Using `==` to check membership:** Always use `.has()`, never array-style checking; `set == value` does nothing useful.
 - **NaN handling surprise:** `set.has(NaN)` returns true after `set.add(NaN)` — unlike `NaN !== NaN` in regular JS equality.
 

@@ -8,7 +8,7 @@ tags:
 tiers:
   ds-a: 1
 created: 2026-08-19
-confidence: medium
+confidence: high
 priority: high
 ---
 
@@ -48,7 +48,7 @@ A hash map stores key-value pairs by running each key through a hash function to
 | Delete    | O(1)    | O(n)       |
 | Iteration | O(n)    | O(n)       |
 
-**Why average O(1):** A good hash function spreads n keys across k buckets uniformly. With a load factor α = n/k kept below a constant (V8 rehashes around 0.5–0.75 depending on key type), the expected number of keys per bucket is O(1), so each lookup inspects O(1) entries.
+**Why average O(1):** A good hash function spreads n keys across k buckets uniformly. With a load factor α = n/k kept below a constant (implementations rehash once α crosses a fixed threshold — V8's `Map` grows when entries reach roughly twice the bucket count), the expected number of keys per bucket is O(1), so each lookup inspects O(1) entries.
 
 **Why worst O(n):** All n keys can hash to the same bucket (deliberate collision attack or a pathological hash function), degrading each lookup to a linear scan of that bucket's chain.
 

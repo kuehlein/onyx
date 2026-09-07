@@ -9,7 +9,7 @@ tags:
 tiers:
   ds-a: 1
 created: 2026-08-19
-confidence: low
+confidence: high
 priority: high
 ---
 
@@ -34,7 +34,7 @@ Two pointers is a technique where two indices traverse the same data structure �
 **Prefer Two Pointers over alternatives when:**
 - Over hash map (two-sum on unsorted): if the array is already sorted or sorting is acceptable, two pointers uses O(1) extra space vs. O(n) for the map
 - Over nested loops: whenever the sorted order lets you infer that moving one pointer is strictly better than the other — the nested loop tries all pairs, two pointers skips impossible ones provably
-- Over binary search (pair search): two pointers finds all valid pairs in one pass; binary search finds one pair per outer loop iteration at O(n log n) total — same asymptotic cost but two pointers has a smaller constant and simpler code
+- Over binary search (pair search): after the shared sort, the two-pointer scan is a single O(n) pass, whereas searching each element by binary search is O(n log n); both are O(n log n) once the sort dominates, but two pointers has a smaller constant and simpler code
 
 **Do not use when:**
 - The array is unsorted and sorting would change the problem semantics (e.g., the problem requires original indices) → use a hash map
