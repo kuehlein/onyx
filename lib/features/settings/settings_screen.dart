@@ -70,6 +70,20 @@ class SettingsScreen extends ConsumerWidget {
                 'What the daily levers mean + a start-slow ramp plan.'),
             onTap: () => showStudyLoadHelp(context),
           ),
+          ref.watch(loadCheckInProvider).when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (checkIn) => SwitchListTile(
+                  secondary: const Icon(Icons.favorite_outline),
+                  title: const Text('Weekly load check-in'),
+                  subtitle: const Text(
+                      'Once a week the coach asks how the load feels and uses '
+                      'your answer to tune what it suggests.'),
+                  value: checkIn.enabled,
+                  onChanged: (v) =>
+                      ref.read(loadCheckInProvider.notifier).setEnabled(v),
+                ),
+              ),
           ref.watch(newCardLimitProvider).when(
                 loading: () => const ListTile(
                   leading: Icon(Icons.auto_stories_outlined),

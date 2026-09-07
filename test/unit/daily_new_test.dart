@@ -35,8 +35,8 @@ void main() {
     ]);
     addTearDown(container.dispose);
 
-    // Limit defaults to 20; nothing learned yet → full allowance.
-    expect(await container.read(dailyNewRemainingProvider.future), 20);
+    // Limit defaults to 8; nothing learned yet → full allowance.
+    expect(await container.read(dailyNewRemainingProvider.future), 8);
 
     // Learn 3 sections today (each writes an activity_log 'learn' event).
     for (var i = 0; i < 3; i++) {
@@ -47,7 +47,7 @@ void main() {
       );
     }
     container.invalidate(dailyNewRemainingProvider);
-    expect(await container.read(dailyNewRemainingProvider.future), 17);
+    expect(await container.read(dailyNewRemainingProvider.future), 5);
 
     await db.close();
   });
@@ -76,7 +76,7 @@ void main() {
     addTearDown(container.dispose);
 
     // Yesterday's 5 don't reduce today's allowance.
-    expect(await container.read(dailyNewRemainingProvider.future), 20);
+    expect(await container.read(dailyNewRemainingProvider.future), 8);
 
     await db.close();
   });

@@ -14,6 +14,7 @@ import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import 'coach_chat_sheet.dart';
+import 'load_checkin_sheet.dart';
 
 /// The numbers that seed the "talk about it" chat.
 typedef _ChatSeed = ({
@@ -63,7 +64,9 @@ class CoachBadge extends ConsumerWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showDetail(context, ref, update, color, seed, load),
+        onTap: () => update.kind == CoachInsightKind.loadCheckin
+            ? showLoadCheckInSheet(context, ref)
+            : _showDetail(context, ref, update, color, seed, load),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -239,6 +242,7 @@ class CoachBadge extends ConsumerWidget {
         CoachInsightKind.algoDue => Icons.terminal_outlined,
         CoachInsightKind.explainDue => Icons.record_voice_over_outlined,
         CoachInsightKind.unproven => Icons.psychology_outlined,
+        CoachInsightKind.loadCheckin => Icons.favorite_outline,
         CoachInsightKind.readyToPush => Icons.trending_up,
         CoachInsightKind.onTrack => Icons.check_circle_outline,
       };

@@ -21,6 +21,9 @@ CoachSignals sig({
   String? weakestDomain = 'system-design',
   String? weakestDomainPretty = 'System design',
   int affirmSeed = 0,
+  bool checkInDue = false,
+  LoadFeel? loadFeel,
+  bool activeRecently = true,
 }) =>
     CoachSignals(
       anyStudied: anyStudied,
@@ -40,6 +43,9 @@ CoachSignals sig({
       weakestDomain: weakestDomain,
       weakestDomainPretty: weakestDomainPretty,
       affirmSeed: affirmSeed,
+      checkInDue: checkInDue,
+      loadFeel: loadFeel,
+      activeRecently: activeRecently,
     );
 
 void main() {
@@ -135,6 +141,52 @@ void main() {
       expect(u.proposal?.setting, CoachSetting.newCardsPerDay);
       expect(u.proposal?.delta, 3);
       expect(u.tone, CoachTone.positive);
+    });
+
+    test('no push when not showing up lately (engagement gate)', () {
+      final u = buildCoachUpdate(sig(
+          coverage: 0.5,
+          newCardLimit: 15,
+          retention: 0.95,
+          dueCount: 0,
+          activeRecently: false))!;
+      expect(u.kind, isNot(CoachInsightKind.readyToPush));
+    });
+
+    test('"too much" feel suppresses the push even when numbers are green', () {
+      final u = buildCoachUpdate(sig(
+          coverage: 0.5,
+          newCardLimit: 15,
+          retention: 0.95,
+          dueCount: 0,
+          loadFeel: LoadFeel.tooMuch))!;
+      expect(u.kind, isNot(CoachInsightKind.readyToPush));
+    });
+
+    test('"could do more" relaxes the retention bar for a push', () {
+      // 0.86 is below the 0.90 bar but clears the relaxed 0.85 bar.
+      final u = buildCoachUpdate(sig(
+          coverage: 0.5,
+          newCardLimit: 15,
+          retention: 0.86,
+          dueCount: 0,
+          loadFeel: LoadFeel.couldDoMore))!;
+      expect(u.kind, CoachInsightKind.readyToPush);
+    });
+
+    test('check-in (enabled+due) surfaces on a calm day', () {
+      final u = buildCoachUpdate(sig(coverage: 0.5, checkInDue: true))!;
+      expect(u.kind, CoachInsightKind.loadCheckin);
+    });
+
+    test('check-in waits behind a backlog (health first)', () {
+      final u = buildCoachUpdate(sig(
+          checkInDue: true,
+          dueCount: 90,
+          newCardLimit: 20,
+          retention: 0.6,
+          reviewsInWindow: 30))!;
+      expect(u.kind, CoachInsightKind.overloaded);
     });
 
     test('only-ok retention while building → plain building, no push', () {

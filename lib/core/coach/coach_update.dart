@@ -23,6 +23,7 @@ enum CoachInsightKind {
   algoDue,
   explainDue,
   unproven,
+  loadCheckin,
   readyToPush,
   onTrack,
 }
@@ -35,6 +36,11 @@ enum CoachTone { info, caution, positive }
 /// the algorithms track ([algoMin]/[algoMax]). The triage (or the chat) names
 /// the change; the UI applies it with an undo on confirm — never silently.
 enum CoachSetting { newCardsPerDay, algoMin, algoMax }
+
+/// The learner's self-reported sense of the load, from the opt-in weekly
+/// check-in. Complements the objective signals (retention/backlog): you can be
+/// hitting 90% and still be burning out, or coasting and ready for more.
+enum LoadFeel { tooMuch, aboutRight, couldDoMore }
 
 /// A proposed setting change carried by a [CoachUpdate]. [delta] is signed
 /// (e.g. +3 or -5); [applyLabel] is the button text (e.g. "Add 3 new/day").
@@ -98,6 +104,9 @@ class CoachSignals {
     this.weakestDomain,
     this.weakestDomainPretty,
     this.affirmSeed = 0,
+    this.checkInDue = false,
+    this.loadFeel,
+    this.activeRecently = true,
   });
 
   /// Any section studied at all (else the deck is untouched).
@@ -120,6 +129,16 @@ class CoachSignals {
 
   /// Rotates affirmation copy so the on-track message isn't identical daily.
   final int affirmSeed;
+
+  /// The opt-in weekly check-in is enabled and hasn't been answered in ~a week.
+  final bool checkInDue;
+
+  /// The learner's last self-reported load feel (recent), or null.
+  final LoadFeel? loadFeel;
+
+  /// They've actually been showing up lately (used to gate ramping up — don't
+  /// pile on load for someone who isn't practising). Defaults true.
+  final bool activeRecently;
 
   // --- Grounded thresholds (labeled heuristics; see memory) ---
   /// Below this recent review success, cards are running too hard / load too
@@ -146,18 +165,26 @@ class CoachSignals {
   /// The coach won't nudge new-cards/day above this (manual can go higher).
   static const newCardPushCeiling = 20;
 
+  /// Retention bar for a push, relaxed a touch when the learner has said they
+  /// could handle more (their input, not just the numbers).
+  double get _pushBar =>
+      loadFeel == LoadFeel.couldDoMore ? 0.85 : pushRetentionBar;
+
   /// Everything's green with headroom while still building the base: strong
-  /// retention, zero backlog, engaged today, and new/day below the ceiling. The
-  /// moment to *offer* a small load increase rather than just "keep learning".
+  /// retention, zero backlog, engaged (today AND showing up lately), new/day
+  /// below the ceiling, and they haven't said the load's too much. The moment to
+  /// *offer* a small load increase rather than just "keep learning".
   bool get readyToPush =>
       anyStudied &&
+      activeRecently &&
       coverage < coverageBar &&
       dueCount == 0 &&
       studiedToday &&
       newCardLimit < newCardPushCeiling &&
+      loadFeel != LoadFeel.tooMuch &&
       retention != null &&
       reviewsInWindow >= minReviewSample &&
-      retention! >= pushRetentionBar;
+      retention! >= _pushBar;
 
   bool get retentionLow =>
       retention != null &&
@@ -244,6 +271,20 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
           'call. Steady daily wins beat last-minute cramming.',
       actionLabel: 'Learn now',
       actionRoute: '/learn',
+    );
+  }
+
+  // Opt-in weekly check-in — asked on a calm, engaged day (nothing urgent got
+  // here first). A quick subjective read that then gates the load suggestions.
+  if (s.checkInDue && s.anyStudied && s.dueCount == 0) {
+    return const CoachUpdate(
+      kind: CoachInsightKind.loadCheckin,
+      tone: CoachTone.info,
+      headline: "How's the study load feeling this week?",
+      why:
+          'A quick gut-check. Your numbers show retention and backlog, but only '
+          'you know if it feels sustainable — tell me and I’ll factor it into '
+          'what I suggest next.',
     );
   }
 

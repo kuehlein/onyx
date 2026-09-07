@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/coach/coach_update.dart';
 import '../../core/readiness/readiness.dart';
 import 'algo.dart';
+import 'analytics.dart';
 import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
@@ -30,6 +31,24 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
       .recentReviewStats(clock.now().subtract(const Duration(days: 14)));
   final algoDue = await ref.watch(algoDueCountProvider.future);
   final algoRecognition = await ref.watch(algoRecognitionProvider.future);
+  final checkIn = await ref.watch(loadCheckInProvider.future);
+  final consistency = await ref.watch(studyConsistencyProvider.future);
+
+  final today = clock.today();
+  // The opt-in check-in is due when enabled and unanswered for ~a week.
+  final checkInDue = checkIn.enabled &&
+      (checkIn.lastAsked == null ||
+          today.difference(checkIn.lastAsked!).inDays >= 7);
+  // A recent answer still counts (fades after ~10 days).
+  final loadFeel =
+      (checkIn.feelAt != null && today.difference(checkIn.feelAt!).inDays <= 10)
+          ? checkIn.feel
+          : null;
+  // "Showing up lately" = studied at least 3 of the last 7 days.
+  final last7 = consistency.length <= 7
+      ? consistency
+      : consistency.sublist(consistency.length - 7);
+  final activeRecently = last7.where((c) => c > 0).length >= 3;
 
   final weakest = readiness.weakestDomain;
   // Overall coverage = studied sections / all in-scope sections.
@@ -56,6 +75,9 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     weakestDomainPretty: weakest == null ? null : prettyDomain(weakest),
     // Rotate the on-track affirmation by day so it isn't identical each visit.
     affirmSeed: clock.today().difference(DateTime(2020)).inDays,
+    checkInDue: checkInDue,
+    loadFeel: loadFeel,
+    activeRecently: activeRecently,
   );
   return buildCoachUpdate(signals);
 }
