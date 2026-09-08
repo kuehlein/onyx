@@ -13,7 +13,7 @@ priority: normal
 
 # Monotonic Stack
 
-A monotonic stack is a stack whose contents are kept in sorted order (strictly increasing or decreasing) by popping every element that would violate that order *before* pushing the new one. The principle: each popped element has just met its "next" boundary — the incoming value is the answer to a next-greater/next-smaller query for everything it evicts, and the element left below it after popping is the previous-greater/previous-smaller. Because every index is pushed once and popped at most once, an inner loop that "looks like" O(n²) collapses to O(n) amortized over the whole scan.
+A monotonic stack is a stack whose contents are kept in sorted order (strictly increasing or decreasing) by popping every element that would violate that order *before* pushing the new one. The principle: each popped element has just met its "next" boundary — the incoming value is the answer to a next-greater/next-smaller query for everything it evicts, and the element left below it after popping is the previous-greater/previous-smaller. Because every index is pushed once and popped at most once, an inner loop that "looks like" O(n²) collapses to O(n) [amortized](_meta/glossary.md#amortized-analysis) over the whole scan.
 
 > [!tip] Recognition trigger
 > Reach for a monotonic stack when the problem asks, for each element, for the **nearest greater/smaller element to its left or right** — phrasings like "next greater element", "daily temperatures / days until warmer", "stock span", "largest rectangle in histogram", or "trapping rain water". The tell: a per-element "nearest bigger/smaller neighbor" relationship you'd naively find with a nested loop.
@@ -32,7 +32,7 @@ A monotonic stack is a stack whose contents are kept in sorted order (strictly i
 - Over a [[heap]]: a heap gives the global min/max, but a monotonic stack gives the *nearest-by-position* boundary and keeps candidates in index order, which a heap cannot
 
 **Do not use when:**
-- You need the nearest element by **value distance**, not by "first one greater/smaller" → use sorting or a balanced BST
+- You need the nearest element by **value distance**, not by "first one greater/smaller" → use sorting or a balanced [BST](_meta/glossary.md#bst)
 - The comparison isn't a simple monotone order (no consistent "greater/smaller wins" rule) → the stack invariant can't be maintained
 - You need a **sliding-window min/max over a fixed window** → use a monotonic **deque** (double-ended), not a plain stack, so you can also evict from the front by index
 

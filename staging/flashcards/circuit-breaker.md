@@ -13,12 +13,12 @@ priority: normal
 
 # Circuit Breaker
 
-A circuit breaker wraps calls to a remote dependency in a state machine that trips OPEN after a failure threshold is crossed, then fails fast (returning an error or fallback immediately) instead of letting every caller block on a timeout. The principle: a slow or dead dependency is more dangerous than an absent one — blocked callers pile up, drain thread and connection pools, and take down the caller too. The breaker converts a *slow failure* (timeout per request) into a *fast failure* (immediate reject), which frees resources and gives the sick dependency room to recover. Its partner, the **bulkhead**, caps how many resources any one dependency can consume in the first place, so a failure is contained before the breaker ever needs to trip.
+A circuit breaker wraps calls to a remote dependency in a state machine that trips OPEN after a failure threshold is crossed, then fails fast (returning an error or fallback immediately) instead of letting every caller block on a timeout. The principle: a slow or dead dependency is more dangerous than an absent one — blocked callers pile up, drain thread and [connection pools](_meta/glossary.md#connection-pooling), and take down the caller too. The breaker converts a *slow failure* (timeout per request) into a *fast failure* (immediate reject), which frees resources and gives the sick dependency room to recover. Its partner, the **[bulkhead](_meta/glossary.md#bulkhead)**, caps how many resources any one dependency can consume in the first place, so a failure is contained before the breaker ever needs to trip.
 
 > [!tip] Recognition — reach for a circuit breaker when you hear
 > - "One slow downstream service caused a cascading outage / took the whole cluster down"
 > - "Threads / connection pool got exhausted waiting on a dependency that was already dead"
-> - "We keep hammering a service that's clearly down — retries made it worse (retry storm)"
+> - "We keep hammering a service that's clearly down — retries made it worse ([retry storm](_meta/glossary.md#retry-storm))"
 > - "We need to fail fast and serve a degraded/fallback response instead of timing out"
 > - Any **synchronous call across a network boundary** to a dependency that can be slow or unavailable ([gRPC](_meta/glossary.md#grpc)/HTTP to another service, a flaky third-party API, a database under load)
 
@@ -26,7 +26,7 @@ A circuit breaker wraps calls to a remote dependency in a state machine that tri
 
 **Problem signals that suggest a circuit breaker:**
 - A remote call can hang: the failure mode you fear is *latency*, not just errors. Every blocked caller holds a thread + socket for the full timeout.
-- Cascading / correlated failure: "service B slowed down and callers A, C, D all fell over behind it." Classic [SPOF](_meta/glossary.md#spof) amplification through shared pools.
+- [Cascading failure](_meta/glossary.md#cascading-failure) / correlated: "service B slowed down and callers A, C, D all fell over behind it." Classic [SPOF](_meta/glossary.md#spof) amplification through shared pools.
 - Retries are making an outage worse — a retry storm keeps a struggling service pinned. A breaker is the governor that stops the herd.
 - You have a meaningful **fallback**: cached/stale data, a default, a queued write, or a fast "try later" error that's better than a 30s hang.
 

@@ -14,7 +14,7 @@ priority: normal
 
 # Consistent Hashing
 
-Consistent hashing maps both keys and nodes onto the same fixed hash space — conceptually a ring — and assigns each key to the first node found walking clockwise from the key's position. The principle: because a node owns only the arc between it and its predecessor, adding or removing a node re-homes only the keys in *that one arc* — on average K/N keys for K keys and N nodes — instead of the near-total reshuffle that `hash(key) mod N` forces when N changes. Virtual nodes (multiple ring positions per physical node) then smooth the otherwise lumpy arc sizes and let heterogeneous nodes carry proportional load.
+Consistent hashing maps both keys and nodes onto the same fixed hash space — conceptually a ring — and assigns each key to the first node found walking clockwise from the key's position. The principle: because a node owns only the arc between it and its predecessor, adding or removing a node re-homes only the keys in *that one arc* — on average K/N keys for K keys and N nodes — instead of the near-total reshuffle that `hash(key) mod N` forces when N changes. [Virtual nodes](_meta/glossary.md#virtual-node) (multiple ring positions per physical node) then smooth the otherwise lumpy arc sizes and let heterogeneous nodes carry proportional load.
 
 > [!tip] Recognition
 > Reach for consistent hashing when the trigger is **"minimize the keys that move when the cluster resizes"** — elastic scaling of a distributed cache or shard set, a [DHT](_meta/glossary.md#dht), or partition/ownership assignment where nodes join and leave continuously. The tell is that plain `hash(key) mod N` would remap almost everything on every membership change.
@@ -22,7 +22,7 @@ Consistent hashing maps both keys and nodes onto the same fixed hash space — c
 ## When to Use
 
 **Problem signals that suggest consistent hashing:**
-- "When we add or remove a cache/shard node, we cause a thundering herd of cache misses / a full data reshuffle" — the classic `mod N` rehash-storm symptom
+- "When we add or remove a cache/shard node, we cause a [thundering herd](_meta/glossary.md#thundering-herd) of cache misses / a full data reshuffle" — the classic `mod N` rehash-storm symptom
 - "We autoscale nodes up and down constantly and need key→node ownership to stay stable"
 - "Design a distributed cache (memcached/Ketama), a DHT, or a Dynamo/Cassandra-style ring"
 - "Route each user/session to a consistent backend so warm local state survives a fleet change" (sticky routing at the [LB](_meta/glossary.md#lb))
@@ -58,7 +58,7 @@ Let N = number of (physical) nodes, V = virtual nodes per physical node, K = num
 | Keys remapped on 1 node change | **~K/N expected** | only the affected node's arc(s) move |
 | Ring storage | O(N·V) | one sorted entry per virtual node |
 
-Vnode count V trades memory and lookup constant-factor for smoother load: more vnodes → tighter balance but larger ring. Common production values are 100–256 vnodes per node (Ketama, Cassandra default 256).
+Vnode count V trades memory and lookup constant-factor for smoother load: more vnodes → tighter balance but larger ring. Production values range widely (Ketama uses ~160 points per server; Cassandra defaulted to 256 through 3.x but dropped to 16 in 4.0, since very high vnode counts slow repair, bootstrap, and gossip).
 
 ## Common Pitfalls
 

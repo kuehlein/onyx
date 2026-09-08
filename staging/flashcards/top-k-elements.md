@@ -13,7 +13,7 @@ priority: normal
 
 # Top-K Elements
 
-Top-K is a selection pattern: you need the `k` largest / smallest / most-frequent items but **not** a full ordering of the input. The principle is that finding a boundary is strictly easier than sorting — a size-`k` heap tracks only the current top-`k` (O(n log k)), and quickselect partitions the array around the rank-`k` boundary and recurses on one side only (O(n) average). Paying for a full sort (O(n log n)) does more work than the question asks for.
+Top-K is a selection pattern: you need the `k` largest / smallest / most-frequent items but **not** a full ordering of the input. The principle is that finding a boundary is strictly easier than sorting — a size-`k` heap tracks only the current top-`k` (O(n log k)), and [quickselect](_meta/glossary.md#quickselect) partitions the array around the rank-`k` boundary and recurses on one side only (O(n) average). Paying for a full sort (O(n log n)) does more work than the question asks for.
 
 > [!tip] Recognition signal
 > The phrases **"top K"**, **"K largest / K smallest"**, **"Kth largest"**, **"K closest"**, or **"K most frequent"** — where you need only the extreme `k`, not the whole sorted order. Size-`k` heap for streaming / small-`k`; quickselect for a single-rank query on a static in-memory array.

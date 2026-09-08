@@ -14,7 +14,7 @@ priority: normal
 
 # Saga Pattern
 
-A saga models a long-lived distributed transaction as a sequence of *local* [ACID](_meta/glossary.md#acid) transactions, one per service, where each step publishes an event or message that triggers the next. There is no distributed lock and no global commit: if step _k_ fails, the saga runs **compensating transactions** for steps _k−1 … 1_ in reverse to semantically undo their effects. The price of dropping the two-phase commit lock is that a saga gives you ACD but **not Isolation** — intermediate state is visible to concurrent sagas, so anomalies must be handled in application design. Introduced by Garcia-Molina & Salem (1987) for single-database long transactions; adopted as the default cross-service transaction pattern in microservices.
+A saga models a long-lived distributed transaction as a sequence of *local* [ACID](_meta/glossary.md#acid) transactions, one per service, where each step publishes an event or message that triggers the next. There is no distributed lock and no global commit: if step _k_ fails, the saga runs **compensating transactions** for steps _k−1 … 1_ in reverse to semantically undo their effects. The price of dropping the [two-phase commit](_meta/glossary.md#two-phase-commit) lock is that a saga gives you ACD but **not Isolation** — intermediate state is visible to concurrent sagas, so anomalies must be handled in application design. Introduced by Garcia-Molina & Salem (1987) for single-database long transactions; adopted as the default cross-service transaction pattern in microservices.
 
 > [!tip] Recognition
 > Reach for a saga when a business operation spans **multiple services / databases that each own their data**, the operation is **long-lived** (holding locks across it is unacceptable), and you need **eventual atomicity** ("all steps commit, or all are compensated") without a distributed coordinator holding locks. Signals: "order → payment → inventory → shipping" across separate services; "we can't use a distributed transaction because each service has its own DB"; "the third-party API can't join our transaction."
@@ -40,7 +40,7 @@ A saga models a long-lived distributed transaction as a sequence of *local* [ACI
 ## Key Properties
 
 - **ACD, not ACID.** A saga preserves Atomicity (via compensation), Consistency, and Durability, but sacrifices **Isolation**. Uncommitted-from-the-saga's-view intermediate results are visible to other transactions.
-- **Compensation is semantic, not physical.** There is no `ROLLBACK`. A compensating transaction is a *new* forward transaction that logically reverses a committed one (issue a refund, not "un-charge"). It must be **idempotent** and (ideally) **commutative/retryable**, because it too can fail and be retried.
+- **Compensation is semantic, not physical.** There is no `ROLLBACK`. A compensating transaction is a *new* forward transaction that logically reverses a committed one (issue a refund, not "un-charge"). It must be **[idempotent](_meta/glossary.md#idempotency)** and (ideally) **commutative/retryable**, because it too can fail and be retried.
 - **Not all steps are compensatable.** Richardson's taxonomy of step types:
   - *Compensatable* — can be undone by a compensating txn (reserve inventory).
   - *Pivot* — the point of no return; once it commits the saga must run to completion (charge the card, in many designs).
@@ -58,9 +58,9 @@ A saga models a long-lived distributed transaction as a sequence of *local* [ACI
 
 ## Common Pitfalls
 
-- **Assuming isolation.** Because a saga's intermediate writes are committed and visible, concurrent sagas see them. This produces classic anomalies: **lost updates** (one saga overwrites another's write), **dirty reads** (a saga reads data a not-yet-completed saga will later compensate away), and **non-repeatable/fuzzy reads** (two reads in the same saga differ because another saga wrote in between). You must add countermeasures explicitly.
-- **Non-idempotent handlers.** At-least-once messaging means every step and every compensation can be delivered more than once. A non-idempotent "charge card" run twice double-charges. Deduplicate on a message/idempotency key.
-- **Compensation that can fail permanently.** If a compensating transaction can hard-fail, the saga gets stuck in a half-completed state. Compensations must be retriable to completion (or escalate to a human/dead-letter queue).
+- **Assuming isolation.** Because a saga's intermediate writes are committed and visible, concurrent sagas see them. This produces classic anomalies: **[lost updates](_meta/glossary.md#lost-update)** (one saga overwrites another's write), **[dirty reads](_meta/glossary.md#dirty-read)** (a saga reads data a not-yet-completed saga will later compensate away), and **non-repeatable/fuzzy reads** (two reads in the same saga differ because another saga wrote in between). You must add countermeasures explicitly.
+- **Non-idempotent handlers.** [At-least-once](_meta/glossary.md#at-least-once-delivery) messaging means every step and every compensation can be delivered more than once. A non-idempotent "charge card" run twice double-charges. Deduplicate on a message/[idempotency key](_meta/glossary.md#idempotency-key).
+- **Compensation that can fail permanently.** If a compensating transaction can hard-fail, the saga gets stuck in a half-completed state. Compensations must be retriable to completion (or escalate to a human/[dead-letter queue](_meta/glossary.md#dead-letter-queue)).
 - **Compensating a pivot.** Trying to undo an irreversible step. Classify steps and place the pivot correctly; never assume everything is compensatable.
 - **Losing the saga's state on crash.** The saga log (orchestrator state or the event trail) must be durable so a crashed saga resumes correctly. Persist state transitions in the same local transaction that emits the message (transactional outbox), or you can commit a DB write and then fail before publishing — a dual-write bug.
 - **Choreography sprawl.** Beyond a few steps, event-driven choreography becomes an implicit, untraceable state machine. Reach for orchestration before you can't answer "what state is order 123 in?"
@@ -111,8 +111,8 @@ run(ctx):
 
 **Reliable messaging — transactional outbox (avoids dual-write):**
 - In the *same* local DB transaction as the business write, insert a row into an `outbox` table.
-- A relay (CDC on the [WAL](_meta/glossary.md#wal) via Debezium, or a poller) publishes outbox rows to the broker and marks them sent.
-- Guarantees the event is published **iff** the local transaction committed. Consumers dedupe on message id for at-least-once → effectively-once.
+- A relay ([CDC](_meta/glossary.md#change-data-capture) on the [WAL](_meta/glossary.md#wal) via Debezium, or a poller) publishes outbox rows to the broker and marks them sent.
+- Guarantees the event is published **iff** the local transaction committed. Consumers dedupe on message id for at-least-once → [effectively-once](_meta/glossary.md#exactly-once-semantics).
 
 **Idempotency:** every command and compensation carries a saga id + step id; handlers record processed ids and no-op on replay.
 

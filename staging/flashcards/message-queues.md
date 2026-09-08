@@ -14,7 +14,7 @@ priority: normal
 
 # Message Queues & Event Streaming
 
-A message queue decouples producers from consumers by putting a durable buffer between them: the producer writes and moves on, the consumer reads at its own pace. This buys you three things at once — **temporal decoupling** (consumer can be down when the producer writes), **load leveling** (a spike is absorbed by the buffer instead of crushing the consumer), and **fan-out** (one event, many independent consumers). The core design axis is *point-to-point* (each message goes to exactly one worker — a work queue) vs *pub-sub* (each message goes to every subscriber — an event bus). Kafka unifies both with a partitioned, replayable log: a consumer *group* load-balances a topic like a work queue, while multiple groups each get the full stream like pub-sub.
+A message queue decouples producers from consumers by putting a durable buffer between them: the producer writes and moves on, the consumer reads at its own pace. This buys you three things at once — **temporal decoupling** (consumer can be down when the producer writes), **load leveling** (a spike is absorbed by the buffer instead of crushing the consumer), and **fan-out** (one event, many independent consumers). The core design axis is *point-to-point* (each message goes to exactly one worker — a work queue) vs *pub-sub* (each message goes to every subscriber — an event bus). Kafka unifies both with a partitioned, replayable log: a [consumer group](_meta/glossary.md#consumer-group) load-balances a topic like a work queue, while multiple groups each get the full stream like pub-sub.
 
 > [!tip] Recognition — reach for a queue/stream when you see
 > - **"decouple", "absorb spikes", "the downstream service is slow/flaky"** — a buffer lets the producer commit without waiting on the consumer
@@ -30,12 +30,12 @@ A message queue decouples producers from consumers by putting a durable buffer b
 - A write triggers slow or optional side effects (send email, transcode video, index into search) — do it async so the user-facing request stays fast
 - Producer and consumer scale independently or have mismatched throughput — the queue absorbs bursts and smooths a spiky producer into a steady consumer drain rate
 - One event must fan out to N independent consumers that evolve separately — pub-sub avoids the producer knowing every downstream
-- You need durability + replay of an event history — event sourcing, change data capture (CDC), rebuilding a derived store → log-based broker (Kafka)
+- You need durability + replay of an event history — event sourcing, [change data capture](_meta/glossary.md#change-data-capture) (CDC), rebuilding a derived store → log-based broker (Kafka)
 - Cross-service communication that must survive a consumer outage — the broker holds messages until the consumer recovers
 
 **Prefer a queue over alternatives when:**
 - Over a synchronous RPC call: when the caller does **not** need the result inline, or the callee is slow/unreliable — async decouples availability (caller succeeds even if callee is down)
-- Over a database polling table ("outbox-as-queue by SELECT"): when you need push delivery, back-pressure, and horizontal consumer scaling without hammering the DB — though the **transactional outbox** pattern deliberately combines both
+- Over a database polling table ("outbox-as-queue by SELECT"): when you need push delivery, [back-pressure](_meta/glossary.md#backpressure), and horizontal consumer scaling without hammering the DB — though the **transactional outbox** pattern deliberately combines both
 - Kafka (log) over RabbitMQ/SQS (traditional broker): when you need **replay, retention, high throughput, ordered partitions, or multiple independent consumer groups** over the same stream
 - RabbitMQ/SQS (traditional broker) over Kafka: when you need **per-message ack/redelivery, complex routing, priority queues, or per-message [TTL](_meta/glossary.md#ttl)/delay** — the smart-broker model fits work-queue semantics better
 
@@ -54,7 +54,7 @@ A message queue decouples producers from consumers by putting a durable buffer b
 | At-least-once | 1+ delivery; may dup | Ack / commit offset **after** processing succeeds | Consumer must be **idempotent** |
 | Exactly-once | Effectively 1 | Idempotent producer + transactions (Kafka), or dedup on a key | Bounded to Kafka-internal; throughput cost |
 
-At-least-once is the **practical default** and the right answer most of the time: make the consumer idempotent (dedup on a business key or message ID) and redelivery becomes harmless.
+At-least-once is the **practical default** and the right answer most of the time: make the consumer [idempotent](_meta/glossary.md#idempotency) (dedup on a business key or message ID) and redelivery becomes harmless.
 
 **Pub-sub vs point-to-point:**
 - **Point-to-point:** one queue, competing consumers, each message delivered to exactly one worker → parallelism for a work queue
@@ -72,9 +72,9 @@ At-least-once is the **practical default** and the right answer most of the time
 - **Assuming global ordering.** Kafka orders *within a partition*, not across the topic. If order matters (e.g. all events for one `user_id`), you must route them to the same partition via a partition key; otherwise concurrent partitions interleave arbitrarily.
 - **Non-idempotent at-least-once consumers.** With at-least-once (the default), redelivery *will* happen on rebalance or crash-after-processing-before-commit. A consumer that charges a card or increments a counter without a dedup key will double-apply.
 - **Committing the offset before processing.** This silently turns at-least-once into at-most-once — a crash after commit but before the work finishes loses the message with no error.
-- **A poison message blocking the partition.** One un-deserializable/un-processable record throws forever; because Kafka delivers a partition in order, the consumer retries the same record and the whole partition stalls behind it. You need a retry-then-DLQ escape hatch (see below).
+- **A poison message blocking the partition.** One un-deserializable/un-processable record throws forever; because Kafka delivers a partition in order, the consumer retries the same record and the whole partition stalls behind it. You need a retry-then-[DLQ](_meta/glossary.md#dead-letter-queue) escape hatch (see below).
 - **More consumers than partitions.** Extra consumers in a group sit idle — they cannot share a partition. Scale throughput by *raising partition count* (and partitions can only be increased, never decreased, and increasing them breaks keyed ordering for in-flight keys).
-- **Treating "exactly-once" as end-to-end.** Kafka EOS is scoped to *consume-transform-produce within Kafka*. An RPC to an external store or a DB write inside the consumer is **not** covered — you still need idempotent writes on that side.
+- **Treating "[exactly-once](_meta/glossary.md#exactly-once-semantics)" as end-to-end.** Kafka EOS is scoped to *consume-transform-produce within Kafka*. An RPC to an external store or a DB write inside the consumer is **not** covered — you still need idempotent writes on that side.
 - **Unbounded lag with no back-pressure.** If the consumer can't keep up, lag grows until retention drops un-read messages (data loss) or the buffer/disk fills. Monitor consumer lag as a first-class SLO signal.
 
 ## Trade-offs

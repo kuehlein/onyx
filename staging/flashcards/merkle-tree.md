@@ -23,7 +23,7 @@ A **Merkle tree** (hash tree) is a tree in which every leaf is the cryptographic
 ## When to Use
 
 **Problem signals that suggest a Merkle tree:**
-- "Two replicas may have drifted — repair them *cheaply*, without shipping all their data." Compare roots; if they differ, walk down only the diverging subtrees to pin down exactly which key ranges/rows are out of sync. This is **anti-entropy replica repair** in Dynamo-lineage stores (see below).
+- "Two replicas may have drifted — repair them *cheaply*, without shipping all their data." Compare roots; if they differ, walk down only the diverging subtrees to pin down exactly which key ranges/rows are out of sync. This is **[anti-entropy](_meta/glossary.md#anti-entropy) replica repair** in Dynamo-lineage stores (see below).
 - "Efficiently detect *which part* of two large datasets differ" — not just *whether* something changed (diffing / sync).
 - "Prove one item belongs to a huge set with a small proof" — an `O(log n)` inclusion proof against a trusted root (e.g. "is this transaction/cert/object in this log?").
 - "Build a **tamper-evident, append-only log**" whose membership and append-only history are cryptographically checkable by outside auditors (Certificate Transparency, RFC 6962).

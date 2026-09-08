@@ -33,7 +33,7 @@ The intervals pattern turns overlap questions into a single ordered scan: **sort
 - Over an interval tree / segment tree: those are for **many repeated queries** against a mostly-static set; a one-shot batch question is solved faster and more simply by sort + scan
 
 **Do not use when:**
-- Queries arrive online and you must answer "does X overlap anything?" repeatedly against a mutating set → use an **interval tree** or **balanced BST keyed by start**, not a re-sort each time
+- Queries arrive online and you must answer "does X overlap anything?" repeatedly against a mutating set → use an **interval tree** or **balanced [BST](_meta/glossary.md#bst) keyed by start**, not a re-sort each time
 - The ranges are over a small, bounded integer domain and you just need per-point coverage counts → a **difference array** (prefix-sum of +1/-1) is O(domain), often simpler
 - There is no ordering/overlap structure to exploit (the pairs aren't ranges) → the pattern doesn't apply
 

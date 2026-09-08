@@ -30,7 +30,7 @@ A greedy algorithm builds a solution one step at a time, at each step taking the
 
 **Prefer Greedy over alternatives when:**
 - Over DP: when a *single* locally optimal choice is provably safe — greedy is O(n log n) or better and O(1)–O(n) space, vs DP's larger table and time. Only use DP when you must weigh choices against each other.
-- Over brute force / backtracking: when the greedy-choice property holds you never explore alternatives, collapsing an exponential search to one pass.
+- Over brute force / [backtracking](_meta/glossary.md#backtracking): when the greedy-choice property holds you never explore alternatives, collapsing an exponential search to one pass.
 
 **Do not use when:**
 - Choices **interact** so that the best local pick can block a better global solution (**0-1 knapsack** — you cannot take fractions, so ratio-greedy fails) → use DP

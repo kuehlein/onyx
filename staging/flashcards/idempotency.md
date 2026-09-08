@@ -13,7 +13,7 @@ priority: normal
 
 # Idempotency
 
-An operation is **idempotent** if performing it multiple times has the same effect on system state as performing it once. In distributed systems every network call can be lost, duplicated, or delayed, and a client that times out cannot tell whether its request succeeded — so it must retry. Retries turn "did this happen?" ambiguity into duplicate delivery, and idempotency is what makes those duplicates harmless. It is the practical foundation of "exactly-once" semantics: since a message being processed *exactly once* over an unreliable channel is impossible to guarantee end-to-end, real systems deliver at-least-once and make the *effect* exactly-once by deduplicating idempotent operations (DDIA calls this "effectively-once").
+An operation is **idempotent** if performing it multiple times has the same effect on system state as performing it once. In distributed systems every network call can be lost, duplicated, or delayed, and a client that times out cannot tell whether its request succeeded — so it must retry. Retries turn "did this happen?" ambiguity into duplicate delivery, and idempotency is what makes those duplicates harmless. It is the practical foundation of "exactly-once" semantics: since a message being processed *exactly once* over an unreliable channel is impossible to guarantee end-to-end, real systems deliver [at-least-once](_meta/glossary.md#at-least-once-delivery) and make the *effect* [exactly-once](_meta/glossary.md#exactly-once-semantics) by deduplicating idempotent operations (DDIA calls this "effectively-once").
 
 > [!tip] Recognition
 > Reach for idempotency when you see **retries over an unreliable channel**, **at-least-once delivery**, **"charge the card exactly once"**, **consumer restarts replaying a message log**, **client timeout with unknown outcome**, or a **webhook/[gRPC](_meta/glossary.md#grpc) call that may fire twice**. Whenever an operation both mutates state and can be retried, the design question is "how do I make the second execution a no-op?"
@@ -29,9 +29,9 @@ An operation is **idempotent** if performing it multiple times has the same effe
 - "Webhook receiver may get the same event multiple times" — Stripe, GitHub, etc. explicitly warn receivers to dedupe
 
 **Prefer idempotency over alternatives when:**
-- Over distributed transactions (2PC/XA): idempotency needs no coordinator, no blocking on a prepared state, and survives partitions — DDIA presents idempotence as the lighter-weight alternative to distributed transactions for achieving exactly-once *effects*
+- Over distributed transactions ([2PC](_meta/glossary.md#two-phase-commit)/XA): idempotency needs no coordinator, no blocking on a prepared state, and survives partitions — DDIA presents idempotence as the lighter-weight alternative to distributed transactions for achieving exactly-once *effects*
 - Over "just don't retry": not retrying trades a duplicate-execution risk for a lost-write risk, which is usually worse; retries + idempotency give you both safety and liveness
-- Over at-most-once delivery: at-most-once (fire and forget, no retry) is only acceptable when losing the operation is tolerable (e.g. best-effort metrics)
+- Over [at-most-once](_meta/glossary.md#at-most-once-delivery) delivery: at-most-once (fire and forget, no retry) is only acceptable when losing the operation is tolerable (e.g. best-effort metrics)
 
 **Do not use / not needed when:**
 - The operation is *naturally* idempotent — absolute `SET x = 5`, `PUT /users/42 {...}`, adding to a set — no dedup machinery required
@@ -69,7 +69,7 @@ An operation is **idempotent** if performing it multiple times has the same effe
 - **Idempotency (dedup) vs. distributed transactions (2PC):** idempotency is cheaper, partition-tolerant, and non-blocking, but requires a dedup store and the DDIA preconditions (ordered replay, determinism, no concurrent writer). 2PC gives atomic all-or-nothing across systems but blocks on coordinator failure and couples availability to every participant.
 - **Dedup store cost vs. natural idempotency:** rewriting an operation to be *naturally* idempotent (absolute writes, upserts keyed on a business ID) needs no extra storage. A generic idempotency-key table works for any operation but adds a write + read on the hot path and a GC job.
 - **Client-generated vs. server-generated keys:** client-generated keys (UUID v4) let a retry reuse the *same* key so the server can dedupe; server-generated keys can't, because a retry after timeout would ask for a new key. Idempotency keys therefore essentially must originate at (or before) the client for the timeout case to be covered.
-- **Retry aggressiveness vs. duplicate load:** shorter retry timeouts recover faster but generate more in-flight duplicates hammering the dedup layer; pair retries with exponential backoff + jitter, and consider request hedging only for idempotent reads.
+- **Retry aggressiveness vs. duplicate load:** shorter retry timeouts recover faster but generate more in-flight duplicates hammering the dedup layer; pair retries with [exponential backoff](_meta/glossary.md#exponential-backoff) + [jitter](_meta/glossary.md#jitter), and consider request hedging only for idempotent reads.
 - **Dedup window length:** longer windows catch late retries but cost storage; shorter windows are cheap but risk re-execution of a delayed duplicate.
 
 ## Implementation Notes

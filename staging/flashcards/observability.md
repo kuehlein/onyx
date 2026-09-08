@@ -65,7 +65,7 @@ The three signals differ fundamentally in cost model and query shape. This table
 
 ## Common Pitfalls
 
-- **Cardinality explosion — the #1 metrics outage.** A metric's cost is *one time series per unique label-value combination*. Adding a high-cardinality label — `user_id`, `email`, request ID, full URL path with IDs, unbounded `error_message` — multiplies series count combinatorially and OOMs the TSDB. Rule: metric labels must be **bounded, low-cardinality** enumerations (status code, method, route *template* `/users/{id}` not `/users/42`). Put the unbounded detail in traces/logs.
+- **Cardinality explosion — the #1 metrics outage.** A metric's cost is *one time series per unique label-value combination*. Adding a high-cardinality label — `user_id`, `email`, request ID, full URL path with IDs, unbounded `error_message` — multiplies series count combinatorially and [OOMs](_meta/glossary.md#oom) the TSDB. Rule: metric labels must be **bounded, low-cardinality** enumerations (status code, method, route *template* `/users/{id}` not `/users/42`). Put the unbounded detail in traces/logs.
 - **Averaging percentiles.** You cannot average p99 across ten instances to get a global p99 — it is mathematically meaningless. Use histograms and aggregate the *buckets*, then compute the quantile. Summaries silently make this mistake tempting.
 - **Averages hide tail latency.** A mean latency of 40ms can hide a p99 of 3s. Always alert on and chart percentiles (p50/p90/p99), not averages. Distinguish latency of *successful* vs *failed* requests — a fast 500 is not "good latency."
 - **Broken context propagation.** One service that drops the `traceparent` header (a thread-pool hop that loses context, a message queue with no propagation, a proxy that strips headers) severs the trace into disconnected fragments. Every async boundary and every RPC client must propagate context.
@@ -95,7 +95,7 @@ traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
              00   32 hex chars              16 hex chars          01 = sampled
 ```
 - `tracestate` — optional companion header carrying vendor-specific key-value pairs.
-- **Baggage** — a *separate* OTel signal: arbitrary user-defined key-values (e.g. `tenant_id`) propagated alongside the trace so downstream services can read business context. Do NOT put secrets/PII in baggage — it travels over the wire to every hop.
+- **Baggage** — a *separate* OTel cross-cutting concern (not a fourth signal): arbitrary user-defined key-values (e.g. `tenant_id`) propagated alongside the trace so downstream services can read business context. Do NOT put secrets/PII in baggage — it travels over the wire to every hop.
 
 **OpenTelemetry (OTel) — the vendor-neutral standard:**
 - One set of SDKs/APIs and one wire protocol (**OTLP**) for all three signals; decouples instrumentation from backend, so you can swap Jaeger↔Tempo or Prometheus↔vendor without re-instrumenting.

@@ -125,7 +125,7 @@ function topoSortDFS(n, edges) {
 ## Variants
 
 - **Kahn with min-heap** — replace the FIFO queue with a priority queue to get the lexicographically smallest valid ordering (common follow-up).
-- **All topological orderings** — backtracking over in-degree-0 choices; exponential, used when every valid order is needed.
+- **All topological orderings** — [backtracking](_meta/glossary.md#backtracking) over in-degree-0 choices; exponential, used when every valid order is needed.
 - **DAG shortest/longest path** — relax edges in topological order for O(V+E) shortest/longest paths (critical-path / project scheduling); longest path underlies critical-path method.
 - **Lexicographically-constrained scheduling** — e.g. alien dictionary: build edges from adjacent-word differences, then topo sort the alphabet.
 - **Cycle-detection-only** — when you just need "is it schedulable?", either algorithm answers without materializing the full order.

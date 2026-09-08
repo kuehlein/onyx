@@ -28,8 +28,8 @@ Asymptotic analysis measures how an algorithm's running time or space grows as i
 
 **Use the right bound for the claim:**
 - Over a loose Big-O: use **Θ** when the upper and lower bounds match and you want a *tight* claim ("this is exactly n log n", not merely "at most")
-- Over worst-case: quote **amortized** when a rare expensive operation is paid for by many cheap ones (dynamic-array push, [[union-find]])
-- Over worst-case: quote **average/expected** when randomization or typical input makes the worst case pathological and unlikely (quicksort, hash tables, quickselect)
+- Over worst-case: quote **[amortized](_meta/glossary.md#amortized-analysis)** when a rare expensive operation is paid for by many cheap ones (dynamic-array push, [[union-find]])
+- Over worst-case: quote **average/expected** when randomization or typical input makes the worst case pathological and unlikely (quicksort, hash tables, [quickselect](_meta/glossary.md#quickselect))
 
 **Do not conflate:**
 - Big-O is an *upper bound*, not "the exact cost" — saying an O(n²) algorithm is "also O(n³)" is technically true but useless; quote the tightest bound you can justify

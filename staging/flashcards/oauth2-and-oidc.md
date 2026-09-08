@@ -13,11 +13,11 @@ priority: normal
 
 # OAuth 2.0 and OpenID Connect
 
-OAuth 2.0 (RFC 6749) is a **delegated authorization** framework: it lets a user (resource owner) grant a third-party app (client) scoped access to their resources on another service without handing over their password. The core principle is that the client never sees the user's credentials — instead it obtains a short-lived, scoped **access token** from an authorization server and presents it as a bearer credential (RFC 6750) to the resource server. OAuth alone answers *"is this client allowed to do X"*, **not** *"who is this user"*; OpenID Connect (OIDC) layers **authentication** on top by issuing a signed **[ID token](_meta/glossary.md#jwt)** ([JWT](_meta/glossary.md#jwt)) with verified identity claims. Getting the distinction wrong — using an access token to identify a user — is a classic and dangerous mistake.
+OAuth 2.0 (RFC 6749) is a **delegated [authorization](_meta/glossary.md#authorization)** framework: it lets a user (resource owner) grant a third-party app (client) scoped access to their resources on another service without handing over their password. The core principle is that the client never sees the user's credentials — instead it obtains a short-lived, scoped **access token** from an authorization server and presents it as a bearer credential (RFC 6750) to the resource server. OAuth alone answers *"is this client allowed to do X"*, **not** *"who is this user"*; OpenID Connect (OIDC) layers **[authentication](_meta/glossary.md#authentication)** on top by issuing a signed **[ID token](_meta/glossary.md#jwt)** ([JWT](_meta/glossary.md#jwt)) with verified identity claims. Getting the distinction wrong — using an access token to identify a user — is a classic and dangerous mistake.
 
 > [!tip] Recognition — reach for OAuth2/OIDC when you hear
 > - "Let users **sign in with Google/GitHub**" → OIDC (authentication)
-> - "Let a third-party app **access a user's data on our API** on their behalf" → OAuth2 authorization code + PKCE
+> - "Let a third-party app **access a user's data on our API** on their behalf" → OAuth2 authorization code + [PKCE](_meta/glossary.md#pkce)
 > - "Our **backend service** needs to call another service's API (no user present)" → Client Credentials
 > - "**Single sign-on** across our apps", "delegate access without sharing passwords", "scoped/revocable API tokens"
 > - Design red flag in the room: someone proposes putting a **password** in the client, or returning a **token in a URL fragment** — both are deprecated anti-patterns you should flag.
@@ -45,19 +45,19 @@ OAuth 2.0 (RFC 6749) is a **delegated authorization** framework: it lets a user 
 - **Refresh token** — long-lived credential used only against the AS's token endpoint to mint new access tokens without re-prompting the user. Never sent to resource servers.
 - **Scopes** — coarse, space-delimited permission strings (`read:contacts`, `openid`, `email`). Requested by the client, consented by the user, enforced by the resource server.
 - **ID token (OIDC)** — a **JWT** the *client* consumes to learn the user's identity. Required claims: `iss`, `sub` (stable, non-reassigned user id), `aud` (MUST contain the client_id), `exp`, `iat`; `nonce` echoes the request nonce; `at_hash` binds it to the access token. This is the only OAuth/OIDC token the client is *supposed* to open and validate.
-- **`state`** — opaque CSRF token bound to the user's session, echoed in the redirect. **`nonce`** — OIDC value the AS embeds in the ID token to bind it to this login and prevent replay. They defend different links: `state` = the browser callback (CSRF), `nonce` = the ID token (replay), PKCE = the code exchange.
+- **`state`** — opaque CSRF token bound to the user's session, echoed in the redirect. **`nonce`** — OIDC value the AS embeds in the ID token to bind it to this login and prevent [replay](_meta/glossary.md#replay-attack). They defend different links: `state` = the browser callback (CSRF), `nonce` = the ID token (replay), PKCE = the code exchange.
 
 ## Common Pitfalls
 
 Security cards live or die here — these are real, exploited vulnerabilities.
 
-- **JWT algorithm confusion (RS256 → HS256).** If verification lets the token pick its own algorithm, an attacker takes the AS's *public* RSA key (from the JWKS endpoint), sets header `alg: HS256`, and signs a forged token using that public key as the HMAC secret — full auth bypass. Also **`alg: none`** (unsigned token accepted). Fix: pin an explicit algorithm **allowlist** server-side (RFC 8725 / JWT BCP); never derive the algorithm from the token header.
+- **JWT [algorithm confusion](_meta/glossary.md#algorithm-confusion) (RS256 → HS256).** If verification lets the token pick its own algorithm, an attacker takes the AS's *public* RSA key (from the JWKS endpoint), sets header `alg: HS256`, and signs a forged token using that public key as the HMAC secret — full auth bypass. Also **`alg: none`** (unsigned token accepted). Fix: pin an explicit algorithm **allowlist** server-side (RFC 8725 / JWT BCP); never derive the algorithm from the token header.
 - **Not validating ID token claims.** After signature check you MUST verify `iss` (exact match), `aud` (contains your client_id), `exp` (with small clock skew), and `nonce`. Skipping `aud` lets a token minted for *another* client be replayed against yours (token/audience confusion).
 - **Using the access token for authentication.** The access token is for the resource server and may be opaque; treating its contents as "who the user is" is a well-known anti-pattern. Use the ID token (or the OIDC UserInfo endpoint) for identity.
 - **Open redirect / loose redirect_uri matching.** The AS MUST match `redirect_uri` by **exact string comparison** (OAuth 2.1). Wildcards or substring matches let an attacker steal the authorization code by redirecting to their own URL.
 - **Missing `state` → CSRF (login CSRF / code injection).** Without a session-bound `state`, an attacker can splice their own code into a victim's session. PKCE also mitigates code injection; RFC 9700 allows relying on PKCE for this when the AS enforces it.
 - **Tokens in the URL / implicit flow leakage.** The implicit grant returned the access token in the URL **fragment**, leaking it via browser history, referrer headers, and logs — this is *why* implicit is dead. Never put tokens in query strings or fragments.
-- **Bearer tokens are unbound.** Whoever holds an access token can use it (no proof of possession). Keep them short-lived, use TLS everywhere, and prefer sender-constrained tokens (DPoP / mTLS) for high-value APIs. Never log them.
+- **Bearer tokens are unbound.** Whoever holds an access token can use it (no proof of possession). Keep them short-lived, use [TLS](_meta/glossary.md#tls) everywhere, and prefer sender-constrained tokens (DPoP / mTLS) for high-value APIs. Never log them.
 
 ## Trade-offs
 

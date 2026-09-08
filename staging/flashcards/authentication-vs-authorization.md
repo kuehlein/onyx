@@ -19,7 +19,7 @@ Authentication (authN) answers *who are you* — it verifies a claimed identity 
 > - The interviewer asks "how do you secure this endpoint / this service call?" — you must split the answer into *proving identity* and *checking permission*, not lump them as "auth."
 > - "User A can see User B's invoice by changing the ID in the URL" — a pure **authZ** failure (IDOR / broken access control), even though authN worked perfectly.
 > - "We put the user's role inside the JWT and trust it" — smells like moving the authZ decision to the client / a spoofable token.
-> - Any mention of RBAC, scopes, permissions, ACLs, `403 Forbidden` → authZ. Any mention of passwords, MFA, tokens, sessions, mTLS, `401 Unauthorized` → authN.
+> - Any mention of [RBAC](_meta/glossary.md#rbac), scopes, permissions, ACLs, `403 Forbidden` → authZ. Any mention of passwords, MFA, tokens, sessions, mTLS, `401 Unauthorized` → authN.
 > - HTTP status tell: **401 = "I don't know who you are" (authN)**, **403 = "I know who you are, you can't do this" (authZ)**.
 
 ## When to Use
@@ -35,7 +35,7 @@ This is a *decomposition* card, not a single technique — the skill is correctl
 
 **Map the concept correctly:**
 - **AuthN mechanisms:** passwords + MFA, session cookies, bearer tokens ([JWT](_meta/glossary.md#jwt) / opaque), API keys, [mTLS](_meta/glossary.md#mtls) client certs, WebAuthn/passkeys.
-- **AuthZ models:** RBAC (role → permissions), ABAC (policy over attributes of subject/resource/environment), ACLs (per-object allow/deny lists), OAuth **scopes** (delegated, coarse-grained permissions).
+- **AuthZ models:** RBAC (role → permissions), [ABAC](_meta/glossary.md#abac) (policy over attributes of subject/resource/environment), ACLs (per-object allow/deny lists), OAuth **scopes** (delegated, coarse-grained permissions).
 - **Principals & claims:** authN outputs a *principal* described by **claims** (assertions like `sub`, `roles`, `email`); authZ *consumes* those claims to make a decision. Claims are inputs to authZ, never the decision itself.
 
 **Do not conflate:**
@@ -59,8 +59,8 @@ These are real, exploited vulnerability classes — getting them wrong is the di
 - **Missing function-level authZ.** Hiding an admin button in the UI but leaving the endpoint unprotected — authZ enforced only in the client is no authZ. Enforce on the server for every route.
 - **Trusting authN as authZ.** "The token is valid, so let them in" — a valid identity is not permission. Always check *what* the principal may do, not just *that* they are authenticated.
 - **JWT `alg: none` bypass.** Some libraries honor an attacker-set `"alg":"none"` header and skip signature verification, accepting forged tokens. Fix: reject `none`; pin an explicit expected algorithm on verify (RFC 8725).
-- **JWT algorithm-confusion (RS256 → HS256).** If the verifier reads `alg` from the token, an attacker switches an RSA (`RS256`) token to HMAC (`HS256`) and signs it with the *public* [RSA](_meta/glossary.md#rsa) key — which is public — since [HMAC](_meta/glossary.md#hmac) is symmetric and the server uses that same public key as the shared secret. Fix: never let the library pick the algorithm from the header; allow-list one algorithm/key type, and never accept both symmetric and asymmetric for the same key (RFC 8725).
-- **Not validating `aud` / `iss` / `exp`.** A verified signature is not enough — a token minted for a *different* service (wrong `aud`) or a different issuer must be rejected. Failing to check audience lets a token for service X be replayed against service Y.
+- **JWT [algorithm-confusion](_meta/glossary.md#algorithm-confusion) (RS256 → HS256).** If the verifier reads `alg` from the token, an attacker switches an RSA (`RS256`) token to HMAC (`HS256`) and signs it with the *public* [RSA](_meta/glossary.md#rsa) key — which is public — since [HMAC](_meta/glossary.md#hmac) is symmetric and the server uses that same public key as the shared secret. Fix: never let the library pick the algorithm from the header; allow-list one algorithm/key type, and never accept both symmetric and asymmetric for the same key (RFC 8725).
+- **Not validating `aud` / `iss` / `exp`.** A verified signature is not enough — a token minted for a *different* service (wrong `aud`) or a different issuer must be rejected. Failing to check audience lets a token for service X be [replayed](_meta/glossary.md#replay-attack) against service Y.
 - **Privilege escalation via client-controlled claims.** Deriving roles/permissions from a token field the user can influence, or reading `role` from a request body. Roles must come from a trusted, server-side source bound to the verified principal.
 - **Confused-deputy / over-broad scopes.** Granting a delegated client wider OAuth scopes than the task needs; the client (deputy) can then act beyond intent. Request least-privilege scopes.
 - **Weak authN feeding strong authZ.** Perfect RBAC is worthless if identity is spoofable — no MFA, credential stuffing / brute force allowed, session fixation. This is OWASP **A07: Identification and Authentication Failures**.
@@ -90,7 +90,7 @@ These are real, exploited vulnerability classes — getting them wrong is the di
 - Only then trust the claims (`sub`, `scope`/`scp`, `roles`).
 
 **OAuth 2.1 / current best practice (RFC 9700, OAuth 2.1 draft):**
-- Use **Authorization Code + PKCE** for all clients (web, SPA, mobile) — PKCE is now required for every authorization-code client, public *and* confidential.
+- Use **Authorization Code + [PKCE](_meta/glossary.md#pkce)** for all clients (web, SPA, mobile) — PKCE is now required for every authorization-code client, public *and* confidential.
 - The **Implicit grant** (`response_type=token`) and the **Resource Owner Password Credentials** grant are **removed/deprecated** — do not use them (tokens in URL fragments leak; ROPC hands the user's password to the client).
 - **Client Credentials** grant for machine-to-machine (no user); **Authorization Code + PKCE** for user-facing.
 - Use **OIDC** (adds the `id_token`) when you need to *authenticate a user*; use plain OAuth access tokens only to *authorize* API calls.
@@ -107,7 +107,7 @@ def get_invoice(principal, invoice_id):
     return inv
 ```
 
-**Credential storage (authN side):** never store passwords reversibly — use a slow, memory-hard password [KDF](_meta/glossary.md#kdf) (Argon2id / bcrypt / scrypt) with a per-user salt. Treat any [PII](_meta/glossary.md#pii) in tokens/claims as sensitive. Serve everything over [TLS](_meta/glossary.md#tls); a [MAC](_meta/glossary.md#mac)/signature on a token proves integrity, not confidentiality.
+**Credential storage (authN side):** never store passwords reversibly — use a slow, memory-hard password [KDF](_meta/glossary.md#kdf) (Argon2id / bcrypt / scrypt) with a per-user [salt](_meta/glossary.md#salt). Treat any [PII](_meta/glossary.md#pii) in tokens/claims as sensitive. Serve everything over [TLS](_meta/glossary.md#tls); a [MAC](_meta/glossary.md#mac)/signature on a token proves integrity, not confidentiality.
 
 ## Variants
 

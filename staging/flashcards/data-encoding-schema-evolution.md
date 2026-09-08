@@ -14,10 +14,10 @@ priority: normal
 
 # Data Encoding & Schema Evolution
 
-Every time data crosses a process boundary — over a network, into a message queue, or onto disk — it must be *encoded* (serialized) from in-memory objects into a byte sequence and *decoded* on the other side. In any system large enough to deploy incrementally, old and new code run simultaneously, so the encoding must tolerate a version skew in *both* directions: new code reading old data (backward compatibility) and old code reading new data (forward compatibility). Schema-based binary formats (Thrift, Protocol Buffers, Avro) win over text formats (JSON, XML) for service and pipeline traffic because the schema is documentation, enables safe evolution rules, and shrinks the payload — the field-name strings never travel on the wire.
+Every time data crosses a process boundary — over a network, into a message queue, or onto disk — it must be *encoded* (serialized) from in-memory objects into a byte sequence and *decoded* on the other side. In any system large enough to deploy incrementally, old and new code run simultaneously, so the encoding must tolerate a version skew in *both* directions: new code reading old data ([backward compatibility](_meta/glossary.md#backward-compatibility)) and old code reading new data ([forward compatibility](_meta/glossary.md#forward-compatibility)). Schema-based binary formats (Thrift, Protocol Buffers, Avro) win over text formats (JSON, XML) for service and pipeline traffic because the schema is documentation, enables safe evolution rules, and shrinks the payload — the field-name strings never travel on the wire.
 
 > [!tip] Recognition
-> Reach for this when you hear "rolling upgrade," "two versions of the service are live at once," "we can't deploy producers and consumers atomically," "the message-queue payload changed," "we added a field and old clients broke," or "cross-language [RPC](_meta/glossary.md#rpc) contract." Any question about evolving a wire format or on-disk format without downtime is a schema-evolution question.
+> Reach for this when you hear "rolling upgrade," "two versions of the service are live at once," "we can't deploy producers and consumers atomically," "the message-queue payload changed," "we added a field and old clients broke," or "cross-language [RPC](_meta/glossary.md#rpc) contract." Any question about evolving a wire format or on-disk format without downtime is a [schema-evolution](_meta/glossary.md#schema-evolution) question.
 
 ## When to Use
 
@@ -70,7 +70,7 @@ Backward compatibility is usually easy (new code knows about the old format). Fo
 - **Add a field:** give it a *new, never-before-used* tag. Old readers skip the unknown tag (forward compat); new readers reading old data get the field's default / see it absent (backward compat). A new field **must be optional or have a default** — you cannot add a `required` field and keep backward compatibility, because old data has no value for it.
 - **Remove a field:** only remove an optional field, and **reserve its tag number** (and name) forever so it is never reused. Never remove a `required` field.
 - **Never change or reuse a tag number** — that silently corrupts decoding.
-- proto3 dropped `required` entirely (required is considered harmful: it can never be safely removed). Type changes are limited to compatible ones; `optional` ↔ `repeated` is safe in Protobuf because a `repeated` field decodes an old single value as a length-1 list and old code reading a list takes the last element.
+- proto3 dropped `required` entirely (required is considered harmful: it can never be safely removed). Type changes are limited to compatible ones; `optional` ↔ `repeated` is wire-compatible for a scalar field (a `repeated` field decodes an old single value as a length-1 list and old code reading a list takes the last element) — but only for the *non-packed* encoding; proto3 packs repeated scalars by default, so this needs `[packed=false]` to hold.
 
 **Avro evolution rules (reader/writer schema resolution — no tags):**
 - The bytes carry no field tags or names; the decoder walks fields in schema order. Decoding therefore *requires knowing the exact writer schema*. Avro's trick: the **writer's schema** and the **reader's schema** need only be *compatible*, not identical. The library resolves them field-by-field:

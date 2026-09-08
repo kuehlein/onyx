@@ -143,9 +143,9 @@ def solve_n_queens(n):
 
 ## Variants
 
-- **Branch and bound** — backtracking for *optimization*: maintain a bound (best-so-far) and prune any partial whose best possible completion can't beat it. Used for TSP, knapsack, job assignment.
+- **Branch and bound** — backtracking for *optimization*: maintain a bound (best-so-far) and prune any partial whose best possible completion can't beat it. Used for [TSP](_meta/glossary.md#tsp), knapsack, job assignment.
 - **Constraint propagation (forward checking / AC-3)** — after each choice, eliminate now-impossible options from other variables' domains before recursing; drastically shrinks the tree in Sudoku/CSP solvers.
-- **Iterative deepening DFS (IDDFS)** — repeated depth-limited backtracking; combines DFS's O(depth) space with BFS-like shallowest-solution-first behavior for huge/infinite trees.
+- **Iterative deepening DFS (IDDFS)** — repeated depth-limited backtracking; combines DFS's O(depth) space with [BFS](_meta/glossary.md#bfs)-like shallowest-solution-first behavior for huge/infinite trees.
 - **Bitmask backtracking** — encode the chosen/used set as an integer for O(1) choose/undo and cache-friendly state (fast N-queens, subset problems, TSP DP).
 
 ## Resources

@@ -13,15 +13,15 @@ priority: normal
 
 # Retries and Timeouts
 
-Every remote call can hang or fail, so a resilient client bounds each call with a **timeout** and recovers from *transient* failures with **retries**. The catch: naive retries turn a small blip into a self-amplifying outage (retry storm), and any retry can duplicate a side effect. The disciplined form is timeout + capped exponential backoff + jitter + a retry budget, applied at **one** layer of the stack, and only for operations that are **idempotent**. The governing principle: a retry trades one failure mode (a lost call) for another (extra load + duplicate effects), so it is only correct when the extra load is bounded and the duplicate is harmless.
+Every remote call can hang or fail, so a resilient client bounds each call with a **timeout** and recovers from *transient* failures with **retries**. The catch: naive retries turn a small blip into a self-amplifying outage ([retry storm](_meta/glossary.md#retry-storm)), and any retry can duplicate a side effect. The disciplined form is timeout + capped [exponential backoff](_meta/glossary.md#exponential-backoff) + [jitter](_meta/glossary.md#jitter) + a retry budget, applied at **one** layer of the stack, and only for operations that are [**idempotent**](_meta/glossary.md#idempotency). The governing principle: a retry trades one failure mode (a lost call) for another (extra load + duplicate effects), so it is only correct when the extra load is bounded and the duplicate is harmless.
 
 > [!tip] Recognition — reach for this when you hear
 > - "The call to service X sometimes **hangs forever** / no timeout is set" — every remote call needs a deadline
-> - "A small downstream blip caused a **cascading / cascading-failure outage**" or "the dependency recovered but our fleet stayed down" — retry storm / metastable failure
+> - "A small downstream blip caused a **[cascading](_meta/glossary.md#cascading-failure) / cascading-failure outage**" or "the dependency recovered but our fleet stayed down" — retry storm / metastable failure
 > - "We **retry at every layer**" (client → gateway → service → DB) — multiplicative retry amplification
 > - "Retrying the payment **charged the customer twice**" — retry without idempotency
 > - "All clients retried **at the same instant** and hammered the recovering service" — missing jitter
-> - Design-interview cues: "make this dependency call resilient," "handle a flaky/slow downstream," "at-least-once delivery"
+> - Design-interview cues: "make this dependency call resilient," "handle a flaky/slow downstream," "[at-least-once delivery](_meta/glossary.md#at-least-once-delivery)"
 
 ## When to Use
 
@@ -60,10 +60,10 @@ Every remote call can hang or fail, so a resilient client bounds each call with 
 **Backoff + jitter (the Marc Brooker / AWS formulas).**
 - **Capped exponential backoff:** `sleep = min(cap, base * 2^attempt)` — spreads retries out and bounds the max wait.
 - **Full jitter:** `sleep = random_between(0, min(cap, base * 2^attempt))` — the AWS-recommended default. Randomizing across the *whole* window de-synchronizes clients; the simulation showed Full Jitter minimizes both total client calls and server contention.
-- Without jitter, N clients that failed together retry together — a synchronized **thundering herd** that re-overloads the recovering service.
+- Without jitter, N clients that failed together retry together — a synchronized **[thundering herd](_meta/glossary.md#thundering-herd)** that re-overloads the recovering service.
 
 **Retry budget (caps amplification).**
-- **Token bucket (AWS SDK, built in since 2016):** each retry spends a token; success refills. When the bucket empties, stop retrying and fail fast — this locally rate-limits retries.
+- **Token bucket (AWS SDK "standard"/"adaptive" retry mode, 2020):** each retry spends a token; success refills. When the bucket empties, stop retrying and fail fast — this locally rate-limits retries.
 - **Server-wide budget (Google SRE):** allow retries only up to a small percentage of normal traffic (SRE's example: ~60 retries/min per process, or retries capped at ~10% of requests). Beyond that, don't retry.
 
 **Retry amplification is multiplicative.** If a request fans out through layers that *each* retry, attempts multiply, not add. Google SRE's example: 4 layers each retrying to 4 attempts → 4×4×4 = **64** attempts hitting the leaf — precisely when the leaf is least able to serve them. **Retry at exactly one layer** (usually the client / highest layer that can meaningfully recover); lower layers should fail fast and surface the error.
@@ -84,7 +84,7 @@ Every remote call can hang or fail, so a resilient client bounds each call with 
 - **Resilience vs. amplification.** Retries hide transient faults from users, but every retry is extra load on an already-struggling dependency. The retry budget is the knob that keeps recovery from becoming a self-inflicted DDoS.
 - **Availability vs. duplicates.** Retrying gives at-least-once delivery (don't lose the request) at the cost of possible duplicates — acceptable only if the effect is idempotent or deduped.
 - **Tight vs. loose timeouts.** Tight timeouts detect failure fast but cause false positives + retry load under normal jitter; loose timeouts tie up resources during real hangs. Derive from percentiles, don't guess.
-- **Retry vs. circuit breaker.** Retries assume the fault is *transient*; when a dependency is *hard down*, retrying just wastes work. A circuit breaker complements retries: it stops calling a failing dependency entirely so you fail fast and let it recover (see Variants).
+- **Retry vs. circuit breaker.** Retries assume the fault is *transient*; when a dependency is *hard down*, retrying just wastes work. A [circuit breaker](_meta/glossary.md#circuit-breaker) complements retries: it stops calling a failing dependency entirely so you fail fast and let it recover (see Variants).
 - **Client-side vs. server-side control.** Client backoff is cooperative and can be ignored by misbehaving clients; the server must *also* self-protect with load shedding and a clear "I'm overloaded" signal (429/503) so well-behaved clients back off.
 
 ## Implementation Notes
@@ -133,7 +133,7 @@ def call_with_retry(op, budget, max_attempts=3, base=0.05, cap=2.0, deadline=Non
 - **Circuit breaker.** A state machine wrapping a dependency: **Closed** (calls pass; count failures) → trips to **Open** when failures cross a threshold (e.g. 50% error rate) → after a cooldown moves to **Half-Open**, allowing a few probe calls → success closes it, failure re-opens. In Open state calls fail instantly, protecting a down dependency from retry pressure and giving it room to recover. (Nygard / Fowler.)
 - **Jitter strategies.** *Full jitter* `random(0, min(cap, base·2^n))` is the default; *equal jitter* keeps half the backoff fixed to avoid near-zero sleeps; *decorrelated jitter* `min(cap, random(base, prev·3))` is a common AWS alternative.
 - **Load shedding / brownout.** The server-side counterpart: under overload, shed low-priority work and return 429/503 so clients back off — protects the server when client cooperation isn't enough.
-- **Kafka delivery semantics.** *At-least-once* (default: `acks=all`) can duplicate on producer retry; the **idempotent producer** (`enable.idempotence=true`, on by default since Kafka 3.0) dedupes retries per partition via a producer ID + sequence number; **transactions** extend that to atomic exactly-once across partitions for read-process-write pipelines. "Exactly-once" here is dedup on top of at-least-once, not magic.
+- **Kafka delivery semantics.** *At-least-once* (default: `acks=all`) can duplicate on producer retry; the **idempotent producer** (`enable.idempotence=true`, on by default since Kafka 3.0) dedupes retries per partition via a producer ID + sequence number; **transactions** extend that to atomic [exactly-once](_meta/glossary.md#exactly-once-semantics) across partitions for read-process-write pipelines. "Exactly-once" here is dedup on top of at-least-once, not magic.
 
 ## Resources
 
