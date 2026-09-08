@@ -17,7 +17,7 @@ priority: normal
 Isolation levels define which concurrency anomalies a database permits between transactions that run at the same time. They form a ladder from weak to strong: **read uncommitted → read committed → snapshot / repeatable read → serializable**. Each rung prevents one more class of race condition at the cost of more blocking, more aborts, or lower throughput. The core insight from *Designing Data-Intensive Applications* (DDIA) Ch.7: "[ACID](_meta/glossary.md#acid)" says nothing about *which* level you get — most databases default to read committed or snapshot isolation, not serializable, so weak-isolation races are your responsibility to reason about.
 
 > [!tip] Recognition heuristic
-> Any time two transactions touch overlapping data concurrently and correctness depends on *what one sees of the other*, name the anomaly first (dirty read? lost update? write skew?), then pick the weakest level that prevents it. If money, inventory, or an invariant across multiple rows is at stake, you likely need serializable or an explicit lock — not the default.
+> Any time two transactions touch overlapping data concurrently and correctness depends on *what one sees of the other*, name the anomaly first ([dirty read](_meta/glossary.md#dirty-read)? [lost update](_meta/glossary.md#lost-update)? [write skew](_meta/glossary.md#write-skew)?), then pick the weakest level that prevents it. If money, inventory, or an invariant across multiple rows is at stake, you likely need serializable or an explicit lock — not the default.
 
 ## When to Use
 
@@ -26,7 +26,7 @@ Isolation levels define which concurrency anomalies a database permits between t
 - "The report showed a half-applied transfer" — dirty read or read skew (non-atomic read across rows)
 - "Balance check passed but the account went negative under load" — write skew: both transactions read a stale snapshot, both pass a guard, both write
 - "Counter increments are being lost" — lost update on read-modify-write
-- "Same query returned different rows within one transaction" — non-repeatable read or phantom
+- "Same query returned different rows within one transaction" — non-repeatable read or [phantom](_meta/glossary.md#phantom-read)
 
 **Choosing a level:**
 - **Read committed** (default in Postgres, Oracle, SQL Server): fine for most [OLTP](_meta/glossary.md#oltp) where each statement is self-contained; use `SELECT ... FOR UPDATE` for the rare read-modify-write.
@@ -35,7 +35,7 @@ Isolation levels define which concurrency anomalies a database permits between t
 
 **Do not reach for serializable when:**
 - A targeted `SELECT ... FOR UPDATE` / atomic `UPDATE ... SET x = x + 1` solves the one race → cheaper than globally serializable.
-- The workload is read-heavy analytics with no cross-row invariants → snapshot isolation is enough and doesn't abort.
+- The workload is read-heavy analytics with no cross-row invariants → [snapshot isolation](_meta/glossary.md#snapshot-isolation) is enough and doesn't abort.
 
 ## Key Properties
 
@@ -45,10 +45,11 @@ Isolation levels define which concurrency anomalies a database permits between t
 |---|---|---|---|---|---|---|
 | Read uncommitted | prevented | **allowed** | allowed | allowed | allowed | allowed |
 | Read committed | prevented | prevented | allowed | allowed | allowed | allowed |
-| Snapshot / repeatable read | prevented | prevented | prevented¹ | prevented | see note | **allowed** |
+| Snapshot / repeatable read | prevented | prevented | prevented¹ | prevented | prevented² | **allowed** |
 | Serializable | prevented | prevented | prevented | prevented | prevented | prevented |
 
 ¹ Snapshot isolation detects lost updates via first-committer-wins abort or explicit `FOR UPDATE`; the SQL-standard "repeatable read" does not by itself.
+² Snapshot isolation prevents phantoms (reads see one consistent snapshot); SQL-standard "repeatable read" does *not* (new rows aren't locked) — see the note below.
 
 **Anomaly definitions (memorize these):**
 - **Dirty write** — a transaction overwrites another's *uncommitted* write. Prevented at every level via row write-locks.

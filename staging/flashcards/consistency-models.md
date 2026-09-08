@@ -13,7 +13,7 @@ priority: normal
 
 # Consistency Models
 
-A consistency model is the contract between a distributed data store and its clients about *which values a read is allowed to return* given the writes that have happened. The models form a spectrum from strong to weak — linearizability, then causal, then eventual — where each step down relaxes a guarantee to buy availability and lower latency. The core tension is [CAP](_meta/glossary.md#cap): the strongest model (linearizability) cannot be served while remaining available during a network partition, whereas causal and eventual consistency can.
+A consistency model is the contract between a distributed data store and its clients about *which values a read is allowed to return* given the writes that have happened. The models form a spectrum from strong to weak — [linearizability](_meta/glossary.md#linearizability), then [causal](_meta/glossary.md#causal-consistency), then [eventual](_meta/glossary.md#eventual-consistency) — where each step down relaxes a guarantee to buy availability and lower latency. The core tension is [CAP](_meta/glossary.md#cap): the strongest model (linearizability) cannot be served while remaining available during a network partition, whereas causal and eventual consistency can.
 
 > [!tip] Recognition
 > Reach for **consistency models** whenever data is replicated and a design question asks "will a reader see a stale value?", "what happens to reads during a partition?", or "can two clients disagree about the order of updates?". Interview signals: geo-replicated databases, multi-leader/leaderless replication, "read-your-own-writes", distributed locks/leader election (needs linearizability), or shopping-cart/collaborative-editing merges (tolerates eventual + [CRDT](_meta/glossary.md#crdt)).
@@ -44,14 +44,14 @@ A consistency model is the contract between a distributed data store and its cli
 | **Causal** | All replicas agree on the order of causally-related (happens-before) ops; concurrent ops may be seen in different orders | Reads that violate causality (effect before cause) | **Yes** |
 | **Eventual** | If writes stop, all replicas *converge* to the same value | — (almost nothing about intermediate reads) | **Yes** |
 
-- **Linearizability is a recency guarantee (DDIA §9):** it makes a replicated system behave as if there is a *single copy* of the data and every operation is atomic and instantaneous at some point between its invocation and response. This is a stronger, orthogonal property from serializability (which is about transaction isolation, not single-object recency).
+- **Linearizability is a recency guarantee (DDIA §9):** it makes a replicated system behave as if there is a *single copy* of the data and every operation is atomic and instantaneous at some point between its invocation and response. This is a stronger, orthogonal property from [serializability](_meta/glossary.md#serializability) (which is about transaction isolation, not single-object recency).
 - **Session (client-centric) guarantees** sit under causal: read-your-writes, monotonic reads (never see time go backwards), monotonic writes, writes-follow-reads. Causal consistency implies all four.
 - **Ordering hierarchy:** linearizable ⟹ sequential ⟹ causal ⟹ eventual. The strongest that survives a partition is **causal** (Attiya/Mahajan bound; DDIA §9).
 - **Convergence needs conflict resolution.** Eventual/causal stores that accept concurrent writes must merge them: LWW (timestamp wins, silently drops the loser), version vectors + application merge, or a CRDT (mathematically guaranteed to converge without coordination).
 
 ## Common Pitfalls
 
-- **Confusing "strong consistency" with a quorum.** A Dynamo-style quorum with `w + r > n` guarantees a read set *overlaps* a write set, so it returns some recent write — but this is **not linearizability**. DDIA §9 is explicit: sloppy quorums, concurrent writes, and read-repair races mean `w + r > n` can still return stale values. Linearizability needs extra coordination (a consensus protocol or synchronous read-repair).
+- **Confusing "strong consistency" with a quorum.** A Dynamo-style [quorum](_meta/glossary.md#quorum) with `w + r > n` guarantees a read set *overlaps* a write set, so it returns some recent write — but this is **not linearizability**. DDIA §9 is explicit: [sloppy quorums](_meta/glossary.md#sloppy-quorum), concurrent writes, and [read-repair](_meta/glossary.md#read-repair) races mean `w + r > n` can still return stale values. Linearizability needs extra coordination (a consensus protocol or synchronous read-repair).
 - **Confusing consistency (CAP) with consistency (ACID).** The "C" in CAP is *linearizability*; the "C" in [ACID](_meta/glossary.md#acid) is preserving invariants. Different concepts — do not conflate them in an interview.
 - **Confusing linearizability with serializability.** Serializability is a *transaction isolation* property (transactions appear to run in some serial order). Linearizability is a *single-object recency* property. "Strict serializability" is the combination of both.
 - **Assuming eventual = causal.** Plain eventual consistency can show effect-before-cause (see a reply before the post). You must add causal metadata to prevent that.
@@ -82,7 +82,7 @@ A consistency model is the contract between a distributed data store and its cli
   ```
 
   This is the mechanism behind COPS and behind read-your-writes session tickets.
-- **Eventual:** async replication + a convergence rule. Anti-entropy (Merkle-tree diff, à la Dynamo) plus read-repair reconciles replicas in the background; conflicts resolved by LWW, version vectors, or a CRDT.
+- **Eventual:** async replication + a convergence rule. [Anti-entropy](_meta/glossary.md#anti-entropy) (Merkle-tree diff, à la Dynamo) plus read-repair reconciles replicas in the background; conflicts resolved by LWW, version vectors, or a CRDT.
 
 **Quorum sanity check (leaderless):** with `n` replicas, choosing `w + r > n` forces every read quorum to intersect the last write quorum in ≥1 node — necessary but *not sufficient* for linearizability (see Pitfalls).
 

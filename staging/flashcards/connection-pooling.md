@@ -14,16 +14,16 @@ priority: normal
 
 # Connection Pooling
 
-A connection pool is a cache of pre-established database connections held open and handed out to application threads on demand, then returned rather than closed. It exists because opening a connection is expensive — [TCP](_meta/glossary.md#tcp) handshake, TLS negotiation, auth, and (in Postgres) forking a per-connection backend process with its own memory — while each open connection consumes fixed server RAM and a slot against a hard `max_connections` limit. The pool amortizes setup cost and, critically, caps concurrency so a spike in clients cannot exhaust the database.
+A connection pool is a cache of pre-established database connections held open and handed out to application threads on demand, then returned rather than closed. It exists because opening a connection is expensive — [TCP](_meta/glossary.md#tcp) handshake, [TLS](_meta/glossary.md#tls) negotiation, auth, and (in Postgres) forking a per-connection backend process with its own memory — while each open connection consumes fixed server RAM and a slot against a hard `max_connections` limit. The pool amortizes setup cost and, critically, caps concurrency so a spike in clients cannot exhaust the database.
 
 > [!tip] Recognition
-> Reach for connection pooling when you see: "we open a new connection per request/query", connection setup latency dominating fast queries, `too many clients already` / `FATAL: sorry, too many connections` errors, thousands of app instances (or serverless functions) fanning out to one database, or a Postgres box thrashing on backend-process memory. The tell is a mismatch between *client concurrency* (huge, bursty) and *useful database concurrency* (bounded by CPU/disk).
+> Reach for connection pooling when you see: "we open a new connection per request/query", connection setup latency dominating fast queries, `FATAL: sorry, too many clients already` errors, thousands of app instances (or serverless functions) fanning out to one database, or a Postgres box thrashing on backend-process memory. The tell is a mismatch between *client concurrency* (huge, bursty) and *useful database concurrency* (bounded by CPU/disk).
 
 ## When to Use
 
 **Problem signals that suggest connection pooling:**
-- "Connection setup is slower than the query itself" — short [OLTP](_meta/glossary.md#oltp) queries where handshake + auth + [TLS](_meta/glossary.md#tls) dominates latency
-- "We hit `FATAL: too many connections`" — client count exceeds server `max_connections`
+- "Connection setup is slower than the query itself" — short [OLTP](_meta/glossary.md#oltp) queries where handshake + auth + TLS dominates latency
+- "We hit `FATAL: sorry, too many clients already`" — client count exceeds server `max_connections`
 - "Postgres RAM climbs with idle connections" — each backend process reserves work_mem/temp buffers; hundreds of idle connections waste gigabytes
 - "Lambda/serverless functions exhaust the DB under load" — many short-lived environments each open their own connection
 - "We have N app pods × M threads each, all talking to one primary" — fan-in concurrency needs bounding

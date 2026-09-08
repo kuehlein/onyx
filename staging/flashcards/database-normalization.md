@@ -52,7 +52,7 @@ Each normal form assumes the previous one holds. The progression is defined by *
 - **The 3NF mnemonic:** every non-key attribute depends on "the key, the whole key, and nothing but the key" — *whole key* = 2NF, *nothing but the key* = 3NF.
 - **BCNF is stricter than 3NF only in a narrow case.** They differ only when a relation has **overlapping composite candidate keys** and an FD's determinant is a candidate key but not the primary one. Most real 3NF schemas are already BCNF.
 - **3NF is always achievable with a lossless, dependency-preserving decomposition. BCNF is not.** Forcing BCNF can require dropping a functional dependency that then can only be enforced by re-joining tables — the fundamental 3NF-vs-BCNF trade-off (see Date).
-- **Denormalization ≠ un-normalizing.** You design a normalized model first, then selectively add redundancy with a rule for keeping it consistent (trigger, application code, or materialized view) — you do not skip the modeling step.
+- **Denormalization ≠ un-normalizing.** You design a normalized model first, then selectively add redundancy with a rule for keeping it consistent (trigger, application code, or [materialized view](_meta/glossary.md#materialized-view)) — you do not skip the modeling step.
 
 ## Common Pitfalls
 
@@ -71,7 +71,7 @@ Each normal form assumes the previous one holds. The progression is defined by *
 
 **Denormalized (read-optimized):**
 - Pros: fewer joins, better locality, precomputed aggregates queryable in SQL; the model NoSQL document stores lean on since they lack cheap joins ([[sql-vs-nosql]])
-- Cons: redundant copies must be kept in sync → write amplification + risk of divergence; more storage; anomalies return unless guarded
+- Cons: redundant copies must be kept in sync → [write amplification](_meta/glossary.md#write-amplification) + risk of divergence; more storage; anomalies return unless guarded
 
 **The core dial:** normalization optimizes writes and integrity; denormalization optimizes reads and locality. In practice: **normalize to 3NF/BCNF by default, then denormalize the specific paths profiling proves hot** — and only after indexing has failed to close the gap.
 

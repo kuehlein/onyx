@@ -76,7 +76,7 @@ Two fundamentally different access patterns drive two different storage designs.
 - **Confusing column-oriented storage with NoSQL "column-family" stores.** Cassandra/HBase "wide-column" stores are *not* column-oriented in the DDIA/analytics sense — within a column family they still store rows together and do not do per-column compression across all rows. Different concept, similar name.
 - **Assuming column order matters for reassembly** — it's *row order* (positional alignment across all column files) that must be consistent, not the order you list columns.
 - **Over-normalizing the warehouse (snowflake everywhere).** Extra joins on billion-row facts hurt; dimension tables are small, so a little redundancy (star) is usually the right call.
-- **Treating materialized aggregates as free.** A materialized view / **data cube** (OLAP cube) precomputes `GROUP BY` rollups for speed, but must be recomputed on new data and can't answer queries outside its precomputed dimensions — it's a cache, not a source of truth.
+- **Treating materialized aggregates as free.** A [materialized view](_meta/glossary.md#materialized-view) / **data cube** (OLAP cube) precomputes `GROUP BY` rollups for speed, but must be recomputed on new data and can't answer queries outside its precomputed dimensions — it's a cache, not a source of truth.
 
 ## Implementation Notes
 
@@ -114,7 +114,7 @@ WHERE product_id IN (30, 31)  ->  bitwise OR of the two bitmaps, then scan set b
 - Choose a **distribution key** on the join column of the largest fact so joins stay node-local.
 - On-disk formats **Parquet/ORC** apply the same ideas (dictionary + RLE + bitpacking, per-column) and are what lakes/lakehouses store.
 
-**Pipeline:** OLTP source → CDC/batch ETL → warehouse (columnar). Never let a BI dashboard query the transactional primary directly.
+**Pipeline:** OLTP source → [CDC](_meta/glossary.md#change-data-capture)/batch ETL → warehouse (columnar). Never let a BI dashboard query the transactional primary directly.
 
 ## Variants
 

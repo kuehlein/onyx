@@ -46,7 +46,7 @@ Partitioning (a.k.a. sharding) splits one logical dataset across many nodes so t
 
 - **Compound keys mitigate the range/hash tension.** Cassandra hashes only the *partition key* to place data, then stores rows *sorted* by the *clustering columns* within a partition — so you get even distribution across partitions *and* efficient range scans within one (e.g. partition by `user_id`, cluster by `timestamp`).
 - **Hashing kills range queries but not exact lookups.** A good hash function (Cassandra uses Murmur3, not a cryptographic hash — speed matters, not security) distributes keys uniformly; you lose ordered scans in exchange.
-- **Consistent hashing is a specific technique, not the whole story.** DDIA notes it maps both keys and nodes onto a ring so adding/removing a node only moves keys on the adjacent arc — but classic Dynamo-style consistent hashing gives poor balance, which is why real systems layer *virtual nodes* on top (see Implementation Notes).
+- **[Consistent hashing](_meta/glossary.md#consistent-hashing) is a specific technique, not the whole story.** DDIA notes it maps both keys and nodes onto a ring so adding/removing a node only moves keys on the adjacent arc — but classic Dynamo-style consistent hashing gives poor balance, which is why real systems layer [virtual nodes](_meta/glossary.md#virtual-node) on top (see Implementation Notes).
 
 **Local vs global secondary indexes:**
 
@@ -62,7 +62,7 @@ Partitioning (a.k.a. sharding) splits one logical dataset across many nodes so t
 - **Monotonic key + range partitioning = write hot spot.** Partitioning by timestamp (or auto-increment ID) with range partitioning sends *all* new writes to the last partition. Fix: prefix the key with something high-cardinality (e.g. `sensor_id` then timestamp) so writes spread, at the cost of needing N queries for a time range across all sensors.
 - **Celebrity / hot key that hashing cannot fix.** Hashing spreads *distinct* keys, but a single hot key (a celebrity user's ID, one viral tweet) all hashes to one partition. DDIA notes systems do not solve this automatically — the app must split the hot key manually (append a random 2-digit suffix → 100 sub-keys → 100 partitions), which then requires reading all 100 and combining. Only apply this to the few keys that are actually hot; it adds read overhead.
 - **`hash(key) mod N` for partition assignment.** Tempting but wrong: changing N (adding a node) remaps almost *every* key, forcing a massive rebalance. Use a fixed large partition count or consistent hashing instead so only a fraction of keys move.
-- **Assuming a global secondary index is read-your-writes consistent.** Global (term-partitioned) index updates are typically asynchronous, so a read immediately after a write may not see the new row in the index.
+- **Assuming a global secondary index is [read-your-writes](_meta/glossary.md#read-your-writes) consistent.** Global (term-partitioned) index updates are typically asynchronous, so a read immediately after a write may not see the new row in the index.
 - **Forgetting scatter/gather cost of local indexes.** Any query on a local secondary index that isn't the partition key must hit every partition; tail latency ([P99](_meta/glossary.md#p99)) is governed by the *slowest* partition, so it degrades as you add partitions.
 
 ## Trade-offs
@@ -71,7 +71,7 @@ Partitioning (a.k.a. sharding) splits one logical dataset across many nodes so t
 - **Local vs global secondary index:** local = cheap writes, expensive (scatter/gather) reads; global = cheap targeted reads, expensive multi-partition (and async) writes. Pick based on read vs write ratio and consistency needs.
 - **Fixed vs dynamic rebalancing:** a large fixed partition count is operationally simple (only whole partitions move, never split) but you must guess the right count up front and each partition carries fixed overhead; dynamic splitting/merging adapts to data volume automatically but adds coordination complexity and can thrash under bursty load.
 - **More virtual nodes = more even balance but worse availability/repair.** Cassandra's `num_tokens` trades distribution smoothness against the number of peer nodes each node shares data with (which affects availability and streaming/repair cost) — the default was lowered from 256 to 16 in Cassandra 4.0 precisely because 256 hurt availability and made repair painful.
-- **Partitioning vs distributed transactions:** once a logical operation spans partitions, you lose cheap single-node atomicity and need two-phase commit or a saga; a well-chosen partition key that co-locates related data (e.g. all of one tenant's rows) avoids this. This is why entity-group / partition-key design dominates schema choices in sharded stores.
+- **Partitioning vs distributed transactions:** once a logical operation spans partitions, you lose cheap single-node atomicity and need [two-phase commit](_meta/glossary.md#two-phase-commit) or a [saga](_meta/glossary.md#saga); a well-chosen partition key that co-locates related data (e.g. all of one tenant's rows) avoids this. This is why entity-group / partition-key design dominates schema choices in sharded stores.
 
 ## Implementation Notes
 

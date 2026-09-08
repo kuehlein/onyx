@@ -16,7 +16,7 @@ priority: normal
 Replication keeps copies of the same data on multiple nodes for lower read latency (serve reads locally), higher availability (survive node loss), and read throughput scaling. The whole design space reduces to two questions: **where can writes originate** (single-leader, multi-leader, leaderless) and **how do writes propagate** (synchronous vs asynchronous). Every consistency anomaly you have to reason about — stale reads, reads going backward in time, effects seen before causes, lost updates — is a direct consequence of the answers to those two questions. Grounded in DDIA Ch. 5.
 
 > [!tip] Recognition
-> Reach for this vocabulary when a design question involves multiple copies of the same dataset and someone asks "what happens if a replica is behind / a node fails / two people write at once." Signals: "read replica," "failover," "async replication lag," "multi-region writes," "eventually consistent," "[quorum](_meta/glossary.md#cp)," or a user complaint like "I posted a comment and it disappeared on refresh" (that's a replication-lag anomaly, not a bug).
+> Reach for this vocabulary when a design question involves multiple copies of the same dataset and someone asks "what happens if a replica is behind / a node fails / two people write at once." Signals: "read replica," "failover," "async replication lag," "multi-region writes," "eventually consistent," "[quorum](_meta/glossary.md#quorum)," or a user complaint like "I posted a comment and it disappeared on refresh" (that's a replication-lag anomaly, not a bug).
 
 ## When to Use
 
@@ -32,7 +32,7 @@ Replication keeps copies of the same data on multiple nodes for lower read laten
 
 **Prefer multi-leader / leaderless when:**
 - Multi-leader: write latency must be local in several regions, OR clients operate offline. Accept that you now own conflict resolution.
-- Leaderless: write availability during partitions is paramount and you want per-operation tunable consistency (`w`/`r`), accepting only eventual consistency by default.
+- Leaderless: write availability during partitions is paramount and you want per-operation tunable consistency (`w`/`r`), accepting only [eventual consistency](_meta/glossary.md#eventual-consistency) by default.
 
 **Do not use / anti-patterns:**
 - Do not choose multi-leader "for scale" if a single region can serve your writes — the conflict-resolution complexity is rarely worth it. It solves a *latency/availability* problem, not a *throughput* problem.
@@ -62,23 +62,23 @@ Fully-sync replication is impractical: one slow node stalls all writes. Real sys
 | Default consistency | strong on leader, lag on replicas | eventual | eventual (tunable) |
 | Examples | Postgres, MySQL, MongoDB RS | CouchDB, BDR, multi-DC MySQL | Cassandra, DynamoDB, Riak |
 
-**Quorum math (leaderless):** with `n` replicas, if every write reaches `w` replicas and every read queries `r` replicas, then **`w + r > n` guarantees the read set and write set overlap in at least one node** that has the latest value. Common: `n=3, w=2, r=2`. Tuning: `w=n, r=1` = fast reads / slow writes; `w=1, r=n` = fast writes / slow reads. Lowering `w`/`r` below the quorum trades consistency for lower latency and higher availability. Version numbers (or timestamps) let the reader pick the newest returned value; stale replicas are repaired via **read repair** (fix on read) and **anti-entropy** (background sync).
+**Quorum math (leaderless):** with `n` replicas, if every write reaches `w` replicas and every read queries `r` replicas, then **`w + r > n` guarantees the read set and write set overlap in at least one node** that has the latest value. Common: `n=3, w=2, r=2`. Tuning: `w=n, r=1` = fast reads / slow writes; `w=1, r=n` = fast writes / slow reads. Lowering `w`/`r` below the quorum trades consistency for lower latency and higher availability. Version numbers (or timestamps) let the reader pick the newest returned value; stale replicas are repaired via **[read repair](_meta/glossary.md#read-repair)** (fix on read) and **[anti-entropy](_meta/glossary.md#anti-entropy)** (background sync).
 
-**Replication lag and its read anomalies** (arise under async replication / eventual consistency). Three distinct guarantees, each fixing a distinct anomaly:
+**[Replication lag](_meta/glossary.md#replication-lag) and its read anomalies** (arise under async replication / eventual consistency). Three distinct guarantees, each fixing a distinct anomaly:
 
 | Anomaly (what the user sees) | Guarantee that prevents it | How it's fixed |
 |---|---|---|
-| You write, then read a stale replica and don't see your own write | **Read-your-writes** (read-after-write) | Read recently-written items from the leader; or route the user to the same replica for a window after their write; or track a write timestamp/version and only read from a replica caught up to it |
-| Time moves **backward**: you see a value, refresh, and see an *older* value (two replicas, different lag) | **Monotonic reads** | Pin each user to **one** replica (e.g. hash of user ID → replica), so they never jump to a less-caught-up one |
+| You write, then read a stale replica and don't see your own write | **[Read-your-writes](_meta/glossary.md#read-your-writes)** (read-after-write) | Read recently-written items from the leader; or route the user to the same replica for a window after their write; or track a write timestamp/version and only read from a replica caught up to it |
+| Time moves **backward**: you see a value, refresh, and see an *older* value (two replicas, different lag) | **[Monotonic reads](_meta/glossary.md#monotonic-reads)** | Pin each user to **one** replica (e.g. hash of user ID → replica), so they never jump to a less-caught-up one |
 | You see an effect before its cause (answer before the question it replies to) | **Consistent-prefix reads** | Ensure causally-related writes go to the **same partition** and are applied in write order; or track causal dependencies explicitly ([HLC](_meta/glossary.md#hlc)/version vectors) |
 
-These are progressively weaker than linearizability but individually cheap, and interviewers expect you to name the specific guarantee that fixes a specific complaint.
+These are progressively weaker than [linearizability](_meta/glossary.md#linearizability) but individually cheap, and interviewers expect you to name the specific guarantee that fixes a specific complaint.
 
 ## Common Pitfalls
 
-- **"Quorum = strong consistency."** False. `w + r > n` guarantees overlap but **not** linearizability. DDIA lists the edge cases: (1) a **sloppy quorum** with hinted handoff may write to different nodes than it reads, so overlap isn't guaranteed; (2) two concurrent writes can't be totally ordered — you need conflict resolution (e.g. [LWW](_meta/glossary.md#lww) drops data); (3) a concurrent read + write may return either value; (4) if a write succeeds on fewer than `w` nodes it's **not rolled back**, so a later read may or may not see it; (5) node failure + restore-from-old-replica can drop the count below `w` silently.
+- **"Quorum = strong consistency."** False. `w + r > n` guarantees overlap but **not** linearizability. DDIA lists the edge cases: (1) a **[sloppy quorum](_meta/glossary.md#sloppy-quorum)** with [hinted handoff](_meta/glossary.md#hinted-handoff) may write to different nodes than it reads, so overlap isn't guaranteed; (2) two concurrent writes can't be totally ordered — you need conflict resolution (e.g. [LWW](_meta/glossary.md#lww) drops data); (3) a concurrent read + write may return either value; (4) if a write succeeds on fewer than `w` nodes it's **not rolled back**, so a later read may or may not see it; (5) node failure + restore-from-old-replica can drop the count below `w` silently.
 - **Sync/async confusion under "failover."** In single-leader async, promoting a new leader after a crash can **lose** the old leader's un-replicated writes. If those writes' IDs were already used elsewhere (e.g. handed to a cache/Redis or another store), you get dangerous inconsistency. This is the DDIA GitHub-autoincrement failover example.
-- **Split brain in multi-leader / bad failover:** two nodes both believe they're leader and both accept writes → conflicting divergent state. Single-leader systems guard with fencing tokens; consensus systems (Raft) guarantee at most one leader **per term**.
+- **[Split brain](_meta/glossary.md#split-brain) in multi-leader / bad failover:** two nodes both believe they're leader and both accept writes → conflicting divergent state. Single-leader systems guard with fencing tokens; consensus systems (Raft) guarantee at most one leader **per term**.
 - **[LWW](_meta/glossary.md#lww) silently discards writes.** "Last write wins" by timestamp is the default in Cassandra, but concurrent writes with clock skew mean a "later" wall-clock timestamp may be causally earlier — you lose data with no error. Prefer [CRDT](_meta/glossary.md#crdt)s or version vectors when correctness matters.
 - **Monotonic reads vs read-your-writes confused.** They fix *different* anomalies. Read-your-writes is about seeing *your own* write; monotonic reads is about not seeing time go *backward* across successive reads. Pinning to one replica gives monotonic reads but not necessarily read-your-writes (that replica could itself be behind the leader).
 - **Ignoring `w`/`r` failure modes:** with `n=3, w=2`, you can tolerate one dead node for writes; with `r=2`, one dead node for reads. Assuming higher fault tolerance than the numbers allow is a classic slip.

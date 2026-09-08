@@ -13,7 +13,7 @@ priority: normal
 The query optimizer turns a declarative SQL statement into an executable physical plan (which access method, join algorithm, and join order to use). Modern relational databases are **cost-based**: the planner enumerates candidate plans, estimates each plan's cost from table statistics, and picks the cheapest. "Cost" is a dimensionless number combining estimated I/O and CPU — not milliseconds. Because the choice hinges on *estimated* row counts, the optimizer is only as good as its statistics: a bad cardinality estimate is the root cause of most catastrophic plans, including a perfectly good index being ignored.
 
 > [!tip] Recognition
-> Reach for optimizer reasoning when a query is slow *despite* a suitable index existing, when latency swings wildly with data volume or parameter values, or when an interviewer asks "why is this doing a Seq Scan?" / "why did the plan flip?". The mental checklist is: **is the predicate sargable → are the statistics fresh → is the estimated row count close to actual → is the chosen join algorithm right for the row counts.**
+> Reach for optimizer reasoning when a query is slow *despite* a suitable index existing, when latency swings wildly with data volume or parameter values, or when an interviewer asks "why is this doing a Seq Scan?" / "why did the plan flip?". The mental checklist is: **is the predicate [sargable](_meta/glossary.md#sargable) → are the statistics fresh → is the estimated row count close to actual → is the chosen join algorithm right for the row counts.**
 
 ## When to Use
 
@@ -103,7 +103,7 @@ ALTER SYSTEM SET random_page_cost = 1.1;   -- vs. default 4.0
 SET enable_seqscan = off;   -- session-local; a probe, NOT a fix to ship
 ```
 
-**Reading a plan (Postgres):** `Index Only Scan` (best — never touches the heap) > `Index Scan` > `Bitmap Heap Scan` (many scattered matches) > `Seq Scan`. For joins, node label tells you the algorithm directly (`Nested Loop`, `Hash Join`, `Merge Join`).
+**Reading a plan (Postgres):** `Index Only Scan` (best — skips the heap *when the visibility-map bit is set*; falls back to heap fetches otherwise, so keep VACUUM current) > `Index Scan` > `Bitmap Heap Scan` (many scattered matches) > `Seq Scan`. For joins, node label tells you the algorithm directly (`Nested Loop`, `Hash Join`, `Merge Join`).
 
 ## Variants
 

@@ -26,12 +26,12 @@ Two-phase commit is an atomic commit protocol that makes a transaction spanning 
 - You genuinely need cross-resource **atomicity**, not merely agreement between copies of the same data
 
 **Prefer 2PC over alternatives when:**
-- Over a **saga / outbox pattern**: when you truly need atomic all-or-nothing semantics *now* and cannot accept the temporary inconsistency + compensating-transaction complexity a saga introduces. (In practice most large systems accept the saga trade-off precisely to avoid 2PC's blocking.)
+- Over a **[saga](_meta/glossary.md#saga) / outbox pattern**: when you truly need atomic all-or-nothing semantics *now* and cannot accept the temporary inconsistency + compensating-transaction complexity a saga introduces. (In practice most large systems accept the saga trade-off precisely to avoid 2PC's blocking.)
 - Over **consensus (Raft/Paxos)**: when the nodes are doing *different* work that must all succeed together — consensus makes a *majority* of replicas do the *same* thing and is the wrong tool for heterogeneous cross-resource atomicity.
 
 **Do not use when:**
 - You need high availability under partitions — 2PC blocks on coordinator or participant loss → use a **saga with compensation**, an **outbox + idempotent consumer**, or eventual consistency instead
-- The operation can be made idempotent and retried — a single-writer + at-least-once delivery + idempotency key is far cheaper and non-blocking
+- The operation can be made [idempotent](_meta/glossary.md#idempotency) and retried — a single-writer + [at-least-once delivery](_meta/glossary.md#at-least-once-delivery) + [idempotency key](_meta/glossary.md#idempotency-key) is far cheaper and non-blocking
 - You just need multiple copies of the same data to agree → that is replication/consensus ([[raft]], Paxos), not atomic commit
 - Throughput is critical — the extra durable log forces + round trips and the locks held across the network kill concurrency
 
@@ -43,7 +43,7 @@ Two-phase commit is an atomic commit protocol that makes a transaction spanning 
 - **The commit point is the coordinator's log write.** Once the coordinator has durably logged "commit", the transaction *will* commit even across crashes; recovery replays the log and re-sends the decision.
 - **In-doubt participants.** A participant that has voted yes but not yet heard the decision is *in doubt*: it holds its locks and cannot decide on its own. It must wait for the coordinator — potentially forever.
 - **Unanimity for commit, unilateral for abort.** Commit requires every participant's yes; a single no (or unreachable participant during prepare) aborts the whole transaction. This is the opposite of consensus, which only needs a majority.
-- **Not fault-tolerant by design.** 2PC assumes the coordinator can be recovered; it does not tolerate coordinator loss the way a majority-quorum protocol tolerates minority node loss.
+- **Not fault-tolerant by design.** 2PC assumes the coordinator can be recovered; it does not tolerate coordinator loss the way a majority-[quorum](_meta/glossary.md#quorum) protocol tolerates minority node loss.
 
 **2PC vs. consensus (Raft/Paxos):**
 
@@ -70,8 +70,8 @@ Two-phase commit is an atomic commit protocol that makes a transaction spanning 
 - **Atomicity vs. availability.** 2PC buys strict cross-resource atomicity at the cost of availability: it is a CP-flavored, synchronous protocol that stops making progress rather than risk a partial commit. Sagas invert this — always available, but only eventually consistent with compensating actions.
 - **Latency & throughput cost.** Two network round trips *plus* a durable log force at each participant and at the coordinator. Locks are held for the entire cross-network duration, sharply limiting concurrency versus a single-node transaction.
 - **Coupling.** Every participant's availability is multiplied in: the probability the whole transaction can commit falls as you add participants, and the slowest/least-available node gates all others.
-- **Why it's avoided at scale.** The coordinator is a single point of failure whose crash blocks participants with locks held; large systems either (a) avoid distributed transactions entirely (partition so each op is single-node, use sagas/outbox), or (b) make the *coordinator itself fault-tolerant* by replicating its decision via consensus.
-- **The standard fix — combine with consensus.** Google Spanner replicates the coordinator's (and participants') state with Paxos, so no single coordinator node can block the transaction; the "coordinator" role survives failure via leader election. Percolator/TiDB take a similar tack, storing the commit decision durably in a replicated store. The lesson: 2PC's logic is fine — its *single-node coordinator* is the flaw, and consensus removes it.
+- **Why it's avoided at scale.** The coordinator is a single point of failure ([SPOF](_meta/glossary.md#spof)) whose crash blocks participants with locks held; large systems either (a) avoid distributed transactions entirely (partition so each op is single-node, use sagas/outbox), or (b) make the *coordinator itself fault-tolerant* by replicating its decision via consensus.
+- **The standard fix — combine with consensus.** Google Spanner replicates the coordinator's (and participants') state with Paxos, so no single coordinator node can block the transaction; the "coordinator" role survives failure via [leader election](_meta/glossary.md#leader-election). Percolator/TiDB take a similar tack, storing the commit decision durably in a replicated store. The lesson: 2PC's logic is fine — its *single-node coordinator* is the flaw, and consensus removes it.
 
 ## Implementation Notes
 

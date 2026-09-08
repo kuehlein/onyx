@@ -15,10 +15,10 @@ priority: normal
 
 # Storage Engines: B-Tree vs LSM-Tree
 
-The storage engine is the layer that decides how a database's index and rows are laid out on disk and mutated. Two families dominate [OLTP](_meta/glossary.md#oltp): **B-trees** update fixed-size pages *in place* (optimized for reads), and **[LSM](_meta/glossary.md#lsm)-trees** (Log-Structured Merge) buffer writes in memory and flush *append-only* sorted files, converting random writes into sequential I/O (optimized for writes). The whole subject is a set of amplification trade-offs — you cannot minimize read, write, and space amplification simultaneously, so an engine picks two and pays for the third.
+The storage engine is the layer that decides how a database's index and rows are laid out on disk and mutated. Two families dominate [OLTP](_meta/glossary.md#oltp): **B-trees** update fixed-size pages *in place* (optimized for reads), and **[LSM](_meta/glossary.md#lsm)-trees** (Log-Structured Merge) buffer writes in memory and flush *append-only* sorted files, converting random writes into sequential I/O (optimized for writes). The whole subject is a set of amplification trade-offs — you cannot minimize [read](_meta/glossary.md#read-amplification), [write](_meta/glossary.md#write-amplification), and [space amplification](_meta/glossary.md#space-amplification) simultaneously, so an engine picks two and pays for the third.
 
 > [!tip] Recognition
-> "Which storage engine?" / "Postgres vs Cassandra vs RocksDB" / "why is our write throughput capped" / "our SSD is wearing out from writes" / "reads got slow after a bulk delete" / "why does compaction spike latency". Whenever the question pits **write throughput against read latency or space**, reach for the B-tree ↔ LSM-tree amplification framing.
+> "Which storage engine?" / "Postgres vs Cassandra vs RocksDB" / "why is our write throughput capped" / "our SSD is wearing out from writes" / "reads got slow after a bulk delete" / "why does [compaction](_meta/glossary.md#compaction) spike latency". Whenever the question pits **write throughput against read latency or space**, reach for the B-tree ↔ LSM-tree amplification framing.
 
 ## When to Use
 
@@ -40,7 +40,7 @@ The storage engine is the layer that decides how a database's index and rows are
 - Reads dominate and tail latency must be predictable — a B-tree lookup is a bounded ~3–4 page reads, while an LSM read may probe the memtable plus multiple SSTable levels
 - You want each key to live in exactly one place — simpler locking, strong single-node transaction support, no compaction-induced latency spikes
 
-**Do not use LSM when:** you need predictable p99 read latency and cannot tolerate compaction stalls, or the workload is read-mostly with tight range-scan latency → B-tree.
+**Do not use LSM when:** you need predictable [p99](_meta/glossary.md#p99) read latency and cannot tolerate compaction stalls, or the workload is read-mostly with tight range-scan latency → B-tree.
 **Do not use B-tree when:** write amplification / SSD write budget is the constraint on a write-saturated table → LSM.
 
 ## Key Properties
@@ -52,11 +52,11 @@ The storage engine is the layer that decides how a database's index and rows are
 - Durability via a **[write-ahead log](_meta/glossary.md#wal)** (a.k.a. redo log): every modification is appended to the WAL *before* the page is overwritten, so a crash mid-split can be recovered
 
 **LSM-tree:**
-- Writes go to an in-memory sorted structure (**memtable**, e.g. a skip list / red-black tree) fronted by a WAL for durability
+- Writes go to an in-memory sorted structure (**[memtable](_meta/glossary.md#memtable)**, e.g. a skip list / red-black tree) fronted by a WAL for durability
 - When the memtable fills, it flushes to an immutable, sorted on-disk **[SSTable](_meta/glossary.md#sstable)**; SSTables are never modified, only merged
 - A read checks the memtable, then SSTables newest→oldest; a key can exist in several SSTables and the newest wins
-- **Bloom filters** per SSTable let a read skip files that certainly don't contain the key, cutting disk I/O for non-existent-key lookups (but they do **not** help range scans)
-- **Deletes are tombstones** — a marker shadowing older versions; the key isn't physically removed until compaction
+- **[Bloom filters](_meta/glossary.md#bloom-filter)** per SSTable let a read skip files that certainly don't contain the key, cutting disk I/O for non-existent-key lookups (but they do **not** help range scans)
+- **Deletes are [tombstones](_meta/glossary.md#tombstone)** — a marker shadowing older versions; the key isn't physically removed until compaction
 
 **Hash index (context — DDIA's simplest engine):**
 - An in-memory hash map from key → byte offset in an append-only log file; O(1) point lookups

@@ -14,7 +14,7 @@ priority: normal
 
 # Distributed Consensus
 
-Consensus is the problem of getting a set of nodes to agree on a single value (or a single ordered sequence of values) despite crashes, delays, and network partitions. It is the primitive that turns a pile of unreliable machines into a system that behaves like one reliable machine: leader election, distributed locks, atomic commit, uniqueness constraints, and linearizable storage all reduce to consensus. Raft and (Multi-)Paxos are the two canonical algorithms; both work by requiring a **majority quorum** to agree, so the system tolerates a minority of failures while never producing two conflicting decisions.
+Consensus is the problem of getting a set of nodes to agree on a single value (or a single ordered sequence of values) despite crashes, delays, and network partitions. It is the primitive that turns a pile of unreliable machines into a system that behaves like one reliable machine: [leader election](_meta/glossary.md#leader-election), distributed locks, atomic commit, uniqueness constraints, and [linearizable](_meta/glossary.md#linearizability) storage all reduce to consensus. Raft and (Multi-)Paxos are the two canonical algorithms; both work by requiring a **majority [quorum](_meta/glossary.md#quorum)** to agree, so the system tolerates a minority of failures while never producing two conflicting decisions.
 
 > [!tip] Recognition
 > Reach for consensus when the design says **"exactly one leader,"** **"agree on an order,"** **"linearizable,"** **"fencing token / lease,"** **"atomic commit across shards,"** or **"who owns this partition after failover?"** Anything requiring a single source of truth that survives node failure is a consensus problem in disguise.
@@ -23,19 +23,19 @@ Consensus is the problem of getting a set of nodes to agree on a single value (o
 
 **Problem signals that suggest consensus:**
 - "We need automatic **leader failover** with no split-brain" — electing exactly one primary is the textbook consensus use case (etcd, ZooKeeper, Consul all exist for this)
-- "Two nodes both think they're the primary and both accepted writes" — split-brain; you need a quorum-based election plus fencing tokens
+- "Two nodes both think they're the primary and both accepted writes" — [split-brain](_meta/glossary.md#split-brain); you need a quorum-based election plus fencing tokens
 - "Reads must reflect the most recent write" (**linearizability**) — a linearizable register/store is built on consensus
 - "All replicas must apply operations in the **same order**" — total-order (atomic) broadcast, which is equivalent to consensus
-- "Commit this transaction across shards atomically, and survive a coordinator crash" — fault-tolerant atomic commit needs consensus (not bare two-phase commit, which blocks on coordinator failure)
+- "Commit this transaction across shards atomically, and survive a coordinator crash" — fault-tolerant atomic commit needs consensus (not bare [two-phase commit](_meta/glossary.md#two-phase-commit), which blocks on coordinator failure)
 - "Store a small amount of **critical metadata** reliably" — config, service discovery, lock/lease state, shard assignments
 
 **Prefer consensus over alternatives when:**
 - Over a single primary with async replication: when you cannot tolerate losing acknowledged writes or electing a stale replica on failover (async replication can lose the tail of the log)
-- Over leaderless quorum reads/writes (Dynamo-style): when you need a *total order* and linearizability, not just per-key last-write-wins — sloppy quorums and read-repair give eventual consistency, not agreement on order
+- Over leaderless quorum reads/writes (Dynamo-style): when you need a *total order* and linearizability, not just per-key last-write-wins — [sloppy quorums](_meta/glossary.md#sloppy-quorum) and [read repair](_meta/glossary.md#read-repair) give eventual consistency, not agreement on order
 - Over [LWW](_meta/glossary.md#lww) / [CRDT](_meta/glossary.md#crdt) merge: when concurrent updates must be *serialized into one order*, not merged commutatively; [CRDT](_meta/glossary.md#crdt)s deliberately avoid coordination and cannot enforce global invariants like "balance ≥ 0"
 
 **Do not use when:**
-- The workload can tolerate eventual consistency → use a leaderless/AP store; consensus adds a round-trip to a majority on every write and hurts latency, especially cross-region
+- The workload can tolerate [eventual consistency](_meta/glossary.md#eventual-consistency) → use a leaderless/AP store; consensus adds a round-trip to a majority on every write and hurts latency, especially cross-region
 - You only need per-key conflict resolution with no global invariant → [CRDT](_meta/glossary.md#crdt)s or [LWW](_meta/glossary.md#lww) avoid coordination entirely
 - You are tempted to build consensus yourself → don't. Use etcd/ZooKeeper/Consul or an embedded Raft library. Hand-rolled consensus is a classic source of subtle, rare, catastrophic data-loss bugs.
 
@@ -92,7 +92,7 @@ Consensus algorithms provide these guarantees (DDIA Ch. 9):
 
 **Raft in one page** (the mental model to reconstruct in an interview):
 
-*Three roles:* follower, candidate, leader. *Two RPCs:* `RequestVote` and `AppendEntries` ([RPC](_meta/glossary.md#rpc); `AppendEntries` with no entries doubles as the heartbeat).
+*Three roles:* follower, candidate, leader. *Two RPCs:* `RequestVote` and `AppendEntries` (`AppendEntries` with no entries doubles as the heartbeat).
 
 ```text
 LEADER ELECTION
