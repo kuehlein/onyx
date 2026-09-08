@@ -296,7 +296,7 @@ const heap = new MinHeap((a, b) => a[0] - b[0]); // compare by distance
 ## Related
 
 - [[dijkstra-shortest-path]]
-- [[top-k-elements-pattern]]
+- [[top-k-elements]]
 - [[merge-k-sorted-lists]]
 - [[sliding-window-median]]
 - [[minimum-spanning-tree]]
