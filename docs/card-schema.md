@@ -206,6 +206,26 @@ During a session, Onyx:
 The user grades 1–4 (Again / Hard / Good / Easy). FSRS updates `stability`
 and `difficulty` and computes the next `due_at` for that pair independently.
 
+## Glossary linking
+
+Cards link specialist terms to the vault glossary (`_meta/glossary.md`) so the
+learner can tap for a precise definition. Convention:
+
+- Link the **first** occurrence of a term in prose (not in code blocks, the
+  frontmatter, or the Resources/Related sections), as
+  `[term](_meta/glossary.md#slug)`. The anchor is the **GitHub-style slug** of
+  the glossary heading (lowercase, non-alphanumerics → hyphens): `## SHA-256` →
+  `#sha-256`, `## Consistent Hashing` → `#consistent-hashing`.
+- The glossary holds both **acronyms** (TCP, MVCC, CAP) and **nuanced technical
+  terms** whose particulars are easy to misremember or that aren't everyday
+  vocabulary (idempotency, consistent hashing, write skew, quorum,
+  linearizability). Be liberal but not exhaustive — **skip trivially basic
+  concepts** (binary search, array, for loop).
+- Only link a term that actually has a glossary heading; if a term deserves a
+  definition and none exists, **add the entry to the glossary** (alphabetically,
+  `## Term` + a 1–2 sentence definition) and then link it. First occurrence only;
+  don't over-link.
+
 ---
 
 ## Recommended Section Headings
