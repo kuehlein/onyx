@@ -139,7 +139,25 @@ double domainWeight(ReadinessTarget target, String domain) {
       d == 'dsa' ||
       d.contains('algorithm') ||
       d.contains('data-structure');
-  final isSysDesign = d.contains('system-design') || d == 'systems';
+  // The "systems / backend-knowledge" family: system design plus the DDIA-heavy
+  // backend domains. Weighted together (senior-rising, backend-track-boosted)
+  // rather than each defaulting to 1.0. This grouping is a placeholder for a
+  // per-domain, config-driven weight map (see docs/vault-structure.md + #30).
+  const systemsBackend = {
+    'system-design',
+    'systems',
+    'databases',
+    'database',
+    'distributed-systems',
+    'distributed',
+    'networking',
+    'concurrency',
+    'security',
+    'backend',
+    'api-design',
+    'reliability',
+  };
+  final isSysDesign = systemsBackend.contains(d) || d.contains('system-design');
 
   if (isAlgo) {
     final base = switch (target.level) {

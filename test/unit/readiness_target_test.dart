@@ -50,7 +50,26 @@ void main() {
     });
 
     test('unknown domains weigh 1.0', () {
-      expect(domainWeight(ReadinessTarget.fallback, 'databases'), 1.0);
+      expect(domainWeight(ReadinessTarget.fallback, 'astrophysics'), 1.0);
+    });
+
+    test('backend-knowledge domains weigh like system design', () {
+      const senior = ReadinessTarget(
+          level: SeniorityLevel.senior,
+          company: CompanyTier.faang,
+          track: Track.backend);
+      final sd = domainWeight(senior, 'system-design');
+      for (final d in [
+        'databases',
+        'distributed-systems',
+        'networking',
+        'security'
+      ]) {
+        expect(domainWeight(senior, d), sd,
+            reason: '$d should ride the systems/backend weight');
+      }
+      // Still above the neutral default, and boosted by the backend track.
+      expect(sd, greaterThan(1.0));
     });
   });
 
