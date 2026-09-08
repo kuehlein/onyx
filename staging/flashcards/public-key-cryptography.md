@@ -2,7 +2,7 @@
 id: 7f3a2c1e-9b4d-4e8f-a5c0-d2f6b8e3a7c9
 type: flashcard
 tags:
-  - blockchain
+  - security
   - cryptography
   - wallet
 tiers:

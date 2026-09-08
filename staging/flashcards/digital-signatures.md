@@ -6,7 +6,7 @@ confidence: high
 tiers:
   blockchain: 1
 tags:
-  - blockchain
+  - security
   - cryptography
   - digital-signatures
   - public-key-crypto
