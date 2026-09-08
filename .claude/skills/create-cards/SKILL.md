@@ -36,8 +36,17 @@ One card = one markdown file in `staging/flashcards/<slug>.md`:
 - **Encode principles, not rote facts** — the learner should reconstruct an
   answer from the principle. Code is *reference* (reconstruct from the approach),
   never a memorize-verbatim target.
-- **Tight, atomic-ish sections** — don't obsess over one-fact-per-card, but no
-  bloated textbook dumps; each section is its own recall target.
+- **Tight, atomic-ish sections** — don't obsess over one-fact-per-card (no RCT
+  backs that), but each quizzed section should target one coherent idea with the
+  shortest sufficient answer; split a section that bundles independent facts.
+- **Answerable-from-cue** — effortful recall helps *only on success*; a section so
+  overloaded/ambiguous that recall fails just churns in FSRS. Make it winnable.
+- **Disambiguate interference (highest-value)** — interference between confusable
+  sibling cards is the top cause of forgetting. When a card is near-adjacent to
+  others, add an explicit contrast cue ("vs. X" line / comparison row naming the
+  distinguishing signal) and use precise prompts, not generic ones.
+- **No rote-enumeration recall targets** — make the recall target the principle
+  that generates a list; never "turn lists into narratives" (evidence-refuted).
 - Presentation: one clear through-line, segmented sections, syntax-highlighted code.
 
 ## 3. Domains, tiers, weighting

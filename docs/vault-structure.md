@@ -92,10 +92,71 @@ Same rule-of-three discipline as the practice-track engine:
 Keep incremental choices *config-shaped* now (e.g. domain→weight as a map, not
 more enums) so this migration stays cheap.
 
+## AI authoring lives in the vault (added 2026-09-08)
+
+The vault is the single source of truth for **everything needed to author cards —
+including the AI skills themselves**, even if that means a `.claude/skills/` dir
+*inside* the Obsidian vault. Rationale (user): once #30 lands, card authoring
+moves OUT of this repo and INTO the vault (opened as its own Claude Code project);
+Claude working in the vault must have the full method + domain knowledge with no
+dependency on this repo.
+
+Split of knowledge:
+- **General, all-domains-aware** — the Onyx app model, FSRS/spaced-repetition,
+  retention/learning science, and the **domain-agnostic card-authoring method** —
+  lives at the vault top level (general knowledge every theme shares).
+- **Domain-specific** — the SWE curriculum, per-domain sections/tiers/glossary
+  policy, example cards — lives in that theme's subtree.
+
+Three layers of ownership (refined 2026-09-08):
+- **Universal authoring kit** — the general skill + knowledge (app model, FSRS,
+  retention science, the domain-agnostic method). This is *product*, shared by
+  every Onyx user; **canonical source = this GitHub repo** (maintainer-edited).
+- **Domain profiles** — SWE shipped as the reference; friends may author their own
+  in their own vaults.
+- **User content (cards)** — local to each vault, never in git.
+So "the vault is the single source of truth" is really: the repo is upstream for
+the universal kit; each vault holds a *copy* of it + that user's profiles/content.
+
+Distribution (how the repo-tracked universal kit reaches a user's vault/Claude):
+- Requirement: other people can use Onyx for other subjects; they need the
+  universal skills + authoring tools in *their* vault, without access to the
+  maintainer's phone/account. The kit is tracked in GitHub; it must land in each
+  user's `_onyx/`.
+- **Do NOT** build live-sync / symlinks / integrity-checking. Manual, overwrite-in-
+  place re-download is the accepted tradeoff (user's call): easy to re-run, no
+  merge, no corruption worry, occasional staleness is fine.
+- Candidate mechanism (decide in #30): **the Onyx app is the distributor** — bundle
+  the universal kit as app assets + an "Update authoring tools" action that writes/
+  overwrites it into the vault's `_onyx/`. Friends never touch git; tap to (re)install.
+  The kit then rides existing vault sync from phone → desktop (where Claude authors).
+  A small version stamp makes app-vs-kit mismatch visible without enforcement.
+
+Skill design:
+- Generalize `create-cards` to be fully **domain-agnostic** (SWE becomes an example
+  profile, not hardcoded). Do NOT hardcode domain specifics into canonical AI
+  touchpoints (`.claude/skills/`); the touchpoint stays generic and reads specifics
+  from the vault.
+- **Discoverability** = a *Knowledge Map* in `CLAUDE.md` (a table of skills + key
+  docs, each with a one-line "consult when") — cheap always-on awareness,
+  load-on-demand. Sweep in the loose capabilities (card gen/audit method,
+  deep-research, coach/readiness/curriculum docs).
+- Candidate: **stub-loader** — a generic loader skill in `.claude/skills/` that
+  reads the vault's general knowledge + the active domain profile — vs. carrying a
+  full `.claude/skills/` inside the vault. Decide during #30.
+- **Avoid symlinks** for sharing skills repo↔vault: fragile across Linux/Mac
+  (absolute paths), Obsidian sync (may not preserve links), and git (stores the
+  link, not content; vault side may not be a checkout).
+
 ## Open questions
 - Reserved-root name: `_onyx/` (matches the existing single-`_` convention) vs
   `.onyx/` (hidden from Obsidian) vs the user's `__onyx/`. Leaning `_onyx/`.
+- **Layout inside the reserved root:** possibly top level = configuration +
+  knowledge + skills, and all card **content** under a `content/` subdir (rather
+  than cards flat or nested under theme/flow dirs directly). Resolve when building.
 - One active theme at a time, or multiple concurrently? (affects Home/nav.)
 - Migration: today cards live flat in `staging/flashcards/` with `_meta/`; the
   current two flows map to `general/` (concept recall) + `algorithms/` (coding).
+  Card content will **not be committed to git** once authoring moves to the vault;
+  it's fine that cards live in the repo for now and migrate later.
 - Does the theme config subsume `onyx-target.json` / `onyx-goals.json`?

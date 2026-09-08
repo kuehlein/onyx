@@ -99,6 +99,56 @@ splitting it into six atomic cards. Use your judgment.
 
 ---
 
+## 5. Evidence-based formulation rules (verified research pass, 2026-09-08)
+
+A second adversarial research pass (25 sources, 23/25 claims confirmed) revisited
+card *formulation* against primary sources. It **reconciles** — not overturns — §4.
+
+### Active recall beats recognition; effort helps *only on success*
+**Confidence: High** | Roediger & Karpicke 2006 (primary RCT).
+Producing an answer (short-answer recall) beats choosing one (recognition), and
+repeated successful retrieval compounds. Crucial nuance: **effortful retrieval
+helps only when it *succeeds*.** A card so overloaded or ambiguous that the reader
+fails the recall gives no benefit — and, in FSRS terms, a failing card lapses and
+churns instead of building stability.
+**Rule:** each quizzed section must be *answerable from its cue* — challenging but
+winnable, not a wall of facts that guarantees failure.
+
+### Interference is the leading cause of forgetting — disambiguate siblings
+**Confidence: High** | Wozniak (SuperMemo 20 Rules); McGeoch 1932.
+For a maturing deck, confusion *between similar items* is the single biggest cause
+of forgetting — more than any single card's difficulty. Onyx's deck is dense with
+confusable siblings (TCP/gRPC/GraphQL/WebSockets; consensus vs. consistency
+models; the whole caching family; 2PC vs. saga).
+**Rule (net-new, highest-value):** when a card is near-adjacent to others, add an
+explicit *contrast cue* — a "vs. X" line or a comparison row that names the
+distinguishing signal — so the two never blur. Prefer precise, unambiguous prompts
+over generic ones ("When to reach for a *heap* over a sorted array" beats "When to
+use").
+
+### Minimum-information — as a *soft* default, applied within sections
+**Confidence: Medium (doctrine, not RCT).** The new pass confirms the minimum-
+information principle *as expert doctrine*; §4 correctly notes no RCT shows atomic
+cards retain *better*, and Matuschak warns over-atomizing yields shallower
+understanding. Reconciliation for Onyx: keep the rich, principle-based card, but
+make **each quizzed section target one coherent idea with the shortest sufficient
+answer.** Split a section that secretly bundles several independent facts; don't
+shatter a coherent idea into trivia.
+
+### Don't make rote enumeration the recall target
+**Confidence: Medium.** Long *unordered* lists resist recall. (The popular fix
+"turn lists into narratives" was **killed 0-3** — do not do that.) Instead, make
+the recall target the **principle that generates the list**, or group/structure a
+long list so it's reconstructable, not memorized by brute force.
+
+### Spacing/timing is the scheduler's job
+**Confidence: High** | Cepeda 2006/2008; Karpicke & Roediger 2007.
+No single optimal gap exists and delaying the first retrieval is the key desirable
+difficulty — but FSRS already handles all of this. **Nothing to author here**;
+just don't fight the scheduler (no cramming semantics baked into cards).
+
+---
+
 ## The Three Knowledge Types — and Why Conditional Knowledge Is the Priority
 
 Research on knowledge types distinguishes:
@@ -204,8 +254,10 @@ Design cards to encode **rules and recognition triggers**, not rote facts.
 Trust the FSRS scheduler for timing. Trust interleaving for session ordering.
 Do not obsess over card atomicity — there is no peer-reviewed evidence that
 splitting every card into six mini-cards produces better results than one
-well-structured card. Use Onyx to build the pattern library; supplement with
-novel problem practice for transfer.
+well-structured card. **Do** make each quizzed section answerable from its cue
+(effort helps only on success) and **actively disambiguate confusable sibling
+cards** (interference is the top cause of forgetting). Use Onyx to build the
+pattern library; supplement with novel problem practice for transfer.
 
 ---
 
