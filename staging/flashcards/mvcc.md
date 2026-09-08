@@ -14,7 +14,7 @@ priority: normal
 
 # Multi-Version Concurrency Control (MVCC)
 
-MVCC lets a database serve each transaction a consistent point-in-time snapshot without readers and writers blocking each other. Instead of overwriting a row in place, a write creates a *new version* of the row and leaves the old one intact; each version is tagged with the transaction that created it (and, once superseded, the transaction that deleted it). A reader then consults *visibility rules* against its snapshot to decide which single version of each row it is allowed to see. This is how virtually every modern OLTP engine (Postgres, InnoDB, Oracle, SQL Server RCSI) implements **snapshot isolation** — DDIA Ch.7's "readers never block writers, writers never block readers."
+[MVCC](_meta/glossary.md#mvcc) lets a database serve each transaction a consistent point-in-time snapshot without readers and writers blocking each other. Instead of overwriting a row in place, a write creates a *new version* of the row and leaves the old one intact; each version is tagged with the transaction that created it (and, once superseded, the transaction that deleted it). A reader then consults *visibility rules* against its snapshot to decide which single version of each row it is allowed to see. This is how virtually every modern [OLTP](_meta/glossary.md#oltp) engine (Postgres, InnoDB, Oracle, SQL Server RCSI) implements **snapshot isolation** — DDIA Ch.7's "readers never block writers, writers never block readers."
 
 > [!tip] Recognition
 > Reach for MVCC reasoning when you see: "reader sees stale/old data mid-transaction," "long-running analytics query on a live OLTP table," "readers-don't-block-writers," row-version tags (`xmin`/`xmax`, undo logs), table *bloat* / `VACUUM` / autovacuum tuning, or "could not serialize access" / write-skew anomalies. Any question about *how snapshot isolation actually works under the hood* is an MVCC question.
@@ -35,7 +35,7 @@ MVCC lets a database serve each transaction a consistent point-in-time snapshot 
 
 **Do not rely on plain snapshot isolation when:**
 - You need **serializability** — SI alone permits **write skew** and phantom anomalies (DDIA Ch.7). Use SERIALIZABLE (Postgres SSI) or explicit locking (`SELECT ... FOR UPDATE`).
-- The workload is write-mostly with high row churn → version accumulation and GC/`VACUUM` become the bottleneck; consider an [[lsm-tree]] store or partition/TTL strategy.
+- The workload is write-mostly with high row churn → version accumulation and GC/`VACUUM` become the bottleneck; consider an [[lsm-tree]] store or partition/[TTL](_meta/glossary.md#ttl) strategy.
 - You assumed "REPEATABLE READ = serializable." It does not; the SQL-standard names are weaker than their intuitive meaning.
 
 ## Key Properties

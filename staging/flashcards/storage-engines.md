@@ -15,7 +15,7 @@ priority: normal
 
 # Storage Engines: B-Tree vs LSM-Tree
 
-The storage engine is the layer that decides how a database's index and rows are laid out on disk and mutated. Two families dominate OLTP: **B-trees** update fixed-size pages *in place* (optimized for reads), and **LSM-trees** (Log-Structured Merge) buffer writes in memory and flush *append-only* sorted files, converting random writes into sequential I/O (optimized for writes). The whole subject is a set of amplification trade-offs — you cannot minimize read, write, and space amplification simultaneously, so an engine picks two and pays for the third.
+The storage engine is the layer that decides how a database's index and rows are laid out on disk and mutated. Two families dominate [OLTP](_meta/glossary.md#oltp): **B-trees** update fixed-size pages *in place* (optimized for reads), and **[LSM](_meta/glossary.md#lsm)-trees** (Log-Structured Merge) buffer writes in memory and flush *append-only* sorted files, converting random writes into sequential I/O (optimized for writes). The whole subject is a set of amplification trade-offs — you cannot minimize read, write, and space amplification simultaneously, so an engine picks two and pays for the third.
 
 > [!tip] Recognition
 > "Which storage engine?" / "Postgres vs Cassandra vs RocksDB" / "why is our write throughput capped" / "our SSD is wearing out from writes" / "reads got slow after a bulk delete" / "why does compaction spike latency". Whenever the question pits **write throughput against read latency or space**, reach for the B-tree ↔ LSM-tree amplification framing.
@@ -131,8 +131,8 @@ delete(k): write(k, TOMBSTONE)         # physical removal deferred to compaction
 ## Variants
 
 - **Fractal tree / B-ε tree** (TokuDB): buffers writes in internal nodes to cut B-tree write amplification — a hybrid between B-tree reads and LSM-like write batching.
-- **Copy-on-write B-tree** (LMDB): never overwrites pages in place; writes new pages and swaps the root — MVCC and crash safety without a WAL.
-- **Time-window compaction** (Cassandra TWCS): SSTables grouped by time window, ideal for TTL'd time-series data where whole windows expire together.
+- **Copy-on-write B-tree** (LMDB): never overwrites pages in place; writes new pages and swaps the root — [MVCC](_meta/glossary.md#mvcc) and crash safety without a WAL.
+- **Time-window compaction** (Cassandra TWCS): SSTables grouped by time window, ideal for [TTL](_meta/glossary.md#ttl)'d time-series data where whole windows expire together.
 - **Key-value separation** (WiscKey / RocksDB BlobDB): store large values outside the LSM to shrink compaction write amplification.
 
 ## Resources

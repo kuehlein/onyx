@@ -14,7 +14,7 @@ priority: normal
 
 # OLTP vs OLAP
 
-Two fundamentally different access patterns drive two different storage designs. **OLTP** (Online Transaction Processing) serves the application: many small, latency-sensitive reads and writes that each touch a few rows by key — so it uses **row-oriented** storage where one row's columns sit contiguously on disk. **OLAP** (Online Analytical Processing) serves analysts: a few long-running queries that scan millions of rows but only a handful of columns to compute aggregates — so it uses **column-oriented** storage where each column is stored contiguously, enabling the engine to read only the columns a query needs and to compress them aggressively. This is the core insight of DDIA Ch. 3: the disk layout should mirror the query's access pattern.
+Two fundamentally different access patterns drive two different storage designs. **[OLTP](_meta/glossary.md#oltp)** (Online Transaction Processing) serves the application: many small, latency-sensitive reads and writes that each touch a few rows by key — so it uses **row-oriented** storage where one row's columns sit contiguously on disk. **[OLAP](_meta/glossary.md#olap)** (Online Analytical Processing) serves analysts: a few long-running queries that scan millions of rows but only a handful of columns to compute aggregates — so it uses **column-oriented** storage where each column is stored contiguously, enabling the engine to read only the columns a query needs and to compress them aggressively. This is the core insight of DDIA Ch. 3: the disk layout should mirror the query's access pattern.
 
 > [!tip] Recognition
 > Ask "does the query touch **few rows × all columns** (point/range lookup by key → OLTP, row store) or **all rows × few columns** (aggregate scan → OLAP, column store)?" If the answer is "load a customer profile and update it," that's OLTP. If it's "sum revenue by product category over Q3," that's OLAP fed by a nightly ETL into a warehouse.
@@ -25,7 +25,7 @@ Two fundamentally different access patterns drive two different storage designs.
 - Access is by primary key or a selective index — you fetch or mutate a small number of rows per request
 - Writes are frequent, small, and must be durable and low-latency (order placement, profile edit)
 - The application is the client; queries are known and templated by the code path
-- You need row-level transactions with ACID isolation ([[acid-properties]], [[transaction-lifecycle]])
+- You need row-level transactions with [ACID](_meta/glossary.md#acid) isolation ([[acid-properties]], [[transaction-lifecycle]])
 
 **Signals that the workload is OLAP (column store / warehouse: BigQuery, Redshift, Snowflake, ClickHouse):**
 - Queries scan a huge fraction of the rows but project only a few columns and aggregate (`SUM`, `COUNT`, `GROUP BY`, window functions)

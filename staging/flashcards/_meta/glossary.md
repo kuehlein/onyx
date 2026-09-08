@@ -300,6 +300,9 @@ Mutual TLS — a TLS mode in which both client and server present and verify cer
 ## MuSig
 A Schnorr multi-signature protocol that aggregates signers' keys and signatures into a single key and signature.
 
+## MVCC
+Multi-Version Concurrency Control — a concurrency technique where a write creates a new version of a row instead of overwriting it, so each transaction reads a consistent point-in-time snapshot without readers and writers blocking each other. How most databases implement snapshot isolation.
+
 ## MX
 Mail Exchange — a DNS record naming the mail servers that accept email for a domain.
 

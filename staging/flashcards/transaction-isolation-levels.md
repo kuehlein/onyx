@@ -14,7 +14,7 @@ priority: normal
 
 # Transaction Isolation Levels
 
-Isolation levels define which concurrency anomalies a database permits between transactions that run at the same time. They form a ladder from weak to strong: **read uncommitted → read committed → snapshot / repeatable read → serializable**. Each rung prevents one more class of race condition at the cost of more blocking, more aborts, or lower throughput. The core insight from *Designing Data-Intensive Applications* (DDIA) Ch.7: "ACID" says nothing about *which* level you get — most databases default to read committed or snapshot isolation, not serializable, so weak-isolation races are your responsibility to reason about.
+Isolation levels define which concurrency anomalies a database permits between transactions that run at the same time. They form a ladder from weak to strong: **read uncommitted → read committed → snapshot / repeatable read → serializable**. Each rung prevents one more class of race condition at the cost of more blocking, more aborts, or lower throughput. The core insight from *Designing Data-Intensive Applications* (DDIA) Ch.7: "[ACID](_meta/glossary.md#acid)" says nothing about *which* level you get — most databases default to read committed or snapshot isolation, not serializable, so weak-isolation races are your responsibility to reason about.
 
 > [!tip] Recognition heuristic
 > Any time two transactions touch overlapping data concurrently and correctness depends on *what one sees of the other*, name the anomaly first (dirty read? lost update? write skew?), then pick the weakest level that prevents it. If money, inventory, or an invariant across multiple rows is at stake, you likely need serializable or an explicit lock — not the default.
@@ -29,7 +29,7 @@ Isolation levels define which concurrency anomalies a database permits between t
 - "Same query returned different rows within one transaction" — non-repeatable read or phantom
 
 **Choosing a level:**
-- **Read committed** (default in Postgres, Oracle, SQL Server): fine for most OLTP where each statement is self-contained; use `SELECT ... FOR UPDATE` for the rare read-modify-write.
+- **Read committed** (default in Postgres, Oracle, SQL Server): fine for most [OLTP](_meta/glossary.md#oltp) where each statement is self-contained; use `SELECT ... FOR UPDATE` for the rare read-modify-write.
 - **Snapshot / repeatable read**: when a transaction issues *multiple reads* that must see one consistent point-in-time view (analytics, backups, multi-row invariant checks that don't also write to the checked rows).
 - **Serializable**: when correctness depends on an invariant spanning rows a transaction reads but does not modify (booking systems, double-spend guards) — i.e. write skew must be impossible.
 
@@ -60,7 +60,7 @@ Isolation levels define which concurrency anomalies a database permits between t
 
 **Snapshot isolation vs. SQL-standard repeatable read (the senior gotcha):**
 - These are *not* the same guarantee, though vendors conflate them.
-- **Snapshot isolation** (MVCC-based) blocks phantoms and non-repeatable reads but **allows write skew**.
+- **Snapshot isolation** ([MVCC](_meta/glossary.md#mvcc)-based) blocks phantoms and non-repeatable reads but **allows write skew**.
 - The SQL-standard **repeatable read** locks read rows so it blocks write skew on those rows but **allows phantoms** (new rows aren't locked).
 - Neither is fully serializable; write skew is the anomaly that distinguishes snapshot isolation from serializable.
 
