@@ -470,7 +470,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     final grid = monthGrid(_month.year, _month.month, firstDayOfWeek: firstDow);
     final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
-    const blank = SizedBox(height: 34);
+    const blank = SizedBox(height: 44);
     final cells = <Widget>[
       for (var i = 0; i < grid.leading; i++) blank,
       for (var day = 1; day <= grid.days; day++)
@@ -482,7 +482,6 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             past: past,
             selected:
                 widget.selected != null && _sameDay(date, widget.selected!),
-            isToday: _sameDay(date, today),
             zoneColor: _zoneColor(date),
             onTap: past ? null : () => widget.onSelect(date),
           );
@@ -566,7 +565,6 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.past,
     required this.selected,
-    required this.isToday,
     required this.zoneColor,
     required this.onTap,
   });
@@ -574,7 +572,6 @@ class _DayCell extends StatelessWidget {
   final int day;
   final bool past;
   final bool selected;
-  final bool isToday;
   final Color? zoneColor;
   final VoidCallback? onTap;
 
@@ -582,16 +579,13 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showZone = zoneColor != null && !past;
-    // In the bordered grid, the zone is a soft cell BACKGROUND (a proper heatmap
-    // now that cells are outlined) — the most legible option. Selected = solid
-    // primary; today = a subtle primary tint; the number stays neutral to read.
+    // The zone is a soft cell BACKGROUND (a heatmap now that cells are outlined).
+    // Selected = solid primary; the number stays neutral to read.
     final cellBg = selected
         ? theme.colorScheme.primary
-        : isToday
-            ? theme.colorScheme.primary.withValues(alpha: 0.15)
-            : showZone
-                ? zoneColor!.withValues(alpha: 0.22)
-                : null;
+        : showZone
+            ? zoneColor!.withValues(alpha: 0.22)
+            : null;
     final numberColor = past
         ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
         : selected
@@ -602,14 +596,13 @@ class _DayCell extends StatelessWidget {
       canRequestFocus: false,
       focusColor: Colors.transparent,
       child: Container(
-        height: 34,
+        height: 44,
         alignment: Alignment.center,
         color: cellBg,
         child: Text('$day',
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
                 color: numberColor,
-                fontWeight:
-                    selected || isToday ? FontWeight.w700 : FontWeight.w400)),
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w400)),
       ),
     );
   }
