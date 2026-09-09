@@ -34,6 +34,7 @@ priority: normal
 - Over 1D DP: the state cannot be compressed to one dimension without losing information about which sub-problem combination produced it
 - Over [BFS](_meta/glossary.md#bfs)/[DFS](_meta/glossary.md#dfs) alone: you need optimal substructure across two dimensions, not just reachability
 - Over greedy: locally optimal choices do not globally hold (e.g., editing two strings requires tracking all alignments)
+- Over [backtracking](_meta/glossary.md#backtracking): sub-problems overlap (same `(i, j)` reached many ways), so caching turns exponential search into O(n·m). Reach for backtracking only when you must enumerate all solutions or the state does not repeat.
 
 **Do not use when:**
 - Only one sequence/dimension varies → use 1D DP
@@ -58,7 +59,7 @@ Apply this checklist before writing any code:
 
 5. **Answer location:** Is the answer `dp[n][m]`? `max over entire table`? `min of last row`? Identify before implementation.
 
-6. **Memoization vs. tabulation:** Prefer tabulation (bottom-up iteration) in interviews — no recursion stack overhead, easier to reason about. Use memoization when the state space is sparse (many sub-problems never needed).
+6. **Memoization vs. tabulation:** Prefer tabulation (bottom-up iteration) in interviews — no recursion stack overhead, easier to reason about. Use [memoization](_meta/glossary.md#memoization) when the state space is sparse (many sub-problems never needed).
 
 ## Time & Space Complexity
 

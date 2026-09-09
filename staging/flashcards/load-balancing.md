@@ -29,6 +29,10 @@ A load balancer distributes incoming traffic across multiple backend servers so 
 - "Handle traffic spikes" (e.g., flash sales, viral events) — autoscaling groups need a balancer to register new instances
 - Any architecture with multiple replicas of a stateless service (API servers, web servers, microservices)
 
+**vs. confusable siblings (all sit "in front" of servers):**
+- vs. [rate limiting](_meta/glossary.md#rate-limiting): a LB *distributes* load to keep servers healthy; a rate limiter *rejects/throttles* excess load to protect them. Complementary, not alternatives — you run a limiter at/behind the LB.
+- vs. [CDN](_meta/glossary.md#cdn): a CDN *caches and serves static content from edge PoPs* (offloading origin); a LB *routes dynamic requests to compute*. Global LB shares GeoDNS/Anycast mechanics with a CDN but has no cache.
+
 **Prefer load balancing over alternatives when:**
 - Over [DNS](_meta/glossary.md#dns) round-robin: DNS [TTL](_meta/glossary.md#ttl)s commonly range from 300–3600 s (or higher), preventing fast failover because clients cache stale records for minutes to hours; a dedicated [LB](_meta/glossary.md#lb) detects failure in 2–10 s via health checks
 - Over client-side load balancing: centralized LBs offload retry/failover logic from every client; appropriate when clients are untrusted (public internet) or heterogeneous

@@ -17,6 +17,8 @@ Observability is the ability to explain a system's internal state from its exter
 
 > [!tip] Recognition — reach for observability design when you hear
 > "we can't tell why p99 spiked," "the error is somewhere across 12 microservices," "MTTR is too high / on-call is flying blind," "we need to debug a problem we've never seen before," "how do we correlate logs across services for one request," or "our metrics bill exploded." Any question about *unknown-unknowns* in a distributed system is an observability question, not a monitoring one.
+>
+> **vs. resilience siblings:** observability only *measures and explains* — it never changes request flow. [Circuit-breaker](_meta/glossary.md#circuit-breaker), [retries/timeouts](_meta/glossary.md#retry-storm), and [rate-limiting](_meta/glossary.md#rate-limiting) *act on* traffic (stop, resend, or shed it); observability is what tells you they are firing. Distinguishing signal: if the pattern makes a control decision it is resilience; if it emits or answers questions about state it is observability.
 
 ## When to Use
 

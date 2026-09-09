@@ -24,6 +24,10 @@ A message queue decouples producers from consumers by putting a durable buffer b
 > - **"exactly one worker should handle each job"** — point-to-point work queue with competing consumers
 > - Anti-signal: a **synchronous request/response where the caller needs the result now** → that's [gRPC](_meta/glossary.md#grpc)/HTTP, not a queue.
 
+> [!warning] Don't confuse with its siblings
+> - **vs [Load balancing](load-balancing.md):** both spread work across many workers, but a load balancer distributes *synchronous, in-flight* requests to servers that must answer *now* (no persistence, caller waits); a queue *stores* messages so a consumer can process them *later* at its own pace. Distinguishing signal: is the caller blocked waiting for a reply? Yes → load balancer; no → queue.
+> - **vs [Rate limiting](rate-limiting.md):** both cope with spikes, but rate limiting *rejects/throttles* excess requests to protect a service (bounded work, dropped load); a queue *absorbs and defers* the spike so all work eventually runs (unbounded backlog, no drops until retention). Distinguishing signal: shed load vs. smooth load.
+
 ## When to Use
 
 **Problem signals that suggest a message queue / stream:**

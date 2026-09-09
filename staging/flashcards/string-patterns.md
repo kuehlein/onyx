@@ -44,13 +44,17 @@ In-place reversal / rotation:
 
 **Prefer string-specific patterns over alternatives when:**
 - Over generic [DFS](_meta/glossary.md#dfs)/[BFS](_meta/glossary.md#bfs): character-frequency problems have O(26) state, making an explicit graph unnecessary — a fixed-size array/map suffices
-- Over [DP](_meta/glossary.md#dp) for anagram detection: sorting or frequency count is O(n) or O(n log n) vs. O(n²) DP; use DP only when you need edit distance or longest common subsequence
+- Over [DP](_meta/glossary.md#dp) for anagram detection: sorting or frequency count is O(n) or O(n log n) vs. O(n²) DP; use DP only when you need edit distance or [longest common subsequence](_meta/glossary.md#lcs)
 - Over brute-force O(n²) substring search: sliding window reduces to O(n) by maintaining a running invariant rather than recomputing from scratch
 
 **Do not use when:**
 - You need substring *position* with overlap → use [KMP](_meta/glossary.md#kmp) or Rabin-Karp instead of naive sliding window
 - The alphabet is unbounded (e.g., Unicode code points in the millions) → fixed-size array trick breaks; use a general hash map and note the space cost
 - The problem asks for *edit distance* or *longest common subsequence* → two-pointer/frequency won't work; reach for DP
+
+**vs. the sibling technique cards (distinguishing signal):** This card is the *string-specific overlay* — reach for it when the input is text and the alphabet is bounded (≤ 26), which unlocks the O(26) frequency-array/canonical-form tricks that generic cards don't cover.
+- vs. [[sliding-window]] / [[two-pointers]]: those are the general window/scan mechanics on any sequence; string-patterns adds character-frequency semantics, anagram/palindrome canonicalization, and immutability handling.
+- vs. [[hash-map-and-hash-set]]: a general hash map is unbounded-key; string frequency counting is bounded to the alphabet, so prefer a fixed `int[26]` for provable O(1) space.
 
 ## Time & Space Complexity
 

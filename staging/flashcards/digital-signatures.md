@@ -27,6 +27,8 @@ A digital signature is a value produced from a message and a **private key** tha
 
 Contrast with a **[MAC](_meta/glossary.md#mac)** (e.g. [HMAC](_meta/glossary.md#hmac)): a MAC also proves integrity + authenticity, but uses a *shared* secret, so it gives **no non-repudiation** — either party could have produced it. Signatures split the secret from the verifier.
 
+**Don't confuse with neighbours:** a plain **hash** gives integrity but proves *nothing* about origin (anyone can recompute it); **public-key encryption** uses the *public* key to hide data for the holder of the private key, whereas a signature uses the *private* key to prove origin to holders of the public key — same keypair, opposite direction.
+
 > [!warning] Reusing or predicting the ECDSA nonce `k` leaks the private key
 > Two signatures with the same `k` expose the key via simple algebra (the Sony PS3 and Bitcoin thefts). Use RFC 6979 deterministic nonces or [EdDSA](_meta/glossary.md#eddsa).
 

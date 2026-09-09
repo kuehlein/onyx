@@ -16,6 +16,9 @@ priority: low
 
 A blockchain address is a collision-resistant hash digest of a public key, derived from a private key via a one-way elliptic curve scalar multiplication — the public key cannot be reversed to recover the private key, and the address cannot be reversed to recover the public key. This asymmetry is what makes self-sovereign ownership possible without a trusted third party.
 
+> [!note] vs. digital signatures
+> This card is the **keypair primitive** (the asymmetry itself + how a public key becomes an address). [[digital-signatures]] is one *application* of that primitive — the sign/verify protocol (ECDSA `(r,s)`, nonce safety, `ecrecover`). If the cue is "how is an address derived / why can't the address reveal the key," it's this card; if it's "how do you prove you signed message X," it's digital-signatures.
+
 ## When to Use
 
 **Problem signals that suggest this concept is directly relevant:**

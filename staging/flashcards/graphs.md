@@ -148,7 +148,7 @@ function bfsGrid(grid, startR, startC) {
 
 ### DFS — iterative and recursive
 
-DFS is better for: cycle detection, topological sort, connected components, and problems where you need to explore an entire path before backtracking.
+DFS is better for: cycle detection, [topological sort](_meta/glossary.md#topological-sort), connected components, and problems where you need to explore an entire path before backtracking.
 
 ```js
 // Recursive DFS — natural for backtracking; risk: call stack overflow on very deep graphs

@@ -35,7 +35,7 @@ Relational databases (SQL) enforce a rigid, typed schema and guarantee [ACID](_m
 - Data is **sparse or heterogeneous** — user profiles with hundreds of optional fields, product catalogs with wildly different attributes per category
 - The access pattern is **known and narrow**: always look up by a single key (session store, user preferences) → key-value store; always fetch a document by ID (product catalog, CMS) → document store
 - The problem mentions **time-series data** (metrics, IoT, logs) → wide-column (Cassandra) or purpose-built [TSDB](_meta/glossary.md#tsdb)s
-- **Eventual consistency is acceptable** and the system tolerates stale reads (social media feeds, shopping cart recommendations, leaderboards)
+- **[Eventual consistency](_meta/glossary.md#eventual-consistency) is acceptable** and the system tolerates stale reads (social media feeds, shopping cart recommendations, leaderboards)
 - The data has a **graph structure** (social networks: "friends of friends", fraud rings) → graph DB (Neo4j)
 
 **Prefer SQL over NoSQL when:**
@@ -49,7 +49,7 @@ Relational databases (SQL) enforce a rigid, typed schema and guarantee [ACID](_m
 - Over SQL for caching / session storage: Redis delivers sub-millisecond reads from RAM vs. ~5–10 ms for indexed SQL queries
 
 **Do not use NoSQL when:**
-- Multi-entity transactions are required (transfer money between accounts) → SQL with ACID; NoSQL two-phase commit is fragile and rare
+- Multi-entity transactions are required (transfer money between accounts) → SQL with ACID; NoSQL [two-phase commit](_meta/glossary.md#two-phase-commit) is fragile and rare
 - The schema is complex and relational — you will recreate joins in application code, which is slower and harder to maintain
 - The team is small and schema discipline matters — schema-less is a footgun without strong engineering culture
 

@@ -33,7 +33,7 @@ A topological sort is a linear ordering of the vertices of a [DAG](_meta/glossar
 - Over [DP](_meta/glossary.md#dp) on a DAG: topological order is often the *setup* for DAG-DP (process vertices in topo order so subproblems are ready); use topo sort first, then relax
 
 **Do not use when:**
-- The graph is **undirected** or may contain cycles that are legal → topological order is undefined; use union-find / [SCC](_meta/glossary.md#scc) / cycle handling instead
+- The graph is **undirected** or may contain cycles that are legal → topological order is undefined; use union-find / [SCC](_meta/glossary.md#scc) / cycle handling instead. *vs. union-find: union-find groups/detects cycles in **undirected** graphs (connectivity), while topo sort orders a **directed** DAG — both do "cycle detection", but on opposite graph types.*
 - You need a specific *optimal* ordering (shortest, min-cost) rather than any valid one → that is DAG shortest/longest path (topo order + relaxation), not bare topo sort
 - The relation is a true **total order** already (numbers, timestamps) → just sort, O(n log n) with no graph
 

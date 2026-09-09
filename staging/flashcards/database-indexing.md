@@ -75,7 +75,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 
 **Storage overhead:** A secondary B-tree index on a single integer column typically adds ~10–30% of the table's storage size. Covering indexes with wide INCLUDE columns can approach the table size itself.
 
-**Write amplification:** Each additional secondary index adds one B-tree insert per row write. A table with 5 secondary indexes incurs 6 total B-tree writes per row (1 for the clustered PK + 5 for secondary indexes) — 6× the baseline write I/O.
+**[Write amplification](_meta/glossary.md#write-amplification):** Each additional secondary index adds one B-tree insert per row write. A table with 5 secondary indexes incurs 6 total B-tree writes per row (1 for the clustered PK + 5 for secondary indexes) — 6× the baseline write I/O.
 
 ## Trade-offs
 
@@ -142,7 +142,7 @@ An index is a separate data structure (typically a B-tree or hash) that the data
 - **Full-text index (inverted index):** Maps tokens to row IDs; used by Elasticsearch, Postgres `tsvector`. Not a B-tree — optimized for `CONTAINS` / ranked relevance queries.
 - **Bitmap index:** Used in OLAP/data warehouses (Redshift, Oracle). Very efficient for low-cardinality columns in read-only or batch-write workloads; not suited for [OLTP](_meta/glossary.md#oltp).
 - **Spatial index (R-tree / GiST):** Geospatial queries ("find all restaurants within 5 km"). PostGIS, MySQL SPATIAL INDEX.
-- **LSM-tree (Log-Structured Merge):** Used by RocksDB, Cassandra, LevelDB. Converts random writes to sequential I/O at the cost of read amplification (must probe multiple [SSTable](_meta/glossary.md#sstable)s/levels per read) and space amplification (duplicate keys exist across levels until compaction merges them). Fundamentally different trade-off from B-tree.
+- **LSM-tree (Log-Structured Merge):** Used by RocksDB, Cassandra, LevelDB. Converts random writes to sequential I/O at the cost of [read amplification](_meta/glossary.md#read-amplification) (must probe multiple [SSTable](_meta/glossary.md#sstable)s/levels per read) and [space amplification](_meta/glossary.md#space-amplification) (duplicate keys exist across levels until [compaction](_meta/glossary.md#compaction) merges them). Fundamentally different trade-off from B-tree.
 
 ## Resources
 

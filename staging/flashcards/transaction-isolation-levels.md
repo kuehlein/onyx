@@ -65,13 +65,15 @@ Isolation levels define which concurrency anomalies a database permits between t
 - The SQL-standard **repeatable read** locks read rows so it blocks write skew on those rows but **allows phantoms** (new rows aren't locked).
 - Neither is fully serializable; write skew is the anomaly that distinguishes snapshot isolation from serializable.
 
+**vs. [MVCC](_meta/glossary.md#mvcc):** MVCC is the *mechanism* (keep multiple row versions so readers don't block writers); an isolation level is the *policy* (which anomalies you tolerate). MVCC is how most engines implement read committed and snapshot isolation — but the same engine's serializable adds conflict detection (SSI) on top. Don't equate "uses MVCC" with any particular level.
+
 ## Common Pitfalls
 
 - **Assuming "ACID" implies serializable.** It doesn't. The I in ACID is whatever level is configured; most engines default to read committed (Postgres/Oracle/SQL Server) or repeatable read (MySQL InnoDB).
 - **Vendor label ≠ standard meaning.** Postgres `REPEATABLE READ` is actually *snapshot isolation* (allows write skew). Postgres/Oracle `READ UNCOMMITTED` silently behaves as `READ COMMITTED`. Read the vendor docs, not the SQL keyword.
 - **Read-modify-write in application code.** `SELECT balance` → compute in app → `UPDATE balance` is a lost-update trap at read committed *and* snapshot isolation. Use an atomic `UPDATE ... SET balance = balance - ?`, `SELECT ... FOR UPDATE`, or a compare-and-set.
 - **Believing snapshot isolation prevents write skew.** It does not. The classic bug: two transactions each check "at least one doctor still on call", each sees the other, each goes off call.
-- **Forgetting serializable can abort.** SSI (Postgres serializable) and OCC-style implementations abort transactions on conflict at commit — the app *must* retry on serialization failure (SQLSTATE `40001`). Code that assumes commit always succeeds breaks under contention.
+- **Forgetting serializable can abort.** SSI (Postgres serializable) and [OCC](_meta/glossary.md#optimistic-concurrency-control)-style implementations abort transactions on conflict at commit — the app *must* retry on serialization failure (SQLSTATE `40001`). Code that assumes commit always succeeds breaks under contention.
 - **Long-running transactions at snapshot isolation.** They pin an old MVCC snapshot, bloating undo/version storage (Postgres dead-tuple bloat, MySQL undo-log growth) and blocking vacuum/purge.
 
 ## Trade-offs

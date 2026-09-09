@@ -15,6 +15,8 @@ priority: high
 
 A recursive function solves a problem by reducing it to a smaller instance of itself, delegating that smaller problem to a recursive call, and combining the result — continuing until a base case is reached. The call stack enforces this by pushing a new frame for every active call and popping it when that call returns, meaning execution at each level is *suspended* until all deeper levels complete.
 
+**vs. its specializations (the key disambiguation):** recursion is the general *mechanism*; the confusable siblings are patterns built on top of it. **[Backtracking](_meta/glossary.md#backtracking)** = recursion that *mutates shared state, recurses, then undoes the mutation* to explore a choice tree. **[DFS](_meta/glossary.md#dfs)** = recursion applied to graph/tree traversal with visited-tracking. **Divide-and-conquer** = recursion that splits into independent subproblems and merges. **[Memoization](_meta/glossary.md#memoization)** = recursion + a cache to reuse overlapping subproblems (the bridge to DP). If you can't cleanly reduce to a smaller self-similar instance, recursion is the wrong tool.
+
 ## When to Use
 
 **Problem signals that suggest recursion:**
@@ -53,7 +55,7 @@ The complexity depends on the shape of the recursion tree:
 
 - **Base case:** the condition that stops recursion and returns a concrete value without a further recursive call. Every recursive path must reach a base case or the stack overflows.
 - **Recursive case:** reduces the problem toward the base case. The critical invariant is that the argument passed to the recursive call must be strictly "smaller" (closer to the base case) by some well-founded measure (n-1, left/right subtree, prefix/suffix).
-- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in [LIFO](_meta/glossary.md#lifo) order.
+- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in LIFO (last-in, first-out) order.
 - **Return value propagation:** results travel *up* the stack as each frame returns. Post-order computations (e.g., combining left and right subtree results) happen during unwinding.
 
 ## Common Pitfalls

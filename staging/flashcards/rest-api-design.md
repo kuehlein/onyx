@@ -16,6 +16,9 @@ priority: normal
 
 REST (Representational State Transfer) is an architectural style for distributed hypermedia systems that treats every resource as a URL-addressable entity operated on via a uniform interface (HTTP verbs). Its statelessness constraint forces all session context into each request, enabling horizontal scaling without server affinity.
 
+> [!note] vs. HTTP/HTTPS
+> HTTP/HTTPS is the *transport protocol* (the wire format, verbs, status codes, TLS). REST is an *architectural style* layered on top — a set of design constraints (uniform interface, statelessness, cacheability) for how to use HTTP well. You can speak HTTP without being RESTful (`POST /createOrder`); "REST API Design" is the discipline, HTTP is the vehicle.
+
 ## When to Use
 
 **Problem signals that suggest REST API Design:**
@@ -43,7 +46,7 @@ REST (Representational State Transfer) is an architectural style for distributed
 
 **Uniform Interface — the central REST constraint:**
 - Resources identified by stable URLs: `/users/{id}`, `/orders/{id}/items`
-- HTTP verbs carry semantics, not the URL: `GET` (read, safe, idempotent), `POST` (create, not idempotent), `PUT` (full replace, idempotent), `PATCH` (partial update), `DELETE` (idempotent)
+- HTTP verbs carry semantics, not the URL: `GET` (read, safe, [idempotent](_meta/glossary.md#idempotency)), `POST` (create, not idempotent), `PUT` (full replace, idempotent), `PATCH` (partial update), `DELETE` (idempotent)
 - Representations (JSON, XML) are separate from resource identity
 - [HATEOAS](_meta/glossary.md#hateoas) (Hypermedia as the Engine of Application State): responses embed links to valid next actions — rarely implemented in practice but theoretically required for "full REST"
 
@@ -82,7 +85,7 @@ Clients cannot tell whether they are talking to the origin server, a CDN edge no
 Maintain parallel versions (`/v1/`, `/v2/`) until clients migrate. Sunset old versions with `Sunset` and `Deprecation` response headers. Additive changes (new optional fields, new endpoints) are non-breaking and can ship without versioning.
 
 **Interviewer probe: "How do you scale a REST API to 1M [RPS](_meta/glossary.md#rps)?"**
-CDN for static + cacheable GETs (cache hit rate target: 80–95%), horizontal scaling of stateless API servers behind a load balancer, read replicas for DB, rate limiting at the API gateway layer (token bucket, ~1000 req/min per user is typical), async processing for expensive mutations via message queue.
+CDN for static + cacheable GETs (cache hit rate target: 80–95%), horizontal scaling of stateless API servers behind a load balancer, read replicas for DB, rate limiting at the API gateway layer ([token bucket](_meta/glossary.md#token-bucket), ~1000 req/min per user is typical), async processing for expensive mutations via message queue.
 
 ## Implementation Notes
 
@@ -103,7 +106,7 @@ CDN for static + cacheable GETs (cache hit rate target: 80–95%), horizontal sc
 - Return pagination metadata in response: `{ "data": [...], "next_cursor": "xyz", "has_more": true }`
 
 **Rate limiting placement:**
-Apply at the API gateway or reverse proxy (Nginx, Kong, AWS API Gateway) before requests reach application servers. Token bucket allows burst; leaky bucket smooths traffic. Return `429 Too Many Requests` with `Retry-After` header.
+Apply at the API gateway or reverse proxy (Nginx, Kong, AWS API Gateway) before requests reach application servers. Token bucket allows burst; [leaky bucket](_meta/glossary.md#leaky-bucket) smooths traffic. Return `429 Too Many Requests` with `Retry-After` header.
 
 **Idempotency keys:**
 For non-idempotent operations (payments, order creation) clients pass a client-generated `Idempotency-Key` header. The server stores the key and result for a [TTL](_meta/glossary.md#ttl) (~24 hours) and returns the cached result for duplicate requests. This is essential for safe client retries.

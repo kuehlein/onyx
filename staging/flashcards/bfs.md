@@ -41,7 +41,7 @@ priority: high
 **Do not use when:**
 - Edge weights differ → use Dijkstra (non-negative weights) or Bellman-Ford (negative weights)
 - You need to explore all paths or enumerate combinations → use DFS / backtracking
-- The graph is a [DAG](_meta/glossary.md#dag) and you need shortest weighted path → topological sort + [DP](_meta/glossary.md#dp)
+- The graph is a [DAG](_meta/glossary.md#dag) and you need shortest weighted path → [topological sort](_meta/glossary.md#topological-sort) + [DP](_meta/glossary.md#dp)
 - The search space is enormous and the goal is deep → consider bidirectional BFS or A*
 
 ## Time & Space Complexity

@@ -41,7 +41,7 @@ A distributed data store can guarantee at most two of three properties simultane
 ## Key Properties
 
 **Consistency (C)**
-Every read sees the most recent committed write — equivalent to linearizability. A read after a write on any node returns the new value or an error. This requires coordination (consensus) across nodes before acknowledging writes.
+Every read sees the most recent committed write — equivalent to [linearizability](_meta/glossary.md#linearizability). A read after a write on any node returns the new value or an error. This requires coordination (consensus) across nodes before acknowledging writes.
 
 **Availability (A)**
 Every non-failing node returns a response for every request. No timeouts, no errors due to partition. The response may be stale. This requires nodes to serve requests independently without waiting for coordination.
@@ -99,7 +99,7 @@ Many workloads tolerate slightly higher latency for consistency. Google Spanner 
 - **Tunable consistency:** Expose per-request consistency level (e.g., Cassandra: `ONE`, `QUORUM`, `ALL`). Operators tune the CP/AP dial per use-case without re-architecting.
 
 **Multi-region design decision:**
-In active-active multi-region, cross-region writes over [WAN](_meta/glossary.md#wan) (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
+In active-active multi-region, cross-region writes over the WAN (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
 
 ## Resources
 

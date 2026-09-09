@@ -55,6 +55,7 @@ A circuit breaker wraps calls to a remote dependency in a state machine that tri
 - **Trip and recovery are asymmetric on purpose.** Tripping is aggressive (protect yourself fast); recovery is cautious (one/few probes, not a flood) so you don't re-overload a service that just came back.
 - **Separation of concerns.** The breaker only decides *permit vs. reject*. It provides **neither retries nor fallbacks** itself — those are the caller's job (or a separate decorator). Composed order matters (see Implementation Notes).
 - **Half-open is a limited gate,** not a floodgate. It admits a small, bounded number of probes and evaluates their outcome; excess calls during half-open are rejected.
+- **vs. [rate limiting](_meta/glossary.md#rate-limiting):** both reject requests, but the trigger and direction differ. A breaker protects the *caller* from a *failing dependency* — it trips on observed **health** (failure/slow-call rate) and is reactive. A rate limiter protects the *callee* from *excess load* — it rejects on **volume** (requests per window) regardless of health, and is proactive/preventive. Health-based fast-fail vs. load-based admission control.
 
 ## Common Pitfalls
 

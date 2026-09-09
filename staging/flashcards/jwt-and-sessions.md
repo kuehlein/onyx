@@ -60,7 +60,7 @@ A [JWT](_meta/glossary.md#jwt) is a signed, self-contained credential — `heade
 | `jti` | Unique token id | Enables [replay](_meta/glossary.md#replay-attack) detection and per-token denylisting |
 
 **Signing algorithm families:**
-- **HS256 (HMAC-SHA-256)** — symmetric [MAC](_meta/glossary.md#mac) ([HMAC](_meta/glossary.md#hmac), [SHA](_meta/glossary.md#sha)-256). One shared secret both signs and verifies. Simple, fast, but every verifier can also *forge*. Fine within one trust boundary.
+- **HS256 (HMAC-SHA-256)** — symmetric [MAC](_meta/glossary.md#mac) ([HMAC](_meta/glossary.md#hmac), [SHA-256](_meta/glossary.md#sha-256)). One shared secret both signs and verifies. Simple, fast, but every verifier can also *forge*. Fine within one trust boundary.
 - **RS256 (RSA-SHA-256)** — asymmetric. Private key signs; the public key (distributable freely, e.g. via JWKS) only verifies. Use when verifiers are untrusted or numerous. ES256 ([ECDSA](_meta/glossary.md#ecdsa)) is the smaller-key modern equivalent.
 
 ## Common Pitfalls

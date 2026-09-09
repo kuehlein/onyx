@@ -41,7 +41,7 @@ These properties are formally independent — no strict implication holds in gen
 **Prefer a plain cryptographic hash over alternatives when:**
 - Over a **[MAC](_meta/glossary.md#mac) / [HMAC](_meta/glossary.md#hmac)**: you need a *public*, keyless fingerprint anyone can verify. Use HMAC instead the moment authenticity depends on a *secret* (see Pitfalls — length extension).
 - Over a **digital signature**: you only need integrity/identity of *content*, not proof of *who* produced it. Signatures are ~100–1000x more expensive and require key management; hashes do not prove authorship.
-- Over a **non-cryptographic hash** (CRC32, MurmurHash, [FNV](_meta/glossary.md#fnv)): an adversary can influence the input. Non-crypto hashes optimize speed/distribution and are trivially collidable on purpose.
+- Over a **non-cryptographic hash** ([CRC32](_meta/glossary.md#crc), MurmurHash, [FNV](_meta/glossary.md#fnv)): an adversary can influence the input. Non-crypto hashes optimize speed/distribution and are trivially collidable on purpose.
 - Over a **password [KDF](_meta/glossary.md#kdf)** (bcrypt, scrypt, Argon2): the input has high entropy (a key, a random nonce, a 256-bit tx). A raw hash is *deliberately fast* and therefore wrong for low-entropy secrets.
 
 **Do not use when:**

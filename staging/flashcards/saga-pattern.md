@@ -28,7 +28,7 @@ A saga models a long-lived distributed transaction as a sequence of *local* [ACI
 - Steps have **natural business-level inverses** (refund a payment, restock inventory, cancel a reservation) so compensation is meaningful
 
 **Prefer a saga over alternatives when:**
-- Over two-phase commit (2PC / XA): when you need availability and low latency, services span heterogeneous datastores (an [RDBMS](_meta/glossary.md#rdbms) + a message broker + a third-party [RPC](_meta/glossary.md#rpc) call that can't enlist in XA), or a blocking coordinator is a [SPOF](_meta/glossary.md#spof). 2PC blocks all participants until the coordinator decides; a stalled coordinator holds locks indefinitely.
+- Over two-phase commit (2PC / XA): when you need availability and low latency, services span heterogeneous datastores (an [RDBMS](_meta/glossary.md#rdbms) + a message broker + a third-party RPC call that can't enlist in XA), or a blocking coordinator is a [SPOF](_meta/glossary.md#spof). 2PC blocks all participants until the coordinator decides; a stalled coordinator holds locks indefinitely.
 - Over a single local ACID transaction: only when the data genuinely spans service boundaries. If it all lives in one database, use one transaction — a saga is strictly more complex and weaker.
 - Over "just retry the whole thing": when steps have side effects that can't be safely re-executed (charging a card twice) and instead must be compensated.
 

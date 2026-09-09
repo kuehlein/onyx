@@ -63,7 +63,7 @@ Every remote call can hang or fail, so a resilient client bounds each call with 
 - Without jitter, N clients that failed together retry together — a synchronized **[thundering herd](_meta/glossary.md#thundering-herd)** that re-overloads the recovering service.
 
 **Retry budget (caps amplification).**
-- **Token bucket (AWS SDK "standard"/"adaptive" retry mode, 2020):** each retry spends a token; success refills. When the bucket empties, stop retrying and fail fast — this locally rate-limits retries.
+- **[Token bucket](_meta/glossary.md#token-bucket) (AWS SDK "standard"/"adaptive" retry mode, 2020):** each retry spends a token; success refills. When the bucket empties, stop retrying and fail fast — this locally rate-limits retries.
 - **Server-wide budget (Google SRE):** allow retries only up to a small percentage of normal traffic (SRE's example: ~60 retries/min per process, or retries capped at ~10% of requests). Beyond that, don't retry.
 
 **Retry amplification is multiplicative.** If a request fans out through layers that *each* retry, attempts multiply, not add. Google SRE's example: 4 layers each retrying to 4 attempts → 4×4×4 = **64** attempts hitting the leaf — precisely when the leaf is least able to serve them. **Retry at exactly one layer** (usually the client / highest layer that can meaningfully recover); lower layers should fail fast and surface the error.
@@ -85,6 +85,7 @@ Every remote call can hang or fail, so a resilient client bounds each call with 
 - **Availability vs. duplicates.** Retrying gives at-least-once delivery (don't lose the request) at the cost of possible duplicates — acceptable only if the effect is idempotent or deduped.
 - **Tight vs. loose timeouts.** Tight timeouts detect failure fast but cause false positives + retry load under normal jitter; loose timeouts tie up resources during real hangs. Derive from percentiles, don't guess.
 - **Retry vs. circuit breaker.** Retries assume the fault is *transient*; when a dependency is *hard down*, retrying just wastes work. A [circuit breaker](_meta/glossary.md#circuit-breaker) complements retries: it stops calling a failing dependency entirely so you fail fast and let it recover (see Variants).
+- **Retry budget vs. rate limiting.** Both can use a token bucket and both react to 429s, but they answer different questions: a retry budget is the *caller's* self-cap on how much of its own traffic may be re-sent (so recovery doesn't amplify), whereas [rate limiting](_meta/glossary.md#rate-limiting) is the *server's* admission control on total incoming requests (fairness / capacity protection). One throttles *retries*; the other throttles *arrivals*.
 - **Client-side vs. server-side control.** Client backoff is cooperative and can be ignored by misbehaving clients; the server must *also* self-protect with load shedding and a clear "I'm overloaded" signal (429/503) so well-behaved clients back off.
 
 ## Implementation Notes

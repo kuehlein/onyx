@@ -24,7 +24,7 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 ## When to Use
 
 **Problem signals that suggest caching:**
-- The same expensive result is recomputed or re-fetched repeatedly (high read amplification on a small hot set).
+- The same expensive result is recomputed or re-fetched repeatedly (high [read amplification](_meta/glossary.md#read-amplification) on a small hot set).
 - Read:write ratio is high (e.g. 100:1) — data is read many times between mutations.
 - A downstream dependency (DB, third-party API, disk) is the latency or throughput bottleneck, and its responses are deterministic for a given input.
 - [P99](_meta/glossary.md#p99) latency spikes trace to a slow backing store that returns identical answers.
@@ -61,11 +61,11 @@ Caching stores the result of an expensive computation or fetch in faster, closer
 > [!warning] Thundering herd is the classic cache-stampede failure
 > When a hot key expires, thousands of concurrent misses hit the origin at once. Mitigate with single-flight request coalescing, a per-key refill lock, probabilistic early expiration, or stale-while-revalidate.
 
-- **Thundering herd / cache stampede:** a hot key expires and thousands of concurrent requests all miss and hit the origin simultaneously. Mitigate with request coalescing (single-flight), a mutex/lock per key on refill, probabilistic early expiration, or serving stale-while-revalidate.
+- **[Thundering herd](_meta/glossary.md#thundering-herd) / [cache stampede](_meta/glossary.md#cache-stampede):** a hot key expires and thousands of concurrent requests all miss and hit the origin simultaneously. Mitigate with request coalescing (single-flight), a mutex/lock per key on refill, probabilistic early expiration, or serving stale-while-revalidate.
 - **Unbounded cache growth:** no eviction / no maxmemory → [OOM](_meta/glossary.md#oom). Always set a size bound *and* an eviction policy.
 - **Stale reads after write:** updating the DB but forgetting to invalidate/update the cache. Decide the write strategy explicitly (below).
 - **Invalidation races:** a concurrent read repopulates the cache with the old value in the window between DB write and cache delete. Delete-after-write plus short TTL, or versioned keys, reduce the window.
-- **Cache penetration:** repeatedly querying keys that do not exist in the origin → every request misses and hits the DB. Cache negative results (with short TTL) or use a Bloom filter to short-circuit known-absent keys.
+- **Cache penetration:** repeatedly querying keys that do not exist in the origin → every request misses and hits the DB. Cache negative results (with short TTL) or use a [Bloom filter](_meta/glossary.md#bloom-filter) to short-circuit known-absent keys.
 - **Hot-key overload (distributed):** one key on one shard saturates a single node. Replicate the hot key across nodes or add a small in-process tier in front.
 - **Caching per-user data under a shared key:** leaks one user's data to another. Scope keys by tenant/user/permission.
 - **Serializing large objects:** the (de)serialization cost can dwarf the origin fetch; measure end-to-end, not just the GET.

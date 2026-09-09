@@ -18,7 +18,9 @@ priority: normal
 Rate limiting constrains how often a client can invoke an operation within a time window — the core mechanism that prevents resource exhaustion, enforces fair use, and absorbs traffic spikes before they cascade into outages.
 
 > [!tip] Default answer
-> Reach for **token bucket** unless told otherwise: O(1) state, allows bounded bursts, cheap at scale. It's the most commonly chosen algorithm in practice.
+> Reach for **[token bucket](_meta/glossary.md#token-bucket)** unless told otherwise: O(1) state, allows bounded bursts, cheap at scale. It's the most commonly chosen algorithm in practice.
+>
+> **vs. load balancing:** a load balancer *distributes* traffic across healthy backends to spread load; rate limiting *rejects* excess traffic (429) from a single client to protect capacity. LB answers "which node?", rate limiting answers "should this request run at all?"
 
 ## When to Use
 
@@ -37,7 +39,7 @@ Rate limiting constrains how often a client can invoke an operation within a tim
 - Over autoscaling alone: compute costs are unbounded or scale-up latency (minutes) is too slow to absorb sudden spikes
 
 **Do not use when:**
-- Traffic is entirely internal and trusted (service-to-service within a private [VPC](_meta/glossary.md#vpc)) → prefer backpressure or queue depth signals
+- Traffic is entirely internal and trusted (service-to-service within a private [VPC](_meta/glossary.md#vpc)) → prefer [backpressure](_meta/glossary.md#backpressure) or queue depth signals
 - The bottleneck is a single global resource with no client attribution → use a semaphore or token bucket at the resource level without per-client state
 
 ## Key Properties
@@ -50,7 +52,7 @@ Rate limiting constrains how often a client can invoke an operation within a tim
 | **Sliding Window Log** | O(requests in window) | Exact | Smooth | Audit trails, low-volume premium APIs |
 | **Sliding Window Counter** | O(1) | ~10% over-burst at boundary | Near-smooth | High-throughput APIs with acceptable approximation |
 | **Token Bucket** | O(1) | Configurable burst up to bucket size | Smooth | APIs allowing short bursts ([CDN](_meta/glossary.md#cdn), mobile clients) |
-| **Leaky Bucket** | O(queue depth) | No burst — strict constant rate | Perfectly smooth | Downstream protection, payment processors |
+| **[Leaky Bucket](_meta/glossary.md#leaky-bucket)** | O(queue depth) | No burst — strict constant rate | Perfectly smooth | Downstream protection, payment processors |
 
 **Token bucket** is the most commonly chosen algorithm in practice: it naturally allows burst absorption (idle clients accumulate tokens up to capacity) while bounding the maximum burst, and O(1) state makes it cheap at scale.
 

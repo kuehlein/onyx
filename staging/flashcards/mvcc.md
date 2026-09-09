@@ -18,6 +18,8 @@ priority: normal
 
 > [!tip] Recognition
 > Reach for MVCC reasoning when you see: "reader sees stale/old data mid-transaction," "long-running analytics query on a live OLTP table," "readers-don't-block-writers," row-version tags (`xmin`/`xmax`, undo logs), table *bloat* / `VACUUM` / autovacuum tuning, or "could not serialize access" / [write-skew](_meta/glossary.md#write-skew) anomalies. Any question about *how snapshot isolation actually works under the hood* is an MVCC question.
+>
+> **vs. transaction-isolation-levels:** isolation levels are the *guarantees* the SQL spec names (READ COMMITTED, REPEATABLE READ, SERIALIZABLE); MVCC is one *mechanism* an engine uses to deliver them (versions + visibility rules instead of read locks). **vs. acid-properties:** MVCC is a concrete implementation of the **I** (Isolation); it does not by itself provide Atomicity/Durability (that's WAL/commit).
 
 ## When to Use
 

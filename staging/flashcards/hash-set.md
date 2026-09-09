@@ -34,7 +34,7 @@ A hash set stores an unordered collection of unique values with O(1) average-cas
 - Over sorted array + binary search: when you need O(1) vs O(log n) lookup and insertion order does not matter
 - Over Array.includes(): when the collection is large — `.includes()` is O(n) per call, Set is O(1)
 - Over Bit vector: when values are not dense integers in a known small range (bit vectors require domain knowledge)
-- Over Bloom filter: when false positives are unacceptable (Set gives exact answers)
+- Over [Bloom filter](_meta/glossary.md#bloom-filter): when false positives are unacceptable (Set gives exact answers)
 
 **Do not use when:**
 - You need to count occurrences → use a `Map` (hash map) instead

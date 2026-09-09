@@ -37,6 +37,11 @@ The intervals pattern turns overlap questions into a single ordered scan: **sort
 - The ranges are over a small, bounded integer domain and you just need per-point coverage counts → a **difference array** (prefix-sum of +1/-1) is O(domain), often simpler
 - There is no ordering/overlap structure to exploit (the pairs aren't ranges) → the pattern doesn't apply
 
+**vs. confusable siblings (what distinguishes intervals):**
+- **vs. [[sliding-window]]:** sliding window scans *one* array with a contiguous window over **indices**; intervals reasons about **explicit `[start, end]` ranges** and their pairwise overlap after a sort. If the "window" boundaries are given values you must sort, it's intervals, not sliding window.
+- **vs. [[greedy]]:** activity-selection (max non-overlapping) *is* a greedy problem — intervals is the recognition/setup (sort by **end**); greedy is the choice rule.
+- **vs. [[heap]] / [[two-pointers]]:** these are the *engines* for specific variants (heap for peak concurrency, two-pointer for intersecting two sorted lists), not competing patterns.
+
 ## Time & Space Complexity
 
 Nearly every interval algorithm is **dominated by the initial sort at O(n log n)**; the scan/merge itself is O(n). The exception is *insert interval*, where the input is already sorted, so no sort is needed.

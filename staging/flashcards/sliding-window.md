@@ -19,6 +19,10 @@ A technique that maintains a contiguous subarray (or substring) between two poin
 > [!tip] Recognition trigger
 > Optimal **contiguous** subarray/substring under a **monotonic** constraint (longest/shortest with "at most k distinct", "no repeats", "window of size k"). Monotonicity is what lets you avoid backtracking.
 
+> [!warning] vs. confusable siblings
+> - **vs. two-pointers:** two-pointers is the general family (any two indices, often converging on a *sorted* input); sliding window is the special case where the pointers bound a *contiguous window* and you carry incremental window state. Signal for window: unsorted input + "subarray/substring" + a running aggregate you update in O(1).
+> - **vs. monotonic-stack:** use a monotonic stack for "next/previous greater/smaller element" per index; use a window when the answer is a contiguous *range* optimized under a constraint (they combine — sliding-window-maximum uses a monotonic deque).
+
 ## When to Use
 
 **Problem signals that suggest sliding window:**

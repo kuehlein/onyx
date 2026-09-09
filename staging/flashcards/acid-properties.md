@@ -49,7 +49,7 @@ priority: normal
 Each property eliminates a distinct failure mode:
 
 **Atomicity — "all or nothing"**
-A transaction either commits fully or rolls back completely. If a transfer deducts $100 from Alice but the process crashes before crediting Bob, the deduction is rolled back. Implemented via write-ahead log (WAL): changes are logged before they are applied, so the database can undo incomplete transactions on restart.
+A transaction either commits fully or rolls back completely. If a transfer deducts $100 from Alice but the process crashes before crediting Bob, the deduction is rolled back. Implemented via write-ahead log ([WAL](_meta/glossary.md#wal)): changes are logged before they are applied, so the database can undo incomplete transactions on restart.
 
 **Consistency — "rules are never violated"**
 Every transaction moves the database from one valid state to another. "Valid" is defined by constraints, foreign keys, and application-level invariants. Note: this is the weakest of the four — the database enforces schema-level constraints, but application logic must enforce business invariants (e.g., balance ≥ 0 requires a CHECK constraint or application guard).
@@ -77,7 +77,10 @@ Once the database acknowledges a commit, the data persists even if the server cr
 | Durability (sync replication) | Survives node loss | Write latency = network RTT to replica (~1–5 ms LAN) |
 
 **ACID vs. BASE (Basically Available, Soft state, Eventual consistency):**
-ACID sacrifices availability under partition (CAP theorem: choose CP) to maintain consistency. BASE systems sacrifice consistency for availability (AP). For a payment system, CP is correct. For a social media like count, AP is fine.
+ACID sacrifices availability under partition ([CAP](_meta/glossary.md#cap) theorem: choose [CP](_meta/glossary.md#cp)) to maintain consistency. [BASE](_meta/glossary.md#base) systems sacrifice consistency for availability ([AP](_meta/glossary.md#ap)). For a payment system, CP is correct. For a social media like count, AP is fine.
+
+> [!warning] The two "C"s are different (vs. cap-theorem)
+> The **C in ACID** is *transactional integrity* — a transaction never leaves the DB violating its constraints/invariants. The **C in CAP** is *linearizability* — every read sees the latest write across nodes. They are unrelated; a system can satisfy ACID-C while being CAP-AP. If asked "does ACID's C mean the same as CAP's C?", the answer is no.
 
 **Performance gotcha:** `fsync=off` in PostgreSQL gives ~10× faster writes but sacrifices durability — data loss on OS crash. Never use in production for primary data stores.
 
@@ -88,7 +91,7 @@ ACID sacrifices availability under partition (CAP theorem: choose CP) to maintai
 - **Confusing Consistency with Isolation.** Consistency is about invariants; isolation is about visibility between concurrent transactions. Interviewers sometimes blur these — be precise.
 - **Assuming ACID = safe from all bugs.** ACID guarantees transaction semantics; it does not protect against application logic errors (transferring to the wrong account is durable and isolated).
 - **Treating isolation as binary.** There are four levels with different anomaly profiles. Defaulting to "just use Serializable" ignores the throughput cost; defaulting to Read Uncommitted is dangerous. The right answer is almost always Read Committed + selective `SELECT FOR UPDATE`.
-- **Forgetting that distributed ACID is expensive.** Single-node ACID is cheap. Distributed ACID (two-phase commit across shards) adds coordinator latency (50–200 ms in cross-region setups) and introduces coordinator SPOF. CockroachDB/Spanner achieve distributed serializable isolation via consensus (Raft/Paxos) but at higher latency than local transactions.
+- **Forgetting that distributed ACID is expensive.** Single-node ACID is cheap. Distributed ACID (two-phase commit across shards) adds coordinator latency (50–200 ms in cross-region setups) and introduces coordinator [SPOF](_meta/glossary.md#spof). CockroachDB/Spanner achieve distributed serializable isolation via consensus (Raft/Paxos) but at higher latency than local transactions.
 
 ## Implementation Notes
 

@@ -156,7 +156,7 @@ const binarySearch = (arr, target) => {
 ## Variants
 
 - **Circular array**: index arithmetic uses `i % n` to wrap around; common in round-robin schedulers and the sliding-window-maximum problem
-- **Bit array / bitset**: each element is a single bit; used for membership sets at extreme scale (Bloom filters)
+- **Bit array / bitset**: each element is a single bit; used for membership sets at extreme scale ([Bloom filters](_meta/glossary.md#bloom-filter))
 - **Sorted array**: enables binary search and two-pointer techniques; pay O(n log n) once, gain O(log n) per query
 - **NumPy ndarray**: typed, contiguous, supports vectorized SIMD operations — not the same as a Python list
 

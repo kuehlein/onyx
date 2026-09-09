@@ -83,7 +83,7 @@ priority: normal
 - GeoDNS returns different A records per client geography — effective but depends on resolver IP approximating user location (VPN users get wrong region)
 - Anycast routes to the topologically nearest instance at the [BGP](_meta/glossary.md#bgp) level — more accurate but requires owning an [AS](_meta/glossary.md#as) and IP block
 
-**Single point of failure risk:**
+**Single point of failure ([SPOF](_meta/glossary.md#spof)) risk:**
 - Authoritative servers should be in at least two independent providers (e.g., Route 53 + NS1) — a DNS outage makes your entire service unreachable regardless of backend health
 
 **[DNSSEC](_meta/glossary.md#dnssec):**

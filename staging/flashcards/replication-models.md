@@ -17,6 +17,8 @@ Replication keeps copies of the same data on multiple nodes for lower read laten
 
 > [!tip] Recognition
 > Reach for this vocabulary when a design question involves multiple copies of the same dataset and someone asks "what happens if a replica is behind / a node fails / two people write at once." Signals: "read replica," "failover," "async replication lag," "multi-region writes," "eventually consistent," "[quorum](_meta/glossary.md#quorum)," or a user complaint like "I posted a comment and it disappeared on refresh" (that's a replication-lag anomaly, not a bug).
+>
+> **vs. siblings:** replication is the *mechanism* of keeping copies (where writes originate + how they propagate). **Consensus** (Raft/Paxos) is one *sub-mechanism* used to agree on a single-leader's log; **consistency-models** is the *taxonomy of guarantees* (linearizability, causal, etc.) — the read anomalies below are replication lag's *symptoms*, and consistency-models names the *guarantees*. **Partitioning/sharding** splits *different* data across nodes; replication copies the *same* data — orthogonal and usually combined.
 
 ## When to Use
 
@@ -95,7 +97,7 @@ These are progressively weaker than [linearizability](_meta/glossary.md#lineariz
 
 **Single-leader propagation (Postgres-style):** leader appends to its [WAL](_meta/glossary.md#wal), streams log records to followers, which replay them. Followers track a log position; lag = leader position − follower position. Failover = detect leader death (timeout) → pick the most-up-to-date follower → reconfigure clients.
 
-**Consensus-based single-leader (Raft — the interview-grade version of "leader election + log replication"), verified against the Raft paper (Ongaro & Ousterhout, 2014):**
+**Consensus-based single-leader (Raft — the interview-grade version of "[leader election](_meta/glossary.md#leader-election) + log replication"), verified against the Raft paper (Ongaro & Ousterhout, 2014):**
 
 ```
 State per node: currentTerm, votedFor, log[], commitIndex

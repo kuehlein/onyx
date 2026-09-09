@@ -575,6 +575,9 @@ A 160-bit cryptographic hash used with SHA-256 to derive Bitcoin P2PKH addresses
 ## RLP
 Recursive Length Prefix — Ethereum's canonical serialization for arbitrarily nested binary data (transactions, blocks, and state), and the basis of a transaction's signed digest.
 
+## RPC
+Remote Procedure Call — a protocol/style where a client invokes a function that executes on a remote server as if it were local, hiding the network. gRPC and Thrift are RPC frameworks; contrast REST (resource-oriented).
+
 ## RPS
 Requests Per Second — a throughput metric for how many requests a system handles each second.
 

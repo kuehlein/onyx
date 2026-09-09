@@ -18,6 +18,8 @@ Consistent hashing maps both keys and nodes onto the same fixed hash space — c
 
 > [!tip] Recognition
 > Reach for consistent hashing when the trigger is **"minimize the keys that move when the cluster resizes"** — elastic scaling of a distributed cache or shard set, a [DHT](_meta/glossary.md#dht), or partition/ownership assignment where nodes join and leave continuously. The tell is that plain `hash(key) mod N` would remap almost everything on every membership change.
+>
+> **vs. [[partitioning-sharding]]:** partitioning is the *goal* (split data across nodes); consistent hashing is one *mechanism* for it (specifically hash partitioning that stays stable under resize). "How do I divide the data?" → partitioning; "how do I assign keys to nodes so few move when membership changes?" → consistent hashing.
 
 ## When to Use
 

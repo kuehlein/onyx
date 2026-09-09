@@ -19,6 +19,8 @@ The storage engine is the layer that decides how a database's index and rows are
 
 > [!tip] Recognition
 > "Which storage engine?" / "Postgres vs Cassandra vs RocksDB" / "why is our write throughput capped" / "our SSD is wearing out from writes" / "reads got slow after a bulk delete" / "why does [compaction](_meta/glossary.md#compaction) spike latency". Whenever the question pits **write throughput against read latency or space**, reach for the B-tree ↔ LSM-tree amplification framing.
+>
+> **vs. database-indexing:** the storage engine decides *how* data + indexes are physically laid out and mutated on disk (in-place pages vs append-only SSTables); indexing decides *which* auxiliary access paths exist (which columns are indexed, B-tree vs hash vs [GIN](_meta/glossary.md#gin)/[inverted](_meta/glossary.md#inverted-index)). Same engine, many index choices.
 
 ## When to Use
 

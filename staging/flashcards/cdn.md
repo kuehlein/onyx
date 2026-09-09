@@ -33,7 +33,8 @@ A [CDN](_meta/glossary.md#cdn) is a geographically distributed network of edge s
 - A read-heavy API with relatively stable responses (e.g. public catalog data, sports scores, weather) that could be edge-cached
 
 **Prefer a CDN over alternatives when:**
-- Over application-layer caching (Redis/Memcached): user is geographically distributed — in-region application caches still require a cross-ocean [TCP](_meta/glossary.md#tcp) connection; CDN edge nodes serve from within 50 ms of the user
+- vs. **[caching](caching)** (Redis/Memcached): both cache to cut work, but a CDN caches *bytes at the network edge* keyed by URL for geographically distributed readers; an application cache stores *arbitrary computed values* in one region for the app tier. In-region application caches still require a cross-ocean [TCP](_meta/glossary.md#tcp) connection; CDN edge nodes serve from within 50 ms of the user.
+- vs. **[load-balancing](load-balancing)**: a load balancer *routes every request* to a healthy backend (nothing is served locally); a CDN *answers the request itself* from cache and only forwards misses. Both may use Anycast/geo-routing, but the LB distributes work while the CDN eliminates it.
 - Over scaling up the origin: CDN offloads 80–95% of requests entirely, making origin capacity a small fraction of what you'd otherwise need; cost per GB served at the edge is typically 2–5x cheaper than origin egress
 - Over replicating full origin servers to each region: CDN caches on-demand (no pre-seeding required for most content), simpler operational model, no database replication complexity
 
@@ -72,7 +73,7 @@ Long TTLs maximize cache hit rate and offload but mean users see stale content a
 **Cost:**
 CDN egress pricing is typically $0.01–0.08/GB (vs. $0.08–0.20/GB from cloud provider origin egress). High cache hit rates are critical to realizing this saving — a 50% hit rate means you pay origin egress prices on half your traffic.
 
-**Single point of failure risk:**
+**[Single point of failure](_meta/glossary.md#spof) risk:**
 A CDN outage (Fastly June 2021, Akamai July 2021) can take down many sites simultaneously. Mitigations: multi-CDN setup, origin fallback via health checks, or DNS failover.
 
 **Security surface:**

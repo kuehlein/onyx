@@ -21,7 +21,7 @@ A consistency model is the contract between a distributed data store and its cli
 ## When to Use
 
 **Problem signals that point to a specific model:**
-- "A user must never see their own write disappear on the next read" — session guarantee (read-your-writes); causal consistency subsumes it
+- "A user must never see their own write disappear on the next read" — session guarantee ([read-your-writes](_meta/glossary.md#read-your-writes)); causal consistency subsumes it
 - "Comments must never appear before the post they reply to" — causal consistency (preserves happens-before)
 - "We elect one leader / grant one distributed lock / enforce a uniqueness constraint" — requires **linearizability**; anything weaker permits two leaders or duplicate values
 - "Cross-region writes must stay available and fast during a WAN partition" — settle for causal or eventual; linearizability is off the table (CAP)
@@ -45,7 +45,7 @@ A consistency model is the contract between a distributed data store and its cli
 | **Eventual** | If writes stop, all replicas *converge* to the same value | — (almost nothing about intermediate reads) | **Yes** |
 
 - **Linearizability is a recency guarantee (DDIA §9):** it makes a replicated system behave as if there is a *single copy* of the data and every operation is atomic and instantaneous at some point between its invocation and response. This is a stronger, orthogonal property from [serializability](_meta/glossary.md#serializability) (which is about transaction isolation, not single-object recency).
-- **Session (client-centric) guarantees** sit under causal: read-your-writes, monotonic reads (never see time go backwards), monotonic writes, writes-follow-reads. Causal consistency implies all four.
+- **Session (client-centric) guarantees** sit under causal: read-your-writes, [monotonic reads](_meta/glossary.md#monotonic-reads) (never see time go backwards), monotonic writes, writes-follow-reads. Causal consistency implies all four.
 - **Ordering hierarchy:** linearizable ⟹ sequential ⟹ causal ⟹ eventual. The strongest that survives a partition is **causal** (Attiya/Mahajan bound; DDIA §9).
 - **Convergence needs conflict resolution.** Eventual/causal stores that accept concurrent writes must merge them: LWW (timestamp wins, silently drops the loser), version vectors + application merge, or a CRDT (mathematically guaranteed to converge without coordination).
 

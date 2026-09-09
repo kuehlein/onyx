@@ -71,6 +71,7 @@ A queue enforces [FIFO](_meta/glossary.md#fifo) (First-In, First-Out) ordering �
 - **Thread safety:** `collections.deque` is thread-safe for `append` and `popleft` operations ([GIL](_meta/glossary.md#gil)-protected atomic ops). For producer-consumer across threads use `queue.Queue` which adds blocking and `maxsize`.
 - **`queue.Queue` vs `collections.deque`:** `queue.Queue` is for thread synchronization (blocking `get`/`put`, `maxsize`). `collections.deque` is for single-threaded algorithmic use — it is faster and has no overhead.
 - **Monotonic deque:** A deque maintained in monotonically increasing or decreasing order. When a new element arrives, pop from the back until the invariant holds, then append. This enables O(1) window max/min queries.
+- **vs. [monotonic stack](_meta/glossary.md#monotonic-stack):** a monotonic *stack* only pushes/pops one end and answers "next/previous greater/smaller element"; a monotonic *deque* also evicts from the front to drop out-of-window elements, which is what makes it the sliding-window (bounded-range) tool rather than the unbounded next-greater tool.
 
 ## Common Pitfalls
 
@@ -180,7 +181,7 @@ const multiSourceBfs = (grid) => {
 - **Circular Queue (Ring Buffer):** Fixed-size queue backed by an array with head/tail pointers that wrap around using modulo. O(1) all operations, zero allocation after init. Used in producer-consumer buffers and audio streaming. Python: implement with a list of size `n` and `(head + 1) % n`.
 - **Monotonic Deque:** A deque maintained in sorted order by evicting from one end before appending. Enables O(n) total sliding window max/min (amortized O(1) per element). Every element is appended and popped at most once.
 - **0-1 BFS:** When edge weights are only 0 or 1, use a deque instead of Dijkstra's heap. Weight-0 edges prepend (`appendleft`), weight-1 edges append. Achieves O(V + E) vs O((V + E) log V) for Dijkstra.
-- **`queue.Queue` (thread-safe):** Wraps a deque with a `threading.Condition` lock. Supports `block=True` for consumer threads to wait when empty, and `maxsize` for backpressure. Do not use in single-threaded algorithms — the lock overhead is unnecessary.
+- **`queue.Queue` (thread-safe):** Wraps a deque with a `threading.Condition` lock. Supports `block=True` for consumer threads to wait when empty, and `maxsize` for [backpressure](_meta/glossary.md#backpressure). Do not use in single-threaded algorithms — the lock overhead is unnecessary.
 
 ## Resources
 

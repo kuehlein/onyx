@@ -19,7 +19,7 @@ priority: normal
 A [BST](_meta/glossary.md#bst) is a binary tree where every node satisfies the invariant: all keys in the left subtree are strictly less than the node's key, and all keys in the right subtree are strictly greater. This ordering property is what makes BSTs useful — it lets you eliminate half the remaining search space at each node, enabling O(log n) operations on a balanced tree.
 
 > [!tip] Reach for a BST when
-> You need **fast search AND ordered queries** (range, rank, successor, k-th smallest) on a *dynamic* set. In-order traversal yields sorted output for free. If you only need O(1) lookup use a hash map; if you only need min/max use a heap.
+> You need **fast search AND ordered queries** (range, rank, successor, k-th smallest) on a *dynamic* set. In-order traversal yields sorted output for free. If you only need O(1) lookup use a hash map; if you only need min/max use a heap. **vs. binary search:** binary search is an *algorithm* over an already-sorted, static array; a BST is a *structure* that stays searchable while it mutates.
 
 ## When to Use
 
