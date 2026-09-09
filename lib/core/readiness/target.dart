@@ -219,8 +219,9 @@ const _tierRelevanceByLevel = <SeniorityLevel, List<double>>{
 double tierRelevance(SeniorityLevel level, int? tier) {
   final row = _tierRelevanceByLevel[level] ??
       _tierRelevanceByLevel[SeniorityLevel.senior]!;
-  if (tier == null || tier < 1)
+  if (tier == null || tier < 1) {
     return row.first; // untiered → treat as foundational
+  }
   return row[(tier - 1).clamp(0, row.length - 1)];
 }
 
