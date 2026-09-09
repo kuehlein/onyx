@@ -98,16 +98,69 @@ class ReadinessPanel extends ConsumerWidget {
               const _BarLegend(),
               const SizedBox(height: 8),
             ],
-            for (final d in r.domains)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _DomainRow(d,
-                    focus: identical(d, r.domains.first),
-                    summary: appliedSummary[d.domain]),
-              ),
+            _DomainList(domains: r.domains, appliedSummary: appliedSummary),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The per-domain bars, weakest-first. Capped to the few most-relevant (weakest)
+/// domains with a "show all" toggle so a broad, multi-domain deck doesn't make
+/// the home panel scroll. Weakest-first ordering means the collapsed tail is the
+/// strong domains that least need attention.
+class _DomainList extends StatefulWidget {
+  const _DomainList({required this.domains, required this.appliedSummary});
+
+  final List<DomainReadiness> domains;
+  final Map<String, ({int attempts, int contested})> appliedSummary;
+
+  @override
+  State<_DomainList> createState() => _DomainListState();
+}
+
+class _DomainListState extends State<_DomainList> {
+  static const _cap = 4;
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final all = widget.domains;
+    final capped = all.length > _cap;
+    final shown = (_expanded || !capped) ? all : all.take(_cap).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final d in shown)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _DomainRow(d,
+                focus: identical(d, all.first),
+                summary: widget.appliedSummary[d.domain]),
+          ),
+        if (capped)
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    _expanded ? 'Show fewer' : 'Show all ${all.length} domains',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -663,7 +716,15 @@ class _DomainRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final color = _color(d);
+    final mocks = summary?.attempts ?? 0;
+    // Two-tone "proven vs recall" only where mock evidence actually exists. A
+    // domain with no mocks is recall-only — its score is silently discounted by
+    // the transfer prior, which we do NOT visualise as "proven in mocks" (that
+    // read as "proven" with zero mocks). Deeper question — whether readiness
+    // should discount before any evidence — is task #49.
+    final proven = d.transfer != null && mocks > 0;
+    final shown = proven ? d.score : d.recall;
+    final color = d.studied == 0 ? statusMuted : _bandColor(shown);
 
     final meta = _meta;
     return Column(
@@ -694,7 +755,7 @@ class _DomainRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(d.studied == 0 ? d.label : '${(d.score * 100).round()}%',
+            Text(d.studied == 0 ? d.label : '${(shown * 100).round()}%',
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: color, fontWeight: FontWeight.w700)),
           ],
@@ -703,7 +764,11 @@ class _DomainRow extends StatelessWidget {
         // Goal flag at the "Strong" line (0.75) — the target for this domain.
         // In interview mode the lighter portion is recall, the darker is what
         // mocks have actually proven.
-        _TickedBar(value: d.score, recall: d.recall, color: color, goal: 0.75),
+        _TickedBar(
+            value: shown,
+            recall: proven ? d.recall : null,
+            color: color,
+            goal: 0.75),
         // Evidence caption (interview mode only): mock count + contested flag.
         if (meta != null)
           Padding(
@@ -725,10 +790,5 @@ class _DomainRow extends StatelessWidget {
     final base = '$n mock${n == 1 ? '' : 's'} · transfer '
         '${((d.transfer ?? 0) * 100).round()}%';
     return contested > 0 ? '$base · $contested contested' : base;
-  }
-
-  Color _color(DomainReadiness d) {
-    if (d.studied == 0) return statusMuted; // muted gray
-    return _bandColor(d.score);
   }
 }
