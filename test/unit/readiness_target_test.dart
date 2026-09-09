@@ -151,4 +151,66 @@ void main() {
       expect(senior.overall, lessThan(newGrad.overall));
     });
   });
+
+  group('tierRelevance (grounded curve)', () {
+    test('foundations (tier 1) are fully weighted at every level', () {
+      for (final l in SeniorityLevel.values) {
+        expect(tierRelevance(l, 1), 1.0,
+            reason: 'tier1 is table-stakes for $l');
+      }
+    });
+
+    test('advanced-tier weight rises with seniority', () {
+      double t3(SeniorityLevel l) => tierRelevance(l, 3);
+      expect(t3(SeniorityLevel.newGrad), lessThan(t3(SeniorityLevel.mid)));
+      expect(t3(SeniorityLevel.mid), lessThan(t3(SeniorityLevel.senior)));
+      expect(t3(SeniorityLevel.senior),
+          lessThanOrEqualTo(t3(SeniorityLevel.staff)));
+    });
+
+    test('the deepest specialist tier is < 1 for everyone', () {
+      for (final l in SeniorityLevel.values) {
+        expect(tierRelevance(l, 4), lessThan(1.0),
+            reason: 'no total mastery for $l');
+      }
+    });
+
+    test('untiered falls back to foundational', () {
+      expect(tierRelevance(SeniorityLevel.senior, null), 1.0);
+    });
+  });
+
+  group('relevance-weighted coverage', () {
+    const senior = ReadinessTarget(
+        level: SeniorityLevel.senior,
+        company: CompanyTier.faang,
+        track: Track.backend);
+    final tw = tierWeightsFor(senior);
+    double cov(List<Card> cards) => computeReadiness(
+          cards: cards,
+          stabilityByKey: const {'A::s': 200.0},
+          tierWeights: tw,
+        ).domains.first.coverage;
+
+    test(
+        'an unstudied peripheral (deep-tier) card dilutes coverage less than '
+        'an unstudied essential (foundational) one', () {
+      final base = [
+        _card('A', 'ds-a', 1, ['s'])
+      ];
+      expect(cov(base), closeTo(1.0, 1e-9));
+      final withPeripheral = cov([
+        ...base,
+        _card('P', 'ds-a', 4, ['s'])
+      ]);
+      final withEssential = cov([
+        ...base,
+        _card('E', 'ds-a', 1, ['s'])
+      ]);
+      expect(withPeripheral, greaterThan(withEssential));
+      expect(withEssential, closeTo(0.5, 1e-9)); // raw dilution
+      expect(withPeripheral,
+          greaterThan(0.6)); // ~0.667, peripheral barely dilutes
+    });
+  });
 }

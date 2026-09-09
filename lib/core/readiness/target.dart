@@ -192,3 +192,39 @@ double domainWeight(ReadinessTarget target, String domain) {
 
   return 1.0;
 }
+
+/// Relevance weight (0..1) of knowledge at a given **tier** (knowledge-hierarchy
+/// depth, 1 = foundational → higher = specialist) for a target [level]'s
+/// interview. This is the level-dependent half of card relevance; the other half
+/// is [domainWeight]. Together they let peripheral-for-this-target cards
+/// contribute ~0 to readiness (so adding them never lowers the number) while an
+/// advanced-but-essential card counts fully for a senior.
+///
+/// Grounded in a verified research pass (2026-09-09, deep-research): foundations
+/// stay FULLY required (table-stakes) at every level — "less differentiating" is
+/// a candidate-ranking notion, not a readiness one, and weak foundations are
+/// already gated by readiness's weakest-link (p20) floor. Advanced tiers matter
+/// more as seniority rises. The deepest specialist tier is < 1 for everyone
+/// because breadth-with-selective-depth (not total mastery) is the norm. The
+/// staff differentiator (judgment) is orthogonal to tiers and is captured by the
+/// applied/transfer dimension, not here. Placeholder for a #30 config-driven map.
+const _tierRelevanceByLevel = <SeniorityLevel, List<double>>{
+  // index i → tier (i+1); last entry applies to that tier and deeper.
+  SeniorityLevel.newGrad: [1.0, 0.7, 0.35, 0.15],
+  SeniorityLevel.mid: [1.0, 0.9, 0.55, 0.30],
+  SeniorityLevel.senior: [1.0, 1.0, 0.90, 0.50],
+  SeniorityLevel.staff: [1.0, 1.0, 1.00, 0.65],
+};
+
+double tierRelevance(SeniorityLevel level, int? tier) {
+  final row = _tierRelevanceByLevel[level] ??
+      _tierRelevanceByLevel[SeniorityLevel.senior]!;
+  if (tier == null || tier < 1)
+    return row.first; // untiered → treat as foundational
+  return row[(tier - 1).clamp(0, row.length - 1)];
+}
+
+/// The tier→weight map for a [target]'s level, covering tiers 1..[maxTier].
+/// Passed to `computeReadiness` so coverage + strength are relevance-weighted.
+Map<int, double> tierWeightsFor(ReadinessTarget target, {int maxTier = 8}) =>
+    {for (var t = 1; t <= maxTier; t++) t: tierRelevance(target.level, t)};

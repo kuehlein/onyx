@@ -120,6 +120,7 @@ Readiness computeReadiness({
   double stabilityTarget = 90,
   double coverageGamma = 0.7,
   Map<String, double>? domainWeights,
+  Map<int, double>? tierWeights,
   Map<String, TransferEstimate>? transferByDomain,
   double transferTau = 0.5,
 }) {
@@ -137,23 +138,36 @@ Readiness computeReadiness({
     var weightedSum = 0.0;
     var weightTotal = 0.0;
     var total = 0;
+    var coverWeightTotal = 0.0; // relevance-weighted section count (all)
+    var coverWeightStudied = 0.0; // relevance-weighted section count (studied)
 
     for (final card in entry.value) {
-      final weight = _tierWeight(card.tiers[domain]);
+      final tier = card.tiers[domain];
+      // When a tier→weight map is supplied (target-aware relevance), weight both
+      // coverage and strength by it — so peripheral-for-this-target cards barely
+      // move readiness and can't dilute it. Without a map, fall back to the
+      // legacy foundational-favoring strength curve and an unweighted coverage
+      // count (backward-compatible default).
+      final rel = tierWeights == null ? null : (tierWeights[tier ?? 0] ?? 0.5);
+      final covW = rel ?? 1.0;
+      final strW = rel ?? _tierWeight(tier);
       for (final section in card.quizzableSections) {
         total++;
+        coverWeightTotal += covW;
         final stability = stabilityByKey['${card.id}::${section.slug}'];
         if (stability == null) continue; // unstudied → hits coverage only
+        coverWeightStudied += covW;
         final s = durability(stability, stabilityTarget: stabilityTarget);
         studiedStrengths.add(s);
-        weightedSum += weight * s;
-        weightTotal += weight;
+        weightedSum += strW * s;
+        weightTotal += strW;
       }
     }
 
     if (total == 0) continue;
     final studied = studiedStrengths.length;
-    final coverage = studied / total;
+    final coverage =
+        coverWeightTotal == 0 ? 0.0 : coverWeightStudied / coverWeightTotal;
 
     double strength = 0;
     if (studied > 0) {
@@ -239,6 +253,7 @@ Readiness computeReadinessForTarget({
     stabilityByKey: stabilityByKey,
     stabilityTarget: target.stabilityTarget,
     domainWeights: {for (final d in domains) d: domainWeight(target, d)},
+    tierWeights: tierWeightsFor(target),
     transferByDomain: transferByDomain,
   );
 }
