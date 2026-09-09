@@ -15,6 +15,10 @@ Future<void> showTargetSheet(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
+      // Open tall (up to 92% of the screen) so the calendar + forecast aren't
+      // clipped below the fold; the body scrolls within if it's still taller.
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
       builder: (_) => const _TargetSheet(),
     );
 
@@ -343,8 +347,13 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
   @override
   void initState() {
     super.initState();
-    final anchor =
-        widget.selected ?? widget.forecast?.currentReadyDate ?? DateTime.now();
+    // Open on the month the user most likely wants to pick in: their current
+    // date if any, else the on-track month, else the earliest reachable month —
+    // so we don't land on a month with nothing worth selecting.
+    final anchor = widget.selected ??
+        widget.forecast?.currentReadyDate ??
+        widget.forecast?.earliestReadyDate ??
+        _today.add(const Duration(days: 30));
     final today = _today;
     final curMonth = DateTime(today.year, today.month);
     var m = DateTime(anchor.year, anchor.month);
@@ -377,15 +386,15 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    final loc = MaterialLocalizations.of(context);
+    final firstDow = loc.firstDayOfWeekIndex; // 0=Sun … 6=Sat
     final today = _today;
-    final grid = monthGrid(_month.year, _month.month);
-    final daysInMonth = grid.days;
-    final leading = grid.leading;
+    final grid = monthGrid(_month.year, _month.month, firstDayOfWeek: firstDow);
     final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
     final cells = <Widget>[
-      for (var i = 0; i < leading; i++) const SizedBox.shrink(),
-      for (var day = 1; day <= daysInMonth; day++)
+      for (var i = 0; i < grid.leading; i++) const SizedBox.shrink(),
+      for (var day = 1; day <= grid.days; day++)
         Builder(builder: (_) {
           final date = DateTime(_month.year, _month.month, day);
           final past = date.isBefore(today);
@@ -407,43 +416,53 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(children: [
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.chevron_left, size: 20),
-            onPressed: canPrev
-                ? () => setState(
-                    () => _month = DateTime(_month.year, _month.month - 1))
-                : null,
-          ),
-          Expanded(
-            child: Center(
-              child: Text('${_monthName(_month.month)} ${_month.year}',
-                  style: theme.textTheme.titleSmall),
+        // Header: a prominent month title with well-spaced navigation arrows.
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous month',
+              onPressed: canPrev
+                  ? () => setState(
+                      () => _month = DateTime(_month.year, _month.month - 1))
+                  : null,
             ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.chevron_right, size: 20),
-            onPressed: () => setState(
-                () => _month = DateTime(_month.year, _month.month + 1)),
-          ),
-        ]),
-        Row(children: [
-          for (final w in const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
             Expanded(
               child: Center(
-                child: Text(w,
-                    style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+                child: Text('${_monthName(_month.month)} ${_month.year}',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
               ),
             ),
-        ]),
-        const SizedBox(height: 4),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next month',
+              onPressed: () => setState(
+                  () => _month = DateTime(_month.year, _month.month + 1)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var i = 0; i < 7; i++)
+              Expanded(
+                child: Center(
+                  child: Text(loc.narrowWeekdays[(firstDow + i) % 7],
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: muted, fontWeight: FontWeight.w600)),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
         GridView.count(
           crossAxisCount: 7,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.0,
+          childAspectRatio: 1.15,
+          mainAxisSpacing: 3,
+          crossAxisSpacing: 3,
           children: cells,
         ),
       ],
@@ -476,46 +495,38 @@ class _DayCell extends StatelessWidget {
         : selected
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
-    return InkWell(
-      onTap: onTap,
+    // Zone shown as a soft cell wash (a heatmap) — clearly visible, not a
+    // hair-thin underline. Selected wins with the primary fill; the wash fades
+    // on past days.
+    final bg = selected
+        ? theme.colorScheme.primary
+        : zoneColor?.withValues(alpha: past ? 0.08 : 0.26);
+    return Material(
+      color: bg ?? Colors.transparent,
       borderRadius: BorderRadius.circular(8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 26,
-            height: 26,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selected ? theme.colorScheme.primary : null,
-              border: isToday && !selected
-                  ? Border.all(color: theme.colorScheme.primary, width: 1.3)
-                  : null,
-            ),
-            child: Text('$day',
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: fg,
-                    fontWeight: selected || isToday
-                        ? FontWeight.w700
-                        : FontWeight.w400)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: isToday && !selected
+                ? Border.all(color: theme.colorScheme.primary, width: 1.4)
+                : null,
           ),
-          const SizedBox(height: 3),
-          Container(
-            width: 16,
-            height: 2.5,
-            decoration: BoxDecoration(
-              color: zoneColor ?? Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
+          child: Text('$day',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                  color: fg,
+                  fontWeight:
+                      selected || isToday ? FontWeight.w700 : FontWeight.w500)),
+        ),
       ),
     );
   }
 }
 
-/// Legend for the zone-underlined calendar.
+/// Legend for the zone-coloured calendar cells.
 class _CalendarLegend extends StatelessWidget {
   const _CalendarLegend();
 
@@ -527,11 +538,12 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 12,
-                height: 2.5,
+                width: 13,
+                height: 13,
                 decoration: BoxDecoration(
-                    color: c, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(width: 4),
+                    color: c.withValues(alpha: 0.26),
+                    borderRadius: BorderRadius.circular(3))),
+            const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
           ],
@@ -548,15 +560,20 @@ class _CalendarLegend extends StatelessWidget {
   }
 }
 
-/// The Sunday-first month-grid layout: how many leading blank cells precede
-/// day 1, and how many days the month has. This is the only date arithmetic in
-/// the calendar — factored out and public so it's unit-tested. Relies entirely
-/// on Dart's `DateTime` normalization (leap years, month rollover), no hand math.
-({int leading, int days}) monthGrid(int year, int month) => (
-      leading:
-          DateTime(year, month, 1).weekday % 7, // Mon=1..Sun=7 → Sun=0..Sat=6
-      days: DateTime(year, month + 1, 0).day,
-    );
+/// The month-grid layout for a locale whose week starts on [firstDayOfWeek]
+/// (0=Sunday … 6=Saturday, matching `MaterialLocalizations.firstDayOfWeekIndex`):
+/// how many leading blank cells precede day 1, and how many days the month has.
+/// This is the only date arithmetic in the calendar — public and unit-tested.
+/// Relies entirely on Dart's `DateTime` normalization (leap years, month
+/// rollover); no hand-rolled math.
+({int leading, int days}) monthGrid(int year, int month,
+    {int firstDayOfWeek = 0}) {
+  final firstWeekday = DateTime(year, month, 1).weekday % 7; // 0=Sun … 6=Sat
+  return (
+    leading: (firstWeekday - firstDayOfWeek + 7) % 7,
+    days: DateTime(year, month + 1, 0).day,
+  );
+}
 
 String _monthName(int m) => const [
       'January', 'February', 'March', 'April', 'May', 'June', //

@@ -28,6 +28,23 @@ void main() {
       }
     });
 
+    test('respects the locale first-day-of-week', () {
+      // Jan 1 2026 is a Thursday (Mon=1..Sun=7 → Sun-index 4).
+      expect(monthGrid(2026, 1).leading, 4); // Sunday-first (default)
+      expect(monthGrid(2026, 1, firstDayOfWeek: 1).leading, 3); // Monday-first
+      // Feb 1 2026 is a Sunday → 0 leading Sunday-first, 6 leading Monday-first.
+      expect(monthGrid(2026, 2).leading, 0);
+      expect(monthGrid(2026, 2, firstDayOfWeek: 1).leading, 6);
+      // Invariant for every first-day-of-week: the day-1 cell index rotates
+      // correctly and stays in [0,6].
+      final firstWeekday = DateTime(2026, 3, 1).weekday % 7;
+      for (var fdw = 0; fdw <= 6; fdw++) {
+        final g = monthGrid(2026, 3, firstDayOfWeek: fdw);
+        expect(g.leading, (firstWeekday - fdw + 7) % 7);
+        expect(g.leading, inInclusiveRange(0, 6));
+      }
+    });
+
     test('a full grid (leading + days) always fits in whole weeks ≤ 6 rows',
         () {
       for (var y = 2024; y <= 2030; y++) {
