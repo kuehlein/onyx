@@ -106,30 +106,30 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               // needed to hit the chosen date.
               _ForecastBlock(chosenDate: date),
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    await ref
-                        .read(readinessTargetControllerProvider.notifier)
-                        .save(t);
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                  child: const Text('Save target'),
-                ),
-              ),
-              const SizedBox(height: 4),
-              // The base aim above is your general target; a specific interview
-              // (company + date) layers on top via the AI planner.
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.push('/plan-interview');
-                  },
-                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-                  label: const Text('Plan for a specific interview'),
-                ),
+              // Save (primary) and the specific-interview planner on one row to
+              // keep the sheet short.
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () async {
+                        await ref
+                            .read(readinessTargetControllerProvider.notifier)
+                            .save(t);
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
+                      child: const Text('Save target'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.push('/plan-interview');
+                    },
+                    child: const Text('Plan interview'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -226,14 +226,7 @@ class _ForecastBlock extends ConsumerWidget {
     final f = async.asData?.value;
     if (f == null) return const SizedBox.shrink();
 
-    final rows = <Widget>[
-      Row(children: [
-        Icon(Icons.trending_up, size: 15, color: theme.colorScheme.primary),
-        const SizedBox(width: 6),
-        Text('Readiness forecast', style: theme.textTheme.labelLarge),
-      ]),
-      const SizedBox(height: 6),
-    ];
+    final rows = <Widget>[];
 
     if (f.alreadyReady) {
       rows.add(Text('You’re already at your target for this aim.',
@@ -470,7 +463,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
           crossAxisCount: 7,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.4,
+          childAspectRatio: 1.5,
           mainAxisSpacing: 1,
           crossAxisSpacing: 1,
           children: cells,
@@ -506,51 +499,34 @@ class _DayCell extends StatelessWidget {
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
     final showZone = zoneColor != null && !past;
-    // Compact cell: the number in an optional circle (selected/today), with the
-    // zone shown as a small dot just beneath it — a classic, legible calendar
-    // marker in a fixed 30px box, so the whole grid stays small.
+    // Zone shown as a coloured RING around the day — clearly visible and classy,
+    // and it adds no height (just the circle), so the grid stays compact.
+    // Precedence: selected fill > today ring > zone ring.
+    final ring = selected
+        ? null
+        : isToday
+            ? theme.colorScheme.primary
+            : (showZone ? zoneColor : null);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(18),
       child: Center(
-        child: SizedBox(
+        child: Container(
           width: 30,
           height: 30,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? theme.colorScheme.primary : null,
-                  border: isToday && !selected
-                      ? Border.all(color: theme.colorScheme.primary, width: 1.4)
-                      : null,
-                ),
-                child: Text('$day',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        color: fg,
-                        fontWeight: selected || isToday
-                            ? FontWeight.w700
-                            : FontWeight.w400)),
-              ),
-              if (showZone)
-                Positioned(
-                  bottom: 0,
-                  child: Container(
-                    width: 5.5,
-                    height: 5.5,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: zoneColor,
-                    ),
-                  ),
-                ),
-            ],
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected ? theme.colorScheme.primary : null,
+            border: ring != null
+                ? Border.all(color: ring, width: isToday ? 1.6 : 2)
+                : null,
           ),
+          child: Text('$day',
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: fg,
+                  fontWeight:
+                      selected || isToday ? FontWeight.w700 : FontWeight.w400)),
         ),
       ),
     );
@@ -569,9 +545,11 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c, width: 2))),
             const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
