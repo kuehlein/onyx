@@ -55,14 +55,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Your target', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 2),
-              Text(
-                'What are you preparing for? This weights the domains that matter '
-                'and sets the bar.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _ChipGroup<SeniorityLevel>(
                 label: 'Level',
                 values: SeniorityLevel.values,
@@ -108,11 +101,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               ),
               const SizedBox(height: 8),
               const _CalendarLegend(),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               // Ready-date readout: on-track date, push/ease range, and the pace
               // needed to hit the chosen date.
               _ForecastBlock(chosenDate: date),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -165,25 +158,34 @@ class _ChipGroup<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: theme.textTheme.labelLarge
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final v in values)
-                ChoiceChip(
-                  label: Text(labelOf(v)),
-                  selected: v == selected,
-                  onSelected: (_) => onSelected(v),
-                ),
-            ],
+          SizedBox(
+            width: 66,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 9),
+              child: Text(label,
+                  style: theme.textTheme.labelMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final v in values)
+                  ChoiceChip(
+                    label: Text(labelOf(v)),
+                    selected: v == selected,
+                    onSelected: (_) => onSelected(v),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -192,8 +194,8 @@ class _ChipGroup<T> extends StatelessWidget {
 }
 
 /// The readiness-forecast readout: at your recent pace, the day recall readiness
-/// crosses the target, a push/ease range, a colour-zoned timeline, and — when a
-/// date is chosen — the exact pace needed to hit it. Reflects the *saved* aim
+/// crosses the target, a push/ease range, and — when a date is chosen — the
+/// exact pace needed to hit it. Reflects the *saved* aim
 /// (the projection is a forward simulation, too heavy to recompute on every
 /// draft chip tap); the date feedback uses the draft date.
 class _ForecastBlock extends ConsumerWidget {
@@ -442,7 +444,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           children: [
             for (var i = 0; i < 7; i++)
@@ -455,14 +457,14 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         GridView.count(
           crossAxisCount: 7,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.15,
-          mainAxisSpacing: 3,
-          crossAxisSpacing: 3,
+          childAspectRatio: 1.25,
+          mainAxisSpacing: 2,
+          crossAxisSpacing: 2,
           children: cells,
         ),
       ],
@@ -495,32 +497,43 @@ class _DayCell extends StatelessWidget {
         : selected
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
-    // Zone shown as a soft cell wash (a heatmap) — clearly visible, not a
-    // hair-thin underline. Selected wins with the primary fill; the wash fades
-    // on past days.
-    final bg = selected
-        ? theme.colorScheme.primary
-        : zoneColor?.withValues(alpha: past ? 0.08 : 0.26);
-    return Material(
-      color: bg ?? Colors.transparent,
+    final showZone = zoneColor != null && !past;
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: isToday && !selected
-                ? Border.all(color: theme.colorScheme.primary, width: 1.4)
-                : null,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? theme.colorScheme.primary : null,
+              border: isToday && !selected
+                  ? Border.all(color: theme.colorScheme.primary, width: 1.4)
+                  : null,
+            ),
+            child: Text('$day',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: fg,
+                    fontWeight: selected || isToday
+                        ? FontWeight.w700
+                        : FontWeight.w500)),
           ),
-          child: Text('$day',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                  color: fg,
-                  fontWeight:
-                      selected || isToday ? FontWeight.w700 : FontWeight.w500)),
-        ),
+          const SizedBox(height: 2),
+          // Zone marker: a solid underline, slightly bolder than v1 — classy and
+          // subtle, clearly more than a hairline but not a full-cell wash.
+          Container(
+            width: 16,
+            height: 3,
+            decoration: BoxDecoration(
+              color: showZone ? zoneColor! : Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -538,11 +551,10 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 13,
-                height: 13,
+                width: 16,
+                height: 3,
                 decoration: BoxDecoration(
-                    color: c.withValues(alpha: 0.26),
-                    borderRadius: BorderRadius.circular(3))),
+                    color: c, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
