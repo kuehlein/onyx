@@ -470,7 +470,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     final grid = monthGrid(_month.year, _month.month, firstDayOfWeek: firstDow);
     final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
-    const blank = SizedBox(height: 44);
+    const blank = SizedBox(height: 50);
     final cells = <Widget>[
       for (var i = 0; i < grid.leading; i++) blank,
       for (var day = 1; day <= grid.days; day++)
@@ -596,7 +596,7 @@ class _DayCell extends StatelessWidget {
       canRequestFocus: false,
       focusColor: Colors.transparent,
       child: Container(
-        height: 44,
+        height: 50,
         alignment: Alignment.center,
         color: cellBg,
         child: Text('$day',
@@ -634,9 +634,9 @@ class _CalendarLegend extends StatelessWidget {
       spacing: 12,
       runSpacing: 4,
       children: [
-        item(statusGood, 'Ready / comfortable'),
+        item(statusGood, 'Ready at your pace'),
         item(statusWarn, 'Needs a faster pace'),
-        item(statusBad, 'Not reachable yet'),
+        item(statusBad, 'Too soon to be ready'),
       ],
     );
   }

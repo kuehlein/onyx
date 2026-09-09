@@ -191,10 +191,11 @@ class CoachBadge extends ConsumerWidget {
                     label: const Text('Talk about it'),
                   ),
                 ),
+                const SizedBox(height: 8),
                 // The deep dive lives here (progressive disclosure) rather than
                 // as its own Home button.
-                Align(
-                  alignment: Alignment.center,
+                SizedBox(
+                  width: double.infinity,
                   child: TextButton.icon(
                     onPressed: () {
                       Navigator.pop(ctx);
