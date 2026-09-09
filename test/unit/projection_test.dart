@@ -95,4 +95,35 @@ void main() {
     expect(push!, lessThanOrEqualTo(cur!));
     expect(cur, lessThanOrEqualTo(chill!));
   });
+
+  test(
+      'pace curve + forecast: faster pace reaches no later, required-pace '
+      'rises for a tighter deadline', () {
+    final c = projectPaceCurve(
+      cards: deck,
+      stateByKey: const {},
+      target: senior,
+      currentPerDay: 4,
+      today: today,
+    );
+    final reached = c.curve.where((p) => p.readyDay != null).toList();
+    expect(reached.length, greaterThan(1));
+    // ready-day is non-increasing as pace rises (± a sampling-window wobble)
+    for (var i = 1; i < reached.length; i++) {
+      expect(reached[i].readyDay!,
+          lessThanOrEqualTo(reached[i - 1].readyDay! + 7));
+    }
+    final f = ReadinessForecast(
+      curve: c.curve,
+      currentPerDay: 4,
+      today: today,
+      startReadiness: c.startReadiness,
+      threshold: 0.75,
+    );
+    final easy = f.requiredPerDayFor(300); // generous deadline
+    final tight = f.requiredPerDayFor(60); // tight deadline
+    expect(easy, isNotNull);
+    if (tight != null) expect(tight, greaterThanOrEqualTo(easy!));
+    expect(f.readyDateFor(f.currentPerDay), isNotNull);
+  });
 }

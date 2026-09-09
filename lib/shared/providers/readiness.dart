@@ -281,7 +281,7 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
   var perDay = (started / denom).round();
   if (perDay < 1) perDay = 8;
 
-  final scen = projectScenarios(
+  final c = projectPaceCurve(
     cards: cards,
     stateByKey: stateByKey,
     target: target,
@@ -289,11 +289,11 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
     today: today,
   );
   return ReadinessForecast(
-    chill: scen['chill']!,
-    current: scen['current']!,
-    push: scen['push']!,
+    curve: c.curve,
     currentPerDay: perDay,
     today: today,
+    startReadiness: c.startReadiness,
+    threshold: 0.75,
   );
 }
 

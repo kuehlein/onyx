@@ -80,29 +80,127 @@ class ReadinessProjection {
   bool get unreachable => readyDay == null;
 }
 
-/// The three-scenario forecast surfaced in the UI, plus the pace it assumed.
+/// One point on the pace → ready-day curve.
+class PacePoint {
+  const PacePoint(this.perDay, this.readyDay);
+  final int perDay;
+  final int?
+      readyDay; // days-from-today; null if unreachable within the horizon
+}
+
+/// The forecast surfaced in the UI. Holds a pace → ready-day CURVE so the same
+/// data powers the ready-date readout, the "to hit a chosen date, study ~N/day"
+/// feasibility answer, and the Phase-3 what-if slider — no per-interaction
+/// recompute.
 class ReadinessForecast {
   const ReadinessForecast({
-    required this.chill,
-    required this.current,
-    required this.push,
+    required this.curve,
     required this.currentPerDay,
     required this.today,
+    required this.startReadiness,
+    required this.threshold,
   });
 
-  final ReadinessProjection chill;
-  final ReadinessProjection current;
-  final ReadinessProjection push;
+  final List<PacePoint> curve; // ascending by perDay
   final int currentPerDay;
   final DateTime today;
+  final double startReadiness;
+  final double threshold;
 
-  // These mirror projectScenarios' pace math so the UI labels are accurate.
+  bool get alreadyReady => startReadiness >= threshold;
+
+  DateTime? _date(int? day) =>
+      day == null ? null : today.add(Duration(days: day));
+
+  PacePoint? _pointAt(int perDay) {
+    PacePoint? best;
+    var bestD = 1 << 30;
+    for (final p in curve) {
+      if (p.perDay == perDay) return p;
+      final d = (p.perDay - perDay).abs();
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  int? readyDayFor(int perDay) => alreadyReady ? 0 : _pointAt(perDay)?.readyDay;
+  DateTime? readyDateFor(int perDay) => _date(readyDayFor(perDay));
+
+  int? get currentReadyDay => readyDayFor(currentPerDay);
+  DateTime? get currentReadyDate => _date(currentReadyDay);
+
   int get chillPerDay => (currentPerDay * 0.5).round().clamp(1, 1 << 20);
   int get pushPerDay => (currentPerDay * 2).clamp(1, 1 << 20);
+  DateTime? get chillReadyDate => readyDateFor(chillPerDay);
+  DateTime? get pushReadyDate => readyDateFor(pushPerDay);
 
-  /// The absolute date a projection reaches the target, or null if unreachable.
-  DateTime? dateFor(ReadinessProjection p) =>
-      p.readyDay == null ? null : today.add(Duration(days: p.readyDay!));
+  /// Smallest sampled pace that reaches the target within [daysFromToday], or
+  /// null if even the fastest sampled pace can't (within the horizon).
+  int? requiredPerDayFor(int daysFromToday) {
+    if (alreadyReady) return curve.isEmpty ? currentPerDay : curve.first.perDay;
+    for (final p in curve) {
+      // ascending pace → the first that meets the deadline is the minimum
+      final rd = p.readyDay;
+      if (rd != null && rd <= daysFromToday) return p.perDay;
+    }
+    return null;
+  }
+
+  /// The soonest day any sampled pace reaches the target (fastest curve point).
+  int? get earliestReadyDay {
+    if (alreadyReady) return 0;
+    int? best;
+    for (final p in curve) {
+      final rd = p.readyDay;
+      if (rd != null && (best == null || rd < best)) best = rd;
+    }
+    return best;
+  }
+
+  DateTime? get earliestReadyDate => _date(earliestReadyDay);
+
+  /// The fastest pace we sampled (curve max) — used to phrase "even at ~N/day…".
+  int get maxSampledPerDay => curve.isEmpty ? currentPerDay : curve.last.perDay;
+}
+
+/// Runs the projection across a spread of paces (plus chill/current/push) to
+/// build the pace → ready-day curve, returning it with the shared start
+/// readiness (pace doesn't affect day 0).
+({List<PacePoint> curve, double startReadiness}) projectPaceCurve({
+  required List<Card> cards,
+  required Map<String, SectionSrsState> stateByKey,
+  required ReadinessTarget target,
+  required int currentPerDay,
+  required DateTime today,
+  double desiredRetention = 0.9,
+  double threshold = 0.75,
+  int horizonDays = 365,
+}) {
+  final chill = (currentPerDay * 0.5).round().clamp(1, 1 << 20);
+  final push = (currentPerDay * 2).clamp(1, 1 << 20);
+  final paces = <int>{1, 2, 3, 5, 8, 13, 21, 34, chill, currentPerDay, push}
+      .toList()
+    ..sort();
+  final points = <PacePoint>[];
+  var start = 0.0;
+  for (final p in paces) {
+    final proj = projectReadiness(
+      cards: cards,
+      stateByKey: stateByKey,
+      target: target,
+      pace:
+          PacePolicy(newSectionsPerDay: p, desiredRetention: desiredRetention),
+      today: today,
+      threshold: threshold,
+      horizonDays: horizonDays,
+    );
+    start = proj.startReadiness;
+    points.add(PacePoint(p, proj.readyDay));
+  }
+  return (curve: points, startReadiness: start);
 }
 
 class _SecSim {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
@@ -196,11 +197,11 @@ class _ChipGroup<T> extends StatelessWidget {
   }
 }
 
-/// The readiness-forecast readout: at your recent pace, when recall readiness
-/// crosses the target, as a hedged month + a chill/push range, plus a
-/// feasibility note against the chosen interview date. Reflects the *saved*
-/// aim (the projection is a forward simulation, too heavy to recompute on every
-/// draft chip tap); the date-feasibility note uses the draft date.
+/// The readiness-forecast readout: at your recent pace, the day recall readiness
+/// crosses the target, a push/ease range, a colour-zoned timeline, and — when a
+/// date is chosen — the exact pace needed to hit it. Reflects the *saved* aim
+/// (the projection is a forward simulation, too heavy to recompute on every
+/// draft chip tap); the date feedback uses the draft date.
 class _ForecastBlock extends ConsumerWidget {
   const _ForecastBlock({this.chosenDate});
 
@@ -229,9 +230,6 @@ class _ForecastBlock extends ConsumerWidget {
     final f = async.asData?.value;
     if (f == null) return const SizedBox.shrink();
 
-    final cur = f.current;
-    final curDate = f.dateFor(cur);
-
     final rows = <Widget>[
       Row(children: [
         Icon(Icons.trending_up, size: 15, color: theme.colorScheme.primary),
@@ -241,61 +239,74 @@ class _ForecastBlock extends ConsumerWidget {
       const SizedBox(height: 6),
     ];
 
-    if (cur.alreadyReady) {
+    if (f.alreadyReady) {
       rows.add(Text('You’re already at your target for this aim.',
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: statusGood, fontWeight: FontWeight.w600)));
-    } else if (curDate == null) {
-      rows.add(Text(
-          'At ~${f.currentPerDay} new/day you won’t reach your target within a '
-          'year — raise your daily load.',
-          style: theme.textTheme.bodySmall?.copyWith(color: muted)));
     } else {
-      rows.add(RichText(
-        text: TextSpan(
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurface),
-          children: [
-            TextSpan(text: 'At ~${f.currentPerDay} new/day, on track for '),
-            TextSpan(
-                text: _fmtMonth(curDate),
-                style: const TextStyle(fontWeight: FontWeight.w700)),
-            const TextSpan(text: '.'),
-          ],
-        ),
-      ));
-      final chillDate = f.dateFor(f.chill);
-      final pushDate = f.dateFor(f.push);
-      rows.add(const SizedBox(height: 4));
-      rows.add(Text(
-        'Ease ~${f.chillPerDay}/day → ${chillDate == null ? '1yr+' : _fmtMonth(chillDate)}'
-        '   ·   '
-        'Push ~${f.pushPerDay}/day → ${pushDate == null ? '1yr+' : _fmtMonth(pushDate)}',
-        style: theme.textTheme.bodySmall?.copyWith(color: muted),
-      ));
-    }
-
-    if (chosenDate != null && curDate != null && !cur.alreadyReady) {
-      rows.add(const SizedBox(height: 8));
-      if (chosenDate!.isBefore(curDate)) {
-        rows.add(Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.warning_amber_rounded,
-                size: 15, color: statusWarn),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'Your date is earlier than this pace reaches — push '
-                '(~${f.pushPerDay}/day) or move the date.',
-                style: theme.textTheme.bodySmall?.copyWith(color: statusWarn),
-              ),
-            ),
-          ],
-        ));
+      final curDate = f.currentReadyDate;
+      if (curDate == null) {
+        final earliest = f.earliestReadyDate;
+        rows.add(Text(
+            'At ~${f.currentPerDay} new/day you won’t hit your target within a '
+            'year. Even at ~${f.maxSampledPerDay}/day the earliest is '
+            '${earliest == null ? "over a year out" : _fmtDate(earliest)}.',
+            style: theme.textTheme.bodySmall?.copyWith(color: muted)));
       } else {
-        rows.add(Text('Comfortable — you’d be ready before your date.',
-            style: theme.textTheme.bodySmall?.copyWith(color: statusGood)));
+        rows.add(RichText(
+          text: TextSpan(
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: theme.colorScheme.onSurface),
+            children: [
+              TextSpan(text: 'At ~${f.currentPerDay} new/day, ready by '),
+              TextSpan(
+                  text: _fmtDate(curDate),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              const TextSpan(text: '.'),
+            ],
+          ),
+        ));
+        final push = f.pushReadyDate;
+        final chill = f.chillReadyDate;
+        rows.add(const SizedBox(height: 4));
+        rows.add(Text(
+          'Push ~${f.pushPerDay}/day → ${push == null ? '1yr+' : _fmtDate(push)}'
+          '    ·    '
+          'Ease ~${f.chillPerDay}/day → ${chill == null ? '1yr+' : _fmtDate(chill)}',
+          style: theme.textTheme.bodySmall?.copyWith(color: muted),
+        ));
+      }
+
+      rows.add(const SizedBox(height: 10));
+      rows.add(_ForecastTimeline(forecast: f, chosenDate: chosenDate));
+
+      if (chosenDate != null) {
+        final days = chosenDate!.difference(f.today).inDays;
+        final req = f.requiredPerDayFor(days);
+        rows.add(const SizedBox(height: 8));
+        if (req == null) {
+          final earliest = f.earliestReadyDate;
+          rows.add(_note(
+              Icons.block,
+              'Even at ~${f.maxSampledPerDay}/day you can’t be ready by '
+              '${_fmtDate(chosenDate!)} — earliest is '
+              '${earliest == null ? "over a year out" : _fmtDate(earliest)}.',
+              statusBad,
+              theme));
+        } else if (req <= f.currentPerDay) {
+          rows.add(_note(
+              Icons.check_circle_outline,
+              'On track — your pace reaches ${_fmtDate(chosenDate!)}.',
+              statusGood,
+              theme));
+        } else {
+          rows.add(_note(
+              Icons.bolt,
+              'To be ready by ${_fmtDate(chosenDate!)}, study ~$req/day '
+              '(up from ~${f.currentPerDay}).',
+              statusWarn,
+              theme));
+        }
       }
     }
 
@@ -305,14 +316,109 @@ class _ForecastBlock extends ConsumerWidget {
       children: rows,
     ));
   }
+
+  Widget _note(IconData icon, String text, Color color, ThemeData theme) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(text,
+                style: theme.textTheme.bodySmall?.copyWith(color: color)),
+          ),
+        ],
+      );
 }
 
-String _fmtMonth(DateTime d) {
+/// A compact colour-zoned timeline from today: red = not reachable even at the
+/// fastest sampled pace, amber = reachable but faster than your current pace,
+/// green = comfortable at your pace. A dark marker shows the chosen date.
+class _ForecastTimeline extends StatelessWidget {
+  const _ForecastTimeline({required this.forecast, this.chosenDate});
+
+  final ReadinessForecast forecast;
+  final DateTime? chosenDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final f = forecast;
+    final amberStart = f.earliestReadyDay; // fastest pace reaches here
+    final greenStart = f.currentReadyDay; // current pace reaches here
+    final chosenDay = chosenDate?.difference(f.today).inDays;
+
+    var end = (greenStart ?? amberStart ?? 365).toDouble();
+    if (chosenDay != null && chosenDay > end) end = chosenDay.toDouble();
+    end = (end * 1.25).clamp(30, 366);
+
+    return LayoutBuilder(builder: (context, cns) {
+      final w = cns.maxWidth;
+      double px(num day) => (day / end).clamp(0.0, 1.0) * w;
+      final amberX = px(amberStart ?? end.toInt());
+      final greenX = px(greenStart ?? end.toInt());
+
+      Widget seg(double left, double right, Color c) => right - left <= 0.5
+          ? const SizedBox.shrink()
+          : Positioned(
+              left: left,
+              top: 0,
+              child: Container(width: right - left, height: 8, color: c));
+
+      return SizedBox(
+        height: 30,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                width: w,
+                height: 8,
+                child: Stack(children: [
+                  Container(color: theme.colorScheme.surfaceContainerHighest),
+                  seg(0, amberX, statusBad.withValues(alpha: 0.45)),
+                  seg(amberX, greenX, statusWarn.withValues(alpha: 0.55)),
+                  seg(greenX, w, statusGood.withValues(alpha: 0.55)),
+                ]),
+              ),
+            ),
+            // "now" tick
+            Positioned(
+                left: 0,
+                top: 11,
+                child: Text('now',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+            // ready (current pace) tick
+            if (greenStart != null && f.currentReadyDate != null)
+              Positioned(
+                left: (px(greenStart) - 14).clamp(0.0, w - 40),
+                top: 11,
+                child: Text(_fmtMonthShort(f.currentReadyDate!),
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: statusGood)),
+              ),
+            // chosen-date marker
+            if (chosenDay != null)
+              Positioned(
+                left: (px(chosenDay) - 1).clamp(0.0, w - 2),
+                top: -2,
+                child: Container(
+                    width: 2, height: 12, color: theme.colorScheme.onSurface),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+String _fmtMonthShort(DateTime d) {
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
   ];
-  return '${months[d.month - 1]} ${d.year}';
+  return months[d.month - 1];
 }
 
 String _fmtDate(DateTime d) {
