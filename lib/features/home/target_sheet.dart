@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
+import '../interview/interview_planner_screen.dart';
 
 /// Opens the target-selection sheet. Lets the user pick the interview they're
 /// aiming at (level × company × track) and an optional date; both re-shape the
@@ -66,9 +66,26 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
       for (final g in scheduled)
         DateTime(g.date!.year, g.date!.month, g.date!.day),
     };
-    void openPlanner() {
-      Navigator.of(context).pop();
-      context.push('/plan-interview');
+    Future<void> openPlanner() async {
+      final before = {
+        for (final g in (ref.read(prepGoalsProvider).asData?.value ??
+            const <PrepGoal>[]))
+          g.id
+      };
+      // Push over the sheet (imperative, not go_router) so saving/cancelling in
+      // the planner returns to this still-open sheet rather than dumping to Home.
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const InterviewPlannerScreen()),
+      );
+      if (!mounted) return;
+      final after =
+          ref.read(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
+      final added = [
+        for (final g in after)
+          if (!before.contains(g.id) && g.date != null) g,
+      ];
+      // Surface a newly-added interview: focus its date so its flag is visible.
+      if (added.isNotEmpty) _set(_t.copyWith(interviewDate: added.first.date));
     }
 
     return SafeArea(
@@ -642,16 +659,22 @@ class _DayCell extends StatelessWidget {
                             selected ? FontWeight.w700 : FontWeight.w400)),
               ),
             ),
-            // A scheduled interview on this day — a small flag in the corner.
+            // A scheduled interview on this day — a bold accent bar along the
+            // bottom of the cell, clearly distinct from the zone background.
             if (hasInterview)
               Positioned(
-                top: 4,
-                right: 5,
-                child: Icon(Icons.flag,
-                    size: 12,
+                left: 7,
+                right: 7,
+                bottom: 5,
+                child: Container(
+                  height: 3,
+                  decoration: BoxDecoration(
                     color: selected
                         ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.primary),
+                        : theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
           ],
         ),
@@ -689,6 +712,20 @@ class _CalendarLegend extends StatelessWidget {
         item(statusGood, 'Ready at your pace'),
         item(statusWarn, 'Needs a faster pace'),
         item(statusBad, 'Too soon to be ready'),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+                width: 12,
+                height: 3,
+                decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 5),
+            Text('interview',
+                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+          ],
+        ),
       ],
     );
   }
