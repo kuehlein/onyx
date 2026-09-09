@@ -213,7 +213,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 forecast: forecast,
                 today: forecast?.today ?? DateTime.now(),
                 onAdd: openPlanner,
-                onTapGoal: (_) => openPlanner(),
+                onFocus: (d) => _set(t.copyWith(interviewDate: d)),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -455,6 +455,17 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     var m = DateTime(anchor.year, anchor.month);
     if (m.isBefore(curMonth)) m = curMonth; // never start before this month
     _month = m;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ZoneCalendar old) {
+    super.didUpdateWidget(old);
+    // When the focused/selected date changes to another month (e.g. tapping a
+    // scheduled interview), jump the grid there so its flag is visible.
+    final sel = widget.selected;
+    if (sel != null && (sel.year != _month.year || sel.month != _month.month)) {
+      _month = DateTime(sel.year, sel.month);
+    }
   }
 
   DateTime get _today {
@@ -699,33 +710,68 @@ class _CalendarLegend extends StatelessWidget {
 }
 
 /// Scheduled interviews (prep goals with a date) listed under the calendar —
-/// each with a days-away readout + a pace status from the forecast — plus the
-/// entry to plan a new one. Kept compact so it barely adds height.
-class _ScheduledSection extends StatelessWidget {
+/// each with a days-away readout + a pace status from the forecast. A section
+/// header carries the '+ Add' entry; the list shows the 3 soonest with a
+/// 'show all' expander so many interviews never blow up the sheet.
+class _ScheduledSection extends StatefulWidget {
   const _ScheduledSection({
     required this.goals,
     required this.forecast,
     required this.today,
     required this.onAdd,
-    required this.onTapGoal,
+    required this.onFocus,
   });
 
-  final List<PrepGoal> goals;
+  final List<PrepGoal> goals; // sorted soonest-first
   final ReadinessForecast? forecast;
   final DateTime today;
   final VoidCallback onAdd;
-  final void Function(PrepGoal) onTapGoal;
+  final void Function(DateTime) onFocus;
+
+  @override
+  State<_ScheduledSection> createState() => _ScheduledSectionState();
+}
+
+class _ScheduledSectionState extends State<_ScheduledSection> {
+  static const _cap = 3;
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    final goals = widget.goals;
+    final capped = goals.length > _cap;
+    final visible = (_showAll || !capped) ? goals : goals.take(_cap).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final g in goals)
+        // Header with the add action on the right.
+        Row(
+          children: [
+            Text('Interviews',
+                style: theme.textTheme.labelLarge?.copyWith(color: muted)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: widget.onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+              style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8)),
+            ),
+          ],
+        ),
+        if (goals.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 2),
+            child: Text('None scheduled — add one to flag it on the calendar.',
+                style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+          ),
+        for (final g in visible)
           InkWell(
-            onTap: () => onTapGoal(g),
+            onTap: () => widget.onFocus(g.date!),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
@@ -753,29 +799,21 @@ class _ScheduledSection extends StatelessWidget {
               ),
             ),
           ),
-        InkWell(
-          onTap: onAdd,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Plan a specific interview',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600)),
-              ],
+        if (capped)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => setState(() => _showAll = !_showAll),
+              child: Text(_showAll ? 'Show fewer' : 'Show all ${goals.length}'),
             ),
           ),
-        ),
       ],
     );
   }
 
   String _daysAway(DateTime d) {
-    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    final days =
+        DateTime(d.year, d.month, d.day).difference(widget.today).inDays;
     if (days < 0) return 'past';
     if (days == 0) return 'today';
     if (days < 14) return 'in $days days';
@@ -783,9 +821,10 @@ class _ScheduledSection extends StatelessWidget {
   }
 
   Widget _statusChip(BuildContext context, DateTime d) {
-    final f = forecast;
+    final f = widget.forecast;
     if (f == null) return const SizedBox.shrink();
-    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    final days =
+        DateTime(d.year, d.month, d.day).difference(widget.today).inDays;
     final String text;
     final Color color;
     if (f.alreadyReady) {
