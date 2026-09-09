@@ -3,8 +3,96 @@ import '../util.dart';
 
 import 'target.dart';
 
-/// The outcome of an interview a goal was preparing for.
+/// The outcome of an interview (or a single round of one).
 enum GoalOutcome { pending, passed, failed }
+
+/// The kind of interview round.
+enum InterviewRoundType {
+  screen,
+  coding,
+  systemDesign,
+  behavioral,
+  onsite,
+  other
+}
+
+extension InterviewRoundTypeLabel on InterviewRoundType {
+  String get label => switch (this) {
+        InterviewRoundType.screen => 'Screen',
+        InterviewRoundType.coding => 'Coding',
+        InterviewRoundType.systemDesign => 'System design',
+        InterviewRoundType.behavioral => 'Behavioral',
+        InterviewRoundType.onsite => 'Onsite',
+        InterviewRoundType.other => 'Other',
+      };
+}
+
+/// One round of an interview loop (a phone screen, a system-design round, …).
+/// An interview ([PrepGoal]) owns an ordered list of these.
+class InterviewRound {
+  const InterviewRound({
+    required this.id,
+    required this.number,
+    this.type = InterviewRoundType.screen,
+    this.date,
+    this.outcome = GoalOutcome.pending,
+    this.notes,
+  });
+
+  final String id;
+
+  /// 1-based position in the loop.
+  final int number;
+  final InterviewRoundType type;
+
+  /// When this round is scheduled, or null if not yet set.
+  final DateTime? date;
+  final GoalOutcome outcome;
+  final String? notes;
+
+  /// e.g. "Round 2 · System design".
+  String get label => 'Round $number · ${type.label}';
+
+  InterviewRound copyWith({
+    int? number,
+    InterviewRoundType? type,
+    Object? date = _unset,
+    GoalOutcome? outcome,
+    Object? notes = _unset,
+  }) =>
+      InterviewRound(
+        id: id,
+        number: number ?? this.number,
+        type: type ?? this.type,
+        date: date == _unset ? this.date : date as DateTime?,
+        outcome: outcome ?? this.outcome,
+        notes: notes == _unset ? this.notes : notes as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'number': number,
+        'type': type.name,
+        if (date != null) 'date': _fmtDate(date!),
+        'outcome': outcome.name,
+        if (notes != null) 'notes': notes,
+      };
+
+  static InterviewRound? fromJson(Map<String, dynamic> m) {
+    final id = m['id'];
+    if (id is! String || id.isEmpty) return null;
+    return InterviewRound(
+      id: id,
+      number: m['number'] is int ? m['number'] as int : 1,
+      type: enumByName(InterviewRoundType.values, m['type']) ??
+          InterviewRoundType.screen,
+      date: _parseDate(m['date']),
+      outcome:
+          enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+      notes: m['notes'] is String ? m['notes'] as String : null,
+    );
+  }
+}
 
 /// A single interview-prep goal: a target (company/role/level/track/date) plus
 /// optional AI-plan boosts and an outcome. The generalization of the single
@@ -27,6 +115,7 @@ class PrepGoal {
     this.outcome = GoalOutcome.pending,
     this.outcomeNotes,
     this.notes,
+    this.rounds = const [],
   });
 
   final String id;
@@ -59,6 +148,33 @@ class PrepGoal {
 
   /// A short AI-plan summary attached to the goal.
   final String? notes;
+
+  /// The interview loop's rounds, in order. Source of truth for scheduling; the
+  /// top-level [date] is kept as a denormalized "next round" for legacy readers.
+  final List<InterviewRound> rounds;
+
+  /// Rounds as the source of truth, migrating a legacy single [date] into a
+  /// synthetic round 1 when no rounds are stored.
+  List<InterviewRound> get effectiveRounds => rounds.isNotEmpty
+      ? rounds
+      : (date != null
+          ? [InterviewRound(id: '$id-r1', number: 1, date: date)]
+          : const []);
+
+  /// All scheduled round dates (date-only), for calendar flags.
+  List<DateTime> get roundDates => [
+        for (final r in effectiveRounds)
+          if (r.date != null)
+            DateTime(r.date!.year, r.date!.month, r.date!.day),
+      ];
+
+  /// The soonest round on/after [from] (else the earliest scheduled), or null.
+  DateTime? nextRoundDate([DateTime? from]) {
+    final dates = roundDates..sort();
+    if (dates.isEmpty) return null;
+    if (from == null) return dates.first;
+    return dates.firstWhere((d) => !d.isBefore(from), orElse: () => dates.last);
+  }
 
   /// A human label, e.g. "Google · Senior · Backend" or (no company) the plain
   /// target label "Senior · FAANG · Backend".
@@ -97,6 +213,7 @@ class PrepGoal {
     GoalOutcome? outcome,
     Object? outcomeNotes = _unset,
     Object? notes = _unset,
+    List<InterviewRound>? rounds,
   }) =>
       PrepGoal(
         id: id,
@@ -113,6 +230,7 @@ class PrepGoal {
             ? this.outcomeNotes
             : outcomeNotes as String?,
         notes: notes == _unset ? this.notes : notes as String?,
+        rounds: rounds ?? this.rounds,
       );
 
   Map<String, dynamic> toJson() => {
@@ -128,6 +246,7 @@ class PrepGoal {
         'outcome': outcome.name,
         if (outcomeNotes != null) 'outcomeNotes': outcomeNotes,
         if (notes != null) 'notes': notes,
+        if (rounds.isNotEmpty) 'rounds': [for (final r in rounds) r.toJson()],
       };
 
   static PrepGoal? fromJson(Map<String, dynamic> m) {
@@ -149,6 +268,7 @@ class PrepGoal {
       outcomeNotes:
           m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
       notes: m['notes'] is String ? m['notes'] as String : null,
+      rounds: _parseRounds(m['rounds']),
     );
   }
 
@@ -180,6 +300,14 @@ String _fmtDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
 DateTime? _parseDate(Object? v) {
   if (v is! String || v.isEmpty) return null;
   return DateTime.tryParse(v);
+}
+
+List<InterviewRound> _parseRounds(Object? v) {
+  if (v is! List) return const [];
+  return [
+    for (final e in v)
+      if (e is Map<String, dynamic>) InterviewRound.fromJson(e),
+  ].whereType<InterviewRound>().toList();
 }
 
 Map<String, double> _weightMap(Object? v) {

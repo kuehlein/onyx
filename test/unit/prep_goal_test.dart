@@ -101,6 +101,87 @@ void main() {
       expect(g.copyWith(active: false).date, DateTime(2026, 10, 1));
     });
 
+    test('rounds round-trip through JSON, preserving order + type + outcome',
+        () {
+      final g = PrepGoal(
+        id: 'g3',
+        companyName: 'Stripe',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.senior,
+        track: Track.backend,
+        rounds: [
+          InterviewRound(
+            id: 'g3-r1',
+            number: 1,
+            type: InterviewRoundType.screen,
+            date: DateTime(2026, 9, 15),
+            outcome: GoalOutcome.passed,
+          ),
+          InterviewRound(
+            id: 'g3-r2',
+            number: 2,
+            type: InterviewRoundType.systemDesign,
+            date: DateTime(2026, 9, 25),
+            notes: 'design a rate limiter',
+          ),
+        ],
+      );
+      final back = PrepGoal.fromJson(g.toJson())!;
+      expect(back.rounds.length, 2);
+      expect(back.rounds[0].number, 1);
+      expect(back.rounds[0].type, InterviewRoundType.screen);
+      expect(back.rounds[0].date, DateTime(2026, 9, 15));
+      expect(back.rounds[0].outcome, GoalOutcome.passed);
+      expect(back.rounds[1].type, InterviewRoundType.systemDesign);
+      expect(back.rounds[1].notes, 'design a rate limiter');
+    });
+
+    test('effectiveRounds migrates a legacy single date into a synthetic r1',
+        () {
+      final legacy = PrepGoal(
+        id: 'old',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.senior,
+        track: Track.backend,
+        date: DateTime(2026, 10, 1),
+      );
+      final eff = legacy.effectiveRounds;
+      expect(eff.length, 1);
+      expect(eff.first.number, 1);
+      expect(eff.first.date, DateTime(2026, 10, 1));
+      expect(legacy.roundDates, [DateTime(2026, 10, 1)]);
+
+      // A goal with no date and no rounds has no effective rounds.
+      const unscheduled = PrepGoal(
+        id: 'u',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.senior,
+        track: Track.backend,
+      );
+      expect(unscheduled.effectiveRounds, isEmpty);
+      expect(unscheduled.roundDates, isEmpty);
+    });
+
+    test('nextRoundDate returns the soonest round on/after a reference date',
+        () {
+      final g = PrepGoal(
+        id: 'g4',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.senior,
+        track: Track.backend,
+        rounds: [
+          InterviewRound(id: 'r1', number: 1, date: DateTime(2026, 9, 10)),
+          InterviewRound(id: 'r2', number: 2, date: DateTime(2026, 9, 20)),
+          InterviewRound(id: 'r3', number: 3, date: DateTime(2026, 9, 30)),
+        ],
+      );
+      expect(g.nextRoundDate(), DateTime(2026, 9, 10)); // earliest
+      expect(g.nextRoundDate(DateTime(2026, 9, 15)), DateTime(2026, 9, 20));
+      expect(g.nextRoundDate(DateTime(2026, 9, 20)), DateTime(2026, 9, 20));
+      // Past the last round → clamps to the last.
+      expect(g.nextRoundDate(DateTime(2026, 10, 5)), DateTime(2026, 9, 30));
+    });
+
     test('encodeList / decodeList round-trip; junk decodes to empty', () {
       final goals = [
         const PrepGoal(
