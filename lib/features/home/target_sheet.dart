@@ -423,6 +423,10 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
+              iconSize: 22,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 34),
               tooltip: 'Previous month',
               onPressed: canPrev
                   ? () => setState(
@@ -438,6 +442,10 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
+              iconSize: 22,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 34),
               tooltip: 'Next month',
               onPressed: () => setState(
                   () => _month = DateTime(_month.year, _month.month + 1)),
@@ -462,9 +470,9 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
           crossAxisCount: 7,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.25,
-          mainAxisSpacing: 2,
-          crossAxisSpacing: 2,
+          childAspectRatio: 1.4,
+          mainAxisSpacing: 1,
+          crossAxisSpacing: 1,
           children: cells,
         ),
       ],
@@ -498,42 +506,52 @@ class _DayCell extends StatelessWidget {
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
     final showZone = zoneColor != null && !past;
+    // Compact cell: the number in an optional circle (selected/today), with the
+    // zone shown as a small dot just beneath it — a classic, legible calendar
+    // marker in a fixed 30px box, so the whole grid stays small.
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
+      borderRadius: BorderRadius.circular(15),
+      child: Center(
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: Stack(
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selected ? theme.colorScheme.primary : null,
-              border: isToday && !selected
-                  ? Border.all(color: theme.colorScheme.primary, width: 1.4)
-                  : null,
-            ),
-            child: Text('$day',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                    color: fg,
-                    fontWeight: selected || isToday
-                        ? FontWeight.w700
-                        : FontWeight.w500)),
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? theme.colorScheme.primary : null,
+                  border: isToday && !selected
+                      ? Border.all(color: theme.colorScheme.primary, width: 1.4)
+                      : null,
+                ),
+                child: Text('$day',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: fg,
+                        fontWeight: selected || isToday
+                            ? FontWeight.w700
+                            : FontWeight.w400)),
+              ),
+              if (showZone)
+                Positioned(
+                  bottom: 0,
+                  child: Container(
+                    width: 5.5,
+                    height: 5.5,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: zoneColor,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 2),
-          // Zone marker: a solid underline, slightly bolder than v1 — classy and
-          // subtle, clearly more than a hairline but not a full-cell wash.
-          Container(
-            width: 16,
-            height: 3,
-            decoration: BoxDecoration(
-              color: showZone ? zoneColor! : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -551,10 +569,9 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 16,
-                height: 3,
-                decoration: BoxDecoration(
-                    color: c, borderRadius: BorderRadius.circular(2))),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
             const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
