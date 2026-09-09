@@ -31,6 +31,7 @@ class _TargetSheet extends ConsumerStatefulWidget {
 
 class _TargetSheetState extends ConsumerState<_TargetSheet> {
   ReadinessTarget? _draft;
+  bool _showDims = false;
 
   ReadinessTarget get _t =>
       _draft ??
@@ -45,6 +46,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final t = _t;
     final date = t.interviewDate;
     final forecast = ref.watch(readinessForecastProvider).asData?.value;
+    final muted = theme.colorScheme.onSurfaceVariant;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -55,34 +57,75 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Your target', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 10),
+              // Target dimensions: a compact one-line summary that expands to the
+              // level/company/track pickers on demand — keeps the sheet short.
+              if (_showDims) ...[
+                _ChipGroup<SeniorityLevel>(
+                  label: 'Level',
+                  values: SeniorityLevel.values,
+                  selected: t.level,
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(t.copyWith(level: v)),
+                ),
+                _ChipGroup<CompanyTier>(
+                  label: 'Company',
+                  values: CompanyTier.values,
+                  selected: t.company,
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(t.copyWith(company: v)),
+                ),
+                _ChipGroup<Track>(
+                  label: 'Track',
+                  values: Track.values,
+                  selected: t.track,
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(t.copyWith(track: v)),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => setState(() => _showDims = false),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ] else
+                InkWell(
+                  onTap: () => setState(() => _showDims = true),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text.rich(TextSpan(
+                            style: theme.textTheme.bodyMedium,
+                            children: [
+                              TextSpan(
+                                  text: 'Aiming for  ',
+                                  style: TextStyle(color: muted)),
+                              TextSpan(
+                                  text: t.label,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          )),
+                        ),
+                        Icon(Icons.tune,
+                            size: 17, color: theme.colorScheme.primary),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 12),
-              _ChipGroup<SeniorityLevel>(
-                label: 'Level',
-                values: SeniorityLevel.values,
-                selected: t.level,
-                labelOf: (v) => v.label,
-                onSelected: (v) => _set(t.copyWith(level: v)),
-              ),
-              _ChipGroup<CompanyTier>(
-                label: 'Company',
-                values: CompanyTier.values,
-                selected: t.company,
-                labelOf: (v) => v.label,
-                onSelected: (v) => _set(t.copyWith(company: v)),
-              ),
-              _ChipGroup<Track>(
-                label: 'Track',
-                values: Track.values,
-                selected: t.track,
-                labelOf: (v) => v.label,
-                onSelected: (v) => _set(t.copyWith(track: v)),
-              ),
-              const SizedBox(height: 8),
+              // Forecast readout ABOVE the calendar (the headline outcome).
+              _ForecastBlock(chosenDate: date),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Text('Interview date (optional)',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                      style:
+                          theme.textTheme.labelLarge?.copyWith(color: muted)),
                   const Spacer(),
                   if (date != null)
                     TextButton(
@@ -92,8 +135,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 ],
               ),
               const SizedBox(height: 4),
-              // Inline calendar with per-day readiness-zone underlines (the OS
-              // picker can't colour individual cells). Tapping a day sets the date.
+              // Inline calendar with per-day readiness-zone markers (the OS picker
+              // can't colour individual cells). Tapping a day sets the date.
               _ZoneCalendar(
                 forecast: forecast,
                 selected: date,
@@ -101,11 +144,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               ),
               const SizedBox(height: 8),
               const _CalendarLegend(),
-              const SizedBox(height: 10),
-              // Ready-date readout: on-track date, push/ease range, and the pace
-              // needed to hit the chosen date.
-              _ForecastBlock(chosenDate: date),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               // Save (primary) and the specific-interview planner on one row to
               // keep the sheet short.
               Row(
@@ -493,40 +532,37 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fg = past
-        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+    final showZone = zoneColor != null && !past;
+    // Zone shown by tinting the day NUMBER (green/amber/red) — visible and clean,
+    // no extra shape and no height. Selected = filled primary circle; today = a
+    // soft filled circle (no ring). canRequestFocus off so no stray focus ring.
+    final numberColor = past
+        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.38)
         : selected
             ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onSurface;
-    final showZone = zoneColor != null && !past;
-    // Zone shown as a coloured RING around the day — clearly visible and classy,
-    // and it adds no height (just the circle), so the grid stays compact.
-    // Precedence: selected fill > today ring > zone ring.
-    final ring = selected
-        ? null
-        : isToday
-            ? theme.colorScheme.primary
-            : (showZone ? zoneColor : null);
+            : showZone
+                ? zoneColor!
+                : theme.colorScheme.onSurface;
+    final bg = selected
+        ? theme.colorScheme.primary
+        : (isToday ? theme.colorScheme.primary.withValues(alpha: 0.16) : null);
     return InkWell(
       onTap: onTap,
+      canRequestFocus: false,
+      focusColor: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
       child: Center(
         child: Container(
           width: 30,
           height: 30,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: selected ? theme.colorScheme.primary : null,
-            border: ring != null
-                ? Border.all(color: ring, width: isToday ? 1.6 : 2)
-                : null,
-          ),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
           child: Text('$day',
               style: theme.textTheme.bodySmall?.copyWith(
-                  color: fg,
-                  fontWeight:
-                      selected || isToday ? FontWeight.w700 : FontWeight.w400)),
+                  color: numberColor,
+                  fontWeight: selected || isToday
+                      ? FontWeight.w700
+                      : (showZone ? FontWeight.w600 : FontWeight.w400))),
         ),
       ),
     );
@@ -545,11 +581,9 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 13,
-                height: 13,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: c, width: 2))),
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
             const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
