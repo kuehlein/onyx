@@ -7,6 +7,7 @@ import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
 import '../interview/interview_planner_screen.dart';
+import '../interview/round_editing.dart';
 
 /// Opens the target-selection sheet. Lets the user pick the interview they're
 /// aiming at (level × company × track) and an optional date; both re-shape the
@@ -104,8 +105,23 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Your target', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 10),
+              // Title + an explicit close: a tall sheet's drag handle alone is
+              // easy to miss, and scrolling back up to grab it is awkward.
+              Row(
+                children: [
+                  Expanded(
+                    child:
+                        Text('Your target', style: theme.textTheme.titleLarge),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
               // Target dimensions: a form-field-style panel that expands to the
               // level/company/track pickers. Open by default until configured;
               // AnimatedSize gives it a smooth drawer-like open/close.
@@ -235,7 +251,6 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               // Scheduled interviews (flagged above) + the entry to plan one.
               _ScheduledSection(
                 goals: scheduled,
-                forecast: forecast,
                 today: forecast?.today ?? DateTime.now(),
                 onAdd: openPlanner,
                 onFocus: (d) => _set(t.copyWith(interviewDate: d)),
@@ -766,22 +781,21 @@ class _CalendarLegend extends StatelessWidget {
   );
 }
 
-/// Scheduled interviews listed under the calendar. Each interview is a loop of
-/// rounds (screen, system-design, …), each with its own date, pace status, and
-/// outcome; rounds can be added/edited/removed inline. The section header
-/// carries the 'Add' entry (plan a new interview); the list shows the 3 soonest
-/// interviews with a 'show all' expander so many never blow up the sheet.
+/// Scheduled interviews listed under the calendar — one compact row per
+/// interview, showing its NEXT upcoming round (companies schedule one at a time)
+/// and a pace status judged against THAT interview's own role. Swipe a row or
+/// use its menu to manage it; full round-by-round management lives on the
+/// Upcoming-interviews screen. The header's 'Add' plans a new interview; the
+/// list shows the 3 soonest with a 'show all' expander.
 class _ScheduledSection extends ConsumerStatefulWidget {
   const _ScheduledSection({
     required this.goals,
-    required this.forecast,
     required this.today,
     required this.onAdd,
     required this.onFocus,
   });
 
   final List<PrepGoal> goals; // sorted by soonest round first
-  final ReadinessForecast? forecast;
   final DateTime today;
   final VoidCallback onAdd;
   final void Function(DateTime) onFocus;
@@ -827,7 +841,8 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
             child: Text('None scheduled — add one to flag it on the calendar.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),
-        for (final g in visible) _interviewTile(context, g),
+        for (final g in visible)
+          _InterviewRow(goal: g, today: widget.today, onFocus: widget.onFocus),
         if (capped)
           Align(
             alignment: Alignment.centerLeft,
@@ -839,250 +854,183 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
       ],
     );
   }
+}
 
-  /// One interview: its label + an overflow menu, then its rounds, then a
-  /// compact '+ round' entry.
-  Widget _interviewTile(BuildContext context, PrepGoal g) {
+/// One compact interview row: its next upcoming round + a pace status judged
+/// against the interview's OWN role (a junior · non-faang loop can read "needs a
+/// faster pace" on a date the senior · faang target calls "too soon"). Swipe to
+/// delete; the menu adds/edits a round or removes the interview.
+class _InterviewRow extends ConsumerWidget {
+  const _InterviewRow({
+    required this.goal,
+    required this.today,
+    required this.onFocus,
+  });
+
+  final PrepGoal goal;
+  final DateTime today;
+  final void Function(DateTime) onFocus;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final rounds = g.effectiveRounds;
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 4),
-            child: Row(
-              children: [
-                Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    g.companyName.isEmpty ? g.label : g.companyName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert, size: 18),
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Interview options',
-                  onPressed: () => _interviewMenu(context, g),
-                ),
-              ],
-            ),
-          ),
-          for (final r in rounds) _roundRow(context, g, r),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => _addRound(context, g),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add round'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.fromLTRB(10, 0, 12, 2),
-                foregroundColor: muted,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final rounds = goal.effectiveRounds;
+    final nextDate = goal.nextRoundDate(today);
+    final next = _nextRound(rounds, nextDate);
+    // Judge this interview against its own role, not the top-of-form target.
+    final forecast = ref
+        .watch(readinessForecastForProvider((
+          level: goal.level,
+          company: goal.tier,
+          track: goal.track,
+        )))
+        .asData
+        ?.value;
 
-  Widget _roundRow(BuildContext context, PrepGoal g, InterviewRound r) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final d = r.date;
-    final sub = d == null ? 'No date yet' : '${_fmtDate(d)} · ${_daysAway(d)}';
-    return InkWell(
-      onTap: d == null ? null : () => widget.onFocus(d),
+    final roleLabel = '${goal.level.label} · ${goal.tier.label} · '
+        '${goal.track.label}';
+    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+    final sub = StringBuffer();
+    if (next != null) {
+      if (rounds.length > 1) sub.write('${next.type.label} · ');
+      final d = next.date;
+      if (d != null) sub.write('${_fmtDate(d)} · ${_daysAway(d)}');
+      if (rounds.length > 1) {
+        sub.write('  ·  round ${next.number} of ${rounds.length}');
+      }
+    }
+
+    final row = InkWell(
+      onTap: nextDate == null ? null : () => onFocus(nextDate),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            _outcomeDot(context, r.outcome),
+            Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(r.label,
+                  Text(title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium),
-                  Text(sub,
-                      style:
-                          theme.textTheme.labelSmall?.copyWith(color: muted)),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  if (sub.isNotEmpty)
+                    Text(sub.toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            theme.textTheme.labelSmall?.copyWith(color: muted)),
                 ],
               ),
             ),
-            if (d != null && r.outcome == GoalOutcome.pending)
-              _statusChip(context, d),
-            IconButton(
-              icon: const Icon(Icons.more_vert, size: 16),
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Round options',
-              onPressed: () => _roundMenu(context, g, r),
-            ),
+            if (nextDate != null)
+              _statusChip(context, forecast, nextDate, roleLabel),
+            _menu(context, ref),
           ],
         ),
       ),
     );
-  }
 
-  /// A small dot conveying the round's outcome (pending/passed/failed).
-  Widget _outcomeDot(BuildContext context, GoalOutcome o) {
-    final (IconData icon, Color color) = switch (o) {
-      GoalOutcome.passed => (Icons.check_circle, statusGood),
-      GoalOutcome.failed => (Icons.cancel, statusBad),
-      GoalOutcome.pending => (
-          Icons.radio_button_unchecked,
-          Theme.of(context).colorScheme.primary
+    // Swipe-to-delete, with a confirm — plus the same action in the menu.
+    return Dismissible(
+      key: ValueKey(goal.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmRemove(context),
+      onDismissed: (_) => ref.read(prepGoalsProvider.notifier).remove(goal.id),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(8),
         ),
-    };
-    return Icon(icon, size: 15, color: color);
-  }
-
-  Future<void> _interviewMenu(BuildContext context, PrepGoal g) async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Add round'),
-              onTap: () => Navigator.pop(ctx, 'add'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Remove interview'),
-              onTap: () => Navigator.pop(ctx, 'remove'),
-            ),
-          ],
-        ),
+        child: Icon(Icons.delete_outline,
+            color: theme.colorScheme.onErrorContainer),
       ),
+      child: row,
     );
-    if (!context.mounted) return;
-    if (choice == 'add') {
-      await _addRound(context, g);
-    } else if (choice == 'remove') {
-      await ref.read(prepGoalsProvider.notifier).remove(g.id);
-    }
   }
 
-  Future<void> _roundMenu(
-      BuildContext context, PrepGoal g, InterviewRound r) async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit round'),
-              onTap: () => Navigator.pop(ctx, 'edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Remove round'),
-              onTap: () => Navigator.pop(ctx, 'remove'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!context.mounted) return;
-    if (choice == 'edit') {
-      final edited =
-          await showRoundDialog(context, today: widget.today, existing: r);
-      if (edited != null) await _saveRound(g, edited);
-    } else if (choice == 'remove') {
-      await _removeRound(g, r);
-    }
-  }
-
-  Future<void> _addRound(BuildContext context, PrepGoal g) async {
-    final n = g.effectiveRounds.length + 1;
-    final draft = InterviewRound(
-      id: '${g.id}-r$n-${widget.today.millisecondsSinceEpoch}',
-      number: n,
-      type: n == 1 ? InterviewRoundType.screen : InterviewRoundType.onsite,
-    );
-    final added =
-        await showRoundDialog(context, today: widget.today, existing: draft);
-    if (added != null) await _saveRound(g, added);
-  }
-
-  Future<void> _saveRound(PrepGoal g, InterviewRound round) async {
-    final rounds = [...g.effectiveRounds];
-    final i = rounds.indexWhere((r) => r.id == round.id);
-    if (i >= 0) {
-      rounds[i] = round;
-    } else {
-      rounds.add(round);
-    }
-    await ref.read(prepGoalsProvider.notifier).upsert(_synced(g, rounds));
-  }
-
-  Future<void> _removeRound(PrepGoal g, InterviewRound round) async {
-    final rounds = [...g.effectiveRounds]..removeWhere((r) => r.id == round.id);
-    if (rounds.isEmpty) {
-      // A loop with no rounds isn't an interview any more — drop it.
-      await ref.read(prepGoalsProvider.notifier).remove(g.id);
-      return;
-    }
-    await ref.read(prepGoalsProvider.notifier).upsert(_synced(g, rounds));
-  }
-
-  /// Re-order rounds by date (dated ascending, undated last), renumber 1..n, and
-  /// mirror the soonest dated round into the denormalized [PrepGoal.date] that
-  /// legacy targeting still reads.
-  PrepGoal _synced(PrepGoal g, List<InterviewRound> rounds) {
-    final sorted = [...rounds]..sort((a, b) {
-        if (a.date == null && b.date == null) {
-          return a.number.compareTo(b.number);
-        }
-        if (a.date == null) return 1;
-        if (b.date == null) return -1;
-        return a.date!.compareTo(b.date!);
-      });
-    final renum = [
-      for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(number: i + 1),
-    ];
-    DateTime? earliest;
-    for (final r in renum) {
+  InterviewRound? _nextRound(List<InterviewRound> rounds, DateTime? nextDate) {
+    if (rounds.isEmpty) return null;
+    if (nextDate == null) return rounds.first;
+    for (final r in rounds) {
       final d = r.date;
-      if (d != null && (earliest == null || d.isBefore(earliest))) earliest = d;
+      if (d != null && DateTime(d.year, d.month, d.day) == nextDate) return r;
     }
-    return g.copyWith(rounds: renum, date: earliest);
+    return rounds.first;
   }
+
+  Widget _menu(BuildContext context, WidgetRef ref) => PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, size: 18),
+        tooltip: 'Interview options',
+        onSelected: (v) => _onMenu(context, ref, v),
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'add', child: Text('Add round')),
+          PopupMenuItem(value: 'edit', child: Text('Edit next round')),
+          PopupMenuItem(value: 'remove', child: Text('Remove interview')),
+        ],
+      );
+
+  Future<void> _onMenu(BuildContext context, WidgetRef ref, String v) async {
+    final notifier = ref.read(prepGoalsProvider.notifier);
+    if (v == 'add') {
+      final added = await showRoundDialog(context,
+          today: today, existing: draftRound(goal, seed: _seed()));
+      if (added != null) await notifier.upsert(goalWithRound(goal, added));
+    } else if (v == 'edit') {
+      final next = _nextRound(goal.effectiveRounds, goal.nextRoundDate(today));
+      if (next == null) return;
+      final edited =
+          await showRoundDialog(context, today: today, existing: next);
+      if (edited != null) await notifier.upsert(goalWithRound(goal, edited));
+    } else if (v == 'remove') {
+      if (!context.mounted) return;
+      final ok = await _confirmRemove(context);
+      if (ok) await notifier.remove(goal.id);
+    }
+  }
+
+  Future<bool> _confirmRemove(BuildContext context) async {
+    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove interview?'),
+        content: Text('This deletes “$title” and its rounds.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove')),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  int _seed() => DateTime.now().microsecondsSinceEpoch;
 
   String _daysAway(DateTime d) {
-    final days =
-        DateTime(d.year, d.month, d.day).difference(widget.today).inDays;
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     if (days < 0) return 'past';
     if (days == 0) return 'today';
     if (days < 14) return 'in $days days';
     return 'in ${(days / 7).round()} wks';
   }
 
-  Widget _statusChip(BuildContext context, DateTime d) {
-    final f = widget.forecast;
+  Widget _statusChip(BuildContext context, ReadinessForecast? f, DateTime d,
+      String roleLabel) {
     if (f == null) return const SizedBox.shrink();
-    final days =
-        DateTime(d.year, d.month, d.day).difference(widget.today).inDays;
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     final String text;
     final Color color;
     if (f.alreadyReady) {
@@ -1101,136 +1049,21 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
         color = statusWarn;
       }
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: color, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-/// A dialog to add or edit one interview round: its type, date (optional), and
-/// outcome. Returns the edited round, or null on cancel.
-Future<InterviewRound?> showRoundDialog(
-  BuildContext context, {
-  required DateTime today,
-  required InterviewRound existing,
-}) =>
-    showDialog<InterviewRound>(
-      context: context,
-      builder: (_) => _RoundDialog(today: today, existing: existing),
-    );
-
-class _RoundDialog extends StatefulWidget {
-  const _RoundDialog({required this.today, required this.existing});
-
-  final DateTime today;
-  final InterviewRound existing;
-
-  @override
-  State<_RoundDialog> createState() => _RoundDialogState();
-}
-
-class _RoundDialogState extends State<_RoundDialog> {
-  late InterviewRoundType _type = widget.existing.type;
-  late DateTime? _date = widget.existing.date;
-  late GoalOutcome _outcome = widget.existing.outcome;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    return AlertDialog(
-      title: Text('Round ${widget.existing.number}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Type',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          DropdownButtonFormField<InterviewRoundType>(
-            initialValue: _type,
-            isExpanded: true,
-            items: [
-              for (final t in InterviewRoundType.values)
-                DropdownMenuItem(value: t, child: Text(t.label)),
-            ],
-            onChanged: (v) => setState(() => _type = v ?? _type),
-          ),
-          const SizedBox(height: 14),
-          Text('Date',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.event, size: 18),
-                  label: Text(_date == null ? 'Set a date' : _fmtDate(_date!)),
-                  onPressed: _pickDate,
-                ),
-              ),
-              if (_date != null)
-                IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  tooltip: 'Clear date',
-                  onPressed: () => setState(() => _date = null),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text('Outcome',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          SegmentedButton<GoalOutcome>(
-            segments: const [
-              ButtonSegment(value: GoalOutcome.pending, label: Text('Pending')),
-              ButtonSegment(value: GoalOutcome.passed, label: Text('Passed')),
-              ButtonSegment(value: GoalOutcome.failed, label: Text('Failed')),
-            ],
-            selected: {_outcome},
-            showSelectedIcon: false,
-            onSelectionChanged: (s) => setState(() => _outcome = s.first),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+    return Tooltip(
+      message: 'Judged for $roleLabel',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(20),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            widget.existing
-                .copyWith(type: _type, date: _date, outcome: _outcome),
-          ),
-          child: const Text('Save'),
-        ),
-      ],
+        child: Text(text,
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+      ),
     );
-  }
-
-  Future<void> _pickDate() async {
-    final base =
-        DateTime(widget.today.year, widget.today.month, widget.today.day);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date ?? base.add(const Duration(days: 14)),
-      firstDate: base,
-      lastDate: base.add(const Duration(days: 365 * 2)),
-    );
-    if (picked != null) {
-      setState(() => _date = DateTime(picked.year, picked.month, picked.day));
-    }
   }
 }
 

@@ -237,17 +237,44 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   );
 }
 
-/// Projected "ready date" forecast (#49): at the recent pace, when does
-/// relevance-weighted recall readiness cross the target — plus chill/current/push
-/// scenarios for a range. Recall-only maturation (mocks are a separate axis).
-/// Returns null with no concept cards. Heavier than the other providers (a
-/// forward FSRS simulation), so it's memoised and only recomputed when its
-/// inputs change.
+/// The role dimensions a forecast is computed against. A value-equal record so
+/// [readinessForecastForProvider] memoises per role — interviews sharing a role
+/// (e.g. two "senior · faang · backend" loops) reuse a single simulation.
+typedef ForecastDims = ({
+  SeniorityLevel level,
+  CompanyTier company,
+  Track track,
+});
+
+/// Projected "ready date" forecast (#49) for the SAVED top-of-form target: at
+/// the recent pace, when relevance-weighted recall readiness crosses the target,
+/// plus chill/current/push scenarios. Delegates to [readinessForecastForProvider]
+/// so the calendar (top target) and per-interview chips (their own role) share
+/// the same engine.
 @riverpod
 Future<ReadinessForecast?> readinessForecast(Ref ref) async {
+  final target = await ref.watch(readinessTargetControllerProvider.future);
+  return ref.watch(readinessForecastForProvider((
+    level: target.level,
+    company: target.company,
+    track: target.track,
+  )).future);
+}
+
+/// Projected "ready date" forecast for an ARBITRARY role — the per-interview
+/// judgement lever. Same maturation model as above, weighted toward [dims]'s
+/// level/company/track, so a junior · non-faang loop can read "needs a faster
+/// pace" on a date the senior · faang target calls "too soon". Recall-only
+/// maturation (mocks are a separate axis). Returns null with no concept cards.
+/// Heavier than the other providers (a forward FSRS simulation), so it's
+/// memoised per role and only recomputed when its inputs change.
+@riverpod
+Future<ReadinessForecast?> readinessForecastFor(
+    Ref ref, ForecastDims dims) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final target = ReadinessTarget(
+      level: dims.level, company: dims.company, track: dims.track);
   final today = (await ref.watch(clockProvider.future)).today();
 
   // Concept cards only — algorithms feed readiness via transfer, not recall

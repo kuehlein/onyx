@@ -7,6 +7,7 @@ import '../../core/readiness/prep_goal.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/widgets/card_markdown.dart';
+import 'round_editing.dart';
 
 /// The learner's upcoming interviews — the prep goals, soonest first. Toggle each
 /// on/off (active goals bias study via the targeting layer), remove, view its
@@ -147,89 +148,12 @@ class _GoalRow extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, WidgetRef ref) {
-    final topDomain = _topDomain();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(goal.label,
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w700)),
-                Text(_countdown(),
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                if (goal.notes != null && goal.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: CardMarkdown(goal.notes!, compact: true),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                if (topDomain != null)
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.push('/practice/$topDomain'
-                            '?for=${Uri.encodeComponent(goal.label)}');
-                      },
-                      icon: const Icon(Icons.psychology_outlined),
-                      label: const Text('Practice for this interview'),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.push('/debrief/${goal.id}');
-                    },
-                    icon: const Icon(Icons.rate_review_outlined),
-                    label: const Text('Debrief — how did it go?'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ref.read(prepGoalsProvider.notifier).remove(goal.id);
-                    },
-                    icon: Icon(Icons.delete_outline,
-                        color: theme.colorScheme.error),
-                    label: Text('Remove',
-                        style: TextStyle(color: theme.colorScheme.error)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => _InterviewDetailSheet(goalId: goal.id),
     );
-  }
-
-  /// The goal's highest-weighted domain (for a quick "practice this" jump).
-  String? _topDomain() {
-    if (goal.domainWeights.isEmpty) return null;
-    final keys = goal.domainWeights.keys.toList()
-      ..sort(
-          (a, b) => goal.domainWeights[b]!.compareTo(goal.domainWeights[a]!));
-    return keys.first;
   }
 
   static String _fmt(DateTime d) {
@@ -238,6 +162,258 @@ class _GoalRow extends ConsumerWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
     ];
     return '${months[d.month - 1]} ${d.day}';
+  }
+}
+
+/// The interview detail sheet — the full round-by-round management surface (the
+/// target-sheet list stays compact and shows only the next round). Watches the
+/// goal live so round edits reflect at once. Add/edit/remove rounds, practice,
+/// debrief, or remove the whole interview.
+class _InterviewDetailSheet extends ConsumerWidget {
+  const _InterviewDetailSheet({required this.goalId});
+
+  final String goalId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final goals = ref.watch(prepGoalsProvider).asData?.value ?? const [];
+    final goal = goals.where((g) => g.id == goalId).firstOrNull;
+    if (goal == null) return const SizedBox.shrink();
+    final today = ref.watch(clockProvider).asData?.value.today();
+    final rounds = goal.effectiveRounds;
+    final notifier = ref.read(prepGoalsProvider.notifier);
+    final refDate = today ?? DateTime.now();
+
+    Future<void> addRound() async {
+      final added = await showRoundDialog(context,
+          today: refDate, existing: draftRound(goal, seed: _seed()));
+      if (added != null) await notifier.upsert(goalWithRound(goal, added));
+    }
+
+    Future<void> editRound(InterviewRound r) async {
+      final edited =
+          await showRoundDialog(context, today: refDate, existing: r);
+      if (edited != null) await notifier.upsert(goalWithRound(goal, edited));
+    }
+
+    Future<void> removeRound(InterviewRound r) async {
+      final updated = goalWithoutRound(goal, r.id);
+      if (updated == null) {
+        await notifier.remove(goal.id);
+        if (context.mounted) Navigator.pop(context);
+      } else {
+        await notifier.upsert(updated);
+      }
+    }
+
+    final topDomain = _topDomain(goal);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(goal.label,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            if (goal.notes != null && goal.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: CardMarkdown(goal.notes!, compact: true),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text('Rounds',
+                    style: theme.textTheme.labelLarge?.copyWith(color: muted)),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: addRound,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add round'),
+                  style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                ),
+              ],
+            ),
+            for (final r in rounds)
+              _RoundTile(
+                round: r,
+                today: today,
+                onEdit: () => editRound(r),
+                onRemove: () => removeRound(r),
+              ),
+            const SizedBox(height: 16),
+            if (topDomain != null)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.push('/practice/$topDomain'
+                        '?for=${Uri.encodeComponent(goal.label)}');
+                  },
+                  icon: const Icon(Icons.psychology_outlined),
+                  label: const Text('Practice for this interview'),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/debrief/${goal.id}');
+                },
+                icon: const Icon(Icons.rate_review_outlined),
+                label: const Text('Debrief — how did it go?'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  final ok = await _confirmRemove(context, goal);
+                  if (ok) {
+                    await notifier.remove(goal.id);
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+                icon:
+                    Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                label: Text('Remove interview',
+                    style: TextStyle(color: theme.colorScheme.error)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The goal's highest-weighted domain (for a quick "practice this" jump).
+  String? _topDomain(PrepGoal goal) {
+    if (goal.domainWeights.isEmpty) return null;
+    final keys = goal.domainWeights.keys.toList()
+      ..sort(
+          (a, b) => goal.domainWeights[b]!.compareTo(goal.domainWeights[a]!));
+    return keys.first;
+  }
+
+  int _seed() => DateTime.now().microsecondsSinceEpoch;
+
+  Future<bool> _confirmRemove(BuildContext context, PrepGoal goal) async {
+    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove interview?'),
+        content: Text('This deletes “$title” and its rounds.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove')),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+}
+
+/// One round in the detail sheet: outcome dot + label + date, with an
+/// edit/remove menu.
+class _RoundTile extends StatelessWidget {
+  const _RoundTile({
+    required this.round,
+    required this.today,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  final InterviewRound round;
+  final DateTime? today;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final d = round.date;
+    final sub = d == null ? 'No date yet' : '${_fmt(d)}${_daysAway(d)}';
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            _outcomeDot(context, round.outcome),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(round.label, style: theme.textTheme.bodyMedium),
+                  Text(sub,
+                      style:
+                          theme.textTheme.labelSmall?.copyWith(color: muted)),
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, size: 18),
+              tooltip: 'Round options',
+              onSelected: (v) => v == 'edit' ? onEdit() : onRemove(),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit')),
+                PopupMenuItem(value: 'remove', child: Text('Remove')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _outcomeDot(BuildContext context, GoalOutcome o) {
+    final (IconData icon, Color color) = switch (o) {
+      GoalOutcome.passed => (Icons.check_circle, statusGood),
+      GoalOutcome.failed => (Icons.cancel, Theme.of(context).colorScheme.error),
+      GoalOutcome.pending => (
+          Icons.radio_button_unchecked,
+          Theme.of(context).colorScheme.primary
+        ),
+    };
+    return Icon(icon, size: 16, color: color);
+  }
+
+  String _fmt(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
+    ];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  String _daysAway(DateTime d) {
+    if (today == null) return '';
+    final days = DateTime(d.year, d.month, d.day).difference(today!).inDays;
+    if (days < 0) return ' · past';
+    if (days == 0) return ' · today';
+    if (days < 14) return ' · in $days days';
+    return ' · in ${(days / 7).round()} wks';
   }
 }
 
