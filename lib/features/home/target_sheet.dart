@@ -31,7 +31,7 @@ class _TargetSheet extends ConsumerStatefulWidget {
 
 class _TargetSheetState extends ConsumerState<_TargetSheet> {
   ReadinessTarget? _draft;
-  bool _showDims = false;
+  bool? _showDims; // null = auto: open until a target has been configured
 
   ReadinessTarget get _t =>
       _draft ??
@@ -47,6 +47,12 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final date = t.interviewDate;
     final forecast = ref.watch(readinessForecastProvider).asData?.value;
     final muted = theme.colorScheme.onSurfaceVariant;
+    // Open the dimension pickers by default until a target has been configured
+    // (the controller returns the const fallback only when nothing is set).
+    final saved = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final unconfigured =
+        saved == null || identical(saved, ReadinessTarget.fallback);
+    final showDims = _showDims ?? unconfigured;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -58,65 +64,103 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
             children: [
               Text('Your target', style: theme.textTheme.titleLarge),
               const SizedBox(height: 10),
-              // Target dimensions: a compact one-line summary that expands to the
-              // level/company/track pickers on demand — keeps the sheet short.
-              if (_showDims) ...[
-                _ChipGroup<SeniorityLevel>(
-                  label: 'Level',
-                  values: SeniorityLevel.values,
-                  selected: t.level,
-                  labelOf: (v) => v.label,
-                  onSelected: (v) => _set(t.copyWith(level: v)),
+              // Target dimensions: a form-field-style panel that expands to the
+              // level/company/track pickers. Open by default until configured;
+              // AnimatedSize gives it a smooth drawer-like open/close.
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                _ChipGroup<CompanyTier>(
-                  label: 'Company',
-                  values: CompanyTier.values,
-                  selected: t.company,
-                  labelOf: (v) => v.label,
-                  onSelected: (v) => _set(t.copyWith(company: v)),
-                ),
-                _ChipGroup<Track>(
-                  label: 'Track',
-                  values: Track.values,
-                  selected: t.track,
-                  labelOf: (v) => v.label,
-                  onSelected: (v) => _set(t.copyWith(track: v)),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => setState(() => _showDims = false),
-                    child: const Text('Done'),
-                  ),
-                ),
-              ] else
-                InkWell(
-                  onTap: () => setState(() => _showDims = true),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text.rich(TextSpan(
-                            style: theme.textTheme.bodyMedium,
-                            children: [
-                              TextSpan(
-                                  text: 'Aiming for  ',
-                                  style: TextStyle(color: muted)),
-                              TextSpan(
-                                  text: t.label,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          )),
+                clipBehavior: Clip.antiAlias,
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: showDims
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InkWell(
+                              onTap: () => setState(() => _showDims = false),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 10, 10, 4),
+                                child: Row(children: [
+                                  Text('Target',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(color: muted)),
+                                  const Spacer(),
+                                  Icon(Icons.expand_less,
+                                      size: 20, color: muted),
+                                ]),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                              child: Column(
+                                children: [
+                                  _ChipGroup<SeniorityLevel>(
+                                    label: 'Level',
+                                    values: SeniorityLevel.values,
+                                    selected: t.level,
+                                    labelOf: (v) => v.label,
+                                    onSelected: (v) =>
+                                        _set(t.copyWith(level: v)),
+                                  ),
+                                  _ChipGroup<CompanyTier>(
+                                    label: 'Company',
+                                    values: CompanyTier.values,
+                                    selected: t.company,
+                                    labelOf: (v) => v.label,
+                                    onSelected: (v) =>
+                                        _set(t.copyWith(company: v)),
+                                  ),
+                                  _ChipGroup<Track>(
+                                    label: 'Track',
+                                    values: Track.values,
+                                    selected: t.track,
+                                    labelOf: (v) => v.label,
+                                    onSelected: (v) =>
+                                        _set(t.copyWith(track: v)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : InkWell(
+                          onTap: () => setState(() => _showDims = true),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                            child: Row(
+                              children: [
+                                Icon(Icons.flag_outlined,
+                                    size: 18, color: theme.colorScheme.primary),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Target',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(color: muted)),
+                                      const SizedBox(height: 1),
+                                      Text(t.label,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                  fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.expand_more, size: 20, color: muted),
+                              ],
+                            ),
+                          ),
                         ),
-                        Icon(Icons.tune,
-                            size: 17, color: theme.colorScheme.primary),
-                      ],
-                    ),
-                  ),
                 ),
+              ),
               const SizedBox(height: 12),
               // Forecast readout ABOVE the calendar (the headline outcome).
               _ForecastBlock(chosenDate: date),
@@ -426,8 +470,9 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     final grid = monthGrid(_month.year, _month.month, firstDayOfWeek: firstDow);
     final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
+    const blank = SizedBox(height: 34);
     final cells = <Widget>[
-      for (var i = 0; i < grid.leading; i++) const SizedBox.shrink(),
+      for (var i = 0; i < grid.leading; i++) blank,
       for (var day = 1; day <= grid.days; day++)
         Builder(builder: (_) {
           final date = DateTime(_month.year, _month.month, day);
@@ -444,8 +489,12 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
         }),
     ];
     while (cells.length % 7 != 0) {
-      cells.add(const SizedBox.shrink());
+      cells.add(blank);
     }
+    final weeks = <TableRow>[
+      for (var i = 0; i < cells.length; i += 7)
+        TableRow(children: cells.sublist(i, i + 7)),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -498,14 +547,14 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
           ],
         ),
         const SizedBox(height: 6),
-        GridView.count(
-          crossAxisCount: 7,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.5,
-          mainAxisSpacing: 1,
-          crossAxisSpacing: 1,
-          children: cells,
+        Table(
+          border: TableBorder.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+            width: 0.8,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: weeks,
         ),
       ],
     );
@@ -533,37 +582,34 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showZone = zoneColor != null && !past;
-    // Zone shown by tinting the day NUMBER (green/amber/red) — visible and clean,
-    // no extra shape and no height. Selected = filled primary circle; today = a
-    // soft filled circle (no ring). canRequestFocus off so no stray focus ring.
+    // In the bordered grid, the zone is a soft cell BACKGROUND (a proper heatmap
+    // now that cells are outlined) — the most legible option. Selected = solid
+    // primary; today = a subtle primary tint; the number stays neutral to read.
+    final cellBg = selected
+        ? theme.colorScheme.primary
+        : isToday
+            ? theme.colorScheme.primary.withValues(alpha: 0.15)
+            : showZone
+                ? zoneColor!.withValues(alpha: 0.22)
+                : null;
     final numberColor = past
-        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.38)
+        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
         : selected
             ? theme.colorScheme.onPrimary
-            : showZone
-                ? zoneColor!
-                : theme.colorScheme.onSurface;
-    final bg = selected
-        ? theme.colorScheme.primary
-        : (isToday ? theme.colorScheme.primary.withValues(alpha: 0.16) : null);
+            : theme.colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       canRequestFocus: false,
       focusColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: Center(
-        child: Container(
-          width: 30,
-          height: 30,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
-          child: Text('$day',
-              style: theme.textTheme.bodySmall?.copyWith(
-                  color: numberColor,
-                  fontWeight: selected || isToday
-                      ? FontWeight.w700
-                      : (showZone ? FontWeight.w600 : FontWeight.w400))),
-        ),
+      child: Container(
+        height: 34,
+        alignment: Alignment.center,
+        color: cellBg,
+        child: Text('$day',
+            style: theme.textTheme.bodySmall?.copyWith(
+                color: numberColor,
+                fontWeight:
+                    selected || isToday ? FontWeight.w700 : FontWeight.w400)),
       ),
     );
   }
@@ -581,9 +627,11 @@ class _CalendarLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(3))),
             const SizedBox(width: 5),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
