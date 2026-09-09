@@ -27,7 +27,7 @@ Use the Top 10 as a **threat-modeling and review lens**, not a compliance certif
 - **Deny by default + enforce [authorization](_meta/glossary.md#authorization) server-side.** Access control lives on the server for every request, never in the client or hidden UI. This is #1 (Broken Access Control) — the most common and most severe class.
 - **Separate code from data.** Injection (SQLi, command, LDAP) happens when input is interpreted as code. Parameterized queries / safe APIs keep the two apart.
 - **Encode for the destination context.** XSS is injection into the *browser*; the fix is context-aware output encoding plus a Content Security Policy.
-- **Protect data in transit and at rest.** [TLS](_meta/glossary.md#tls) everywhere; slow, [salted](_meta/glossary.md#salt) password hashing (bcrypt/scrypt/Argon2), not MD5/[SHA-256](_meta/glossary.md#sha-256).
+- **Protect data in transit and at rest.** [TLS](_meta/glossary.md#tls) everywhere; slow, [salted](_meta/glossary.md#salt) password hashing (bcrypt/scrypt/Argon2), not [MD5](_meta/glossary.md#md5)/[SHA-256](_meta/glossary.md#sha-256).
 - **Least privilege at every boundary,** including outbound: validate/allowlist server-initiated requests to stop SSRF.
 - **Trust your supply chain deliberately:** pin and verify dependencies and build artifacts.
 
