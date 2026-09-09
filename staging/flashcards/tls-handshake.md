@@ -97,7 +97,7 @@ Reference points, not memorization targets:
 - **Inspect a live handshake:** `openssl s_client -connect example.com:443 -tls1_3` shows the negotiated version, cipher, and the presented certificate chain.
 - **View the cert chain:** `openssl s_client -connect host:443 -showcerts`, or `curl -vI https://host` for a quick verify path.
 - **mTLS** (mutual TLS, [mTLS](_meta/glossary.md#mtls)): the server also requests a client certificate — the client sends its own Certificate + CertificateVerify. Used in zero-trust service meshes; operationally heavier (client-side PKI, rotation).
-- **Certificate Transparency** (CT): CAs log issued certs to public append-only logs so misissuance is detectable; browsers may require SCTs.
+- **Certificate Transparency** ([CT](_meta/glossary.md#ct)): CAs log issued certs to public append-only logs so misissuance is detectable; browsers may require SCTs.
 - **Where termination happens** matters: a load balancer / CDN often terminates TLS at the edge, then re-encrypts (or not) to origin. This changes where the private key lives and where plaintext is exposed.
 
 ## Resources

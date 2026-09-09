@@ -59,7 +59,7 @@ These are real, exploited vulnerability classes — getting them wrong is the di
 - **Missing function-level authZ.** Hiding an admin button in the UI but leaving the endpoint unprotected — authZ enforced only in the client is no authZ. Enforce on the server for every route.
 - **Trusting authN as authZ.** "The token is valid, so let them in" — a valid identity is not permission. Always check *what* the principal may do, not just *that* they are authenticated.
 - **JWT `alg: none` bypass.** Some libraries honor an attacker-set `"alg":"none"` header and skip signature verification, accepting forged tokens. Fix: reject `none`; pin an explicit expected algorithm on verify (RFC 8725).
-- **JWT algorithm-confusion (RS256 → HS256).** If the verifier reads `alg` from the token, an attacker switches an RSA (`RS256`) token to HMAC (`HS256`) and signs it with the *public* [RSA](_meta/glossary.md#rsa) key — which is public — since [HMAC](_meta/glossary.md#hmac) is symmetric and the server uses that same public key as the shared secret. Fix: never let the library pick the algorithm from the header; allow-list one algorithm/key type, and never accept both symmetric and asymmetric for the same key (RFC 8725).
+- **JWT [algorithm-confusion](_meta/glossary.md#algorithm-confusion) (RS256 → HS256).** If the verifier reads `alg` from the token, an attacker switches an RSA (`RS256`) token to HMAC (`HS256`) and signs it with the *public* [RSA](_meta/glossary.md#rsa) key — which is public — since [HMAC](_meta/glossary.md#hmac) is symmetric and the server uses that same public key as the shared secret. Fix: never let the library pick the algorithm from the header; allow-list one algorithm/key type, and never accept both symmetric and asymmetric for the same key (RFC 8725).
 - **Not validating `aud` / `iss` / `exp`.** A verified signature is not enough — a token minted for a *different* service (wrong `aud`) or a different issuer must be rejected. Failing to check audience lets a token for service X be [replayed](_meta/glossary.md#replay-attack) against service Y.
 - **Privilege escalation via client-controlled claims.** Deriving roles/permissions from a token field the user can influence, or reading `role` from a request body. Roles must come from a trusted, server-side source bound to the verified principal.
 - **Confused-deputy / over-broad scopes.** Granting a delegated client wider OAuth scopes than the task needs; the client (deputy) can then act beyond intent. Request least-privilege scopes.
@@ -107,7 +107,7 @@ def get_invoice(principal, invoice_id):
     return inv
 ```
 
-**Credential storage (authN side):** never store passwords reversibly — use a slow, memory-hard password [KDF](_meta/glossary.md#kdf) (Argon2id / bcrypt / scrypt) with a per-user [salt](_meta/glossary.md#salt). Treat any PII in tokens/claims as sensitive. Serve everything over [TLS](_meta/glossary.md#tls); a [MAC](_meta/glossary.md#mac)/signature on a token proves integrity, not confidentiality.
+**Credential storage (authN side):** never store passwords reversibly — use a slow, memory-hard password [KDF](_meta/glossary.md#kdf) (Argon2id / bcrypt / scrypt) with a per-user [salt](_meta/glossary.md#salt). Treat any [PII](_meta/glossary.md#pii) in tokens/claims as sensitive. Serve everything over [TLS](_meta/glossary.md#tls); a [MAC](_meta/glossary.md#mac)/signature on a token proves integrity, not confidentiality.
 
 ## Variants
 

@@ -55,7 +55,7 @@ The complexity depends on the shape of the recursion tree:
 
 - **Base case:** the condition that stops recursion and returns a concrete value without a further recursive call. Every recursive path must reach a base case or the stack overflows.
 - **Recursive case:** reduces the problem toward the base case. The critical invariant is that the argument passed to the recursive call must be strictly "smaller" (closer to the base case) by some well-founded measure (n-1, left/right subtree, prefix/suffix).
-- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in LIFO (last-in, first-out) order.
+- **Call stack frame:** each frame stores the function's local variables, parameters, and the return address. Frames accumulate until the deepest base case resolves, then unwind in [LIFO](_meta/glossary.md#lifo) (last-in, first-out) order.
 - **Return value propagation:** results travel *up* the stack as each frame returns. Post-order computations (e.g., combining left and right subtree results) happen during unwinding.
 
 ## Common Pitfalls

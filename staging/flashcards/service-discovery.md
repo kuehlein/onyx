@@ -55,7 +55,7 @@ Service discovery is the mechanism by which a client finds a *currently healthy*
 | Language coupling | Library needed per language | Language-agnostic |
 | Examples | Netflix Eureka + Ribbon, [gRPC](_meta/glossary.md#grpc) client-side LB | AWS ELB/ALB, k8s Service via kube-proxy, service-mesh sidecar |
 
-- **DNS-based discovery** is the simplest server-side-ish form: instances become A/AAAA/SRV records; clients just resolve a name. Cheap and universal, but DNS [TTL](_meta/glossary.md#ttl) caching makes removal of a dead instance *slow*, and plain A records carry no health or weight metadata. Good enough for slow-changing fleets; weak for fast failure removal.
+- **DNS-based discovery** is the simplest server-side-ish form: instances become A/[AAAA](_meta/glossary.md#aaaa)/SRV records; clients just resolve a name. Cheap and universal, but DNS [TTL](_meta/glossary.md#ttl) caching makes removal of a dead instance *slow*, and plain A records carry no health or weight metadata. Good enough for slow-changing fleets; weak for fast failure removal.
 - **Registry consistency ([CP](_meta/glossary.md#cp) vs [AP](_meta/glossary.md#ap)):** a CP registry ([etcd](https://etcd.io/), [ZooKeeper](https://zookeeper.apache.org/), Consul's Raft-backed writes) refuses to serve possibly-stale membership during a partition — favored when the registry backs control-plane decisions (etcd for Kubernetes). An AP-leaning approach (gossip, Eureka) keeps returning cached membership during a partition — favored for discovery itself, where a slightly stale-but-available instance list beats no list at all. For *discovery specifically*, strict [linearizability](_meta/glossary.md#linearizability) is usually not required: fast convergence is enough.
 
 ## Common Pitfalls

@@ -99,7 +99,7 @@ Many workloads tolerate slightly higher latency for consistency. Google Spanner 
 - **Tunable consistency:** Expose per-request consistency level (e.g., Cassandra: `ONE`, `QUORUM`, `ALL`). Operators tune the CP/AP dial per use-case without re-architecting.
 
 **Multi-region design decision:**
-In active-active multi-region, cross-region writes over the WAN (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
+In active-active multi-region, cross-region writes over the [WAN](_meta/glossary.md#wan) (~80–150 ms RTT) make synchronous consensus expensive. Most teams accept AP (async cross-region replication) for the global tier and enforce CP within a single region. Write conflicts across regions are rare by design (geo-routing keeps users on their home region's primary).
 
 ## Resources
 
