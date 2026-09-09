@@ -121,7 +121,7 @@ class _DomainList extends StatefulWidget {
 }
 
 class _DomainListState extends State<_DomainList> {
-  static const _cap = 4;
+  static const _cap = 3;
   bool _expanded = false;
 
   @override

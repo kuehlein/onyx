@@ -45,22 +45,35 @@ class HomeScreen extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  index.when(
-                    loading: () => const Text('Indexing vault…',
-                        textAlign: TextAlign.center),
-                    error: (e, _) => Text('Index error: $e',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: theme.colorScheme.error)),
-                    data: (r) => Text(
-                      r.cardCount == 0
+                  // Status line only for informational states (indexing, no
+                  // vault, all caught up). When there's actual due/new work the
+                  // Review/Learn buttons already show those counts, so we skip
+                  // it to save a redundant line of height.
+                  ...index.when(
+                    loading: () => const [
+                      Text('Indexing vault…', textAlign: TextAlign.center),
+                      SizedBox(height: 14),
+                    ],
+                    error: (e, _) => [
+                      Text('Index error: $e',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: theme.colorScheme.error)),
+                      const SizedBox(height: 14),
+                    ],
+                    data: (r) {
+                      final msg = r.cardCount == 0
                           ? 'No vault configured yet — open Settings.'
-                          : _statusLine(dueCount, newCount, r.cardCount),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                          : _statusLine(dueCount, newCount, r.cardCount);
+                      if (msg == null) return const <Widget>[];
+                      return [
+                        Text(msg,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
+                        const SizedBox(height: 14),
+                      ];
+                    },
                   ),
-                  const SizedBox(height: 14),
                   FilledButton.icon(
                     // Always tappable; the label tracks the day's concept-recall
                     // work, and /quiz guides you (learn first → review → extra
@@ -149,12 +162,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _statusLine(int? due, int? newCount, int cardCount) {
+  /// Informational status only. Returns null when there's actionable work
+  /// (due/new) — the Review/Learn buttons already show those counts, so we don't
+  /// repeat them and cost a line of height.
+  String? _statusLine(int? due, int? newCount, int cardCount) {
     if (due == null && newCount == null) return '$cardCount cards indexed';
-    final parts = <String>[
-      if ((due ?? 0) > 0) '$due to review',
-      if ((newCount ?? 0) > 0) '$newCount new to learn',
-    ];
-    return parts.isEmpty ? 'All caught up' : parts.join(' · ');
+    if ((due ?? 0) > 0 || (newCount ?? 0) > 0) return null;
+    return 'All caught up';
   }
 }
