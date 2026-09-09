@@ -6,7 +6,7 @@ tags:
   - encoding
   - schema
 tiers:
-  distributed-systems: 1
+  distributed-systems: 2
 created: 2026-09-08
 confidence: high
 priority: normal

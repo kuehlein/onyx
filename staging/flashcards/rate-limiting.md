@@ -7,7 +7,7 @@ tags:
   - scalability
   - api-design
 tiers:
-  system-design: 1
+  system-design: 2
 created: 2026-08-20
 confidence: high
 priority: normal

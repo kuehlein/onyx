@@ -5,7 +5,7 @@ tags:
   - security
   - auth
 tiers:
-  security: 1
+  security: 3
 created: 2026-09-08
 confidence: high
 priority: normal

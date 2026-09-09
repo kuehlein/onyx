@@ -4,7 +4,7 @@ type: flashcard
 created: 2026-08-21
 confidence: high
 tiers:
-  distributed-systems: 2
+  distributed-systems: 3
 tags:
   - distributed-systems
   - merkle-tree

@@ -7,7 +7,7 @@ tags:
   - array
   - two-pointers
 tiers:
-  ds-a: 1
+  ds-a: 2
 created: 2026-08-19
 confidence: high
 priority: normal

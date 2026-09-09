@@ -7,7 +7,7 @@ tags:
   - tree
   - data-structures
 tiers:
-  ds-a: 2
+  ds-a: 1
 created: 2026-08-20
 confidence: high
 priority: high

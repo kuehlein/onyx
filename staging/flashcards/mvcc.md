@@ -6,7 +6,7 @@ tags:
   - transactions
   - mvcc
 tiers:
-  databases: 1
+  databases: 3
 created: 2026-09-08
 confidence: high
 priority: normal

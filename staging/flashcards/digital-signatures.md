@@ -4,7 +4,7 @@ type: flashcard
 created: 2026-08-21
 confidence: high
 tiers:
-  blockchain: 1
+  security: 2
 tags:
   - security
   - cryptography

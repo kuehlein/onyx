@@ -7,7 +7,7 @@ tags:
   - lsm-tree
   - b-tree
 tiers:
-  databases: 1
+  databases: 2
 created: 2026-09-08
 confidence: high
 priority: normal

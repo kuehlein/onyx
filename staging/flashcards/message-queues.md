@@ -6,7 +6,7 @@ tags:
   - messaging
   - kafka
 tiers:
-  system-design: 1
+  system-design: 2
 created: 2026-09-08
 confidence: high
 priority: normal

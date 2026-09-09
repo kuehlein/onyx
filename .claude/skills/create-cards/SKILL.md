@@ -12,8 +12,9 @@ method; don't shortcut the audit.
 ## 1. Format (authoritative: `docs/card-schema.md`)
 One card = one markdown file in `staging/flashcards/<slug>.md`:
 - Frontmatter: `id: <slug>` · `type: flashcard` (or `algorithm`) · `tags: [domain, …]`
-  (the **first tag is the domain**) · `tiers: { <domain>: <1|2|3> }` (1 = most
-  foundational) · `created: <today ISO>` · `confidence: high|medium|low` · `priority`.
+  (the **first tag is the domain**) · `tiers: { <domain>: <N> }` (1 = most
+  foundational → higher = more specialist; see §3 — tier is hierarchy, NOT
+  importance) · `created: <today ISO>` · `confidence: high|medium|low` · `priority`.
 - Body: H1 title → 1-paragraph **principle-first** overview → a `> [!tip]
   Recognition …` callout → H2 sections. Use a real existing high-confidence card
   as the style template (e.g. `database-indexing.md` for systems, `two-pointers.md`
@@ -54,6 +55,28 @@ One card = one markdown file in `staging/flashcards/<slug>.md`:
   `networking`, `concurrency`, `security`, `backend`. `domainWeight()`
   (`core/readiness/target.dart`) treats the systems/backend family as one
   weighted group; new backend domains ride it. Tag the domain as the first tag.
+- **Tier = knowledge-hierarchy depth within a domain, NOT importance.** Set it by
+  "how much must you already know to reach this?", never by "how much does the
+  backend interview care?" (importance/relevance is derived from the target, not
+  stored). Open-ended; today the deck uses 1–3. SWE rubric:
+  - **Tier 1 — foundational:** primitives learned first, prerequisites for the
+    rest (e.g. `array`, `hash-map`, `stack`, `big-o-complexity`; `http-https`,
+    `dns`, `caching`, `load-balancing`, `sql-vs-nosql`, `acid-properties`;
+    `authentication-vs-authorization`).
+  - **Tier 2 — intermediate:** standard patterns/mechanisms built on tier 1
+    (e.g. `bfs`, `dfs`, `two-pointers`, `sliding-window`, `binary-search`,
+    `heap`, `prefix-sum`; `database-indexing`, `replication-models`,
+    `rate-limiting`, `message-queues`, `transaction-isolation-levels`,
+    `jwt-and-sessions`).
+  - **Tier 3 — advanced:** specialist/deep, assume 1–2 (e.g. `dijkstra`, `mst`,
+    `union-find`, `trie`, `topological-sort`, `dynamic-programming-2d`;
+    `consensus`, `two-phase-commit`, `saga-pattern`, `consistency-models`,
+    `mvcc`, `change-data-capture`, `event-sourcing`, `consistent-hashing`;
+    `digital-signatures`, `oauth2-and-oidc`).
+  A tier-3-but-essential topic (e.g. `consensus` for backend) stays high-value
+  via *relevance*, not by demoting its tier. (These examples are SWE-domain
+  specific; the tier *concept* above is generic — when #30 splits the skill, the
+  examples move to the SWE profile.)
 - Curriculum of what to build + priority tags: `docs/curriculum.md`. Build
   CORE → IMPORTANT. Progress tracked in the `backend-curriculum-build` memory.
 

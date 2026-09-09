@@ -2,7 +2,7 @@
 id: partitioning-sharding
 type: flashcard
 tags: [distributed-systems, partitioning, sharding]
-tiers: { distributed-systems: 1 }
+tiers: { distributed-systems: 2 }
 created: 2026-09-08
 confidence: high
 priority: normal

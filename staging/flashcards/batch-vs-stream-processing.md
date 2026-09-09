@@ -4,7 +4,7 @@ type: flashcard
 tags:
   - distributed-systems
 tiers:
-  distributed-systems: 2
+  distributed-systems: 3
 created: 2026-09-08
 confidence: high
 priority: normal

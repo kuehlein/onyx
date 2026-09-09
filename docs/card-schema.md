@@ -30,7 +30,7 @@ tags:
   - trees
   - bst
 tiers:
-  ds-a: 2                                 # per-domain tier (1=foundational → 4=specialist)
+  ds-a: 2                                 # per-domain tier (1=foundational → higher=specialist; hierarchy, NOT importance)
   system-design: 1                        # include only domains where this card is relevant
 created: 2024-01-15                        # ISO 8601 date
 quiz: []                                   # optional: explicit list of section slugs to quiz
@@ -45,9 +45,15 @@ quiz: []                                   # optional: explicit list of section 
 - `tags` — kebab-case strings. Always include a domain tag (`ds-a`,
   `system-design`, `blockchain`, `behavioral`). See `_meta/tags.md` in the
   vault for the full index and conflict-resolution rules.
-- `tiers` — map of domain → tier level (1–4). Tier is per-domain: a card can
-  be tier 1 in `system-design` and tier 3 in `ds-a`. Cards without `tiers` are
-  indexed and quizzed normally but excluded from readiness calculations.
+- `tiers` — map of domain → tier level (1 = most foundational → higher = more
+  specialist/advanced; open-ended, not capped). Tier is a card's position in the
+  **knowledge hierarchy** within a domain — intrinsic to the knowledge itself.
+  It is **NOT** importance, priority, or relevance to any goal: *relevance* to a
+  given target is derived separately (target × domain × tier), so a topic can be
+  foundational (low tier) yet peripheral for one goal and essential for another.
+  Tier is per-domain: a card can be tier 1 in `system-design` and tier 3 in
+  `ds-a`. Cards without `tiers` are indexed and quizzed normally but excluded
+  from readiness calculations.
 - `confidence` — `high` / `medium` / `low`. Set at card creation based on verification outcome. Guides how much to trust the card before cross-checking with Resources.
   - `high` — clean verification pass; study with confidence
   - `medium` — minor issues were flagged; verify the specific sections noted in REVIEW.md

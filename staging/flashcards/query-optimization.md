@@ -2,7 +2,7 @@
 id: query-optimization
 type: flashcard
 tags: [databases, query-optimization]
-tiers: { databases: 1 }
+tiers: { databases: 2 }
 created: 2026-09-08
 confidence: high
 priority: normal

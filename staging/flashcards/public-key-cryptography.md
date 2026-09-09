@@ -6,7 +6,7 @@ tags:
   - cryptography
   - wallet
 tiers:
-  blockchain: 1
+  security: 1
 created: 2026-08-20
 confidence: high
 priority: low
