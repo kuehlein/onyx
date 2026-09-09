@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
@@ -53,6 +54,22 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final unconfigured =
         saved == null || identical(saved, ReadinessTarget.fallback);
     final showDims = _showDims ?? unconfigured;
+    // Scheduled interviews (prep goals with a date) — flagged on the calendar
+    // and listed below it.
+    final goals =
+        ref.watch(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
+    final scheduled = [
+      for (final g in goals)
+        if (g.date != null) g,
+    ]..sort((a, b) => a.date!.compareTo(b.date!));
+    final interviewDates = {
+      for (final g in scheduled)
+        DateTime(g.date!.year, g.date!.month, g.date!.day),
+    };
+    void openPlanner() {
+      Navigator.of(context).pop();
+      context.push('/plan-interview');
+    }
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -184,35 +201,32 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               _ZoneCalendar(
                 forecast: forecast,
                 selected: date,
+                interviewDates: interviewDates,
                 onSelect: (d) => _set(t.copyWith(interviewDate: d)),
               ),
               const SizedBox(height: 8),
               const _CalendarLegend(),
+              const SizedBox(height: 14),
+              // Scheduled interviews (flagged above) + the entry to plan one.
+              _ScheduledSection(
+                goals: scheduled,
+                forecast: forecast,
+                today: forecast?.today ?? DateTime.now(),
+                onAdd: openPlanner,
+                onTapGoal: (_) => openPlanner(),
+              ),
               const SizedBox(height: 16),
-              // Save (primary) and the specific-interview planner on one row to
-              // keep the sheet short.
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () async {
-                        await ref
-                            .read(readinessTargetControllerProvider.notifier)
-                            .save(t);
-                        if (context.mounted) Navigator.of(context).pop();
-                      },
-                      child: const Text('Save target'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.push('/plan-interview');
-                    },
-                    child: const Text('Plan interview'),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    await ref
+                        .read(readinessTargetControllerProvider.notifier)
+                        .save(t);
+                    if (context.mounted) Navigator.of(context).pop();
+                  },
+                  child: const Text('Save target'),
+                ),
               ),
             ],
           ),
@@ -408,11 +422,15 @@ class _ZoneCalendar extends StatefulWidget {
   const _ZoneCalendar({
     required this.forecast,
     required this.selected,
+    required this.interviewDates,
     required this.onSelect,
   });
 
   final ReadinessForecast? forecast;
   final DateTime? selected;
+
+  /// Date-only days that have a scheduled interview (flagged in the grid).
+  final Set<DateTime> interviewDates;
   final ValueChanged<DateTime> onSelect;
 
   @override
@@ -483,6 +501,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             selected:
                 widget.selected != null && _sameDay(date, widget.selected!),
             zoneColor: _zoneColor(date),
+            hasInterview: widget.interviewDates.contains(date),
             onTap: past ? null : () => widget.onSelect(date),
           );
         }),
@@ -566,6 +585,7 @@ class _DayCell extends StatelessWidget {
     required this.past,
     required this.selected,
     required this.zoneColor,
+    required this.hasInterview,
     required this.onTap,
   });
 
@@ -573,6 +593,7 @@ class _DayCell extends StatelessWidget {
   final bool past;
   final bool selected;
   final Color? zoneColor;
+  final bool hasInterview;
   final VoidCallback? onTap;
 
   @override
@@ -595,14 +616,34 @@ class _DayCell extends StatelessWidget {
       onTap: onTap,
       canRequestFocus: false,
       focusColor: Colors.transparent,
-      child: Container(
+      child: SizedBox(
         height: 50,
-        alignment: Alignment.center,
-        color: cellBg,
-        child: Text('$day',
-            style: theme.textTheme.bodyMedium?.copyWith(
-                color: numberColor,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w400)),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                alignment: Alignment.center,
+                color: cellBg,
+                child: Text('$day',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        color: numberColor,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w400)),
+              ),
+            ),
+            // A scheduled interview on this day — a small flag in the corner.
+            if (hasInterview)
+              Positioned(
+                top: 4,
+                right: 5,
+                child: Icon(Icons.flag,
+                    size: 12,
+                    color: selected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.primary),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -655,6 +696,127 @@ class _CalendarLegend extends StatelessWidget {
     leading: (firstWeekday - firstDayOfWeek + 7) % 7,
     days: DateTime(year, month + 1, 0).day,
   );
+}
+
+/// Scheduled interviews (prep goals with a date) listed under the calendar —
+/// each with a days-away readout + a pace status from the forecast — plus the
+/// entry to plan a new one. Kept compact so it barely adds height.
+class _ScheduledSection extends StatelessWidget {
+  const _ScheduledSection({
+    required this.goals,
+    required this.forecast,
+    required this.today,
+    required this.onAdd,
+    required this.onTapGoal,
+  });
+
+  final List<PrepGoal> goals;
+  final ReadinessForecast? forecast;
+  final DateTime today;
+  final VoidCallback onAdd;
+  final void Function(PrepGoal) onTapGoal;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final g in goals)
+          InkWell(
+            onTap: () => onTapGoal(g),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(g.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text('${_fmtDate(g.date!)} · ${_daysAway(g.date!)}',
+                            style: theme.textTheme.labelSmall
+                                ?.copyWith(color: muted)),
+                      ],
+                    ),
+                  ),
+                  _statusChip(context, g.date!),
+                ],
+              ),
+            ),
+          ),
+        InkWell(
+          onTap: onAdd,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Plan a specific interview',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _daysAway(DateTime d) {
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    if (days < 0) return 'past';
+    if (days == 0) return 'today';
+    if (days < 14) return 'in $days days';
+    return 'in ${(days / 7).round()} wks';
+  }
+
+  Widget _statusChip(BuildContext context, DateTime d) {
+    final f = forecast;
+    if (f == null) return const SizedBox.shrink();
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    final String text;
+    final Color color;
+    if (f.alreadyReady) {
+      text = 'ready';
+      color = statusGood;
+    } else {
+      final req = f.requiredPerDayFor(days);
+      if (req == null) {
+        text = 'too soon';
+        color = statusBad;
+      } else if (req <= f.currentPerDay) {
+        text = 'on track';
+        color = statusGood;
+      } else {
+        text = '~$req/day';
+        color = statusWarn;
+      }
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text,
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall
+              ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+    );
+  }
 }
 
 String _monthName(int m) => const [
