@@ -6,6 +6,7 @@ import '../../core/readiness/goals_service.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/prep_goal.dart';
+import '../../core/readiness/projection.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
@@ -233,6 +234,66 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,
+  );
+}
+
+/// Projected "ready date" forecast (#49): at the recent pace, when does
+/// relevance-weighted recall readiness cross the target — plus chill/current/push
+/// scenarios for a range. Recall-only maturation (mocks are a separate axis).
+/// Returns null with no concept cards. Heavier than the other providers (a
+/// forward FSRS simulation), so it's memoised and only recomputed when its
+/// inputs change.
+@riverpod
+Future<ReadinessForecast?> readinessForecast(Ref ref) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final states = await ref.watch(srsStatesProvider.future);
+  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final today = (await ref.watch(clockProvider.future)).today();
+
+  // Concept cards only — algorithms feed readiness via transfer, not recall
+  // coverage (matches the readiness provider).
+  final cards = index.cards.where((c) => c.type != CardType.algorithm).toList();
+  if (cards.isEmpty) return null;
+
+  final stateByKey = {
+    for (final e in states.byKey.entries)
+      e.key: SectionSrsState(
+        stability: e.value.stability,
+        difficulty: e.value.difficulty,
+        state: e.value.state,
+        step: e.value.step,
+        due: e.value.dueAt,
+        lastReview: e.value.lastReview,
+      ),
+  };
+
+  // Recent new-sections/day, computed like readinessPace. With no history yet,
+  // assume a standard daily plan so we can still show an outlook.
+  const window = 14;
+  final repo = ref.watch(srsRepositoryProvider);
+  final started = await repo
+      .sectionsStartedSince(today.subtract(const Duration(days: window)));
+  final first = await repo.firstLearnDate();
+  final historyDays = first == null
+      ? window
+      : today.difference(DateTime(first.year, first.month, first.day)).inDays;
+  final denom = historyDays.clamp(1, window);
+  var perDay = (started / denom).round();
+  if (perDay < 1) perDay = 8;
+
+  final scen = projectScenarios(
+    cards: cards,
+    stateByKey: stateByKey,
+    target: target,
+    currentPerDay: perDay,
+    today: today,
+  );
+  return ReadinessForecast(
+    chill: scen['chill']!,
+    current: scen['current']!,
+    push: scen['push']!,
+    currentPerDay: perDay,
+    today: today,
   );
 }
 

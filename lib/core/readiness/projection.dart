@@ -80,6 +80,31 @@ class ReadinessProjection {
   bool get unreachable => readyDay == null;
 }
 
+/// The three-scenario forecast surfaced in the UI, plus the pace it assumed.
+class ReadinessForecast {
+  const ReadinessForecast({
+    required this.chill,
+    required this.current,
+    required this.push,
+    required this.currentPerDay,
+    required this.today,
+  });
+
+  final ReadinessProjection chill;
+  final ReadinessProjection current;
+  final ReadinessProjection push;
+  final int currentPerDay;
+  final DateTime today;
+
+  // These mirror projectScenarios' pace math so the UI labels are accurate.
+  int get chillPerDay => (currentPerDay * 0.5).round().clamp(1, 1 << 20);
+  int get pushPerDay => (currentPerDay * 2).clamp(1, 1 << 20);
+
+  /// The absolute date a projection reaches the target, or null if unreachable.
+  DateTime? dateFor(ReadinessProjection p) =>
+      p.readyDay == null ? null : today.add(Duration(days: p.readyDay!));
+}
+
 class _SecSim {
   _SecSim(SectionSrsState s)
       : stability = s.stability,
