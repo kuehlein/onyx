@@ -22,6 +22,7 @@ class InterviewPlan {
     required this.tier,
     required this.track,
     this.date,
+    this.roundType = InterviewRoundType.screen,
     this.domainWeights = const {},
     this.conceptWeights = const {},
     this.missingConcepts = const [],
@@ -35,6 +36,10 @@ class InterviewPlan {
   final CompanyTier tier;
   final Track track;
   final DateTime? date;
+
+  /// The kind of the interview being scheduled. Creating a goal seeds this as
+  /// round 1 (a learner may not log a loop until after, say, the phone screen).
+  final InterviewRoundType roundType;
 
   /// Boosts keyed by the deck's own domain tags (so they actually apply).
   final Map<String, double> domainWeights;
@@ -64,6 +69,11 @@ class InterviewPlan {
         domainWeights: domainWeights,
         conceptWeights: conceptWeights,
         notes: summary.isEmpty ? null : summary,
+        // Creation seeds round 1 with the inferred type; more rounds are added
+        // as the loop unfolds. The denormalized [date] mirrors round 1.
+        rounds: [
+          InterviewRound(id: '$id-r1', number: 1, type: roundType, date: date),
+        ],
       );
 }
 
@@ -104,14 +114,18 @@ String buildInterviewPlannerSystem({
         'learner never sees:')
     ..writeln('<plan>{"company":"…","role":"…","level":"newGrad|mid|senior|'
         'staff","tier":"faang|typical","track":"general|backend|frontend|'
-        'fullStack|ml|mobile","date":"YYYY-MM-DD or omit","domainWeights":'
+        'fullStack|ml|mobile","date":"YYYY-MM-DD or omit","roundType":"screen|'
+        'coding|systemDesign|behavioral|onsite|other","domainWeights":'
         '{"<deck-domain>":1.5,…},"conceptWeights":{"<deck-concept>":2.0,…},'
         '"missingConcepts":["…"],"appGaps":["…"],"summary":"markdown"}</plan>')
     ..writeln('Rules for the plan JSON: use ONLY the exact deck domain/concept '
         'keys listed below for domainWeights/conceptWeights (else they won\'t '
         'apply); weights are multipliers > 0 (higher = more important for this '
         'interview); pick the closest level/tier/track; omit date if unknown. '
-        'Emit the <plan> block at most once, only when ready.')
+        'roundType is the kind of THIS interview being scheduled (the nearest '
+        'one they described) — default to "screen" for an early-stage or '
+        'unspecified interview, "onsite" for a full loop. Emit the <plan> block '
+        'at most once, only when ready.')
     ..writeln()
     ..writeln('Deck domains: '
         '${deckDomains.isEmpty ? '(none)' : deckDomains.join(', ')}')
@@ -145,6 +159,8 @@ InterviewPlan? _parsePlan(String json) {
       tier: enumByName(CompanyTier.values, m['tier']) ?? CompanyTier.typical,
       track: enumByName(Track.values, m['track']) ?? Track.general,
       date: _parseDate(m['date']),
+      roundType: enumByName(InterviewRoundType.values, m['roundType']) ??
+          InterviewRoundType.screen,
       domainWeights: _weights(m['domainWeights']),
       conceptWeights: _weights(m['conceptWeights']),
       missingConcepts: _strings(m['missingConcepts']),

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_plan.dart';
+import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
 
 const _base = ReadinessTarget(
@@ -42,7 +43,8 @@ void main() {
       const raw = 'Here is your plan — behavioral is on you.\n'
           '<plan>{"company":"Google","role":"Senior Backend, Maps",'
           '"level":"senior","tier":"faang","track":"backend",'
-          '"date":"2026-09-20","domainWeights":{"system-design":1.6,"ds-a":1.0},'
+          '"date":"2026-09-20","roundType":"systemDesign",'
+          '"domainWeights":{"system-design":1.6,"ds-a":1.0},'
           '"conceptWeights":{"consistent-hashing":2.0},'
           '"missingConcepts":["rate limiting"],"appGaps":["behavioral"],'
           '"summary":"Focus system design."}</plan>';
@@ -56,6 +58,7 @@ void main() {
       expect(p.tier, CompanyTier.faang);
       expect(p.track, Track.backend);
       expect(p.date, DateTime(2026, 9, 20));
+      expect(p.roundType, InterviewRoundType.systemDesign);
       expect(p.domainWeights['system-design'], 1.6);
       expect(p.conceptWeights['consistent-hashing'], 2.0);
       expect(p.missingConcepts, ['rate limiting']);
@@ -72,6 +75,7 @@ void main() {
       expect(p.level, SeniorityLevel.mid); // fallback
       expect(p.tier, CompanyTier.typical); // fallback
       expect(p.track, Track.general); // fallback
+      expect(p.roundType, InterviewRoundType.screen); // fallback
       expect(p.domainWeights.containsKey('ds-a'), isFalse); // 0 dropped
       expect(p.domainWeights['x'], 2.0);
       expect(p.date, isNull);
@@ -92,6 +96,7 @@ void main() {
         tier: CompanyTier.faang,
         track: Track.backend,
         date: DateTime(2026, 9, 20),
+        roundType: InterviewRoundType.systemDesign,
         domainWeights: const {'system-design': 1.6},
         conceptWeights: const {'consistent-hashing': 2.0},
         summary: 'plan',
@@ -107,6 +112,24 @@ void main() {
       expect(g.conceptWeights['consistent-hashing'], 2.0);
       expect(g.active, isTrue);
       expect(g.notes, 'plan');
+    });
+
+    test('seeds round 1 with the inferred type + date', () {
+      final plan = InterviewPlan(
+        company: 'Google',
+        role: 'Senior Backend',
+        level: SeniorityLevel.senior,
+        tier: CompanyTier.faang,
+        track: Track.backend,
+        date: DateTime(2026, 9, 20),
+        roundType: InterviewRoundType.systemDesign,
+      );
+      final g = plan.toGoal('goal-1');
+      expect(g.rounds.length, 1);
+      expect(g.rounds.first.id, 'goal-1-r1');
+      expect(g.rounds.first.number, 1);
+      expect(g.rounds.first.type, InterviewRoundType.systemDesign);
+      expect(g.rounds.first.date, DateTime(2026, 9, 20));
     });
   });
 }
