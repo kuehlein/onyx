@@ -80,16 +80,16 @@ void main() {
   });
 
   group('draftRound', () {
-    test('first round defaults to screen, later rounds to onsite', () {
+    test('numbers the next round and defaults to the generic type', () {
       final empty = _goal(const []);
       // effectiveRounds is empty (no date, no rounds) → next is round 1.
       expect(draftRound(empty, seed: 1).number, 1);
-      expect(draftRound(empty, seed: 1).type, InterviewRoundType.screen);
+      expect(draftRound(empty, seed: 1).type, InterviewRoundType.other);
 
       final one = _goal([_r('a', 1, DateTime(2026, 9, 10))]);
       final next = draftRound(one, seed: 2);
       expect(next.number, 2);
-      expect(next.type, InterviewRoundType.onsite);
+      expect(next.type, InterviewRoundType.other);
     });
   });
 }

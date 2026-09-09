@@ -33,7 +33,7 @@ class InterviewRound {
   const InterviewRound({
     required this.id,
     required this.number,
-    this.type = InterviewRoundType.screen,
+    this.type = InterviewRoundType.other,
     this.date,
     this.outcome = GoalOutcome.pending,
     this.notes,
@@ -85,7 +85,7 @@ class InterviewRound {
       id: id,
       number: m['number'] is int ? m['number'] as int : 1,
       type: enumByName(InterviewRoundType.values, m['type']) ??
-          InterviewRoundType.screen,
+          InterviewRoundType.other,
       date: _parseDate(m['date']),
       outcome:
           enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,

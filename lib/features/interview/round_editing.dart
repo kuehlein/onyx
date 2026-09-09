@@ -48,14 +48,14 @@ PrepGoal? goalWithoutRound(PrepGoal g, String roundId) {
   return syncedGoal(g, rounds);
 }
 
-/// A fresh round for [g], numbered next in the loop, with a sensible default
-/// type (screen for the first, onsite thereafter). [seed] disambiguates the id.
+/// A fresh round for [g], numbered next in the loop. Defaults to the generic
+/// [InterviewRoundType.other] — the learner picks the real kind if they know it,
+/// rather than us presuming a screen. [seed] disambiguates the id.
 InterviewRound draftRound(PrepGoal g, {required int seed}) {
   final n = g.effectiveRounds.length + 1;
   return InterviewRound(
     id: '${g.id}-r$n-$seed',
     number: n,
-    type: n == 1 ? InterviewRoundType.screen : InterviewRoundType.onsite,
   );
 }
 
@@ -91,59 +91,68 @@ class _RoundDialogState extends State<_RoundDialog> {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     return AlertDialog(
+      // Wider + roomier than the default content-sized dialog, which felt
+      // cramped for three labelled fields.
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       title: Text('Round ${widget.existing.number}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Type',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          DropdownButtonFormField<InterviewRoundType>(
-            initialValue: _type,
-            isExpanded: true,
-            items: [
-              for (final t in InterviewRoundType.values)
-                DropdownMenuItem(value: t, child: Text(t.label)),
-            ],
-            onChanged: (v) => setState(() => _type = v ?? _type),
-          ),
-          const SizedBox(height: 14),
-          Text('Date',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.event, size: 18),
-                  label: Text(_date == null ? 'Set a date' : _fmtDate(_date!)),
-                  onPressed: _pickDate,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type',
+                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<InterviewRoundType>(
+              initialValue: _type,
+              isExpanded: true,
+              items: [
+                for (final t in InterviewRoundType.values)
+                  DropdownMenuItem(value: t, child: Text(t.label)),
+              ],
+              onChanged: (v) => setState(() => _type = v ?? _type),
+            ),
+            const SizedBox(height: 18),
+            Text('Date',
+                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.event, size: 18),
+                    label:
+                        Text(_date == null ? 'Set a date' : _fmtDate(_date!)),
+                    onPressed: _pickDate,
+                  ),
                 ),
-              ),
-              if (_date != null)
-                IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  tooltip: 'Clear date',
-                  onPressed: () => setState(() => _date = null),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text('Outcome',
-              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-          const SizedBox(height: 4),
-          SegmentedButton<GoalOutcome>(
-            segments: const [
-              ButtonSegment(value: GoalOutcome.pending, label: Text('Pending')),
-              ButtonSegment(value: GoalOutcome.passed, label: Text('Passed')),
-              ButtonSegment(value: GoalOutcome.failed, label: Text('Failed')),
-            ],
-            selected: {_outcome},
-            showSelectedIcon: false,
-            onSelectionChanged: (s) => setState(() => _outcome = s.first),
-          ),
-        ],
+                if (_date != null)
+                  IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    tooltip: 'Clear date',
+                    onPressed: () => setState(() => _date = null),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text('Outcome',
+                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+            const SizedBox(height: 6),
+            SegmentedButton<GoalOutcome>(
+              segments: const [
+                ButtonSegment(
+                    value: GoalOutcome.pending, label: Text('Pending')),
+                ButtonSegment(value: GoalOutcome.passed, label: Text('Passed')),
+                ButtonSegment(value: GoalOutcome.failed, label: Text('Failed')),
+              ],
+              selected: {_outcome},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) => setState(() => _outcome = s.first),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -165,11 +174,20 @@ class _RoundDialogState extends State<_RoundDialog> {
   Future<void> _pickDate() async {
     final base =
         DateTime(widget.today.year, widget.today.month, widget.today.day);
+    // An already-scheduled round may sit in the past (e.g. a completed screen);
+    // allow firstDate to reach back to it so editing doesn't assert. New rounds
+    // (no date) still can't be picked before today. initialDate is clamped into
+    // [firstDate, lastDate] to satisfy showDatePicker's invariants.
+    final first = (_date != null && _date!.isBefore(base)) ? _date! : base;
+    final last = base.add(const Duration(days: 365 * 2));
+    var initial = _date ?? base.add(const Duration(days: 14));
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date ?? base.add(const Duration(days: 14)),
-      firstDate: base,
-      lastDate: base.add(const Duration(days: 365 * 2)),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null) {
       setState(() => _date = DateTime(picked.year, picked.month, picked.day));
