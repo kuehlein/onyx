@@ -35,117 +35,107 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
 
   void _set(ReadinessTarget next) => setState(() => _draft = next);
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _t.interviewDate ?? today.add(const Duration(days: 30)),
-      firstDate: today,
-      lastDate: today.add(const Duration(days: 365 * 2)),
-      helpText: 'Interview date',
-    );
-    if (picked != null) {
-      _set(_t.copyWith(
-          interviewDate: DateTime(picked.year, picked.month, picked.day)));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = _t;
     final date = t.interviewDate;
+    final forecast = ref.watch(readinessForecastProvider).asData?.value;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Your target', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 2),
-            Text(
-              'What are you preparing for? This weights the domains that matter '
-              'and sets the bar.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            _ChipGroup<SeniorityLevel>(
-              label: 'Level',
-              values: SeniorityLevel.values,
-              selected: t.level,
-              labelOf: (v) => v.label,
-              onSelected: (v) => _set(t.copyWith(level: v)),
-            ),
-            _ChipGroup<CompanyTier>(
-              label: 'Company',
-              values: CompanyTier.values,
-              selected: t.company,
-              labelOf: (v) => v.label,
-              onSelected: (v) => _set(t.copyWith(company: v)),
-            ),
-            _ChipGroup<Track>(
-              label: 'Track',
-              values: Track.values,
-              selected: t.track,
-              labelOf: (v) => v.label,
-              onSelected: (v) => _set(t.copyWith(track: v)),
-            ),
-            const SizedBox(height: 8),
-            Text('Interview date',
-                style: theme.textTheme.labelLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.event_outlined, size: 18),
-                  label: Text(date == null ? 'Set a date' : _fmtDate(date)),
-                ),
-                if (date != null) ...[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => _set(t.copyWith(interviewDate: null)),
-                    child: const Text('Clear'),
-                  ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Your target', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 2),
+              Text(
+                'What are you preparing for? This weights the domains that matter '
+                'and sets the bar.',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              _ChipGroup<SeniorityLevel>(
+                label: 'Level',
+                values: SeniorityLevel.values,
+                selected: t.level,
+                labelOf: (v) => v.label,
+                onSelected: (v) => _set(t.copyWith(level: v)),
+              ),
+              _ChipGroup<CompanyTier>(
+                label: 'Company',
+                values: CompanyTier.values,
+                selected: t.company,
+                labelOf: (v) => v.label,
+                onSelected: (v) => _set(t.copyWith(company: v)),
+              ),
+              _ChipGroup<Track>(
+                label: 'Track',
+                values: Track.values,
+                selected: t.track,
+                labelOf: (v) => v.label,
+                onSelected: (v) => _set(t.copyWith(track: v)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text('Interview date (optional)',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const Spacer(),
+                  if (date != null)
+                    TextButton(
+                      onPressed: () => _set(t.copyWith(interviewDate: null)),
+                      child: const Text('Clear'),
+                    ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Projected "ready date" at the recent pace (recall maturation only),
-            // with a chill/push range + a feasibility note vs. the chosen date.
-            _ForecastBlock(chosenDate: date),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  await ref
-                      .read(readinessTargetControllerProvider.notifier)
-                      .save(t);
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-                child: const Text('Save target'),
               ),
-            ),
-            const SizedBox(height: 4),
-            // The base aim above is your general target; a specific interview
-            // (company + date) layers on top via the AI planner.
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.push('/plan-interview');
-                },
-                icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-                label: const Text('Plan for a specific interview'),
+              const SizedBox(height: 4),
+              // Inline calendar with per-day readiness-zone underlines (the OS
+              // picker can't colour individual cells). Tapping a day sets the date.
+              _ZoneCalendar(
+                forecast: forecast,
+                selected: date,
+                onSelect: (d) => _set(t.copyWith(interviewDate: d)),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              const _CalendarLegend(),
+              const SizedBox(height: 14),
+              // Ready-date readout: on-track date, push/ease range, and the pace
+              // needed to hit the chosen date.
+              _ForecastBlock(chosenDate: date),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    await ref
+                        .read(readinessTargetControllerProvider.notifier)
+                        .save(t);
+                    if (context.mounted) Navigator.of(context).pop();
+                  },
+                  child: const Text('Save target'),
+                ),
+              ),
+              const SizedBox(height: 4),
+              // The base aim above is your general target; a specific interview
+              // (company + date) layers on top via the AI planner.
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/plan-interview');
+                  },
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                  label: const Text('Plan for a specific interview'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -277,9 +267,6 @@ class _ForecastBlock extends ConsumerWidget {
         ));
       }
 
-      rows.add(const SizedBox(height: 10));
-      rows.add(_ForecastTimeline(forecast: f, chosenDate: chosenDate));
-
       if (chosenDate != null) {
         final days = chosenDate!.difference(f.today).inDays;
         final req = f.requiredPerDayFor(days);
@@ -330,96 +317,251 @@ class _ForecastBlock extends ConsumerWidget {
       );
 }
 
-/// A compact colour-zoned timeline from today: red = not reachable even at the
-/// fastest sampled pace, amber = reachable but faster than your current pace,
-/// green = comfortable at your pace. A dark marker shows the chosen date.
-class _ForecastTimeline extends StatelessWidget {
-  const _ForecastTimeline({required this.forecast, this.chosenDate});
+/// An inline month calendar whose day cells are **underlined by readiness zone**:
+/// green = comfortable at your pace, amber = reachable but needs a faster pace,
+/// red = not reachable even at the fastest sampled pace. Tapping a day sets the
+/// interview date. Replaces the OS date picker (whose theme colours are per-state,
+/// not per-date, so it can't zone-colour cells) — plain widgets, no runtime jank.
+class _ZoneCalendar extends StatefulWidget {
+  const _ZoneCalendar({
+    required this.forecast,
+    required this.selected,
+    required this.onSelect,
+  });
 
-  final ReadinessForecast forecast;
-  final DateTime? chosenDate;
+  final ReadinessForecast? forecast;
+  final DateTime? selected;
+  final ValueChanged<DateTime> onSelect;
+
+  @override
+  State<_ZoneCalendar> createState() => _ZoneCalendarState();
+}
+
+class _ZoneCalendarState extends State<_ZoneCalendar> {
+  late DateTime _month;
+
+  @override
+  void initState() {
+    super.initState();
+    final anchor =
+        widget.selected ?? widget.forecast?.currentReadyDate ?? DateTime.now();
+    final today = _today;
+    final curMonth = DateTime(today.year, today.month);
+    var m = DateTime(anchor.year, anchor.month);
+    if (m.isBefore(curMonth)) m = curMonth; // never start before this month
+    _month = m;
+  }
+
+  DateTime get _today {
+    final t = widget.forecast?.today ?? DateTime.now();
+    return DateTime(t.year, t.month, t.day);
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  Color? _zoneColor(DateTime d) {
+    final f = widget.forecast;
+    if (f == null || f.alreadyReady) return null;
+    final off = d.difference(_today).inDays;
+    if (off < 0) return null;
+    final earliest = f.earliestReadyDay;
+    final current = f.currentReadyDay;
+    if (current != null && off >= current) return statusGood;
+    if (earliest != null && off >= earliest) return statusWarn;
+    if (earliest == null && current == null) return null;
+    return statusBad;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final f = forecast;
-    final amberStart = f.earliestReadyDay; // fastest pace reaches here
-    final greenStart = f.currentReadyDay; // current pace reaches here
-    final chosenDay = chosenDate?.difference(f.today).inDays;
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final today = _today;
+    final grid = monthGrid(_month.year, _month.month);
+    final daysInMonth = grid.days;
+    final leading = grid.leading;
+    final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
-    var end = (greenStart ?? amberStart ?? 365).toDouble();
-    if (chosenDay != null && chosenDay > end) end = chosenDay.toDouble();
-    end = (end * 1.25).clamp(30, 366);
+    final cells = <Widget>[
+      for (var i = 0; i < leading; i++) const SizedBox.shrink(),
+      for (var day = 1; day <= daysInMonth; day++)
+        Builder(builder: (_) {
+          final date = DateTime(_month.year, _month.month, day);
+          final past = date.isBefore(today);
+          return _DayCell(
+            day: day,
+            past: past,
+            selected:
+                widget.selected != null && _sameDay(date, widget.selected!),
+            isToday: _sameDay(date, today),
+            zoneColor: _zoneColor(date),
+            onTap: past ? null : () => widget.onSelect(date),
+          );
+        }),
+    ];
+    while (cells.length % 7 != 0) {
+      cells.add(const SizedBox.shrink());
+    }
 
-    return LayoutBuilder(builder: (context, cns) {
-      final w = cns.maxWidth;
-      double px(num day) => (day / end).clamp(0.0, 1.0) * w;
-      final amberX = px(amberStart ?? end.toInt());
-      final greenX = px(greenStart ?? end.toInt());
-
-      Widget seg(double left, double right, Color c) => right - left <= 0.5
-          ? const SizedBox.shrink()
-          : Positioned(
-              left: left,
-              top: 0,
-              child: Container(width: right - left, height: 8, color: c));
-
-      return SizedBox(
-        height: 30,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                width: w,
-                height: 8,
-                child: Stack(children: [
-                  Container(color: theme.colorScheme.surfaceContainerHighest),
-                  seg(0, amberX, statusBad.withValues(alpha: 0.45)),
-                  seg(amberX, greenX, statusWarn.withValues(alpha: 0.55)),
-                  seg(greenX, w, statusGood.withValues(alpha: 0.55)),
-                ]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.chevron_left, size: 20),
+            onPressed: canPrev
+                ? () => setState(
+                    () => _month = DateTime(_month.year, _month.month - 1))
+                : null,
+          ),
+          Expanded(
+            child: Center(
+              child: Text('${_monthName(_month.month)} ${_month.year}',
+                  style: theme.textTheme.titleSmall),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.chevron_right, size: 20),
+            onPressed: () => setState(
+                () => _month = DateTime(_month.year, _month.month + 1)),
+          ),
+        ]),
+        Row(children: [
+          for (final w in const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+            Expanded(
+              child: Center(
+                child: Text(w,
+                    style: theme.textTheme.labelSmall?.copyWith(color: muted)),
               ),
             ),
-            // "now" tick
-            Positioned(
-                left: 0,
-                top: 11,
-                child: Text('now',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-            // ready (current pace) tick
-            if (greenStart != null && f.currentReadyDate != null)
-              Positioned(
-                left: (px(greenStart) - 14).clamp(0.0, w - 40),
-                top: 11,
-                child: Text(_fmtMonthShort(f.currentReadyDate!),
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: statusGood)),
-              ),
-            // chosen-date marker
-            if (chosenDay != null)
-              Positioned(
-                left: (px(chosenDay) - 1).clamp(0.0, w - 2),
-                top: -2,
-                child: Container(
-                    width: 2, height: 12, color: theme.colorScheme.onSurface),
-              ),
-          ],
+        ]),
+        const SizedBox(height: 4),
+        GridView.count(
+          crossAxisCount: 7,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.0,
+          children: cells,
         ),
-      );
-    });
+      ],
+    );
   }
 }
 
-String _fmtMonthShort(DateTime d) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
-  ];
-  return months[d.month - 1];
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.day,
+    required this.past,
+    required this.selected,
+    required this.isToday,
+    required this.zoneColor,
+    required this.onTap,
+  });
+
+  final int day;
+  final bool past;
+  final bool selected;
+  final bool isToday;
+  final Color? zoneColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fg = past
+        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+        : selected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurface;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? theme.colorScheme.primary : null,
+              border: isToday && !selected
+                  ? Border.all(color: theme.colorScheme.primary, width: 1.3)
+                  : null,
+            ),
+            child: Text('$day',
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: fg,
+                    fontWeight: selected || isToday
+                        ? FontWeight.w700
+                        : FontWeight.w400)),
+          ),
+          const SizedBox(height: 3),
+          Container(
+            width: 16,
+            height: 2.5,
+            decoration: BoxDecoration(
+              color: zoneColor ?? Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+/// Legend for the zone-underlined calendar.
+class _CalendarLegend extends StatelessWidget {
+  const _CalendarLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    Widget item(Color c, String label) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+                width: 12,
+                height: 2.5,
+                decoration: BoxDecoration(
+                    color: c, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 4),
+            Text(label,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+          ],
+        );
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        item(statusGood, 'Ready / comfortable'),
+        item(statusWarn, 'Needs a faster pace'),
+        item(statusBad, 'Not reachable yet'),
+      ],
+    );
+  }
+}
+
+/// The Sunday-first month-grid layout: how many leading blank cells precede
+/// day 1, and how many days the month has. This is the only date arithmetic in
+/// the calendar — factored out and public so it's unit-tested. Relies entirely
+/// on Dart's `DateTime` normalization (leap years, month rollover), no hand math.
+({int leading, int days}) monthGrid(int year, int month) => (
+      leading:
+          DateTime(year, month, 1).weekday % 7, // Mon=1..Sun=7 → Sun=0..Sat=6
+      days: DateTime(year, month + 1, 0).day,
+    );
+
+String _monthName(int m) => const [
+      'January', 'February', 'March', 'April', 'May', 'June', //
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ][m - 1];
 
 String _fmtDate(DateTime d) {
   const months = [
