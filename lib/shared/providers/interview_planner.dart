@@ -72,6 +72,7 @@ class InterviewPlanner extends _$InterviewPlanner {
     try {
       final index = await ref.read(vaultIndexProvider.future);
       final base = await ref.read(readinessTargetControllerProvider.future);
+      final today = (await ref.read(clockProvider.future)).today();
       final domains = <String>{
         for (final c in index.cards)
           if (c.domain != null) c.domain!,
@@ -83,6 +84,7 @@ class InterviewPlanner extends _$InterviewPlanner {
         deckDomains: domains.toList(),
         deckConcepts: concepts.toList(),
         base: base,
+        today: today,
       );
 
       final raw = await claude.chat(
@@ -110,8 +112,12 @@ class InterviewPlanner extends _$InterviewPlanner {
   Future<PrepGoal?> accept() async {
     final plan = state.plan;
     if (plan == null) return null;
-    final now = (await ref.read(clockProvider.future)).now();
-    final goal = plan.toGoal('goal-${now.microsecondsSinceEpoch}');
+    final clock = await ref.read(clockProvider.future);
+    final now = clock.now();
+    // notBefore drops a past date (usually a wrong-year slip) → unscheduled
+    // rather than filed in the past.
+    final goal = plan.toGoal('goal-${now.microsecondsSinceEpoch}',
+        notBefore: clock.today());
     await ref.read(prepGoalsProvider.notifier).upsert(goal);
     return goal;
   }

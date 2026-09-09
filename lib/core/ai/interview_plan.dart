@@ -59,22 +59,32 @@ class InterviewPlan {
   final String summary;
 
   /// Convert to a persistable [PrepGoal] (active). [id] is caller-supplied.
-  PrepGoal toGoal(String id) => PrepGoal(
-        id: id,
-        companyName: company,
-        tier: tier,
-        level: level,
-        track: track,
-        date: date,
-        domainWeights: domainWeights,
-        conceptWeights: conceptWeights,
-        notes: summary.isEmpty ? null : summary,
-        // Creation seeds round 1 with the inferred type; more rounds are added
-        // as the loop unfolds. The denormalized [date] mirrors round 1.
-        rounds: [
-          InterviewRound(id: '$id-r1', number: 1, type: roundType, date: date),
-        ],
-      );
+  /// [notBefore] is a safety net against a model that emits a past date (usually
+  /// a wrong year): such a date is dropped so the interview is simply unscheduled
+  /// rather than silently filed in the past.
+  PrepGoal toGoal(String id, {DateTime? notBefore}) {
+    final safeDate =
+        (date != null && notBefore != null && date!.isBefore(notBefore))
+            ? null
+            : date;
+    return PrepGoal(
+      id: id,
+      companyName: company,
+      tier: tier,
+      level: level,
+      track: track,
+      date: safeDate,
+      domainWeights: domainWeights,
+      conceptWeights: conceptWeights,
+      notes: summary.isEmpty ? null : summary,
+      // Creation seeds round 1 with the inferred type; more rounds are added
+      // as the loop unfolds. The denormalized [date] mirrors round 1.
+      rounds: [
+        InterviewRound(
+            id: '$id-r1', number: 1, type: roundType, date: safeDate),
+      ],
+    );
+  }
 }
 
 /// The planner's system prompt, seeded with the deck's available domains +
@@ -84,7 +94,9 @@ String buildInterviewPlannerSystem({
   required List<String> deckDomains,
   required List<String> deckConcepts,
   required ReadinessTarget base,
+  required DateTime today,
 }) {
+  final todayStr = _fmtDate(today);
   final b = StringBuffer();
   b
     ..writeln('You are an interview-prep strategist inside Onyx (a '
@@ -122,6 +134,11 @@ String buildInterviewPlannerSystem({
         'keys listed below for domainWeights/conceptWeights (else they won\'t '
         'apply); weights are multipliers > 0 (higher = more important for this '
         'interview); pick the closest level/tier/track; omit date if unknown. '
+        'CRITICAL — dates: today is $todayStr. Any "date" you emit MUST be that '
+        'day or later; NEVER schedule in the past. Use the correct current '
+        'year ($todayStr\'s year) — do not default to an earlier year. If the '
+        'learner gives a relative time ("in 2 weeks", "next month"), compute it '
+        'from today. '
         'roundType is the kind of THIS interview being scheduled (the nearest '
         'one they described) — default to "screen" for an early-stage or '
         'unspecified interview, "onsite" for a full loop. Emit the <plan> block '
@@ -194,3 +211,6 @@ DateTime? _parseDate(Object? v) {
   if (v is! String || v.isEmpty) return null;
   return DateTime.tryParse(v);
 }
+
+String _fmtDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

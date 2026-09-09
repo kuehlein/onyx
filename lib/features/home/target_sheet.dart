@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
+import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
 import '../interview/interview_planner_screen.dart';
@@ -47,7 +48,15 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final theme = Theme.of(context);
     final t = _t;
     final date = t.interviewDate;
-    final forecast = ref.watch(readinessForecastProvider).asData?.value;
+    // The forecast follows the DRAFT dims so the calendar + readout update the
+    // instant you change level/company/track (memoised per role, so flipping
+    // between a few roles is cached).
+    final dims = (level: t.level, company: t.company, track: t.track);
+    final forecast =
+        ref.watch(readinessForecastForProvider(dims)).asData?.value;
+    final today = ref.watch(clockProvider).asData?.value.today() ??
+        forecast?.today ??
+        DateTime.now();
     final muted = theme.colorScheme.onSurfaceVariant;
     // Open the dimension pickers by default until a target has been configured
     // (the controller returns the const fallback only when nothing is set).
@@ -59,14 +68,17 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     // round is flagged on the calendar and the loops are listed below it.
     final goals =
         ref.watch(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
+    // Only interviews with an upcoming round (a loop whose last round is still
+    // ahead) — fully-past interviews drop out of the list + calendar.
     final scheduled = [
       for (final g in goals)
-        if (g.roundDates.isNotEmpty) g,
-    ]..sort((a, b) => a.nextRoundDate()!.compareTo(b.nextRoundDate()!));
+        if (_hasUpcomingRound(g, today)) g,
+    ]..sort(
+        (a, b) => a.nextRoundDate(today)!.compareTo(b.nextRoundDate(today)!));
     // Every round date → the labels of the round(s) on that day (for the
     // calendar flags + their long-press tooltip).
     final roundsByDate = <DateTime, List<String>>{};
-    for (final g in goals) {
+    for (final g in scheduled) {
       for (final r in g.effectiveRounds) {
         final rd = r.date;
         if (rd == null) continue;
@@ -221,7 +233,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               ),
               const SizedBox(height: 12),
               // Forecast readout ABOVE the calendar (the headline outcome).
-              _ForecastBlock(chosenDate: date),
+              _ForecastBlock(chosenDate: date, dims: dims),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -247,15 +259,15 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               ),
               const SizedBox(height: 8),
               const _CalendarLegend(),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               // Scheduled interviews (flagged above) + the entry to plan one.
               _ScheduledSection(
                 goals: scheduled,
-                today: forecast?.today ?? DateTime.now(),
+                today: today,
                 onAdd: openPlanner,
                 onFocus: (d) => _set(t.copyWith(interviewDate: d)),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -336,15 +348,16 @@ class _ChipGroup<T> extends StatelessWidget {
 /// (the projection is a forward simulation, too heavy to recompute on every
 /// draft chip tap); the date feedback uses the draft date.
 class _ForecastBlock extends ConsumerWidget {
-  const _ForecastBlock({this.chosenDate});
+  const _ForecastBlock({required this.dims, this.chosenDate});
 
+  final ForecastDims dims;
   final DateTime? chosenDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final async = ref.watch(readinessForecastProvider);
+    final async = ref.watch(readinessForecastForProvider(dims));
 
     Widget shell(Widget child) => Container(
           width: double.infinity,
@@ -772,6 +785,15 @@ class _CalendarLegend extends StatelessWidget {
 /// This is the only date arithmetic in the calendar — public and unit-tested.
 /// Relies entirely on Dart's `DateTime` normalization (leap years, month
 /// rollover); no hand-rolled math.
+/// Whether [g] has any round on or after [today] — i.e. the loop isn't fully in
+/// the past. Fully-past interviews drop out of the sheet's list + calendar.
+bool _hasUpcomingRound(PrepGoal g, DateTime today) {
+  final dates = g.roundDates;
+  if (dates.isEmpty) return false;
+  final t = DateTime(today.year, today.month, today.day);
+  return dates.any((d) => !d.isBefore(t));
+}
+
 ({int leading, int days}) monthGrid(int year, int month,
     {int firstDayOfWeek = 0}) {
   final firstWeekday = DateTime(year, month, 1).weekday % 7; // 0=Sun … 6=Sat
@@ -905,7 +927,7 @@ class _InterviewRow extends ConsumerWidget {
       onTap: nextDate == null ? null : () => onFocus(nextDate),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(2, 3, 0, 3),
         child: Row(
           children: [
             Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
@@ -970,6 +992,9 @@ class _InterviewRow extends ConsumerWidget {
   Widget _menu(BuildContext context, WidgetRef ref) => PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert, size: 18),
         tooltip: 'Interview options',
+        // Tight tap target so the row stays slim.
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 40, height: 36),
         onSelected: (v) => _onMenu(context, ref, v),
         itemBuilder: (_) => const [
           PopupMenuItem(value: 'add', child: Text('Add round')),

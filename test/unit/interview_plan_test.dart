@@ -15,6 +15,7 @@ void main() {
       deckDomains: ['ds-a', 'system-design'],
       deckConcepts: ['consistent-hashing'],
       base: _base,
+      today: DateTime(2026, 9, 9),
     );
     test('lists the deck keys and the base aim so weights actually apply', () {
       expect(sys, contains('ds-a, system-design'));
@@ -112,6 +113,33 @@ void main() {
       expect(g.conceptWeights['consistent-hashing'], 2.0);
       expect(g.active, isTrue);
       expect(g.notes, 'plan');
+    });
+
+    test('drops a past date (wrong-year slip) via notBefore', () {
+      final plan = InterviewPlan(
+        company: 'Google',
+        role: 'Senior Backend',
+        level: SeniorityLevel.senior,
+        tier: CompanyTier.faang,
+        track: Track.backend,
+        date: DateTime(2024, 9, 20), // wrong year → in the past
+      );
+      final g = plan.toGoal('goal-1', notBefore: DateTime(2026, 9, 9));
+      expect(g.date, isNull);
+      expect(g.rounds.single.date, isNull);
+    });
+
+    test('keeps a future date under notBefore', () {
+      final plan = InterviewPlan(
+        company: 'Google',
+        role: 'Senior Backend',
+        level: SeniorityLevel.senior,
+        tier: CompanyTier.faang,
+        track: Track.backend,
+        date: DateTime(2026, 10, 20),
+      );
+      final g = plan.toGoal('goal-1', notBefore: DateTime(2026, 9, 9));
+      expect(g.date, DateTime(2026, 10, 20));
     });
 
     test('seeds round 1 with the inferred type + date', () {
