@@ -54,18 +54,26 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final unconfigured =
         saved == null || identical(saved, ReadinessTarget.fallback);
     final showDims = _showDims ?? unconfigured;
-    // Scheduled interviews (prep goals with a date) — flagged on the calendar
-    // and listed below it.
+    // Scheduled interviews (prep goals with at least one dated round) — every
+    // round is flagged on the calendar and the loops are listed below it.
     final goals =
         ref.watch(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
     final scheduled = [
       for (final g in goals)
-        if (g.date != null) g,
-    ]..sort((a, b) => a.date!.compareTo(b.date!));
-    final interviewDates = {
-      for (final g in scheduled)
-        DateTime(g.date!.year, g.date!.month, g.date!.day),
-    };
+        if (g.roundDates.isNotEmpty) g,
+    ]..sort((a, b) => a.nextRoundDate()!.compareTo(b.nextRoundDate()!));
+    // Every round date → the labels of the round(s) on that day (for the
+    // calendar flags + their long-press tooltip).
+    final roundsByDate = <DateTime, List<String>>{};
+    for (final g in goals) {
+      for (final r in g.effectiveRounds) {
+        final rd = r.date;
+        if (rd == null) continue;
+        final d = DateTime(rd.year, rd.month, rd.day);
+        final who = g.companyName.isEmpty ? '' : '${g.companyName} · ';
+        roundsByDate.putIfAbsent(d, () => []).add('$who${r.label}');
+      }
+    }
     Future<void> openPlanner() async {
       final before = {
         for (final g in (ref.read(prepGoalsProvider).asData?.value ??
@@ -218,7 +226,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               _ZoneCalendar(
                 forecast: forecast,
                 selected: date,
-                interviewDates: interviewDates,
+                roundsByDate: roundsByDate,
                 onSelect: (d) => _set(t.copyWith(interviewDate: d)),
               ),
               const SizedBox(height: 8),
@@ -439,15 +447,16 @@ class _ZoneCalendar extends StatefulWidget {
   const _ZoneCalendar({
     required this.forecast,
     required this.selected,
-    required this.interviewDates,
+    required this.roundsByDate,
     required this.onSelect,
   });
 
   final ReadinessForecast? forecast;
   final DateTime? selected;
 
-  /// Date-only days that have a scheduled interview (flagged in the grid).
-  final Set<DateTime> interviewDates;
+  /// Date-only days with a scheduled interview round → the round label(s) on
+  /// that day (flagged in the grid, shown in a long-press tooltip).
+  final Map<DateTime, List<String>> roundsByDate;
   final ValueChanged<DateTime> onSelect;
 
   @override
@@ -529,7 +538,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             selected:
                 widget.selected != null && _sameDay(date, widget.selected!),
             zoneColor: _zoneColor(date),
-            hasInterview: widget.interviewDates.contains(date),
+            roundLabels: widget.roundsByDate[date] ?? const [],
             onTap: past ? null : () => widget.onSelect(date),
           );
         }),
@@ -613,7 +622,7 @@ class _DayCell extends StatelessWidget {
     required this.past,
     required this.selected,
     required this.zoneColor,
-    required this.hasInterview,
+    required this.roundLabels,
     required this.onTap,
   });
 
@@ -621,12 +630,16 @@ class _DayCell extends StatelessWidget {
   final bool past;
   final bool selected;
   final Color? zoneColor;
-  final bool hasInterview;
+
+  /// Round label(s) scheduled on this day (empty = none). Non-empty → the cell
+  /// carries an interview flag + a long-press tooltip naming the round(s).
+  final List<String> roundLabels;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasInterview = roundLabels.isNotEmpty;
     final showZone = zoneColor != null && !past;
     // The zone is a soft cell BACKGROUND (a heatmap now that cells are outlined).
     // Selected = solid primary; the number stays neutral to read.
@@ -640,7 +653,7 @@ class _DayCell extends StatelessWidget {
         : selected
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
-    return InkWell(
+    final cell = InkWell(
       onTap: onTap,
       canRequestFocus: false,
       focusColor: Colors.transparent,
@@ -679,6 +692,13 @@ class _DayCell extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (!hasInterview) return cell;
+    return Tooltip(
+      message: roundLabels.join('\n'),
+      triggerMode: TooltipTriggerMode.longPress,
+      preferBelow: false,
+      child: cell,
     );
   }
 }
@@ -746,11 +766,12 @@ class _CalendarLegend extends StatelessWidget {
   );
 }
 
-/// Scheduled interviews (prep goals with a date) listed under the calendar —
-/// each with a days-away readout + a pace status from the forecast. A section
-/// header carries the '+ Add' entry; the list shows the 3 soonest with a
-/// 'show all' expander so many interviews never blow up the sheet.
-class _ScheduledSection extends StatefulWidget {
+/// Scheduled interviews listed under the calendar. Each interview is a loop of
+/// rounds (screen, system-design, …), each with its own date, pace status, and
+/// outcome; rounds can be added/edited/removed inline. The section header
+/// carries the 'Add' entry (plan a new interview); the list shows the 3 soonest
+/// interviews with a 'show all' expander so many never blow up the sheet.
+class _ScheduledSection extends ConsumerStatefulWidget {
   const _ScheduledSection({
     required this.goals,
     required this.forecast,
@@ -759,17 +780,17 @@ class _ScheduledSection extends StatefulWidget {
     required this.onFocus,
   });
 
-  final List<PrepGoal> goals; // sorted soonest-first
+  final List<PrepGoal> goals; // sorted by soonest round first
   final ReadinessForecast? forecast;
   final DateTime today;
   final VoidCallback onAdd;
   final void Function(DateTime) onFocus;
 
   @override
-  State<_ScheduledSection> createState() => _ScheduledSectionState();
+  ConsumerState<_ScheduledSection> createState() => _ScheduledSectionState();
 }
 
-class _ScheduledSectionState extends State<_ScheduledSection> {
+class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
   static const _cap = 3;
   bool _showAll = false;
 
@@ -806,36 +827,7 @@ class _ScheduledSectionState extends State<_ScheduledSection> {
             child: Text('None scheduled — add one to flag it on the calendar.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),
-        for (final g in visible)
-          InkWell(
-            onTap: () => widget.onFocus(g.date!),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(g.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w600)),
-                        Text('${_fmtDate(g.date!)} · ${_daysAway(g.date!)}',
-                            style: theme.textTheme.labelSmall
-                                ?.copyWith(color: muted)),
-                      ],
-                    ),
-                  ),
-                  _statusChip(context, g.date!),
-                ],
-              ),
-            ),
-          ),
+        for (final g in visible) _interviewTile(context, g),
         if (capped)
           Align(
             alignment: Alignment.centerLeft,
@@ -846,6 +838,235 @@ class _ScheduledSectionState extends State<_ScheduledSection> {
           ),
       ],
     );
+  }
+
+  /// One interview: its label + an overflow menu, then its rounds, then a
+  /// compact '+ round' entry.
+  Widget _interviewTile(BuildContext context, PrepGoal g) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final rounds = g.effectiveRounds;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 4, 4),
+            child: Row(
+              children: [
+                Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    g.companyName.isEmpty ? g.label : g.companyName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Interview options',
+                  onPressed: () => _interviewMenu(context, g),
+                ),
+              ],
+            ),
+          ),
+          for (final r in rounds) _roundRow(context, g, r),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _addRound(context, g),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add round'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.fromLTRB(10, 0, 12, 2),
+                foregroundColor: muted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _roundRow(BuildContext context, PrepGoal g, InterviewRound r) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final d = r.date;
+    final sub = d == null ? 'No date yet' : '${_fmtDate(d)} · ${_daysAway(d)}';
+    return InkWell(
+      onTap: d == null ? null : () => widget.onFocus(d),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        child: Row(
+          children: [
+            _outcomeDot(context, r.outcome),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(r.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium),
+                  Text(sub,
+                      style:
+                          theme.textTheme.labelSmall?.copyWith(color: muted)),
+                ],
+              ),
+            ),
+            if (d != null && r.outcome == GoalOutcome.pending)
+              _statusChip(context, d),
+            IconButton(
+              icon: const Icon(Icons.more_vert, size: 16),
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Round options',
+              onPressed: () => _roundMenu(context, g, r),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A small dot conveying the round's outcome (pending/passed/failed).
+  Widget _outcomeDot(BuildContext context, GoalOutcome o) {
+    final (IconData icon, Color color) = switch (o) {
+      GoalOutcome.passed => (Icons.check_circle, statusGood),
+      GoalOutcome.failed => (Icons.cancel, statusBad),
+      GoalOutcome.pending => (
+          Icons.radio_button_unchecked,
+          Theme.of(context).colorScheme.primary
+        ),
+    };
+    return Icon(icon, size: 15, color: color);
+  }
+
+  Future<void> _interviewMenu(BuildContext context, PrepGoal g) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Add round'),
+              onTap: () => Navigator.pop(ctx, 'add'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Remove interview'),
+              onTap: () => Navigator.pop(ctx, 'remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'add') {
+      await _addRound(context, g);
+    } else if (choice == 'remove') {
+      await ref.read(prepGoalsProvider.notifier).remove(g.id);
+    }
+  }
+
+  Future<void> _roundMenu(
+      BuildContext context, PrepGoal g, InterviewRound r) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit round'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Remove round'),
+              onTap: () => Navigator.pop(ctx, 'remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'edit') {
+      final edited =
+          await showRoundDialog(context, today: widget.today, existing: r);
+      if (edited != null) await _saveRound(g, edited);
+    } else if (choice == 'remove') {
+      await _removeRound(g, r);
+    }
+  }
+
+  Future<void> _addRound(BuildContext context, PrepGoal g) async {
+    final n = g.effectiveRounds.length + 1;
+    final draft = InterviewRound(
+      id: '${g.id}-r$n-${widget.today.millisecondsSinceEpoch}',
+      number: n,
+      type: n == 1 ? InterviewRoundType.screen : InterviewRoundType.onsite,
+    );
+    final added =
+        await showRoundDialog(context, today: widget.today, existing: draft);
+    if (added != null) await _saveRound(g, added);
+  }
+
+  Future<void> _saveRound(PrepGoal g, InterviewRound round) async {
+    final rounds = [...g.effectiveRounds];
+    final i = rounds.indexWhere((r) => r.id == round.id);
+    if (i >= 0) {
+      rounds[i] = round;
+    } else {
+      rounds.add(round);
+    }
+    await ref.read(prepGoalsProvider.notifier).upsert(_synced(g, rounds));
+  }
+
+  Future<void> _removeRound(PrepGoal g, InterviewRound round) async {
+    final rounds = [...g.effectiveRounds]..removeWhere((r) => r.id == round.id);
+    if (rounds.isEmpty) {
+      // A loop with no rounds isn't an interview any more — drop it.
+      await ref.read(prepGoalsProvider.notifier).remove(g.id);
+      return;
+    }
+    await ref.read(prepGoalsProvider.notifier).upsert(_synced(g, rounds));
+  }
+
+  /// Re-order rounds by date (dated ascending, undated last), renumber 1..n, and
+  /// mirror the soonest dated round into the denormalized [PrepGoal.date] that
+  /// legacy targeting still reads.
+  PrepGoal _synced(PrepGoal g, List<InterviewRound> rounds) {
+    final sorted = [...rounds]..sort((a, b) {
+        if (a.date == null && b.date == null) {
+          return a.number.compareTo(b.number);
+        }
+        if (a.date == null) return 1;
+        if (b.date == null) return -1;
+        return a.date!.compareTo(b.date!);
+      });
+    final renum = [
+      for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(number: i + 1),
+    ];
+    DateTime? earliest;
+    for (final r in renum) {
+      final d = r.date;
+      if (d != null && (earliest == null || d.isBefore(earliest))) earliest = d;
+    }
+    return g.copyWith(rounds: renum, date: earliest);
   }
 
   String _daysAway(DateTime d) {
@@ -892,6 +1113,124 @@ class _ScheduledSectionState extends State<_ScheduledSection> {
               .labelSmall
               ?.copyWith(color: color, fontWeight: FontWeight.w600)),
     );
+  }
+}
+
+/// A dialog to add or edit one interview round: its type, date (optional), and
+/// outcome. Returns the edited round, or null on cancel.
+Future<InterviewRound?> showRoundDialog(
+  BuildContext context, {
+  required DateTime today,
+  required InterviewRound existing,
+}) =>
+    showDialog<InterviewRound>(
+      context: context,
+      builder: (_) => _RoundDialog(today: today, existing: existing),
+    );
+
+class _RoundDialog extends StatefulWidget {
+  const _RoundDialog({required this.today, required this.existing});
+
+  final DateTime today;
+  final InterviewRound existing;
+
+  @override
+  State<_RoundDialog> createState() => _RoundDialogState();
+}
+
+class _RoundDialogState extends State<_RoundDialog> {
+  late InterviewRoundType _type = widget.existing.type;
+  late DateTime? _date = widget.existing.date;
+  late GoalOutcome _outcome = widget.existing.outcome;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return AlertDialog(
+      title: Text('Round ${widget.existing.number}'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Type',
+              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+          const SizedBox(height: 4),
+          DropdownButtonFormField<InterviewRoundType>(
+            initialValue: _type,
+            isExpanded: true,
+            items: [
+              for (final t in InterviewRoundType.values)
+                DropdownMenuItem(value: t, child: Text(t.label)),
+            ],
+            onChanged: (v) => setState(() => _type = v ?? _type),
+          ),
+          const SizedBox(height: 14),
+          Text('Date',
+              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.event, size: 18),
+                  label: Text(_date == null ? 'Set a date' : _fmtDate(_date!)),
+                  onPressed: _pickDate,
+                ),
+              ),
+              if (_date != null)
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  tooltip: 'Clear date',
+                  onPressed: () => setState(() => _date = null),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text('Outcome',
+              style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+          const SizedBox(height: 4),
+          SegmentedButton<GoalOutcome>(
+            segments: const [
+              ButtonSegment(value: GoalOutcome.pending, label: Text('Pending')),
+              ButtonSegment(value: GoalOutcome.passed, label: Text('Passed')),
+              ButtonSegment(value: GoalOutcome.failed, label: Text('Failed')),
+            ],
+            selected: {_outcome},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setState(() => _outcome = s.first),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            widget.existing
+                .copyWith(type: _type, date: _date, outcome: _outcome),
+          ),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final base =
+        DateTime(widget.today.year, widget.today.month, widget.today.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date ?? base.add(const Duration(days: 14)),
+      firstDate: base,
+      lastDate: base.add(const Duration(days: 365 * 2)),
+    );
+    if (picked != null) {
+      setState(() => _date = DateTime(picked.year, picked.month, picked.day));
+    }
   }
 }
 

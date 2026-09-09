@@ -54,8 +54,9 @@ class Targeting {
   DateTime? get governingDate {
     DateTime? soonest = base.interviewDate;
     for (final g in goals) {
-      final d = g.date;
-      if (d != null && (soonest == null || d.isBefore(soonest))) soonest = d;
+      for (final d in g.roundDates) {
+        if (soonest == null || d.isBefore(soonest)) soonest = d;
+      }
     }
     return soonest;
   }
@@ -80,7 +81,9 @@ class Targeting {
     final base = card.priority.desiredRetention;
     var best = base;
     for (final g in goals) {
-      final date = g.date;
+      // Ramp retention toward the NEXT upcoming round — as round 1 passes, the
+      // focus shifts to round 2, etc.
+      final date = g.nextRoundDate(today);
       if (date == null) continue;
       final daysLeft =
           DateTime(date.year, date.month, date.day).difference(today).inDays;

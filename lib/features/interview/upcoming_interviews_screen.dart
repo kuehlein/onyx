@@ -44,12 +44,14 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
     );
   }
 
-  // Soonest date first; undated goals last.
+  // Soonest upcoming round first; undated goals last.
   int _byDate(PrepGoal a, PrepGoal b) {
-    if (a.date == null && b.date == null) return 0;
-    if (a.date == null) return 1;
-    if (b.date == null) return -1;
-    return a.date!.compareTo(b.date!);
+    final da = a.nextRoundDate();
+    final db = b.nextRoundDate();
+    if (da == null && db == null) return 0;
+    if (da == null) return 1;
+    if (db == null) return -1;
+    return da.compareTo(db);
   }
 }
 
@@ -125,11 +127,20 @@ class _GoalRow extends ConsumerWidget {
   }
 
   String _countdown() {
-    final d = goal.date;
-    if (d == null) return 'No date set';
-    final label = _fmt(d);
+    final rounds = goal.effectiveRounds;
+    final next = goal.nextRoundDate(today);
+    if (next == null) return 'No date set';
+    // Name the upcoming round when it's part of a multi-round loop.
+    final upcoming = rounds.firstWhere(
+      (r) =>
+          r.date != null &&
+          DateTime(r.date!.year, r.date!.month, r.date!.day) == next,
+      orElse: () => rounds.first,
+    );
+    final prefix = rounds.length > 1 ? '${upcoming.type.label} · ' : '';
+    final label = '$prefix${_fmt(next)}';
     if (today == null) return label;
-    final days = DateTime(d.year, d.month, d.day).difference(today!).inDays;
+    final days = next.difference(today!).inDays;
     if (days < 0) return '$label · past';
     if (days == 0) return '$label · today';
     return '$label · in $days ${days == 1 ? 'day' : 'days'}';

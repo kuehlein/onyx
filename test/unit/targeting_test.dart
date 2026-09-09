@@ -95,6 +95,21 @@ void main() {
       const t = Targeting(base: _base, goals: []);
       expect(t.governingDate, isNull);
     });
+
+    test('governingDate sees the soonest ROUND of a multi-round loop', () {
+      final loop = PrepGoal(
+        id: 'g1',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.senior,
+        track: Track.general,
+        rounds: [
+          InterviewRound(id: 'r1', number: 1, date: DateTime(2026, 9, 25)),
+          InterviewRound(id: 'r2', number: 2, date: DateTime(2026, 9, 10)),
+        ],
+      );
+      final t = Targeting(base: _base, goals: [loop]);
+      expect(t.governingDate, DateTime(2026, 9, 10));
+    });
   });
 
   group('desiredRetentionForCard (FSRS-safe interview lever)', () {
