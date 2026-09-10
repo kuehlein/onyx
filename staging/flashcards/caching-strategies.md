@@ -18,7 +18,7 @@ priority: normal
 A cache trades memory and *staleness* for latency and reduced load on a slow backing store. Choosing a caching strategy is choosing *who* populates and invalidates the cache and *when* — which directly determines the consistency and durability you get. There is no single "the cache" pattern: read paths (cache-aside vs read-through) and write paths (write-through, write-back, write-around) are chosen independently, and the two hardest operational problems — [cache stampede](_meta/glossary.md#cache-stampede) and stale reads from bad invalidation — fall out of those choices. Phil Karlton's adage frames the domain: "there are only two hard things in computer science: cache invalidation and naming things."
 
 > [!tip] Recognition
-> Reach for caching-strategy reasoning when you see: "reduce read latency / offload the database," "hot key," "read-heavy workload," "TTL," "stale data after an update," "thundering herd / everything hits the DB at once when the cache expires," "cache and DB disagree," or "how do we invalidate." When the question is *which* pattern, first split it into a **read path** and a **write path** — they are orthogonal choices.
+> Reach for caching-strategy reasoning when you see: "reduce read latency / offload the database," "hot key," "read-heavy workload," "[TTL](_meta/glossary.md#ttl)," "stale data after an update," "[thundering herd](_meta/glossary.md#thundering-herd) / everything hits the DB at once when the cache expires," "cache and DB disagree," or "how do we invalidate." When the question is *which* pattern, first split it into a **read path** and a **write path** — they are orthogonal choices.
 
 ## When to Use
 
@@ -28,12 +28,12 @@ A cache trades memory and *staleness* for latency and reduced load on a slow bac
 - A slow or rate-limited backing store (DB, upstream API) is the bottleneck under read load
 
 **Choosing the READ path:**
-- **Cache-aside (lazy loading)** — the *default*. App checks cache; on miss it loads from the DB and populates the cache itself. Use when you want the cache to be optional (a cache outage degrades to slow, not broken) and only actually-requested data cached.
+- **[Cache-aside](_meta/glossary.md#cache-aside) (lazy loading)** — the *default*. App checks cache; on miss it loads from the DB and populates the cache itself. Use when you want the cache to be optional (a cache outage degrades to slow, not broken) and only actually-requested data cached.
 - **Read-through** — the cache library/layer fetches from the DB on a miss transparently; app only ever talks to the cache. Use when you want caching logic centralized (one place, not every call site) and the cache provider supports it.
 
 **Choosing the WRITE path:**
-- **Write-through** — write cache and DB synchronously in the same operation. Use when reads must see fresh writes immediately and you can pay write latency for it (cache and DB stay consistent).
-- **Write-back / write-behind** — write cache now, flush to DB asynchronously (batched). Use only when write latency/throughput dominate *and* the cache tier is durable enough to survive a crash (or lost writes are acceptable).
+- **[Write-through](_meta/glossary.md#write-through-cache)** — write cache and DB synchronously in the same operation. Use when reads must see fresh writes immediately and you can pay write latency for it (cache and DB stay consistent).
+- **[Write-back / write-behind](_meta/glossary.md#write-back-cache)** — write cache now, flush to DB asynchronously (batched). Use only when write latency/throughput dominate *and* the cache tier is durable enough to survive a crash (or lost writes are acceptable).
 - **Write-around** — write straight to the DB, bypass the cache (let the next read lazily populate it). Use for write-heavy data that isn't read soon after write, to avoid polluting the cache with cold entries.
 
 **Do not cache when:**

@@ -17,6 +17,9 @@ trivially basic concepts a candidate uses daily (e.g. "binary search", "array",
 Specialist terms were verified against primary standards — IETF RFCs, NIST FIPS,
 vendor docs. Confidence is high; if you spot a slip, just fix it here.
 
+## 0-RTT
+A TLS 1.3 / QUIC feature (also "early data") that lets a client resuming a prior session send application data in its very first flight, before the handshake completes, saving a round trip. Because that early data can be captured and replayed by an attacker, it must be restricted to idempotent requests (e.g. GET), never side-effecting ones.
+
 ## AAAA
 A DNS record that maps a hostname to an IPv6 address.
 
@@ -70,6 +73,9 @@ In the CAP theorem, a system that favors Availability and Partition tolerance, s
 
 ## ARC
 Adaptive Replacement Cache — an eviction policy that dynamically balances recency (LRU) and frequency (LFU).
+
+## ARIES
+Algorithms for Recovery and Isolation Exploiting Semantics — the canonical write-ahead-logging crash-recovery method (Mohan et al., 1992). It runs three passes over the log — Analysis, Redo (repeat history, replaying even uncommitted changes), then Undo of the losers — and uses per-page LSNs plus Compensation Log Records to make recovery idempotent under a steal/no-force buffer policy.
 
 ## AS
 Autonomous System — a network under a single routing policy, identified by an AS number and advertised via BGP.
@@ -125,6 +131,9 @@ The theorem that a distributed data store can guarantee at most two of Consisten
 ## Cache stampede
 When a popular cache entry expires and many concurrent requests all miss and hit the origin at once (also "dog-piling" / thundering herd on the cache). Mitigated by request coalescing, early/probabilistic recomputation, or locking so one request refills while others serve stale.
 
+## Cache-aside
+A caching pattern (also "lazy loading") where the application code, not the cache, manages population: on a read it checks the cache and, on a miss, loads from the backing store and writes the value into the cache itself. The cache holds only requested keys and a cache outage degrades to slow rather than broken, but it has a first-request miss penalty and a stale-repopulation race on concurrent write+delete.
+
 ## Cascading failure
 A failure that propagates: one overloaded or dead component sheds load onto its neighbors, pushing them past capacity, until the whole system collapses. Retries, missing timeouts, and lack of bulkheads/circuit breakers accelerate it.
 
@@ -148,6 +157,9 @@ Content Identifier — a self-describing, hash-based address (as in IPFS) derive
 
 ## CNAME
 Canonical Name — a DNS record that aliases one hostname to another; not allowed at a zone apex.
+
+## Connection migration
+A QUIC feature that identifies a connection by an opaque connection ID rather than the (source IP, port, dest IP, port) 4-tuple, so the connection survives a client address change — e.g. a phone moving from Wi-Fi to cellular — without a new handshake. TCP connections, keyed on the 4-tuple, cannot do this.
 
 ## Connection pooling
 Reusing a fixed set of pre-established database/service connections across requests instead of opening one per request, amortizing the expensive TCP+TLS+auth handshake and capping concurrent connections to protect the backend.
@@ -184,6 +196,9 @@ Directed Acyclic Graph — a directed graph with no cycles, used for dependency 
 
 ## DAU
 Daily Active Users — unique users who engage with a system in a day, a common input to scale and QPS estimates.
+
+## Data race
+Two accesses to the same memory location from different threads where at least one is a write and they are not ordered by a happens-before relationship. In C/C++ a data race is undefined behavior; in Java it is defined but yields no visibility or ordering guarantees. Distinct from a race condition, which is a higher-level logic bug about interleaving that can occur even in fully synchronized code.
 
 ## Dead-letter queue
 A side queue (DLQ) that receives messages a consumer repeatedly fails to process (poison messages) so the main queue isn't blocked; the failures can be inspected, fixed, and replayed later.
@@ -272,6 +287,9 @@ First-In, First-Out — an ordering where the earliest-inserted element is remov
 ## FNV
 Fowler-Noll-Vo — a simple, fast non-cryptographic hash for hash tables where adversarial resistance isn't required.
 
+## Fencing token
+A monotonically increasing number handed out on each distributed-lock acquisition; the client attaches it to every write and the protected resource remembers the highest token seen and rejects any lower one. This is what makes a lock safe against a stale holder that was paused (GC, VM freeze) past its lease — the resume writes carry an outdated token and are refused. Fencing only works if the downstream resource actually enforces the check.
+
 ## Forward compatibility
 A schema/API change is forward-compatible if *old* readers can still process data written by *new* writers (e.g. by ignoring unknown fields). Contrast backward compatibility.
 
@@ -296,6 +314,9 @@ A high-performance RPC framework over HTTP/2 using Protocol Buffers, supporting 
 ## Graceful degradation
 Designing a system to keep serving reduced functionality when a dependency fails — e.g. showing cached or default results when the recommender is down — rather than returning an error for the whole request.
 
+## Group commit
+A write-ahead-log optimization that batches many transactions' commit records into a single `fsync` instead of forcing the log once per transaction, trading a little commit latency for far higher throughput when many transactions commit concurrently (e.g. Postgres `commit_delay`, MySQL `binlog_group_commit_sync_delay`).
+
 ## GTM
 Global Traffic Management — DNS-based routing of clients to the nearest or healthiest regional endpoint.
 
@@ -304,6 +325,9 @@ Hypermedia as the Engine of Application State — the REST constraint where resp
 
 ## HD
 Hierarchical Deterministic (wallet) — a wallet that derives a tree of keys from a single seed per BIP-32.
+
+## Happens-before
+The partial order a memory/consistency model defines over operations: if A happens-before B, then A's effects are guaranteed visible to B and A is ordered before B. It composes transitively and includes program order within a thread; edges are created by synchronization (lock release→acquire, volatile/atomic release→acquire, thread start/join, message send→receive). Operations not ordered by happens-before may be observed in different orders by different threads, which is precisely what makes an unsynchronized access a data race.
 
 ## Head-of-line blocking
 When the first item in a queue/stream stalls everything behind it even though later items could proceed — e.g. one lost TCP segment holding up all multiplexed HTTP/2 streams on that connection (which HTTP/3 over QUIC avoids with independent streams).
@@ -317,6 +341,9 @@ Hybrid Logical Clock — timestamps combining physical time with a logical count
 ## HMAC
 Hash-based Message Authentication Code — a keyed hash construction (RFC 2104) that authenticates integrity and is immune to length-extension.
 
+## HPACK
+HTTP/2's header-compression scheme (RFC 7541), which encodes repetitive headers against a shared static + dynamic table. Its ordered dynamic-table updates require in-order delivery, so using it directly over QUIC would reintroduce head-of-line blocking — the reason HTTP/3 replaced it with QPACK.
+
 ## HSRP
 Hot Standby Router Protocol — a Cisco first-hop redundancy protocol where a group of routers share a virtual IP for gateway failover.
 
@@ -325,6 +352,9 @@ The property that performing an operation multiple times has the same effect as 
 
 ## Idempotency key
 A client-supplied unique token attached to a request so the server can detect and de-duplicate retries — recording the key with the result and returning the stored outcome on repeats — making a non-idempotent operation (e.g. "charge card") safe to retry.
+
+## In-sync replica
+In Kafka, the set (ISR) of a partition's replicas that are fully caught up with the leader's log. A producer using `acks=all` waits for all in-sync replicas to persist a record before it is acknowledged, so an acknowledged write survives leader failure; `min.insync.replicas` sets how many must be in the ISR for such writes to be accepted.
 
 ## Inverted index
 A search data structure mapping each term to the list (posting list) of documents containing it, enabling fast full-text lookup — the inverse of a forward document→terms mapping.
@@ -347,11 +377,17 @@ Knuth-Morris-Pratt — an O(n+m) string-matching algorithm using a precomputed p
 ## KMS
 Key Management Service — a system for securely generating, storing, and controlling access to cryptographic keys.
 
+## Lamport timestamp
+A logical clock that is a single integer per node (Lamport, 1978): increment before each local event, attach the value on send, and on receive set the counter to max(local, received) + 1. It guarantees a → b ⟹ L(a) < L(b), giving a consistent total order (with a node-id tie-break), but the converse does not hold — so it cannot distinguish causally-ordered from concurrent events. Detecting concurrency needs a vector clock.
+
 ## Leader election
 The process by which a distributed cluster agrees on a single node to coordinate (accept writes, sequence operations); on the leader's failure a consensus protocol (e.g. Raft, Paxos, ZooKeeper) elects a new one, ideally avoiding two simultaneous leaders (split-brain).
 
 ## Leaky bucket
 A rate-limiting/traffic-shaping algorithm modeling requests as water poured into a bucket that leaks at a fixed rate; overflow is dropped. It smooths bursts into a constant output rate, unlike the token bucket which permits bursts up to the bucket size.
+
+## Lease
+A lock or grant that auto-expires after a fixed time (its TTL), so a crashed holder cannot hold it forever. It trades the deadlock-on-crash problem for the early-expiry problem: the lease can end while the holder is still working (e.g. paused by GC), which is why a lease alone is unsafe for correctness and must be paired with fencing tokens.
 
 ## L4
 Layer 4 (transport) — where load balancers route TCP/UDP by IP and port without inspecting application content.
@@ -383,6 +419,9 @@ Longest Increasing Subsequence — the dynamic-programming problem of finding th
 ## Linearizability
 The strongest single-object consistency model: every operation appears to take effect atomically at some point between its invocation and response, and the order respects real (wall-clock) time — once a write completes, all later reads see it or a newer value. Stronger than sequential consistency, which drops the real-time requirement.
 
+## Log compaction
+A Kafka retention mode (`cleanup.policy=compact`) that, instead of deleting records by age/size, keeps the latest record per key indefinitely and garbage-collects older values for that key. A record with a null value is a tombstone that removes the key. This turns a topic into a compacted changelog / current-state snapshot (e.g. Kafka Streams state stores, CDC "latest row" topics). Distinct from LSM-tree compaction.
+
 ## Lost update
 A concurrency anomaly where two transactions concurrently read-modify-write the same value and one silently overwrites the other's change. Prevented by atomic operations, explicit locks (SELECT FOR UPDATE), or compare-and-set; some snapshot-isolation engines detect it automatically.
 
@@ -391,6 +430,9 @@ Least Recently Used — a cache eviction policy that discards the entry unused f
 
 ## LSM
 Log-Structured Merge-tree — a write-optimized store (RocksDB, Cassandra) that turns random writes into sequential I/O.
+
+## LSN
+Log Sequence Number — a unique, monotonically increasing identifier for each write-ahead-log record. Each data page stores the `pageLSN` of the last log record applied to it; recovery compares the on-disk `pageLSN` to a log record's LSN to skip redos already durable, which is what makes WAL replay idempotent.
 
 ## LWW
 Last-Write-Wins — a conflict-resolution strategy that keeps the write with the latest timestamp, potentially dropping concurrent updates.
@@ -406,6 +448,9 @@ Message-Digest 5 — a 128-bit legacy cryptographic hash, broken for collision r
 
 ## Memoization
 Top-down dynamic programming: cache the result of each subproblem the first time it's computed (typically in recursion) so repeated calls return in O(1). Contrast tabulation, which fills a table bottom-up.
+
+## Memory barrier
+A fence that constrains reordering of memory operations across it, by both the compiler and the CPU, so that writes before the barrier become visible before writes after it. Portable code expresses the barriers it needs via acquire/release/seq_cst semantics on atomics rather than hand-placing architecture-specific fence instructions.
 
 ## Memtable
 The in-memory, sorted write buffer of an LSM-tree engine; writes go to the memtable (plus the WAL for durability) and, once full, are flushed as an immutable SSTable on disk.
@@ -454,6 +499,9 @@ Mail Exchange — a DNS record naming the mail servers that accept email for a d
 
 ## NLB
 Network Load Balancer — AWS's Layer 4 load balancer for high-throughput, low-overhead TCP/UDP routing.
+
+## Next-key lock
+InnoDB's approximation of a predicate lock: a combination of a record lock on an index row and a gap lock on the gap before it, which locks a scanned index range including the "gaps" where new rows could be inserted. This blocks phantom inserts into the range and is how InnoDB prevents phantoms at REPEATABLE READ and SERIALIZABLE.
 
 ## Nonce
 A number used once — a unique (often random or monotonically increasing) value included in a protocol message to guarantee freshness and prevent replay attacks, or, in ECDSA, the per-signature secret whose reuse leaks the private key.
@@ -527,6 +575,9 @@ HTTP/3's header-compression scheme, adapting HPACK to QUIC's independent-stream 
 ## QPS
 Queries Per Second — a throughput metric for how many requests or queries a system handles each second.
 
+## QUIC
+A UDP-based, encrypted, multiplexed transport protocol (RFC 9000) that HTTP/3 runs on. It gives each stream independent delivery — so one lost packet stalls only its own stream, not all of them (avoiding TCP's transport-layer head-of-line blocking) — folds the transport and TLS 1.3 handshakes into a single 1-RTT exchange (0-RTT on resume), and supports connection migration across network changes. It runs in user space and is always encrypted.
+
 ## Quickselect
 A selection algorithm that finds the k-th smallest element by partitioning (like quicksort) but recursing into only one side, giving O(n) average time (O(n²) worst case, avoidable with median-of-medians).
 
@@ -556,6 +607,9 @@ In leaderless replication, when a read detects that some replicas returned stale
 
 ## Read-your-writes
 A session guarantee (read-after-write consistency) that a client always sees its own prior writes, even if other clients might not yet; prevents a user from submitting an update and then seeing the old value.
+
+## Redlock
+Redis's distributed-lock algorithm that acquires a lease on a majority of N independent Redis masters to tolerate node failure. It is contested for correctness-critical use (Kleppmann): it issues no fencing token, so it cannot stop a paused holder's stale write, and its safety leans on bounded clock drift and pause assumptions that do not always hold. Widely considered acceptable only as a best-effort efficiency lock.
 
 ## Replay attack
 An attack that captures a valid message (e.g. an auth token or signed request) and re-sends it later to impersonate or duplicate an action; defeated by nonces, timestamps, or single-use tokens.
@@ -610,6 +664,9 @@ A model where all operations appear in a single total order that every process a
 
 ## Serializability
 The strongest transaction isolation level: concurrent transactions produce a result equivalent to *some* serial (one-at-a-time) execution, ruling out all anomalies including write skew and phantoms. Concerns multi-object transactions; contrast linearizability, which concerns single-object real-time ordering.
+
+## Serializable Snapshot Isolation
+An optimistic route to serializability (SSI; PostgreSQL SERIALIZABLE since 9.1) that runs transactions on an MVCC snapshot without read locks, tracks read/write dependencies via non-blocking SIREAD predicate locks, and aborts a transaction when it detects the dangerous pattern (two adjacent rw-antidependencies) that could produce a non-serializable schedule. Cheap under low contention (keeps SI's read concurrency) but can raise false-positive aborts; the app must retry.
 
 ## SHA
 Secure Hash Algorithm — a NIST-standardized family of collision-resistant cryptographic hashes (SHA-2, SHA-3).
@@ -695,6 +752,9 @@ Time To Live — a duration after which a cached entry or DNS record is consider
 ## Two-phase commit
 A blocking atomic-commit protocol across participants: a coordinator asks all to prepare (phase 1); only if all vote yes does it tell all to commit (phase 2), else abort. Guarantees atomicity but stalls if the coordinator fails after prepare (participants hold locks), a key availability weakness.
 
+## Two-phase locking
+A pessimistic concurrency-control protocol that achieves serializability: a transaction has a growing phase in which it only acquires locks and a shrinking phase in which it only releases them, using shared (read) and exclusive (write) locks so readers block writers and writers block readers. In practice databases use strong strict 2PL, holding all locks until commit/abort; predicate/index-range locks are added to prevent phantoms.
+
 ## TXT
 A DNS record holding arbitrary text, commonly used for SPF, DKIM, and domain-ownership verification.
 
@@ -736,6 +796,12 @@ The ratio of bytes physically written to storage versus bytes logically written 
 
 ## Write skew
 A concurrency anomaly where two transactions each read an overlapping set, each makes a decision that is valid given its snapshot, and both write — but together they violate an invariant neither would alone (e.g. both doctors go off-call because each sees the other on-call). Only serializable isolation prevents it; snapshot isolation does not.
+
+## Write-back cache
+A write policy (also write-behind) where a write updates the cache immediately and is flushed to the backing store asynchronously (often batched). It gives low write latency and can dramatically cut backend write load, but acknowledged-but-unflushed writes are lost if the cache node dies and the cache and store diverge until the flush — so it needs a durable cache tier or loss tolerance.
+
+## Write-through cache
+A write policy where each write updates the cache and the backing store synchronously in the same operation, so reads see fresh writes immediately and the store holds every acknowledged write (safe on cache crash). The cost is higher write latency, and it can cache data that is never read.
 
 ## XOF
 Extendable-Output Function — a hash-like primitive (e.g. SHAKE, BLAKE3) that produces a digest of arbitrary requested length.

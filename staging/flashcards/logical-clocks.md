@@ -15,7 +15,7 @@ priority: normal
 
 # Logical Clocks
 
-Logical clocks order events in a distributed system by **causality** rather than by wall-clock time, because physical time cannot be trusted across nodes. Every machine's clock drifts, [NTP](_meta/glossary.md#ntp) corrections can jump time forward or *backward*, and even synchronized clocks disagree by enough (milliseconds) that "later timestamp" does not reliably mean "happened later." So instead of asking *when* did an event occur, logical clocks capture *what an event could have depended on*: the **happens-before** relation. Lamport timestamps give a cheap consistent *total* order (a single counter per node) but throw away enough information that they cannot tell "A caused B" from "A and B were concurrent." Vector clocks / version vectors keep one counter per node, which recovers the full **partial** order — so they *can* detect concurrency, at the cost of size proportional to the number of nodes. This is the machinery behind causal consistency, conflict detection in leaderless stores (Dynamo), and safe versioning of replicated objects. (DDIA Ch. 5 & 8-9.)
+Logical clocks order events in a distributed system by **causality** rather than by wall-clock time, because physical time cannot be trusted across nodes. Every machine's clock drifts, NTP corrections can jump time forward or *backward*, and even synchronized clocks disagree by enough (milliseconds) that "later timestamp" does not reliably mean "happened later." So instead of asking *when* did an event occur, logical clocks capture *what an event could have depended on*: the **[happens-before](_meta/glossary.md#happens-before)** relation. [Lamport timestamps](_meta/glossary.md#lamport-timestamp) give a cheap consistent *total* order (a single counter per node) but throw away enough information that they cannot tell "A caused B" from "A and B were concurrent." [Vector clocks](_meta/glossary.md#vector-clock) / version vectors keep one counter per node, which recovers the full **partial** order — so they *can* detect concurrency, at the cost of size proportional to the number of nodes. This is the machinery behind causal consistency, conflict detection in leaderless stores (Dynamo), and safe versioning of replicated objects. (DDIA Ch. 5 & 8-9.)
 
 > [!tip] Recognition
 > Reach for logical-clock reasoning when you see: "we can't rely on server timestamps / clock skew caused a bug," "[last-write-wins](_meta/glossary.md#lww) silently dropped a write," "detect whether two concurrent updates conflict or one supersedes the other," "preserve causal order (read-your-writes, causal consistency)," "sibling versions" in Dynamo/Riak (the managed AWS *DynamoDB* product does **not** expose them — it defaults to last-write-wins), or `(node, counter)` version metadata attached to objects. Any time correctness depends on *ordering events across machines* without a single coordinator, physical time is the wrong tool and a logical clock is the right one.
@@ -36,7 +36,7 @@ Logical clocks order events in a distributed system by **causality** rather than
 - **Logical clocks** over physical (NTP) time: whenever correctness depends on ordering, not on the actual time-of-day. Wall-clock time is for TTLs, human-facing timestamps, and coarse metrics — never for deciding causal order.
 
 **Do not use when:**
-- You need a **total order that all nodes agree is *the* order** with no lost writes and no arbitrary tie-breaking → that's [consensus](_meta/glossary.md#consensus) / total-order broadcast ([[consensus]]), not a logical clock. Logical clocks order events but don't *decide* a single durable log by themselves.
+- You need a **total order that all nodes agree is *the* order** with no lost writes and no arbitrary tie-breaking → that's consensus / total-order broadcast ([[consensus]]), not a logical clock. Logical clocks order events but don't *decide* a single durable log by themselves.
 - You genuinely need real elapsed time (rate limiting, session expiry, "show local time") → use physical time; logical clocks carry no wall-clock meaning.
 - Node count is huge and unbounded → naive vector clocks grow linearly per node; you need pruning, version-vector-per-replica (not per-client), or dotted version vectors.
 
@@ -55,11 +55,11 @@ Logical clocks order events in a distributed system by **causality** rather than
 
 ## Common Pitfalls
 
-- **Trusting wall-clock time to order events.** Clock skew, [NTP](_meta/glossary.md#ntp) step corrections (time can move *backward*), leap seconds, and VM pauses all break "bigger timestamp = later." Sorting versions by physical timestamp for LWW **silently drops writes** whenever clocks disagree — a classic Cassandra footgun.
+- **Trusting wall-clock time to order events.** Clock skew, NTP step corrections (time can move *backward*), leap seconds, and VM pauses all break "bigger timestamp = later." Sorting versions by physical timestamp for LWW **silently drops writes** whenever clocks disagree — a classic Cassandra footgun.
 - **Assuming `L(a) < L(b)` means a caused b.** The #1 Lamport misconception. The implication only runs `a → b ⟹ L(a) < L(b)`; the reverse tells you nothing. To *detect* causality/concurrency you must use a vector clock.
 - **Thinking Lamport's total order is "the real order."** It's a *consistent* order, not a *causal truth*; it linearizes concurrent events by fiat. Fine for a tie-break rule, wrong if you conclude one concurrent event "really happened first."
 - **Ignoring vector-clock growth.** One entry per participant means the vector grows with the number of writers; using a per-*client* vector (not per-replica) makes it grow unboundedly. Real systems bound it (server-side version vectors, dotted version vectors, pruning old entries).
-- **Confusing logical clocks with consensus.** A vector clock detects that two writes conflict; it does **not** resolve them or produce a single agreed log. Resolution needs application merge logic (or a CRDT), and a single durable total order needs [consensus](_meta/glossary.md#consensus).
+- **Confusing logical clocks with consensus.** A vector clock detects that two writes conflict; it does **not** resolve them or produce a single agreed log. Resolution needs application merge logic (or a CRDT), and a single durable total order needs consensus.
 - **Forgetting the increment-on-receive step.** Omitting `+1` after the `max` (or forgetting to bump your own entry) breaks the clock condition and can make causally-ordered events look concurrent or vice versa.
 
 ## Trade-offs
@@ -75,7 +75,7 @@ Logical clocks order events in a distributed system by **causality** rather than
 | Cost | free but unsafe for ordering | cheap | metadata grows with node count |
 
 - **Information vs. size.** Lamport compresses causality into one number and *loses* the ability to tell concurrent from causal; vector clocks keep enough to recover it but pay O(N) metadata. This is the central trade-off.
-- **Logical vs. hybrid.** Pure logical clocks carry no real-time meaning (bad for "show me events from the last hour"). **Hybrid Logical Clocks (HLC)** bolt a bounded physical component onto a logical clock so timestamps stay close to wall-clock while still respecting happens-before — used by CockroachDB/YugabyteDB.
+- **Logical vs. hybrid.** Pure logical clocks carry no real-time meaning (bad for "show me events from the last hour"). **Hybrid Logical Clocks ([HLC](_meta/glossary.md#hlc))** bolt a bounded physical component onto a logical clock so timestamps stay close to wall-clock while still respecting happens-before — used by CockroachDB/YugabyteDB.
 - **Detection vs. resolution.** Logical clocks (vector) *detect* conflicts cheaply and correctly; they say nothing about how to *resolve* them. LWW resolves by discarding (lossy); application merge or [CRDTs](_meta/glossary.md#crdt) resolve without loss; a single global order needs consensus.
 
 ## Variants

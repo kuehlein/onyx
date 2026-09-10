@@ -16,12 +16,12 @@ priority: normal
 
 # Bloom Filter
 
-A Bloom filter is a compact probabilistic structure that answers "is this element in the set?" with **"definitely not"** or **"probably yes."** It is a bit array of `m` bits plus `k` independent hash functions; `add(x)` sets the `k` bits that `x` hashes to, and `contains(x)` returns true only if *all* `k` of those bits are set. Because bits are shared across elements, a query can return true when the element was never added (a **false positive**), but it can *never* return false for an element that was added (**no false negatives**). That asymmetry is the whole point: it lets you use a tiny, fixed amount of memory to cheaply rule out the common "not present" case before paying for an expensive exact lookup (a disk seek, a network call, a full [set](_meta/glossary.md#hash-set) probe).
+A [Bloom filter](_meta/glossary.md#bloom-filter) is a compact probabilistic structure that answers "is this element in the set?" with **"definitely not"** or **"probably yes."** It is a bit array of `m` bits plus `k` independent hash functions; `add(x)` sets the `k` bits that `x` hashes to, and `contains(x)` returns true only if *all* `k` of those bits are set. Because bits are shared across elements, a query can return true when the element was never added (a **false positive**), but it can *never* return false for an element that was added (**no false negatives**). That asymmetry is the whole point: it lets you use a tiny, fixed amount of memory to cheaply rule out the common "not present" case before paying for an expensive exact lookup (a disk seek, a network call, a full set probe).
 
 > [!tip] Recognition
-> Reach for a Bloom filter when you see: **"skip the expensive lookup if the key is definitely absent,"** "have we seen this before?" at massive scale, membership check where a **tunable, small false-positive rate is acceptable** but false negatives are not, or "we can't fit the whole set in memory but need a fast negative check." Concrete tells: LSM-tree read path avoiding SSTable reads, CDN/cache "one-hit-wonder" filtering, URL/dedup "already crawled?" checks, and any "space vs. accuracy" trade where you never need to *retrieve* the element, only test membership.
+> Reach for a Bloom filter when you see: **"skip the expensive lookup if the key is definitely absent,"** "have we seen this before?" at massive scale, membership check where a **tunable, small false-positive rate is acceptable** but false negatives are not, or "we can't fit the whole set in memory but need a fast negative check." Concrete tells: [LSM](_meta/glossary.md#lsm)-tree read path avoiding [SSTable](_meta/glossary.md#sstable) reads, CDN/cache "one-hit-wonder" filtering, URL/dedup "already crawled?" checks, and any "space vs. accuracy" trade where you never need to *retrieve* the element, only test membership.
 >
-> **vs. hash set:** a [hash set](_meta/glossary.md#hash-set) stores the actual keys → exact answers but O(n·keysize) memory. A Bloom filter stores only bits → ~10 bits/element regardless of key size, but answers are approximate and you cannot enumerate or delete. **vs. counting Bloom filter / cuckoo filter:** those add deletion support the plain filter lacks.
+> **vs. hash set:** a hash set stores the actual keys → exact answers but O(n·keysize) memory. A Bloom filter stores only bits → ~10 bits/element regardless of key size, but answers are approximate and you cannot enumerate or delete. **vs. counting Bloom filter / cuckoo filter:** those add deletion support the plain filter lacks.
 
 ## When to Use
 
@@ -32,7 +32,7 @@ A Bloom filter is a compact probabilistic structure that answers "is this elemen
 - "Filter out the majority of definitely-absent keys, then fall back to an exact structure for the survivors"
 
 **Prefer a Bloom filter over alternatives when:**
-- Over a [hash set](_meta/glossary.md#hash-set) / hash map: when you only need membership (never retrieval), keys are large, and the set is huge — the filter is far smaller and its size is independent of key length
+- Over a hash set / hash map: when you only need membership (never retrieval), keys are large, and the set is huge — the filter is far smaller and its size is independent of key length
 - Over hitting the source of truth directly: when the source is slow (disk, network) and most queries are for absent keys — the filter absorbs the negative case in memory
 - Over a counting/cuckoo filter: when you never need to delete elements — the plain filter is the simplest and most space-efficient
 

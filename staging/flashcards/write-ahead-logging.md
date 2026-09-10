@@ -18,17 +18,17 @@ priority: normal
 Write-ahead logging is the discipline that makes durable, atomic storage possible on top of unreliable disks and volatile buffers: **before any change to a data page is allowed to reach disk, the log record describing that change must already be durable.** A transaction's commit is defined not by its data pages hitting disk but by its log records — an append-only, sequential stream — being flushed (`fsync`) to stable storage. Because the log is a physically sequential write, WAL converts scattered random page writes into cheap append I/O *and* gives crash recovery an authoritative replay/rollback record. Every mainstream engine (Postgres WAL, InnoDB redo log, SQLite WAL mode, Oracle redo, MySQL binlog is a *separate* logical log) is built on this rule; it is the concrete mechanism behind ACID's **D**urability and **A**tomicity.
 
 > [!tip] Recognition
-> Reach for WAL reasoning when you see: "how does a commit survive a crash mid-write," "torn page / partial write on power loss," "`fsync` on every commit is the bottleneck," "group commit / commit latency," "replication or [CDC](_meta/glossary.md#cdc) reading the transaction log," "checkpoint / recovery time," "redo vs undo," or ARIES / LSN / `pageLSN`. Any question about *how durability and atomicity are actually implemented under the hood* is a WAL question.
+> Reach for WAL reasoning when you see: "how does a commit survive a crash mid-write," "torn page / partial write on power loss," "`fsync` on every commit is the bottleneck," "group commit / commit latency," "replication or [CDC](_meta/glossary.md#change-data-capture) reading the transaction log," "checkpoint / recovery time," "redo vs undo," or [ARIES](_meta/glossary.md#aries) / [LSN](_meta/glossary.md#lsn) / `pageLSN`. Any question about *how durability and atomicity are actually implemented under the hood* is a WAL question.
 >
-> **vs. mvcc:** MVCC implements Isolation (versions + visibility); WAL implements Durability + Atomicity (log-before-apply + replay/rollback). They are orthogonal and coexist in one engine. **vs. lsm-tree commit log:** an [LSM tree](_meta/glossary.md#lsm-tree)'s commit log is *also* a WAL (durability for the in-memory memtable), but the LSM's SSTables are the primary store, not pages patched in place — see Trade-offs.
+> **vs. mvcc:** MVCC implements Isolation (versions + visibility); WAL implements Durability + Atomicity (log-before-apply + replay/rollback). They are orthogonal and coexist in one engine. **vs. lsm-tree commit log:** an [LSM tree](_meta/glossary.md#lsm)'s commit log is *also* a WAL (durability for the in-memory memtable), but the LSM's SSTables are the primary store, not pages patched in place — see Trade-offs.
 
 ## When to Use
 
 **Problem signals that point to WAL / recovery reasoning:**
 - "The server lost power right after `COMMIT` returned — is the write still there?" — the defining WAL guarantee: committed = log durable, recoverable on restart
 - "A page write was torn in half by a crash (partial 4 KB write)" — WAL replay (and Postgres `full_page_writes`) reconstructs the page
-- "Commit throughput is capped by `fsync`/disk latency" — batching commits (group commit) amortizes the flush
-- "We need to stream every change to a replica / a search index / Kafka" — read the WAL: logical/physical replication and [CDC](_meta/glossary.md#cdc) tail the same log
+- "Commit throughput is capped by `fsync`/disk latency" — batching commits ([group commit](_meta/glossary.md#group-commit)) amortizes the flush
+- "We need to stream every change to a replica / a search index / Kafka" — read the WAL: logical/physical replication and CDC tail the same log
 - "Recovery after a crash takes too long" — checkpoint frequency vs. redo-replay distance is the tuning knob
 - "Explain how a database gives you atomicity without holding the whole transaction in memory" — undo information in the log rolls back uncommitted work
 
@@ -76,7 +76,7 @@ Write-ahead logging is the discipline that makes durable, atomic storage possibl
 - **Commit latency vs. throughput — group commit.** `fsync` per transaction serializes commits behind disk latency. **Group commit** batches many transactions' log records into one `fsync`, trading a little latency for far higher throughput. Postgres `commit_delay`/`commit_siblings`, MySQL `binlog_group_commit_sync_delay` expose this.
 - **Durability vs. speed.** `synchronous_commit=off` (Postgres) or `innodb_flush_log_at_trx_commit=2` (MySQL) return commit *before* the log is durable — bounded data loss window in exchange for throughput. A deliberate, situational trade.
 - **Checkpoint frequency.** Frequent checkpoints ⇒ short recovery (little redo to replay) but steady background write I/O and more full-page images; rare checkpoints ⇒ cheap steady state but long, painful recovery.
-- **vs. LSM commit log.** An [LSM tree](_meta/glossary.md#lsm-tree) also fronts its memtable with a WAL for durability, but its *primary* durability comes from flushing immutable SSTables; the WAL only protects the not-yet-flushed memtable and is discarded after a memtable flush. A B-tree engine, by contrast, updates pages *in place*, so its WAL must protect every page mutation and drives full ARIES-style recovery.
+- **vs. LSM commit log.** An LSM tree also fronts its memtable with a WAL for durability, but its *primary* durability comes from flushing immutable SSTables; the WAL only protects the not-yet-flushed memtable and is discarded after a memtable flush. A B-tree engine, by contrast, updates pages *in place*, so its WAL must protect every page mutation and drives full ARIES-style recovery.
 
 ## Implementation Notes
 
@@ -102,7 +102,7 @@ Start from the last CHECKPOINT (not the start of the log).
 ```
 
 - **Key ARIES ideas:** *redo repeats history* (replay committed *and* uncommitted work first, then undo the losers) — this keeps the algorithm simple and correct with fuzzy checkpoints and steal/no-force. `pageLSN` makes redo idempotent; CLRs make undo idempotent.
-- **Postgres specifics:** WAL lives in `pg_wal/` as 16 MB segments; `synchronous_commit`, `wal_level` (`minimal`/`replica`/`logical`), and `full_page_writes` are the load-bearing knobs. Logical decoding turns physical WAL into a logical change stream for [CDC](_meta/glossary.md#cdc)/logical replication.
+- **Postgres specifics:** WAL lives in `pg_wal/` as 16 MB segments; `synchronous_commit`, `wal_level` (`minimal`/`replica`/`logical`), and `full_page_writes` are the load-bearing knobs. Logical decoding turns physical WAL into a logical change stream for CDC/logical replication.
 - **InnoDB specifics:** a circular physical **redo log** (`ib_logfile`/redo files) plus per-row **undo logs** (in the undo tablespaces, also feeding MVCC read-views). Redo + undo are separate structures here.
 - **WAL as the source of truth for replication/CDC:** streaming/physical replication ships WAL records to replicas that replay them; logical replication and CDC tools (Debezium, Postgres logical decoding) parse the same log into row-level change events — the log is the system's ordered history, so it doubles as the change feed.
 

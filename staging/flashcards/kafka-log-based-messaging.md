@@ -18,7 +18,7 @@ priority: normal
 Log-based messaging replaces the ephemeral "deliver then delete" queue with a **partitioned, append-only, durable log**: producers append records to the tail, and consumers read forward at their own pace by tracking a numeric **offset**. The record is *not* removed when read — it stays until a retention policy expires it — so consumption is a cursor position, not a destructive dequeue. This single design choice is what buys Kafka its defining properties: **replayability** (rewind the offset and re-read history), cheap **fan-out** (many independent consumers read the same log without copies), and high sequential-write throughput (append to disk, page-cache-friendly). It is the messaging analogue of a database's write-ahead log, exposed as a first-class abstraction — DDIA Ch.11 calls this "logs for message storage."
 
 > [!tip] Recognition
-> Reach for the log/Kafka model when you see: **"replay events / re-process from the beginning,"** **"multiple independent consumers of the same stream"** (fan-out to analytics + search + billing), **"event sourcing / change data capture (CDC),"** **"stream processing,"** **"ordered per key,"** or **high sustained throughput** with durable retention. Signals of a *traditional* queue instead: "distribute tasks to workers," "delete after ack," "per-message TTL / priority," "route by header/topic pattern."
+> Reach for the log/Kafka model when you see: **"replay events / re-process from the beginning,"** **"multiple independent consumers of the same stream"** (fan-out to analytics + search + billing), **"event sourcing / [change data capture](_meta/glossary.md#change-data-capture) (CDC),"** **"stream processing,"** **"ordered per key,"** or **high sustained throughput** with durable retention. Signals of a *traditional* queue instead: "distribute tasks to workers," "delete after ack," "per-message TTL / priority," "route by header/topic pattern."
 >
 > **vs. traditional queue (RabbitMQ/SQS):** a broker-managed queue treats a message as a unit of work that is *acked and removed* — great for load-balancing tasks across competing workers, weak at replay and multi-consumer fan-out. Kafka treats the stream as durable shared *storage* — great at replay/fan-out/ordering, but consumption parallelism is capped by partition count and per-message routing/priority is not native.
 
@@ -26,7 +26,7 @@ Log-based messaging replaces the ephemeral "deliver then delete" queue with a **
 
 **Problem signals that point to log-based messaging (Kafka):**
 - "We need to **replay** the last N days of events into a new/ fixed service" — offsets rewind; a delete-on-ack queue cannot
-- "Several **independent** consumers each need the *full* stream" (analytics, search indexer, audit) — consumer groups fan out without copying data
+- "Several **independent** consumers each need the *full* stream" (analytics, search indexer, audit) — [consumer groups](_meta/glossary.md#consumer-group) fan out without copying data
 - "**Event sourcing** / **CDC** / audit log is the source of truth" — the log *is* the durable ordered history
 - "**Stream processing**: windowed aggregation, joins, materialized views" — Kafka Streams / Flink build on the log
 - "Order matters **per entity/key**" — key-based partitioning gives per-key ordering at scale
@@ -34,13 +34,13 @@ Log-based messaging replaces the ephemeral "deliver then delete" queue with a **
 
 **Prefer Kafka over a traditional queue when:**
 - Over RabbitMQ/SQS: you need **replay**, **fan-out to many consumer groups**, or a durable ordered history — a queue deletes on ack and can't cheaply re-serve
-- Over a database polling table: you need a purpose-built, horizontally partitioned, high-throughput event pipe with backpressure via consumer lag
+- Over a database polling table: you need a purpose-built, horizontally partitioned, high-throughput event pipe with [backpressure](_meta/glossary.md#backpressure) via consumer lag
 
 **Do not use when:**
 - You need a **task/work queue** with competing workers, per-message ack/redelivery, priorities, dead-letter routing, or per-message TTL → use RabbitMQ / SQS (Kafka has none of these natively; parallelism is bounded by partitions)
 - You need **per-message routing** by header/content or complex topologies (topic exchanges, fanout+bindings) → RabbitMQ's exchange model
 - The volume is tiny and operational simplicity matters → a managed queue is far less to run than a Kafka/ZooKeeper-or-KRaft cluster
-- You require **exactly-once side effects on an external system** — Kafka's EOS is exactly-once *within Kafka* (read-process-write); external systems still need idempotent writes
+- You require **[exactly-once](_meta/glossary.md#exactly-once-semantics) side effects on an external system** — Kafka's EOS is exactly-once *within Kafka* (read-process-write); external systems still need idempotent writes
 
 ## Key Properties
 
@@ -50,16 +50,16 @@ Log-based messaging replaces the ephemeral "deliver then delete" queue with a **
 - **Consumer groups give competing-consumer semantics *at partition granularity*.** Within one group, each partition is owned by exactly one consumer, so **max useful consumers per group = partition count**; extra consumers sit idle. Different groups read the same partitions independently (fan-out).
 - **Rebalancing** redistributes partitions when members join/leave or partitions change. Legacy "eager" rebalance is stop-the-world (revoke all, reassign); **cooperative/incremental rebalancing (KIP-429, Kafka 2.4+)** revokes only the moving partitions so unaffected consumers keep processing.
 - **Retention is decoupled from consumption.** Records live for `retention.ms` / `retention.bytes` regardless of whether anyone read them; consumers can be offline and catch up later (bounded by retention).
-- **Durability via replication.** Each partition has a leader and `replication.factor` followers; producers with `acks=all` wait for the in-sync replica (ISR) set, so an acknowledged write survives leader failure.
+- **Durability via replication.** Each partition has a leader and `replication.factor` followers; producers with `acks=all` wait for the [in-sync replica](_meta/glossary.md#in-sync-replica) (ISR) set, so an acknowledged write survives leader failure.
 
 ## Common Pitfalls
 
 - **Expecting global ordering.** There is none across partitions. Interviewers probe this: "how do you keep a user's events ordered?" → partition by user id; accept that cross-user order is undefined.
 - **More consumers than partitions to "scale."** Consumers beyond the partition count in a group are idle. You must choose partition count for peak parallelism up front; increasing partitions later breaks key→partition ordering for existing keys.
 - **Treating it as a work queue.** No per-message ack/redelivery, no priorities, no per-message TTL, no native dead-letter queue. A single "poison" record at the head of a partition can block that partition unless you build skip/DLQ logic yourself.
-- **Confusing retention with compaction.** Time/size **retention** deletes *old* records; **log compaction** keeps the *latest value per key* forever (a changelog/snapshot). Enabling the wrong one silently loses data you expected to keep (or keeps data you expected to expire).
-- **Assuming default = exactly-once.** Default delivery is **at-least-once** (consumer can crash after processing but before committing the offset → reprocessing). Real exactly-once needs the idempotent producer + transactions, or idempotent consumer logic.
-- **Committing offsets before processing (or auto-commit).** `enable.auto.commit=true` commits on a timer regardless of processing success → **at-most-once** (silent message loss on crash). For at-least-once, process first, then commit.
+- **Confusing retention with compaction.** Time/size **retention** deletes *old* records; **[log compaction](_meta/glossary.md#log-compaction)** keeps the *latest value per key* forever (a changelog/snapshot). Enabling the wrong one silently loses data you expected to keep (or keeps data you expected to expire).
+- **Assuming default = exactly-once.** Default delivery is **[at-least-once](_meta/glossary.md#at-least-once-delivery)** (consumer can crash after processing but before committing the offset → reprocessing). Real exactly-once needs the idempotent producer + transactions, or idempotent consumer logic.
+- **Committing offsets before processing (or auto-commit).** `enable.auto.commit=true` commits on a timer regardless of processing success → **[at-most-once](_meta/glossary.md#at-most-once-delivery)** (silent message loss on crash). For at-least-once, process first, then commit.
 - **Long processing stalling the group.** Taking longer than `max.poll.interval.ms` between polls makes the broker consider the consumer dead and triggers a rebalance, causing duplicate processing.
 
 ## Delivery Semantics
@@ -103,7 +103,7 @@ The three guarantees and how Kafka reaches each:
 
 **Retention vs. log compaction** (`cleanup.policy`):
 - `delete` (default): drop segments older than `retention.ms` or beyond `retention.bytes`. A rolling window of recent events.
-- `compact`: retain the **latest record per key** indefinitely; older values for the same key are garbage-collected. A `null` value is a **tombstone** that deletes a key. Ideal for changelogs / current-state snapshots (e.g. Kafka Streams state stores, CDC "latest row" topics).
+- `compact`: retain the **latest record per key** indefinitely; older values for the same key are garbage-collected. A `null` value is a **[tombstone](_meta/glossary.md#tombstone)** that deletes a key. Ideal for changelogs / current-state snapshots (e.g. Kafka Streams state stores, CDC "latest row" topics).
 - `compact,delete`: compact *and* age out — keep latest-per-key but still bound total age.
 
 **At-least-once consumer skeleton** (process then commit):

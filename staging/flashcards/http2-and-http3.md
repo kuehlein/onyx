@@ -16,10 +16,10 @@ priority: normal
 
 # HTTP/2 and HTTP/3
 
-HTTP/2 and HTTP/3 keep HTTP *semantics* (methods, status codes, headers, bodies) identical to HTTP/1.1 but change the *wire format and transport* to eliminate the latency HTTP/1.1 imposed. HTTP/1.1 sends plaintext, request-at-a-time messages, so a single slow response blocks everything queued behind it on that connection — application-layer **[head-of-line blocking](_meta/glossary.md#head-of-line-blocking)** — forcing browsers to open ~6 parallel [TCP](_meta/glossary.md#tcp) connections per origin. HTTP/2 fixes the *application* layer with a **binary framing** protocol that multiplexes many concurrent **streams** over one TCP connection, but because those streams still ride a single ordered TCP byte-stream, one lost packet stalls *all* streams — HOL blocking simply moves down to the *transport* layer. HTTP/3 removes even that by running over **QUIC**, a transport built on [UDP](_meta/glossary.md#udp) with independent per-stream delivery, so a loss on one stream never blocks the others.
+HTTP/2 and HTTP/3 keep HTTP *semantics* (methods, status codes, headers, bodies) identical to HTTP/1.1 but change the *wire format and transport* to eliminate the latency HTTP/1.1 imposed. HTTP/1.1 sends plaintext, request-at-a-time messages, so a single slow response blocks everything queued behind it on that connection — application-layer **[head-of-line blocking](_meta/glossary.md#head-of-line-blocking)** — forcing browsers to open ~6 parallel [TCP](_meta/glossary.md#tcp) connections per origin. HTTP/2 fixes the *application* layer with a **binary framing** protocol that [multiplexes](_meta/glossary.md#multiplexing) many concurrent **streams** over one TCP connection, but because those streams still ride a single ordered TCP byte-stream, one lost packet stalls *all* streams — HOL blocking simply moves down to the *transport* layer. HTTP/3 removes even that by running over **[QUIC](_meta/glossary.md#quic)**, a transport built on [UDP](_meta/glossary.md#udp) with independent per-stream delivery, so a loss on one stream never blocks the others.
 
 > [!tip] Recognition
-> Reach for this when you see: "many small assets, browser opens 6 connections," "one slow/large response blocks the others," "head-of-line blocking," "multiplexing over one connection," "packet loss on lossy/mobile networks tanks throughput," "TLS handshake round-trips hurt first-byte latency," "connection survives Wi-Fi→cellular switch," "0-RTT / early data," or a protocol running over **UDP on port 443**.
+> Reach for this when you see: "many small assets, browser opens 6 connections," "one slow/large response blocks the others," "head-of-line blocking," "multiplexing over one connection," "packet loss on lossy/mobile networks tanks throughput," "TLS handshake round-trips hurt first-byte latency," "connection survives Wi-Fi→cellular switch," "[0-RTT](_meta/glossary.md#0-rtt) / early data," or a protocol running over **UDP on port 443**.
 >
 > **Which HOL blocking?** *App-layer* HOL (HTTP/1.1's one-response-at-a-time) → solved by **HTTP/2 multiplexing**. *Transport-layer* HOL (one TCP loss stalls all multiplexed streams) → solved only by **HTTP/3 / QUIC**. Naming the layer is the senior-level distinction.
 
@@ -32,7 +32,7 @@ HTTP/2 and HTTP/3 keep HTTP *semantics* (methods, status codes, headers, bodies)
 
 **Problem signals that point to HTTP/3 / QUIC:**
 - Users are on **lossy or high-latency networks** (mobile, satellite) where TCP-level HOL blocking dominates — QUIC's per-stream independence is the whole point
-- Connections must **survive a network change** (Wi-Fi ↔ cellular, IP change) without a new handshake — QUIC connection migration via connection IDs
+- Connections must **survive a network change** (Wi-Fi ↔ cellular, IP change) without a new handshake — QUIC [connection migration](_meta/glossary.md#connection-migration) via connection IDs
 - You want the **fastest possible handshake**: QUIC folds transport + TLS 1.3 into one round trip (1-RTT), or 0-RTT for resumed connections
 
 **Prefer one over the other / do not use when:**
@@ -44,7 +44,7 @@ HTTP/2 and HTTP/3 keep HTTP *semantics* (methods, status codes, headers, bodies)
 
 - **Same semantics, new transport.** All three speak the same HTTP methods, status codes, and header semantics. What changes is framing (text vs. binary) and the underlying transport (TCP vs. QUIC/UDP).
 - **HTTP/2 = one TCP connection, many streams.** A **stream** is an independent, bidirectional sequence of **frames** (HEADERS, DATA, etc.) identified by a stream ID; the browser interleaves frames from many requests on the single connection.
-- **HPACK vs. QPACK header compression.** HTTP/2 uses **HPACK**; HTTP/3 uses **QPACK**. Both compress repetitive headers against a shared dynamic table, but QPACK is redesigned so header decoding does not require strict cross-stream ordering — using HPACK directly over QUIC would reintroduce HOL blocking.
+- **HPACK vs. QPACK header compression.** HTTP/2 uses **[HPACK](_meta/glossary.md#hpack)**; HTTP/3 uses **[QPACK](_meta/glossary.md#qpack)**. Both compress repetitive headers against a shared dynamic table, but QPACK is redesigned so header decoding does not require strict cross-stream ordering — using HPACK directly over QUIC would reintroduce HOL blocking.
 - **QUIC bundles transport + security.** QUIC (RFC 9000) runs on UDP and has **[TLS 1.3](_meta/glossary.md#tls) built in** — there is no such thing as unencrypted QUIC/HTTP/3. The transport and crypto handshakes are combined into a single 1-RTT exchange.
 - **QUIC streams are independently delivered.** Each stream has its own flow control and ordering; a lost UDP packet only stalls the stream(s) whose bytes it carried, not all of them. This is the property TCP structurally cannot provide.
 - **Connection migration.** A QUIC connection is identified by a **connection ID**, not the 4-tuple, so it can survive a client IP/port change (Wi-Fi→cellular) without a new handshake.

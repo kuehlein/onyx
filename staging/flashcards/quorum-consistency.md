@@ -15,12 +15,12 @@ priority: normal
 
 # Quorum Consistency (Leaderless / Dynamo-style)
 
-In a leaderless ([Dynamo-style](_meta/glossary.md#dynamo)) replicated store, every key is stored on `N` replicas and there is *no leader* — the client (or a coordinator on its behalf) writes to and reads from *many replicas in parallel*. A write is acknowledged once `W` replicas confirm it; a read gathers responses from `R` replicas and picks the newest by version. The single load-bearing rule is **`R + W > N`**: it forces the read set and the write set to overlap in *at least one* replica, so any read is guaranteed to touch a node that saw the latest successful write. Because there is no leader to serialize operations, availability is high (any replica can serve), but the consistency you get is only *eventual*, tunable via `R`/`W` — never linearizable. This is the Amazon Dynamo model and the basis of [Cassandra](_meta/glossary.md#cassandra) / Riak / Voldemort (DDIA Ch.5).
+In a leaderless (Dynamo-style) replicated store, every key is stored on `N` replicas and there is *no leader* — the client (or a coordinator on its behalf) writes to and reads from *many replicas in parallel*. A write is acknowledged once `W` replicas confirm it; a read gathers responses from `R` replicas and picks the newest by version. The single load-bearing rule is **`R + W > N`**: it forces the read set and the write set to overlap in *at least one* replica, so any read is guaranteed to touch a node that saw the latest successful write. Because there is no leader to serialize operations, availability is high (any replica can serve), but the consistency you get is only *eventual*, tunable via `R`/`W` — never linearizable. This is the Amazon Dynamo model and the basis of Cassandra / Riak / Voldemort (DDIA Ch.5).
 
 > [!tip] Recognition
-> Reach for quorum reasoning when you see: **"N replicas, choose R and W,"** **"tunable consistency"** (`ONE`/`QUORUM`/`ALL`), **"no leader / any node accepts writes,"** **"read repair,"** **"hinted handoff,"** **"anti-entropy / Merkle tree repair,"** or **"stays writable during a partition."** Any AP-leaning, multi-datacenter, write-always-available store is a quorum system.
+> Reach for [quorum](_meta/glossary.md#quorum) reasoning when you see: **"N replicas, choose R and W,"** **"tunable consistency"** (`ONE`/`QUORUM`/`ALL`), **"no leader / any node accepts writes,"** **"[read repair](_meta/glossary.md#read-repair),"** **"[hinted handoff](_meta/glossary.md#hinted-handoff),"** **"[anti-entropy](_meta/glossary.md#anti-entropy) / Merkle tree repair,"** or **"stays writable during a partition."** Any AP-leaning, multi-datacenter, write-always-available store is a quorum system.
 >
-> **vs. single-leader replication:** a leader imposes a *total order* on writes (and can be linearizable); a leaderless quorum has no such order — concurrent writes to one key are reconciled after the fact, either by [LWW](_meta/glossary.md#lww) (highest timestamp wins, e.g. Cassandra) or by [version vectors](_meta/glossary.md#version-vector) that surface *siblings* for the client to merge (e.g. Riak). **vs. consensus (Raft/Paxos):** a *majority quorum in consensus* agrees on an ordered log and is linearizable/CP; a *Dynamo read/write quorum* only guarantees overlap, not order — it is not consensus.
+> **vs. single-leader replication:** a leader imposes a *total order* on writes (and can be linearizable); a leaderless quorum has no such order — concurrent writes to one key are reconciled after the fact, either by [LWW](_meta/glossary.md#lww) (highest timestamp wins, e.g. Cassandra) or by [version vectors](_meta/glossary.md#vector-clock) that surface *siblings* for the client to merge (e.g. Riak). **vs. consensus (Raft/Paxos):** a *majority quorum in consensus* agrees on an ordered log and is linearizable/CP; a *Dynamo read/write quorum* only guarantees overlap, not order — it is not consensus.
 
 ## When to Use
 
@@ -28,7 +28,7 @@ In a leaderless ([Dynamo-style](_meta/glossary.md#dynamo)) replicated store, eve
 - "The system must **stay writable even during a network partition** or node failure" — no failover pause; any reachable replica takes the write
 - "We can **tune consistency per operation**" — cheap `R=W=1` for logs/metrics, `R+W>N` (e.g. `QUORUM`) for read-your-writes on important keys
 - "**Multi-datacenter, write-anywhere, low-latency** writes" — clients hit the nearest replicas; conflicts reconciled later
-- "Occasional **stale reads are acceptable**" — the workload tolerates eventual consistency
+- "Occasional **stale reads are acceptable**" — the workload tolerates [eventual consistency](_meta/glossary.md#eventual-consistency)
 - "We keyed everything and only ever do **single-key get/put**" — quorum stores have no cross-key transactions or joins
 
 **Prefer a quorum store over alternatives when:**
@@ -53,12 +53,12 @@ In a leaderless ([Dynamo-style](_meta/glossary.md#dynamo)) replicated store, eve
 
 ## Common Pitfalls
 
-- **Believing `R + W > N` gives you linearizability.** It does **not**. It only guarantees *overlap*, which is weaker than a recency/order guarantee (DDIA Ch.5 & Ch.9). Concurrent writes, failed writes rolled forward, and sloppy quorums all break it — see Trade-offs.
+- **Believing `R + W > N` gives you linearizability.** It does **not**. It only guarantees *overlap*, which is weaker than a recency/order guarantee (DDIA Ch.5 & Ch.9). Concurrent writes, failed writes rolled forward, and [sloppy quorums](_meta/glossary.md#sloppy-quorum) all break it — see Trade-offs.
 - **Forgetting concurrent writes have no total order.** Two clients writing the same key "at the same time" both succeed. Under **[LWW](_meta/glossary.md#lww)** (Cassandra — resolved per *cell* by client timestamp) the lower-timestamp write is **silently discarded**, a classic data-loss trap worsened by clock skew. Under **version vectors** (Riak) both survive as *siblings* the app must merge — safer, but pushes reconciliation onto you. Note Cassandra does **not** produce siblings or use version vectors at all; that is the Riak/Voldemort model.
 - **Assuming a sloppy quorum still guarantees overlap.** A **sloppy quorum** accepts `W` acks from *any* reachable nodes, including ones outside the key's `N` home replicas. Those extra nodes are *not* in the read set, so `R+W>N` no longer guarantees the reader sees the write until **hinted handoff** delivers it home. Sloppy quorums raise availability at the cost of the overlap guarantee.
 - **Treating a failed write as rolled back.** If a write reaches only some of `W` replicas and the client reports failure, the partial write is **not undone**. A later read may or may not see it — quorum stores have no atomic rollback.
 - **Confusing `N` with cluster size.** `N` is the per-key replication factor (often 3). A 100-node Cassandra cluster still has `N=3` per key.
-- **Skipping anti-entropy repair.** Read repair only fixes keys that are actually read; rarely-read stale replicas silently diverge (and deleted-then-resurrected data — *zombies* — appear if repair doesn't run within the tombstone GC window). Schedule `nodetool repair`.
+- **Skipping anti-entropy repair.** Read repair only fixes keys that are actually read; rarely-read stale replicas silently diverge (and deleted-then-resurrected data — *zombies* — appear if repair doesn't run within the [tombstone](_meta/glossary.md#tombstone) GC window). Schedule `nodetool repair`.
 
 ## Trade-offs
 
