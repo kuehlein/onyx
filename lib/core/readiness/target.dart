@@ -193,10 +193,14 @@ double domainWeight(ReadinessTarget target, String domain) {
 
 /// Relevance weight (0..1) of knowledge at a given **tier** (knowledge-hierarchy
 /// depth, 1 = foundational → higher = specialist) for a target [level]'s
-/// interview. This is the level-dependent half of card relevance; the other half
-/// is [domainWeight]. Together they let peripheral-for-this-target cards
-/// contribute ~0 to readiness (so adding them never lowers the number) while an
-/// advanced-but-essential card counts fully for a senior.
+/// interview. This is THE seniority knob: level affects readiness ONLY through
+/// tier depth here (higher levels require deeper tiers → a strictly harder bar),
+/// never by reshuffling whole-domain weights in [domainWeight] — doing the latter
+/// let a harder target read as *closer* (an inversion; verified 2026-09). The
+/// other half of card relevance is [domainWeight] (track-only). Together they let
+/// peripheral-for-this-target cards contribute ~0 to readiness (so adding them
+/// never lowers the number) while an advanced-but-essential card counts fully for
+/// a senior.
 ///
 /// Grounded in a verified research pass (2026-09-09, deep-research): foundations
 /// stay FULLY required (table-stakes) at every level — "less differentiating" is
