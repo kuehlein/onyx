@@ -101,11 +101,17 @@ A schema/API change is backward-compatible if *new* readers can still process da
 ## BASE
 Basically Available, Soft state, Eventual consistency — the availability-favoring counterpart to ACID common in NoSQL systems.
 
+## Blocking queue
+A thread-safe queue whose `take` blocks the caller while it is empty and whose `put` blocks while it is full (for a bounded one), rather than returning an error or spinning. It is the standard encapsulation of the mutex + condition-variable dance behind the producer-consumer pattern, and a bounded one is where backpressure originates.
+
 ## Bloom filter
 A space-efficient probabilistic set that answers membership with no false negatives but possible false positives; used in LSM-tree engines to skip SSTables that definitely lack a key. Cannot delete elements (a standard Bloom filter) and its error rate rises as it fills.
 
 ## BM25
 Best Match 25 — the standard lexical ranking function (a tuned TF-IDF variant with term-frequency saturation and document-length normalization) used by search engines like Lucene/Elasticsearch. It scores exact-term overlap, so it excels at rare tokens, IDs, and codes but misses paraphrase and synonyms — the complement to semantic vector search.
+
+## Bounded queue
+A queue with a fixed maximum capacity, so once full it must block the producer, reject/shed the item, or drop an existing one instead of growing without limit. The bound is what converts hidden overload (unbounded latency, eventual OOM) into visible, handleable backpressure.
 
 ## Bulkhead
 A resilience pattern that isolates resources (e.g. separate thread pools or connection pools per dependency) so that one failing or saturated component cannot exhaust shared capacity and sink the whole system — named after a ship's watertight compartments.
@@ -166,6 +172,9 @@ Content Identifier — a self-describing, hash-based address (as in IPFS) derive
 
 ## CNAME
 Canonical Name — a DNS record that aliases one hostname to another; not allowed at a zone apex.
+
+## Condition variable
+A synchronization primitive, always paired with a mutex, that lets a thread atomically release the lock and sleep until another thread signals a state change, then reacquire the lock on wake. Because wakeups can be spurious and state can change before the woken thread runs, the predicate must always be re-tested in a `while` loop, never an `if`.
 
 ## Connection migration
 A QUIC feature that identifies a connection by an opaque connection ID rather than the (source IP, port, dest IP, port) 4-tuple, so the connection survives a client address change — e.g. a phone moving from Wi-Fi to cellular — without a new handshake. TCP connections, keyed on the 4-tuple, cannot do this.
@@ -298,6 +307,9 @@ Ethereum Virtual Machine — the stack-based runtime that executes smart-contrac
 
 ## Exactly-once semantics
 The guarantee that each message's *effect* is applied once despite retries and failures. Usually achieved not by delivering exactly once (impossible in general) but by at-least-once delivery plus idempotent/transactional processing ("effectively once"), e.g. Kafka's idempotent producer + transactions.
+
+## Executor
+An abstraction that decouples task *submission* from task *execution*: callers hand it work items (often receiving a future) and it decides how and on which threads they run, typically backed by a thread pool. It turns "how do I run this concurrently" into a policy the executor owns (pool size, queue, rejection behavior).
 
 ## Exponential backoff
 A retry strategy that multiplicatively increases the wait between attempts (e.g. 1s, 2s, 4s, …), reducing load on a struggling dependency; typically capped and combined with jitter to avoid synchronized retry storms.
@@ -461,6 +473,9 @@ Longest Increasing Subsequence — the dynamic-programming problem of finding th
 ## Linearizability
 The strongest single-object consistency model: every operation appears to take effect atomically at some point between its invocation and response, and the order respects real (wall-clock) time — once a write completes, all later reads see it or a newer value. Stronger than sequential consistency, which drops the real-time requirement.
 
+## Little's law
+A queueing-theory identity stating that the long-run average number of items in a stable system equals the average arrival rate times the average time each item spends in it (L = λW). It underpins thread-pool sizing — e.g. threads ≈ cores × (1 + wait/compute) — and reasoning about queue depth, concurrency, and latency.
+
 ## Log compaction
 A Kafka retention mode (`cleanup.policy=compact`) that, instead of deleting records by age/size, keeps the latest record per key indefinitely and garbage-collects older values for that key. A record with a null value is a tombstone that removes the key. This turns a topic into a compacted changelog / current-state snapshot (e.g. Kafka Streams state stores, CDC "latest row" topics). Distinct from LSM-tree compaction.
 
@@ -602,6 +617,9 @@ Proof Key for Code Exchange — an OAuth 2.0 extension where the client sends a 
 ## PKI
 Public Key Infrastructure — the certificate authorities, certificates, and policies that bind public keys to verified identities.
 
+## Poison pill
+A special sentinel value placed on a queue to signal consumers to shut down gracefully: on dequeuing it, a worker stops after draining the real items ahead of it, so no in-flight or queued work is abandoned. One pill per consumer is enqueued to stop them all.
+
 ## PoP
 Point of Presence — an edge location where a network places servers close to users.
 
@@ -673,6 +691,9 @@ Redis's distributed-lock algorithm that acquires a lease on a majority of N inde
 
 ## Reflection
 An agent pattern (self-critique) in which the model evaluates its own prior output and revises it, optionally over several rounds — the only core pattern whose "tool" is the model examining its own work, improving quality without new external input.
+
+## Rejection policy
+The saturation strategy a thread pool applies when its bounded queue is full and no worker is free — e.g. abort/throw (fail fast), caller-runs (the submitter executes the task, throttling itself), or drop-oldest/discard. It is where a saturated pool surfaces backpressure to the caller rather than hiding overload.
 
 ## Replay attack
 An attack that captures a valid message (e.g. an auth token or signed request) and re-sends it later to impersonate or duplicate an action; defeated by nonces, timestamps, or single-use tokens.
@@ -770,6 +791,9 @@ A failure where a network partition leaves two sides each believing it is the so
 ## SPOF
 Single Point of Failure — a component whose failure alone brings down the entire system.
 
+## Spurious wakeup
+When a thread waiting on a condition variable returns from `wait` without any thread having signaled it (permitted by most threading APIs/OS implementations). Because of it, waiters must re-check the guarding predicate in a `while` loop rather than assuming the awaited condition now holds.
+
 ## SPV
 Simplified Payment Verification — a Bitcoin light-client method that verifies a transaction's inclusion via a Merkle proof against block headers.
 
@@ -790,6 +814,9 @@ Transmission Control Protocol — a connection-oriented transport that guarantee
 
 ## Tensor parallelism
 Sharding one model across GPUs by splitting each layer's weight matrices across devices, so a single forward pass runs collaboratively. It lowers latency for a model too big for one GPU but demands heavy inter-GPU communication and a fast interconnect (e.g. NVLink); contrast pipeline parallelism, which splits layers into stages and introduces pipeline bubbles.
+
+## Thread pool
+A fixed set of reusable worker threads that pull tasks from a shared queue, amortizing thread-creation cost across many tasks and capping concurrency so unbounded threads can't exhaust memory or thrash the scheduler. The cap makes the pool an admission-control point and a natural place to apply backpressure.
 
 ## Thundering herd
 When a large number of waiters are all released at once (e.g. a cache entry expires, or a lock/connection frees) and stampede the same resource simultaneously, spiking load. Mitigated by request coalescing, staggered expiry, and jittered backoff.
@@ -877,6 +904,9 @@ Write-Ahead Log — a durability technique that records changes to an append-onl
 
 ## WAN
 Wide Area Network — a network spanning large geographic distances, typically with higher latency than a local network.
+
+## Work-stealing
+A load-balancing scheme (used by fork-join pools) where each worker owns a double-ended queue of tasks and idle workers *steal* tasks from the tail of a busy worker's deque. It automatically balances recursive, unevenly-sized tasks while minimizing contention, since each worker mostly touches its own deque.
 
 ## Write amplification
 The ratio of bytes physically written to storage versus bytes logically written by the application — e.g. LSM compaction rewriting data repeatedly, or SSD block rewrites. Trading it against read and space amplification is central to storage-engine tuning.
