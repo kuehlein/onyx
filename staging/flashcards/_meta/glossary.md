@@ -32,6 +32,9 @@ A JWT/JOSE attack that forces a verifier to use the wrong signature algorithm �
 ## Amortized analysis
 Averaging the cost of an operation over a sequence, so occasional expensive steps are spread across many cheap ones (e.g. a dynamic array's push is O(1) amortized despite O(n) resizes). It bounds total worst-case work, not any single call.
 
+## ANN
+Approximate Nearest Neighbor search — an index (e.g. HNSW, IVF, PQ) that returns *most* of the true k-nearest vectors in sublinear time, trading a tunable amount of recall for orders-of-magnitude lower latency than exact brute-force kNN. Recall is a knob, not a fixed property, so it must be benchmarked against exact search.
+
 ## Anti-entropy
 A background replica-synchronization process in leaderless systems that compares data between replicas (often via Merkle trees) and repairs divergence, ensuring replicas eventually converge even for keys that are rarely read.
 
@@ -101,6 +104,9 @@ Basically Available, Soft state, Eventual consistency — the availability-favor
 ## Bloom filter
 A space-efficient probabilistic set that answers membership with no false negatives but possible false positives; used in LSM-tree engines to skip SSTables that definitely lack a key. Cannot delete elements (a standard Bloom filter) and its error rate rises as it fills.
 
+## BM25
+Best Match 25 — the standard lexical ranking function (a tuned TF-IDF variant with term-frequency saturation and document-length normalization) used by search engines like Lucene/Elasticsearch. It scores exact-term overlap, so it excels at rare tokens, IDs, and codes but misses paraphrase and synonyms — the complement to semantic vector search.
+
 ## Bulkhead
 A resilience pattern that isolates resources (e.g. separate thread pools or connection pools per dependency) so that one failing or saturated component cannot exhaust shared capacity and sink the whole system — named after a ship's watertight compartments.
 
@@ -146,6 +152,9 @@ Content Delivery Network — geographically distributed edge servers that cache 
 ## Change data capture
 A technique (CDC) that streams a database's row-level changes — typically by tailing its replication log/WAL — so downstream systems (search indexes, caches, data warehouses) stay in sync without dual writes.
 
+## Chunking
+Splitting source documents into smaller passages before embedding so retrieval returns coherent, self-contained units. Chunk size/overlap and boundary choice (fixed-size vs semantic/structural) cap a RAG system's quality ceiling: too large yields mushy "average" vectors, too small severs facts across chunks.
+
 ## Circuit breaker
 A resilience pattern that stops calling a failing dependency after an error threshold: it "opens" to fail fast (protecting caller and callee), then periodically allows a trial call ("half-open") and "closes" again once the dependency recovers.
 
@@ -169,6 +178,15 @@ A hashing scheme that maps both keys and nodes onto a ring so that adding or rem
 
 ## Consumer group
 In a log-based broker (e.g. Kafka), a set of consumers that jointly subscribe to a topic and split its partitions among themselves so each message is processed by exactly one member of the group; multiple groups each get the full stream (pub-sub).
+
+## Continuous batching
+An LLM-serving scheduler (also in-flight/iteration-level batching) that admits and evicts requests at the per-token step rather than running a fixed batch to completion: finished sequences leave immediately and new ones join mid-flight, keeping the GPU saturated and lifting throughput several-fold over padded static batching.
+
+## Cosine similarity
+A similarity measure equal to the cosine of the angle between two vectors (dot product divided by both magnitudes), so it captures orientation while ignoring magnitude — the common default for text embeddings. On L2-normalized vectors it ranks identically to raw dot product.
+
+## Counting sort
+A non-comparison, stable integer sort that tallies how many times each key value occurs, then uses the running counts to place elements directly, running in Θ(n + k) for a key range of size k. Fast only when k is small relative to n; used as the stable inner pass of radix sort.
 
 ## CP
 In the CAP theorem, a system that favors Consistency and Partition tolerance, refusing writes it cannot safely serve during a partition.
@@ -202,6 +220,9 @@ Two accesses to the same memory location from different threads where at least o
 
 ## Dead-letter queue
 A side queue (DLQ) that receives messages a consumer repeatedly fails to process (poison messages) so the main queue isn't blocked; the failures can be inspected, fixed, and replayed later.
+
+## Decode
+The autoregressive phase of LLM inference that generates output tokens one at a time, each a single-token forward pass attending over the KV cache. It is memory-bandwidth-bound (streaming all weights + cache per token with tiny compute), so it dominates per-output-token latency and is sped up by reducing bytes moved, not by more FLOPs.
 
 ## DER
 Distinguished Encoding Rules — a canonical binary format used to encode ECDSA signatures; historically lax parsing enabled malleability.
@@ -260,6 +281,9 @@ The Ethereum proposal adding a chain ID to signed transactions for cross-chain r
 ## EIP-1559
 The Ethereum proposal that reformed the fee market with a burned, protocol-set base fee plus a priority-fee tip.
 
+## Embedding
+A learned mapping of an item (text, image, user) to a dense vector so that geometric closeness encodes semantic similarity, letting nearest-neighbor search approximate relatedness. Vectors are only comparable within the same model+version, so a model upgrade requires re-embedding the whole corpus.
+
 ## EOA
 Externally Owned Account — an Ethereum account controlled by a private key, as opposed to a smart-contract account.
 
@@ -295,6 +319,9 @@ A schema/API change is forward-compatible if *old* readers can still process dat
 
 ## FROST
 Flexible Round-Optimized Schnorr Threshold — a protocol letting t of n parties jointly produce a Schnorr signature.
+
+## Function calling
+The mechanism by which an LLM acts on the world: it emits a structured call (function name + JSON arguments) matching a supplied tool schema, whose result is executed externally and fed back into the context. It is the substrate other agentic patterns (ReAct, planning) build on; hallucinated names or malformed args must be validated.
 
 ## GCM
 Galois/Counter Mode — an AEAD block-cipher mode (e.g. AES-GCM) providing encryption plus Galois-field authentication tags.
@@ -341,6 +368,9 @@ Hybrid Logical Clock — timestamps combining physical time with a logical count
 ## HMAC
 Hash-based Message Authentication Code — a keyed hash construction (RFC 2104) that authenticates integrity and is immune to length-extension.
 
+## HNSW
+Hierarchical Navigable Small World — a graph-based ANN index that layers navigable small-world graphs and does greedy descent to find nearest vectors, giving excellent recall/latency with no training step. The default high-quality choice, but memory-hungry (stores the graph plus full vectors), slow to build, and awkward to update/delete incrementally.
+
 ## HPACK
 HTTP/2's header-compression scheme (RFC 7541), which encodes repetitive headers against a shared static + dynamic table. Its ordered dynamic-table updates require in-order delivery, so using it directly over QUIC would reintroduce head-of-line blocking — the reason HTTP/3 replaced it with QPACK.
 
@@ -353,14 +383,23 @@ The property that performing an operation multiple times has the same effect as 
 ## Idempotency key
 A client-supplied unique token attached to a request so the server can detect and de-duplicate retries — recording the key with the result and returning the stored outcome on repeats — making a non-idempotent operation (e.g. "charge card") safe to retry.
 
+## In-place
+A sort (or algorithm) that rearranges its input using only O(1) or O(log n) auxiliary space rather than allocating a second copy proportional to the input. Heapsort and well-tuned quicksort are in-place; merge sort (O(n) aux) is not.
+
 ## In-sync replica
 In Kafka, the set (ISR) of a partition's replicas that are fully caught up with the leader's log. A producer using `acks=all` waits for all in-sync replicas to persist a record before it is acknowledged, so an acknowledged write survives leader failure; `min.insync.replicas` sets how many must be in the ISR for such writes to be accepted.
+
+## Introsort
+The hybrid sort behind C++ `std::sort`: it starts as quicksort for speed, switches to heapsort once recursion depth exceeds ~2·log n to dodge quicksort's O(n²) worst case, and uses insertion sort for small subarrays. Guarantees O(n log n) worst case but is *not* stable.
 
 ## Inverted index
 A search data structure mapping each term to the list (posting list) of documents containing it, enabling fast full-text lookup — the inverse of a forward document→terms mapping.
 
 ## IP
 Internet Protocol — the network-layer protocol that addresses and routes packets between hosts (IPv4/IPv6).
+
+## IVF
+Inverted File index — a partitioning-based ANN method that clusters vectors into cells (Voronoi partitions) and, per query, probes only the nearest `nprobe` cells. Tunable recall/speed via nprobe and lower memory than HNSW, but needs a training/clustering step and misses neighbors that fall in an unprobed cell; often paired with PQ for scale.
 
 ## Jitter
 Random variation added to retry/backoff delays (or scheduled tasks) so that many clients don't retry in lockstep after a shared failure, spreading load and preventing synchronized retry storms and thundering herds.
@@ -376,6 +415,9 @@ Knuth-Morris-Pratt — an O(n+m) string-matching algorithm using a precomputed p
 
 ## KMS
 Key Management Service — a system for securely generating, storing, and controlling access to cryptographic keys.
+
+## KV cache
+The per-token key and value tensors from every attention layer, stored during LLM inference so each new token attends over the cache instead of recomputing all previous tokens — turning per-step cost from O(n²) recompute into O(n). It is the dominant inference memory consumer alongside weights, growing linearly with sequence length × batch × layers × hidden size, which is why context and batch size are memory-bounded.
 
 ## Lamport timestamp
 A logical clock that is a single integer per node (Lamport, 1978): increment before each local event, attach the value on send, and on receive set the counter to max(local, received) + 1. It guarantees a → b ⟹ L(a) < L(b), giving a consistent total order (with a node-id tie-break), but the converse does not hold — so it cannot distinguish causally-ordered from concurrent events. Detecting concurrency needs a vector clock.
@@ -536,6 +578,9 @@ Pay-to-Public-Key-Hash — a standard Bitcoin output type that locks funds to th
 ## PACELC
 An extension of CAP: under a Partition, trade Availability vs Consistency; Else (normal operation), trade Latency vs Consistency.
 
+## PagedAttention
+The vLLM technique that manages the KV cache in fixed-size blocks ("pages") like OS virtual memory instead of one contiguous per-request allocation. It eliminates internal fragmentation and over-reservation so far more requests fit in VRAM, and lets requests with a shared prefix reuse the same KV blocks.
+
 ## Path compression
 A union-find optimization that, during find, re-points every node on the path directly to the root, flattening the tree; combined with union by rank/size it gives near-constant (inverse-Ackermann) amortized operations.
 
@@ -566,6 +611,12 @@ Proof of Stake — consensus that selects validators in proportion to staked cap
 ## PoW
 Proof of Work — consensus requiring miners to expend computation, giving Bitcoin its probabilistic finality.
 
+## Prefill
+The first phase of LLM inference that processes the entire prompt in one forward pass and populates the KV cache. It is compute-bound (large parallel matmuls over all prompt tokens at once) and dominates time-to-first-token, scaling with prompt length. Contrast the serial, memory-bound decode phase.
+
+## Product quantization
+An ANN compression technique (PQ) that splits each vector into sub-vectors and replaces each with the nearest codebook centroid ID, shrinking memory 4–32× so billion-scale corpora fit in RAM. Distances become approximate (lossy), costing some recall; commonly combined with IVF.
+
 ## PSS
 Probabilistic Signature Scheme — the randomized, provably secure RSA padding preferred over PKCS#1 v1.5.
 
@@ -584,6 +635,12 @@ A selection algorithm that finds the k-th smallest element by partitioning (like
 ## Quorum
 A minimum number of replicas that must acknowledge an operation. In a leaderless system with N replicas, W write and R read replicas, choosing W + R > N forces read and write sets to overlap on at least one node, guaranteeing a read sees the latest write (a common config is N=3, W=R=2).
 
+## Radix sort
+A non-comparison integer/string sort that processes keys digit-by-digit (least- or most-significant first), applying a stable counting sort on each digit, for O(d·(n + b)) over d digits in base b. Beats the n log n comparison floor only when keys are bounded and the digit count is small.
+
+## RAG
+Retrieval-Augmented Generation — grounding an LLM by retrieving relevant documents at query time and injecting them into the prompt, so the model answers from provided evidence rather than frozen parametric memory. Moves facts out of the weights into an editable index, cutting hallucination and enabling citations and fresh answers without retraining.
+
 ## Rate limiting
 Capping how many requests a client/key may make per time window to protect a service and ensure fairness; common algorithms are token bucket (allows bursts), leaky bucket (smooths to a steady rate), and fixed/sliding windows.
 
@@ -599,6 +656,9 @@ Relational Database Management System — a schema-enforced, SQL, ACID table sto
 ## RE
 Runtime Error — a competitive-programming judge verdict that a program crashed during execution.
 
+## ReAct
+An agent pattern that interleaves **Rea**soning traces with **Act**ions (tool calls) in a single loop — think → act → observe → think — using each observation to guide the next thought. Distinguished from planning (which commits to a full sequence up front) by deciding the next action reactively at each step.
+
 ## Read amplification
 The ratio of extra work a read does versus the logical data requested — e.g. an LSM-tree read may probe several SSTable levels (mitigated by Bloom filters). One of the three amplification trade-offs alongside write and space.
 
@@ -611,11 +671,17 @@ A session guarantee (read-after-write consistency) that a client always sees its
 ## Redlock
 Redis's distributed-lock algorithm that acquires a lease on a majority of N independent Redis masters to tolerate node failure. It is contested for correctness-critical use (Kleppmann): it issues no fencing token, so it cannot stop a paused holder's stale write, and its safety leans on bounded clock drift and pause assumptions that do not always hold. Widely considered acceptable only as a best-effort efficiency lock.
 
+## Reflection
+An agent pattern (self-critique) in which the model evaluates its own prior output and revises it, optionally over several rounds — the only core pattern whose "tool" is the model examining its own work, improving quality without new external input.
+
 ## Replay attack
 An attack that captures a valid message (e.g. an auth token or signed request) and re-sends it later to impersonate or duplicate an action; defeated by nonces, timestamps, or single-use tokens.
 
 ## Replication lag
 The delay between a write committing on the leader/source and it appearing on a follower/replica; asynchronous replication trades this staleness window (which can violate read-your-writes on the replica) for lower write latency.
+
+## Reranking
+A second-stage retrieval step that re-scores an initial candidate set with a more expensive, higher-quality model — typically a cross-encoder that jointly reads (query, document) — to reorder the top results before they reach the generator. Cheaper than running the heavy model over the whole corpus, and it counters "lost-in-the-middle" by promoting the best chunk.
 
 ## Retry storm
 A failure amplification where clients simultaneously retry a struggling service, multiplying its load and keeping it down (a self-reinforcing cascade); mitigated by exponential backoff with jitter, retry budgets, and circuit breakers.
@@ -689,6 +755,9 @@ Start of Authority — the DNS record holding a zone's authoritative metadata (p
 ## Space amplification
 The ratio of physical storage used to the logical data size — e.g. an LSM-tree holding obsolete versions and tombstones until compaction, or B-tree fragmentation. The third amplification trade-off alongside read and write.
 
+## Speculative decoding
+An LLM latency optimization where a small cheap **draft model** proposes several tokens ahead and the large **target model** verifies them in one parallel forward pass, accepting the longest correct prefix. It speeds up memory-bound decode with an *identical* output distribution when done correctly — a pure latency win, no quality change.
+
 ## SPF
 Sender Policy Framework — an email anti-spoofing mechanism that publishes authorized sending hosts in a DNS TXT record.
 
@@ -710,14 +779,23 @@ Server-Sent Events — a unidirectional protocol that streams server updates to 
 ## SSTable
 Sorted String Table — an immutable on-disk file of sorted key-value pairs, the persisted layer of LSM-tree engines.
 
+## Stable sort
+A sort that preserves the original relative order of elements with equal keys. Essential when sorting by a secondary key after a primary, or when payload beyond the key matters; radix sort *requires* a stable inner pass. Merge sort and Timsort are stable; quicksort and heapsort are not.
+
 ## Sticky session
 Load-balancer behavior (session affinity) that routes a given client's requests to the same backend so in-memory session state is found there; simplifies state but harms even load distribution and loses the session if that backend fails.
 
 ## TCP
 Transmission Control Protocol — a connection-oriented transport that guarantees ordered, reliable, error-checked byte delivery over IP.
 
+## Tensor parallelism
+Sharding one model across GPUs by splitting each layer's weight matrices across devices, so a single forward pass runs collaboratively. It lowers latency for a model too big for one GPU but demands heavy inter-GPU communication and a fast interconnect (e.g. NVLink); contrast pipeline parallelism, which splits layers into stages and introduces pipeline bubbles.
+
 ## Thundering herd
 When a large number of waiters are all released at once (e.g. a cache entry expires, or a lock/connection frees) and stampede the same resource simultaneously, spiking load. Mitigated by request coalescing, staggered expiry, and jittered backoff.
+
+## Timsort
+The hybrid, stable, adaptive sort used by Python (`sorted`/`list.sort`) and Java object arrays. It detects pre-sorted "runs" and merges them (hitting O(n) on ordered data, O(n log n) worst case) and falls back to insertion sort on small runs; being merge-based it uses O(n) auxiliary space, so it is not in-place.
 
 ## TLD
 Top-Level Domain — the highest level of the DNS hierarchy below the root (e.g. .com, .io).
@@ -737,6 +815,9 @@ A marker written to record that a key was deleted in an append-only/LSM or repli
 ## Topological sort
 A linear ordering of a DAG's vertices such that every edge u→v has u before v; used for dependency/build ordering and computable via Kahn's algorithm (repeatedly remove in-degree-0 nodes) or DFS post-order. Exists iff the graph has no cycle.
 
+## TPOT
+Time Per Output Token — the steady-state per-token generation latency of an LLM (also inter-token latency, ITL), dominated by the memory-bandwidth-bound decode phase and roughly constant per token. Together with TTFT it characterizes interactive serving UX.
+
 ## TPS
 Transactions Per Second — a throughput metric for how many transactions a database or blockchain commits each second.
 
@@ -745,6 +826,9 @@ Time-Series Database — a store specialized for timestamped data such as metric
 
 ## TSP
 Traveling Salesman Problem — the NP-hard problem of the shortest route visiting each city once, often solved with bitmask DP for small n.
+
+## TTFT
+Time To First Token — the latency from request arrival to the first generated token of an LLM response, dominated by the compute-bound prefill phase and scaling with prompt length. The key responsiveness metric for interactive/streaming UX, traded off against throughput when tuning batch size.
 
 ## TTL
 Time To Live — a duration after which a cached entry or DNS record is considered expired and must be refreshed.
@@ -766,6 +850,9 @@ Unspent Transaction Output — Bitcoin's model where a balance is the set of uns
 
 ## Vector clock
 A per-replica vector of counters attached to each version so replicas can tell whether two updates are causally ordered or genuinely concurrent (needing conflict resolution) — unlike a single timestamp, which can't distinguish concurrency.
+
+## Vector search
+Finding the k items whose embedding vectors are most similar to a query vector (by cosine, dot product, or L2), powering semantic retrieval, recommendations, dedup, and the retrieval half of RAG. Exact brute-force kNN is O(n·d) per query; at scale an ANN index trades a little recall for sublinear latency.
 
 ## VIP
 Virtual IP — an IP address shared among redundant nodes so it can float to a standby on failure.
