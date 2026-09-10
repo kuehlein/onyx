@@ -20,24 +20,22 @@ Card _card(String id, String domain, int tier, List<String> slugs) => Card(
 
 void main() {
   group('domainWeight', () {
-    test('system design weight rises with level', () {
-      double w(SeniorityLevel l) => domainWeight(
+    test('domain weights are level-independent (seniority rides tierRelevance)',
+        () {
+      // Seniority must not reshuffle whole-domain weights — that let a harder
+      // target read as closer. Depth (tierRelevance) carries level instead.
+      double w(SeniorityLevel l, String d) => domainWeight(
             ReadinessTarget(
                 level: l, company: CompanyTier.faang, track: Track.general),
-            'system-design',
+            d,
           );
-      expect(w(SeniorityLevel.newGrad), lessThan(w(SeniorityLevel.mid)));
-      expect(w(SeniorityLevel.mid), lessThan(w(SeniorityLevel.senior)));
-      expect(w(SeniorityLevel.senior), lessThan(w(SeniorityLevel.staff)));
-    });
-
-    test('algorithms weight falls with level', () {
-      double w(SeniorityLevel l) => domainWeight(
-            ReadinessTarget(
-                level: l, company: CompanyTier.faang, track: Track.general),
-            'ds-a',
-          );
-      expect(w(SeniorityLevel.newGrad), greaterThan(w(SeniorityLevel.staff)));
+      for (final l in SeniorityLevel.values) {
+        expect(
+            w(l, 'system-design'), w(SeniorityLevel.newGrad, 'system-design'),
+            reason: 'system-design weight should not vary by level');
+        expect(w(l, 'ds-a'), w(SeniorityLevel.newGrad, 'ds-a'),
+            reason: 'ds-a weight should not vary by level');
+      }
     });
 
     test('frontend track lightens DS&A', () {
@@ -114,41 +112,40 @@ void main() {
   });
 
   group('computeReadiness with target weights', () {
-    test('senior weighting pulls overall toward the weaker system-design', () {
-      final cards = [
-        _card('A', 'ds-a', 1, ['s1']), // strong
-        _card('B', 'system-design', 1, ['s1']), // weak
-      ];
-      const stability = {'A::s1': 200.0, 'B::s1': 5.0};
+    final cards = [
+      _card('A', 'ds-a', 1, ['s1']), // strong
+      _card('B', 'system-design', 1, ['s1']), // weak
+    ];
+    const stability = {'A::s1': 200.0, 'B::s1': 5.0};
 
-      final newGrad = computeReadiness(
-        cards: cards,
-        stabilityByKey: stability,
-        domainWeights: {
-          'ds-a': domainWeight(
-              ReadinessTarget.fallback.copyWith(level: SeniorityLevel.newGrad),
-              'ds-a'),
-          'system-design': domainWeight(
-              ReadinessTarget.fallback.copyWith(level: SeniorityLevel.newGrad),
-              'system-design'),
-        },
-      );
-      final senior = computeReadiness(
-        cards: cards,
-        stabilityByKey: stability,
-        domainWeights: {
-          'ds-a': domainWeight(
-              ReadinessTarget.fallback.copyWith(level: SeniorityLevel.senior),
-              'ds-a'),
-          'system-design': domainWeight(
-              ReadinessTarget.fallback.copyWith(level: SeniorityLevel.senior),
-              'system-design'),
-        },
-      );
+    Readiness roll(ReadinessTarget t) => computeReadiness(
+          cards: cards,
+          stabilityByKey: stability,
+          domainWeights: {
+            'ds-a': domainWeight(t, 'ds-a'),
+            'system-design': domainWeight(t, 'system-design'),
+          },
+        );
 
-      // System design is the weak domain; senior weights it far more heavily,
-      // so the senior overall should be lower than the new-grad overall.
-      expect(senior.overall, lessThan(newGrad.overall));
+    test('changing only the level does NOT move the overall (no inversion)',
+        () {
+      final ng = roll(ReadinessTarget.fallback
+          .copyWith(level: SeniorityLevel.newGrad, track: Track.general));
+      final staff = roll(ReadinessTarget.fallback
+          .copyWith(level: SeniorityLevel.staff, track: Track.general));
+      // Same track → identical domain weights → identical overall. The old model
+      // made staff *higher* here (weighted the strong algo domain differently),
+      // which is exactly the inversion we removed.
+      expect(staff.overall, closeTo(ng.overall, 1e-9));
+    });
+
+    test('backend track pulls the overall toward the weaker system-design', () {
+      final general = roll(ReadinessTarget.fallback
+          .copyWith(level: SeniorityLevel.senior, track: Track.general));
+      final backend = roll(ReadinessTarget.fallback
+          .copyWith(level: SeniorityLevel.senior, track: Track.backend));
+      // Backend up-weights the weak system-design domain → lower overall.
+      expect(backend.overall, lessThan(general.overall));
     });
   });
 

@@ -53,25 +53,33 @@ void main() {
       expect(pos.currentLabel, 'Staff · FAANG');
     });
 
-    test('strong DS&A but weak system design lands mid-ladder below goal', () {
-      // System design is heavily weighted at senior+, so a weak SD pocket drops
-      // those rungs below the bar while the DS&A-dominant lower rungs clear.
+    test('an uncovered advanced (deep-tier) pocket lands below the senior goal',
+        () {
+      // Foundations are solid, but system-design's ADVANCED tier is unstudied.
+      // Higher rungs weight that depth more (tierRelevance), so they fall below
+      // the bar while the junior rungs — which barely count the deep tier —
+      // clear. This is the seniority signal now: depth, not domain reshuffling.
       final pos = computeLadderPosition(
         cards: [
-          _card('A', 'ds-a', 1, ['s1']), // durable
-          _card('B', 'system-design', 1, ['s1']), // weak
+          _card('A', 'ds-a', 1, ['s1']), // strong foundational
+          _card('B', 'system-design', 1, ['s1']), // strong foundational SD
+          _card('C', 'system-design', 4, ['s1']), // advanced SD — UNSTUDIED
+          _card('D', 'system-design', 4, ['s1']), // advanced SD — UNSTUDIED
+          _card('E', 'system-design', 4, ['s1']), // advanced SD — UNSTUDIED
         ],
-        stabilityByKey: const {'A::s1': 300, 'B::s1': 5},
+        stabilityByKey: const {'A::s1': 300, 'B::s1': 300}, // C–E unstudied
         target: const ReadinessTarget(
           level: SeniorityLevel.senior,
           company: CompanyTier.faang,
           track: Track.general,
         ),
       );
-      expect(pos.currentLabel, 'Mid · FAANG');
-      expect(pos.rungsToGo, 2); // Senior·Typical, Senior·FAANG
+      // Strictly harder as you climb: the missing depth costs more at the top.
+      expect(pos.rungScores.first, greaterThan(pos.rungScores.last));
+      // Below the senior goal, but some junior rungs are cleared.
       expect(pos.atOrAboveGoal, isFalse);
       expect(pos.youFraction, lessThan(pos.goalFraction));
+      expect(pos.clearedCount, greaterThan(0));
     });
 
     test('higher stability clears at least as many rungs as lower', () {

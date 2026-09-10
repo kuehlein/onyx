@@ -4,8 +4,10 @@
 /// date** drives the pace readout.
 ///
 /// In Phase A (recall only) the target does two honest things:
-///   * re-weights the per-domain recall scores into the overall roll-up — e.g.
-///     system design counts for little at new-grad and dominates at staff;
+///   * re-weights the per-domain recall scores into the overall roll-up by
+///     TRACK (e.g. a backend track leans on system design); seniority is carried
+///     separately by [tierRelevance] (deeper tiers required as level rises), not
+///     by reshuffling whole domains — that let a harder target read as *closer*;
 ///   * raises the durability bar for FAANG (recall must be more locked-in).
 /// It deliberately does not fabricate the applied/mock dimensions it can't yet
 /// measure.
@@ -131,8 +133,15 @@ DateTime? _parseDate(Object? v) {
 }
 
 /// Relative weight of a domain in the overall recall roll-up for [target]. Two
-/// canonical domains are shaped by level/track (illustrative — tune later, see
-/// docs/readiness-dashboard.md §3); everything else weighs 1.0.
+/// canonical domain families are shaped by **track** (illustrative — tune later,
+/// see docs/readiness-dashboard.md §3); everything else weighs 1.0.
+///
+/// Deliberately NOT level-dependent: seniority is expressed by [tierRelevance]
+/// (raising the depth bar), not by reshuffling which domains count. The old
+/// per-level swing (algo↓ / system-design↑ with seniority) could make a *harder*
+/// target read as *closer* whenever the learner was strong in the up-weighted
+/// domains — an inversion (verified 2026-09). Track still shapes emphasis
+/// because interview *type* genuinely differs by track.
 double domainWeight(ReadinessTarget target, String domain) {
   final d = domain.toLowerCase();
   final isAlgo = d == 'ds-a' ||
@@ -140,9 +149,9 @@ double domainWeight(ReadinessTarget target, String domain) {
       d.contains('algorithm') ||
       d.contains('data-structure');
   // The "systems / backend-knowledge" family: system design plus the DDIA-heavy
-  // backend domains. Weighted together (senior-rising, backend-track-boosted)
-  // rather than each defaulting to 1.0. This grouping is a placeholder for a
-  // per-domain, config-driven weight map (see docs/vault-structure.md + #30).
+  // backend domains, weighted together (backend-track-boosted) rather than each
+  // defaulting to 1.0. Placeholder for a per-domain, config-driven weight map
+  // (see docs/vault-structure.md + #30).
   const systemsBackend = {
     'system-design',
     'systems',
@@ -159,35 +168,24 @@ double domainWeight(ReadinessTarget target, String domain) {
   };
   final isSysDesign = systemsBackend.contains(d) || d.contains('system-design');
 
+  // Level-independent base (seniority is [tierRelevance]'s job); TRACK modulates.
   if (isAlgo) {
-    final base = switch (target.level) {
-      SeniorityLevel.newGrad => 1.4,
-      SeniorityLevel.mid => 1.15,
-      SeniorityLevel.senior => 0.9,
-      SeniorityLevel.staff => 0.7,
-    };
     final trackMul = switch (target.track) {
       Track.frontend => 0.7,
       Track.mobile => 0.85,
       _ => 1.0,
     };
-    return base * trackMul;
+    return trackMul;
   }
 
   if (isSysDesign) {
-    final base = switch (target.level) {
-      SeniorityLevel.newGrad => 0.3,
-      SeniorityLevel.mid => 0.9,
-      SeniorityLevel.senior => 1.6,
-      SeniorityLevel.staff => 2.1,
-    };
     final trackMul = switch (target.track) {
       Track.backend => 1.15,
       Track.ml => 1.1,
       Track.frontend => 0.9,
       _ => 1.0,
     };
-    return base * trackMul;
+    return trackMul;
   }
 
   return 1.0;

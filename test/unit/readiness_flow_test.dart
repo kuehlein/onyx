@@ -79,33 +79,34 @@ void main() {
         prepGoalsProvider.overrideWith(_NoGoals.new),
       ]);
 
-  test('changing the target level moves the overall readiness', () async {
+  test('level does not move readiness on a foundational deck; track does',
+      () async {
     if (!_sqliteAvailable) return;
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     final c = make(db);
     addTearDown(c.dispose);
-    // Keep the autodispose readiness graph alive across the two reads (a target
-    // change invalidates it in between), the way the Home panel's ref.watch does.
+    // Keep the autodispose readiness graph alive across reads (a target change
+    // invalidates it in between), the way the Home panel's ref.watch does.
     c.listen(readinessProvider, (_, __) {});
 
-    // New-grad weights DS&A (strong) heavily → higher overall.
-    await c.read(readinessTargetControllerProvider.notifier).save(
-        const ReadinessTarget(
-            level: SeniorityLevel.newGrad,
-            company: CompanyTier.faang,
-            track: Track.general));
-    final newGrad = (await c.read(readinessProvider.future)).overall;
+    Future<double> read(SeniorityLevel level, Track track) async {
+      await c.read(readinessTargetControllerProvider.notifier).save(
+          ReadinessTarget(
+              level: level, company: CompanyTier.faang, track: track));
+      return (await c.read(readinessProvider.future)).overall;
+    }
 
-    // Senior weights system design (weak) heavily → lower overall.
-    await c.read(readinessTargetControllerProvider.notifier).save(
-        const ReadinessTarget(
-            level: SeniorityLevel.senior,
-            company: CompanyTier.faang,
-            track: Track.general));
-    final senior = (await c.read(readinessProvider.future)).overall;
+    // Both cards are tier-1 → seniority (which now acts only through tier depth)
+    // must NOT move the overall. The anti-inversion guarantee: a harder level
+    // can no longer read as "closer".
+    final newGrad = await read(SeniorityLevel.newGrad, Track.general);
+    final staff = await read(SeniorityLevel.staff, Track.general);
+    expect(staff, closeTo(newGrad, 1e-9));
 
-    expect(senior, lessThan(newGrad),
-        reason: 'senior should weight the weak system-design domain more');
+    // Track still shifts emphasis: backend up-weights the weak system-design
+    // domain → lower overall.
+    final backend = await read(SeniorityLevel.senior, Track.backend);
+    expect(backend, lessThan(newGrad));
     await db.close();
   });
 

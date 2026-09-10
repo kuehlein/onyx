@@ -95,6 +95,10 @@ LadderPosition computeLadderPosition({
       stabilityByKey: stabilityByKey,
       stabilityTarget: t.stabilityTarget,
       domainWeights: {for (final d in domains) d: domainWeight(t, d)},
+      // Seniority now differentiates rungs by tier DEPTH (higher rungs require
+      // advanced tiers), not by reshuffling domain weights — so the ladder stays
+      // meaningful with domainWeight level-independent.
+      tierWeights: tierWeightsFor(t),
       transferByDomain: transferByDomain,
     );
     scores.add(r.overall);
