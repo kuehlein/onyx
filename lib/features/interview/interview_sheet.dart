@@ -129,11 +129,12 @@ class _InterviewSheet extends ConsumerWidget {
                     onOffer: () => end(InterviewStatus.offer),
                     onRejected: () => end(InterviewStatus.rejected),
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: reschedule,
-                      icon: const Icon(Icons.event_repeat, size: 16),
+                      icon: const Icon(Icons.event_repeat, size: 18),
                       label: const Text('It was rescheduled'),
                     ),
                   ),

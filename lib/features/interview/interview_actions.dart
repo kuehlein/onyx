@@ -61,6 +61,17 @@ PrepGoal endInterview(PrepGoal g, InterviewStatus status) {
 PrepGoal archiveInterview(PrepGoal g) =>
     endInterview(g, InterviewStatus.archived);
 
-/// Bring an ended/archived interview back to active (undo an end/archive).
-PrepGoal reopenInterview(PrepGoal g) =>
-    g.copyWith(status: InterviewStatus.active, active: true);
+/// Bring an ended/archived interview back to active (undo an end/archive). If
+/// ending it had resolved the last round (e.g. an accidental "didn't pass"),
+/// that round is restored to pending so it's the current round again — otherwise
+/// you'd reopen into a loop with nothing to act on. Archived/withdrawn loops
+/// (whose round stayed pending) are unaffected.
+PrepGoal reopenInterview(PrepGoal g) {
+  final rounds = [...g.effectiveRounds];
+  if (g.currentRound == null && rounds.isNotEmpty) {
+    rounds[rounds.length - 1] =
+        rounds.last.copyWith(outcome: GoalOutcome.pending);
+  }
+  return syncedGoal(g, rounds)
+      .copyWith(status: InterviewStatus.active, active: true);
+}

@@ -59,14 +59,24 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
     );
   }
 
-  // Soonest upcoming round first; undated last.
+  // Sort by the CURRENT (upcoming) round — so scheduling a later round re-sorts
+  // by that round, not the first one. Ended loops fall back to their last round.
   int _byRound(PrepGoal a, PrepGoal b) {
-    final da = a.nextRoundDate();
-    final db = b.nextRoundDate();
+    final da = _sortDate(a);
+    final db = _sortDate(b);
     if (da == null && db == null) return 0;
     if (da == null) return 1;
     if (db == null) return -1;
     return da.compareTo(db);
+  }
+
+  DateTime? _sortDate(PrepGoal g) {
+    final cur = g.currentRound?.date;
+    if (cur != null) return cur;
+    final dates = g.roundDates;
+    return dates.isEmpty
+        ? null
+        : dates.reduce((a, b) => a.isAfter(b) ? a : b); // latest
   }
 }
 

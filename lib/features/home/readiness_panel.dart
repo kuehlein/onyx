@@ -22,7 +22,12 @@ class ReadinessPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final r = ref.watch(readinessProvider).asData?.value;
+    final rAsync = ref.watch(readinessProvider);
+    final r = rAsync.asData?.value;
+    // Reserve the panel's space with a skeleton while readiness computes, so the
+    // home page doesn't jump when the data lands. Only truly-empty (loaded, no
+    // cards) collapses to nothing.
+    if (rAsync.isLoading && r == null) return const _LoadingPanel();
     if (r == null || r.isEmpty) return const SizedBox.shrink();
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
@@ -185,55 +190,136 @@ class _Headline extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     const green = statusGood;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(6),
-      onTap: () => showTargetSheet(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Text('for ',
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted)),
-                Flexible(
-                  child: Text(target?.label ?? 'your goal',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+    final unset = target == null || identical(target, ReadinessTarget.fallback);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // A bordered "field" pill so it clearly reads as a tappable form (set
+        // level × company × track × date) rather than a static label.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Material(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => showTargetSheet(context),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(9, 5, 7, 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
-                Icon(Icons.chevron_right, size: 16, color: muted),
-              ],
-            ),
-            if (anyStudied)
-              Tooltip(
-                message: readiness.interview
-                    ? 'Interview readiness: recall gated by your mock-interview '
-                        'performance. The band narrows as you do more mocks.'
-                    : 'Recall readiness. Do mock interviews to prove you can '
-                        'apply it — that graduates this to interview-tested and '
-                        'narrows the band.',
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(
-                    text: '${(readiness.low * 100).round()}'
-                        '–${(readiness.high * 100).round()}% likely · ',
-                    style: theme.textTheme.labelSmall?.copyWith(color: muted),
-                  ),
-                  TextSpan(
-                    text: readiness.interview
-                        ? 'interview-tested'
-                        : 'recall only',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                        color: readiness.interview ? green : muted,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ])),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.flag_outlined,
+                        size: 14, color: theme.colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(unset ? 'Set your target' : target!.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: unset ? theme.colorScheme.primary : null)),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.tune, size: 14, color: muted),
+                  ],
+                ),
               ),
-          ],
+            ),
+          ),
         ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (anyStudied)
+                Tooltip(
+                  message: readiness.interview
+                      ? 'Interview readiness: recall gated by your mock-interview '
+                          'performance. The band narrows as you do more mocks.'
+                      : 'Recall readiness. Do mock interviews to prove you can '
+                          'apply it — that graduates this to interview-tested and '
+                          'narrows the band.',
+                  child: Text.rich(TextSpan(children: [
+                    TextSpan(
+                      text: '${(readiness.low * 100).round()}'
+                          '–${(readiness.high * 100).round()}% likely · ',
+                      style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                    ),
+                    TextSpan(
+                      text: readiness.interview
+                          ? 'interview-tested'
+                          : 'recall only',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                          color: readiness.interview ? green : muted,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ])),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A skeleton the same shape + roughly the same height as the real panel, shown
+/// while readiness computes on launch — so the home list doesn't shift when the
+/// data arrives.
+class _LoadingPanel extends StatelessWidget {
+  const _LoadingPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bar = theme.colorScheme.onSurface.withValues(alpha: 0.06);
+    Widget block(double? w, double h) => Container(
+          width: w,
+          height: h,
+          decoration:
+              BoxDecoration(color: bar, borderRadius: BorderRadius.circular(6)),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              block(48, 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    block(130, 14),
+                    const SizedBox(height: 7),
+                    block(170, 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          for (var i = 0; i < 3; i++) ...[
+            block(double.infinity, 12),
+            const SizedBox(height: 12),
+          ],
+          block(double.infinity, 12),
+        ],
       ),
     );
   }

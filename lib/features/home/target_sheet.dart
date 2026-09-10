@@ -26,7 +26,7 @@ Future<void> showTargetSheet(BuildContext context) {
     // layered card (like the shorter sheets), not a full-width page.
     constraints: BoxConstraints(
       maxHeight: size.height * 0.92,
-      maxWidth: size.width - 24,
+      maxWidth: size.width - 48,
     ),
     builder: (_) => const _TargetSheet(),
   );

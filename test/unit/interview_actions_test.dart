@@ -97,6 +97,17 @@ void main() {
       expect(reopened.status, InterviewStatus.active);
       expect(reopened.active, isTrue);
     });
+
+    test('reopening a rejected loop restores its round to actionable (pending)',
+        () {
+      // Guards the "accidentally said didn't pass, now can't edit" case.
+      final rejected = endInterview(_active(), InterviewStatus.rejected);
+      expect(rejected.currentRound, isNull);
+      final reopened = reopenInterview(rejected);
+      expect(reopened.status, InterviewStatus.active);
+      expect(reopened.currentRound, isNotNull);
+      expect(reopened.currentRound?.outcome, GoalOutcome.pending);
+    });
   });
 
   group('rescheduleCurrentRound', () {
