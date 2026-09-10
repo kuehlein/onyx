@@ -59,23 +59,28 @@ InterviewRound draftRound(PrepGoal g, {required int seed}) {
   );
 }
 
-/// A dialog to add or edit one interview round: its type, date (optional), and
-/// outcome. Returns the edited round, or null on cancel.
+/// A dialog to schedule or reschedule one round: its type + date. The round's
+/// outcome is set elsewhere (logging a result), not here. Returns the updated
+/// round, or null on cancel. [title] labels the dialog (e.g. "Reschedule",
+/// "Next round").
 Future<InterviewRound?> showRoundDialog(
   BuildContext context, {
   required DateTime today,
   required InterviewRound existing,
+  String? title,
 }) =>
     showDialog<InterviewRound>(
       context: context,
-      builder: (_) => _RoundDialog(today: today, existing: existing),
+      builder: (_) =>
+          _RoundDialog(today: today, existing: existing, title: title),
     );
 
 class _RoundDialog extends StatefulWidget {
-  const _RoundDialog({required this.today, required this.existing});
+  const _RoundDialog({required this.today, required this.existing, this.title});
 
   final DateTime today;
   final InterviewRound existing;
+  final String? title;
 
   @override
   State<_RoundDialog> createState() => _RoundDialogState();
@@ -84,7 +89,6 @@ class _RoundDialog extends StatefulWidget {
 class _RoundDialogState extends State<_RoundDialog> {
   late InterviewRoundType _type = widget.existing.type;
   late DateTime? _date = widget.existing.date;
-  late GoalOutcome _outcome = widget.existing.outcome;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +99,7 @@ class _RoundDialogState extends State<_RoundDialog> {
       // Roomier than the default content-sized dialog, which felt cramped.
       insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-      title: Text('Round ${widget.existing.number}'),
+      title: Text(widget.title ?? 'Round ${widget.existing.number}'),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -142,26 +146,6 @@ class _RoundDialogState extends State<_RoundDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            Text('Outcome',
-                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<GoalOutcome>(
-                segments: const [
-                  ButtonSegment(
-                      value: GoalOutcome.pending, label: Text('Pending')),
-                  ButtonSegment(
-                      value: GoalOutcome.passed, label: Text('Passed')),
-                  ButtonSegment(
-                      value: GoalOutcome.failed, label: Text('Failed')),
-                ],
-                selected: {_outcome},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _outcome = s.first),
-              ),
-            ),
           ],
         ),
       ),
@@ -173,8 +157,7 @@ class _RoundDialogState extends State<_RoundDialog> {
         FilledButton(
           onPressed: () => Navigator.pop(
             context,
-            widget.existing
-                .copyWith(type: _type, date: _date, outcome: _outcome),
+            widget.existing.copyWith(type: _type, date: _date),
           ),
           child: const Text('Save'),
         ),

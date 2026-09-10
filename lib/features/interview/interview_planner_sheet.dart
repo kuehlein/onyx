@@ -1,65 +1,119 @@
 import 'package:flutter/material.dart';
-import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
+import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
+import '../../shared/status_colors.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 const _amber = statusWarn;
 
-/// The "plan an interview" chat: describe an upcoming interview, answer any
-/// clarifying questions, review the proposed plan, and save it as an active
-/// prep goal (which then reprioritizes study via the targeting layer).
-class InterviewPlannerScreen extends ConsumerStatefulWidget {
-  const InterviewPlannerScreen({super.key});
+/// The "plan an interview" chat — a slide-up sheet (consistent with the coach
+/// and explain chats): describe an upcoming interview, answer any clarifying
+/// questions, review the proposed plan, and save it as an active interview.
+/// Returns the saved [PrepGoal], or null if dismissed without saving.
+Future<PrepGoal?> showInterviewPlannerSheet(BuildContext context) =>
+    showModalBottomSheet<PrepGoal>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      builder: (_) => const _InterviewPlannerSheet(),
+    );
+
+class _InterviewPlannerSheet extends ConsumerWidget {
+  const _InterviewPlannerSheet();
 
   @override
-  ConsumerState<InterviewPlannerScreen> createState() =>
-      _InterviewPlannerScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final state = ref.watch(interviewPlannerProvider);
+    final hasKey = ref.watch(claudeServiceProvider) != null;
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+    Future<void> accept() async {
+      final messenger = ScaffoldMessenger.of(context);
+      final goal = await ref.read(interviewPlannerProvider.notifier).accept();
+      if (goal == null) return;
+      messenger.showSnackBar(SnackBar(
+          content: Text('Saved — study is now prioritized for '
+              '${goal.companyName}.')));
+      if (context.mounted) Navigator.of(context).pop(goal);
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: Column(
+          children: [
+            const SheetHeader(
+              icon: Icons.event_note_outlined,
+              title: 'Plan an interview',
+              divider: true,
+            ),
+            Expanded(
+              child: !hasKey
+                  ? const _NoKey()
+                  : ChatView(
+                      messages: [
+                        for (final m in state.messages)
+                          ChatTurn(
+                              isUser: m.role == CoachRole.user, text: m.text),
+                      ],
+                      busy: state.busy,
+                      error: state.error,
+                      hintText:
+                          'e.g. Google, senior backend, Maps, in 2 weeks…',
+                      fadeColor: theme.colorScheme.surfaceContainerLow,
+                      opener: const _Opener(),
+                      trailing: state.plan != null
+                          ? _PlanCard(state.plan!, accept)
+                          : null,
+                      onSend: (t) =>
+                          ref.read(interviewPlannerProvider.notifier).send(t),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _InterviewPlannerScreenState
-    extends ConsumerState<InterviewPlannerScreen> {
-  Future<void> _accept() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final goal = await ref.read(interviewPlannerProvider.notifier).accept();
-    if (goal == null) return;
-    messenger.showSnackBar(SnackBar(
-        content: Text('Prep goal saved — study is now prioritized for '
-            '${goal.companyName}.')));
-    if (mounted) context.pop();
-  }
+class _NoKey extends StatelessWidget {
+  const _NoKey();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = ref.watch(interviewPlannerProvider);
-    final hasKey = ref.watch(claudeServiceProvider) != null;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Plan an interview')),
-      body: !hasKey
-          ? _NeedsKey(theme)
-          : ChatView(
-              messages: [
-                for (final m in state.messages)
-                  ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
-              ],
-              busy: state.busy,
-              error: state.error,
-              hintText: 'e.g. Google, senior backend, Maps, in 2 weeks…',
-              opener: const _Opener(),
-              trailing:
-                  state.plan != null ? _PlanCard(state.plan!, _accept) : null,
-              onSend: (t) =>
-                  ref.read(interviewPlannerProvider.notifier).send(t),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Add your Anthropic API key to plan an interview.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/settings');
+              },
+              child: const Text('Open Settings'),
             ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -104,7 +158,6 @@ class _PlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    // Domains/concepts sorted by weight, strongest first.
     final domains = plan.domainWeights.keys.toList()
       ..sort(
           (a, b) => plan.domainWeights[b]!.compareTo(plan.domainWeights[a]!));
@@ -230,33 +283,6 @@ class _ChipRow extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _NeedsKey extends StatelessWidget {
-  const _NeedsKey(this.theme);
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Add your Anthropic API key to plan an interview.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: 16),
-            FilledButton.tonal(
-              onPressed: () => context.go('/settings'),
-              child: const Text('Open Settings'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

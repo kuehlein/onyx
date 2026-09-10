@@ -8,8 +8,8 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/sheet_header.dart';
-import '../interview/interview_planner_screen.dart';
-import '../interview/round_editing.dart';
+import '../interview/interview_card.dart';
+import '../interview/interview_planner_sheet.dart';
 
 /// Opens the target-selection sheet. Lets the user pick the interview they're
 /// aiming at (level × company × track) and an optional date; both re-shape the
@@ -69,11 +69,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     // round is flagged on the calendar and the loops are listed below it.
     final goals =
         ref.watch(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
-    // Only interviews with an upcoming round (a loop whose last round is still
-    // ahead) — fully-past interviews drop out of the list + calendar.
+    // Active interviews with an upcoming round — ended/archived loops drop out
+    // of the target list + calendar (they live on the Interviews screen).
     final scheduled = [
       for (final g in goals)
-        if (_hasUpcomingRound(g, today)) g,
+        if (!g.status.isEnded && _hasUpcomingRound(g, today)) g,
     ]..sort(
         (a, b) => a.nextRoundDate(today)!.compareTo(b.nextRoundDate(today)!));
     // Every round date → the labels of the round(s) on that day (for the
@@ -89,25 +89,13 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
       }
     }
     Future<void> openPlanner() async {
-      final before = {
-        for (final g in (ref.read(prepGoalsProvider).asData?.value ??
-            const <PrepGoal>[]))
-          g.id
-      };
-      // Push over the sheet (imperative, not go_router) so saving/cancelling in
-      // the planner returns to this still-open sheet rather than dumping to Home.
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const InterviewPlannerScreen()),
-      );
+      // A slide-up planner (consistent with the other AI chats); it returns the
+      // saved interview so we can focus its date on the calendar.
+      final added = await showInterviewPlannerSheet(context);
       if (!mounted) return;
-      final after =
-          ref.read(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
-      final added = [
-        for (final g in after)
-          if (!before.contains(g.id) && g.date != null) g,
-      ];
-      // Surface a newly-added interview: focus its date so its flag is visible.
-      if (added.isNotEmpty) _set(_t.copyWith(interviewDate: added.first.date));
+      if (added?.date != null) {
+        _set(_t.copyWith(interviewDate: added!.date));
+      }
     }
 
     return SafeArea(
@@ -262,7 +250,6 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                     goals: scheduled,
                     today: today,
                     onAdd: openPlanner,
-                    onFocus: (d) => _set(t.copyWith(interviewDate: d)),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -813,13 +800,11 @@ class _ScheduledSection extends ConsumerStatefulWidget {
     required this.goals,
     required this.today,
     required this.onAdd,
-    required this.onFocus,
   });
 
   final List<PrepGoal> goals; // sorted by soonest round first
   final DateTime today;
   final VoidCallback onAdd;
-  final void Function(DateTime) onFocus;
 
   @override
   ConsumerState<_ScheduledSection> createState() => _ScheduledSectionState();
@@ -862,8 +847,7 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
             child: Text('None scheduled — add one to flag it on the calendar.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),
-        for (final g in visible)
-          _InterviewRow(goal: g, today: widget.today, onFocus: widget.onFocus),
+        for (final g in visible) InterviewCard(goal: g, today: widget.today),
         if (capped)
           Align(
             alignment: Alignment.centerLeft,
@@ -873,220 +857,6 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// One compact interview row: its next upcoming round + a pace status judged
-/// against the interview's OWN role (a junior · non-faang loop can read "needs a
-/// faster pace" on a date the senior · faang target calls "too soon"). Swipe to
-/// delete; the menu adds/edits a round or removes the interview.
-class _InterviewRow extends ConsumerWidget {
-  const _InterviewRow({
-    required this.goal,
-    required this.today,
-    required this.onFocus,
-  });
-
-  final PrepGoal goal;
-  final DateTime today;
-  final void Function(DateTime) onFocus;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final rounds = goal.effectiveRounds;
-    final nextDate = goal.nextRoundDate(today);
-    final next = _nextRound(rounds, nextDate);
-    // Judge this interview against its own role, not the top-of-form target.
-    final forecast = ref
-        .watch(readinessForecastForProvider((
-          level: goal.level,
-          company: goal.tier,
-          track: goal.track,
-        )))
-        .asData
-        ?.value;
-
-    final roleLabel = '${goal.level.label} · ${goal.tier.label} · '
-        '${goal.track.label}';
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
-    final sub = StringBuffer();
-    if (next != null) {
-      if (rounds.length > 1) sub.write('${next.type.label} · ');
-      final d = next.date;
-      if (d != null) sub.write('${_fmtDate(d)} · ${_daysAway(d)}');
-      if (rounds.length > 1) {
-        sub.write('  ·  round ${next.number} of ${rounds.length}');
-      }
-    }
-
-    final row = InkWell(
-      onTap: nextDate == null ? null : () => onFocus(nextDate),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(2, 3, 0, 3),
-        child: Row(
-          children: [
-            Icon(Icons.flag, size: 15, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  if (sub.isNotEmpty)
-                    Text(sub.toString(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            theme.textTheme.labelSmall?.copyWith(color: muted)),
-                ],
-              ),
-            ),
-            if (nextDate != null)
-              _statusChip(context, forecast, nextDate, roleLabel),
-            _menu(context, ref),
-          ],
-        ),
-      ),
-    );
-
-    // Swipe-to-delete, with a confirm — plus the same action in the menu.
-    return Dismissible(
-      key: ValueKey(goal.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (_) => _confirmRemove(context),
-      onDismissed: (_) => ref.read(prepGoalsProvider.notifier).remove(goal.id),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(Icons.delete_outline,
-            color: theme.colorScheme.onErrorContainer),
-      ),
-      child: row,
-    );
-  }
-
-  InterviewRound? _nextRound(List<InterviewRound> rounds, DateTime? nextDate) {
-    if (rounds.isEmpty) return null;
-    if (nextDate == null) return rounds.first;
-    for (final r in rounds) {
-      final d = r.date;
-      if (d != null && DateTime(d.year, d.month, d.day) == nextDate) return r;
-    }
-    return rounds.first;
-  }
-
-  Widget _menu(BuildContext context, WidgetRef ref) => PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, size: 18),
-        tooltip: 'Interview options',
-        // Slim tap target (padding only — `constraints` here would resize the
-        // MENU, not the button).
-        padding: EdgeInsets.zero,
-        onSelected: (v) => _onMenu(context, ref, v),
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'add', child: Text('Add round')),
-          PopupMenuItem(value: 'edit', child: Text('Edit next round')),
-          PopupMenuItem(value: 'remove', child: Text('Remove interview')),
-        ],
-      );
-
-  Future<void> _onMenu(BuildContext context, WidgetRef ref, String v) async {
-    final notifier = ref.read(prepGoalsProvider.notifier);
-    if (v == 'add') {
-      final added = await showRoundDialog(context,
-          today: today, existing: draftRound(goal, seed: _seed()));
-      if (added != null) await notifier.upsert(goalWithRound(goal, added));
-    } else if (v == 'edit') {
-      final next = _nextRound(goal.effectiveRounds, goal.nextRoundDate(today));
-      if (next == null) return;
-      final edited =
-          await showRoundDialog(context, today: today, existing: next);
-      if (edited != null) await notifier.upsert(goalWithRound(goal, edited));
-    } else if (v == 'remove') {
-      if (!context.mounted) return;
-      final ok = await _confirmRemove(context);
-      if (ok) await notifier.remove(goal.id);
-    }
-  }
-
-  Future<bool> _confirmRemove(BuildContext context) async {
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove interview?'),
-        content: Text('This deletes “$title” and its rounds.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove')),
-        ],
-      ),
-    );
-    return ok ?? false;
-  }
-
-  int _seed() => DateTime.now().microsecondsSinceEpoch;
-
-  String _daysAway(DateTime d) {
-    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
-    if (days < 0) return 'past';
-    if (days == 0) return 'today';
-    if (days < 14) return 'in $days days';
-    return 'in ${(days / 7).round()} wks';
-  }
-
-  Widget _statusChip(BuildContext context, ReadinessForecast? f, DateTime d,
-      String roleLabel) {
-    if (f == null) return const SizedBox.shrink();
-    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
-    final String text;
-    final Color color;
-    if (f.alreadyReady) {
-      text = 'ready';
-      color = statusGood;
-    } else {
-      final req = f.requiredPerDayFor(days);
-      if (req == null) {
-        text = 'too soon';
-        color = statusBad;
-      } else if (req <= f.currentPerDay) {
-        text = 'on track';
-        color = statusGood;
-      } else {
-        text = '~$req/day';
-        color = statusWarn;
-      }
-    }
-    return Tooltip(
-      message: 'Judged for $roleLabel',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(text,
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: color, fontWeight: FontWeight.w600)),
-      ),
     );
   }
 }

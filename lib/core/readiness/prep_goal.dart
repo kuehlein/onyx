@@ -6,6 +6,24 @@ import 'target.dart';
 /// The outcome of an interview (or a single round of one).
 enum GoalOutcome { pending, passed, failed }
 
+/// Where an interview sits in its lifecycle. [active] loops still have a current
+/// upcoming round; the rest are ended and live in the "past" section — kept for
+/// the record rather than deleted (archive-by-default).
+enum InterviewStatus { active, offer, rejected, withdrawn, archived }
+
+extension InterviewStatusLabel on InterviewStatus {
+  String get label => switch (this) {
+        InterviewStatus.active => 'Active',
+        InterviewStatus.offer => 'Offer',
+        InterviewStatus.rejected => "Didn't pass",
+        InterviewStatus.withdrawn => 'Withdrew',
+        InterviewStatus.archived => 'Archived',
+      };
+
+  /// Whether the loop is over (anything but [active]).
+  bool get isEnded => this != InterviewStatus.active;
+}
+
 /// The kind of interview round.
 enum InterviewRoundType {
   screen,
@@ -116,6 +134,7 @@ class PrepGoal {
     this.outcomeNotes,
     this.notes,
     this.rounds = const [],
+    this.status = InterviewStatus.active,
   });
 
   final String id;
@@ -153,6 +172,10 @@ class PrepGoal {
   /// top-level [date] is kept as a denormalized "next round" for legacy readers.
   final List<InterviewRound> rounds;
 
+  /// The interview's lifecycle state. Active loops have a [currentRound]; ended
+  /// ones (offer/rejected/withdrawn/archived) are history.
+  final InterviewStatus status;
+
   /// Rounds as the source of truth, migrating a legacy single [date] into a
   /// synthetic round 1 when no rounds are stored.
   List<InterviewRound> get effectiveRounds => rounds.isNotEmpty
@@ -160,6 +183,21 @@ class PrepGoal {
       : (date != null
           ? [InterviewRound(id: '$id-r1', number: 1, date: date)]
           : const []);
+
+  /// The one upcoming, not-yet-resolved round — what the learner is prepping for
+  /// (companies schedule one at a time). Null once the loop has ended.
+  InterviewRound? get currentRound {
+    for (final r in effectiveRounds) {
+      if (r.outcome == GoalOutcome.pending) return r;
+    }
+    return null;
+  }
+
+  /// Resolved rounds, oldest first — the immutable history behind [currentRound].
+  List<InterviewRound> get pastRounds => [
+        for (final r in effectiveRounds)
+          if (r.outcome != GoalOutcome.pending) r,
+      ];
 
   /// All scheduled round dates (date-only), for calendar flags.
   List<DateTime> get roundDates => [
@@ -214,6 +252,7 @@ class PrepGoal {
     Object? outcomeNotes = _unset,
     Object? notes = _unset,
     List<InterviewRound>? rounds,
+    InterviewStatus? status,
   }) =>
       PrepGoal(
         id: id,
@@ -231,6 +270,7 @@ class PrepGoal {
             : outcomeNotes as String?,
         notes: notes == _unset ? this.notes : notes as String?,
         rounds: rounds ?? this.rounds,
+        status: status ?? this.status,
       );
 
   Map<String, dynamic> toJson() => {
@@ -247,6 +287,7 @@ class PrepGoal {
         if (outcomeNotes != null) 'outcomeNotes': outcomeNotes,
         if (notes != null) 'notes': notes,
         if (rounds.isNotEmpty) 'rounds': [for (final r in rounds) r.toJson()],
+        'status': status.name,
       };
 
   static PrepGoal? fromJson(Map<String, dynamic> m) {
@@ -269,6 +310,8 @@ class PrepGoal {
           m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
       notes: m['notes'] is String ? m['notes'] as String : null,
       rounds: _parseRounds(m['rounds']),
+      status: enumByName(InterviewStatus.values, m['status']) ??
+          InterviewStatus.active,
     );
   }
 

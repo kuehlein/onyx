@@ -19,12 +19,14 @@ Widget _app(List<PrepGoal> goals) => ProviderScope(
       overrides: [
         prepGoalsProvider.overrideWith(() => _FakeGoals(goals)),
         clockProvider.overrideWith((ref) async => Clock.real),
+        // The card's pace chip depends on a heavy forecast; stub it out.
+        readinessForecastForProvider.overrideWith((ref, dims) async => null),
       ],
       child: const MaterialApp(home: UpcomingInterviewsScreen()),
     );
 
 void main() {
-  testWidgets('lists goals soonest-first with a countdown; undated last',
+  testWidgets('lists active interviews soonest-first; undated last',
       (tester) async {
     final goals = [
       // Undated (should sort last despite being first in the list).
@@ -45,16 +47,15 @@ void main() {
     await tester.pumpWidget(_app(goals));
     await tester.pumpAndSettle();
 
-    expect(find.text('Google · Senior · Backend'), findsOneWidget);
-    expect(find.text('Amazon · Mid · Backend'), findsOneWidget);
-    // Google has a future date → a countdown; Amazon shows no date.
+    // The card shows the company name.
+    expect(find.text('Google'), findsOneWidget);
+    expect(find.text('Amazon'), findsOneWidget);
+    // Google has a future date → a countdown; Amazon has no upcoming round.
     expect(find.textContaining('in '), findsWidgets);
-    expect(find.textContaining('No date set'), findsOneWidget);
-    // Dated goal sorts above the undated one.
-    expect(tester.getTopLeft(find.text('Google · Senior · Backend')).dy,
-        lessThan(tester.getTopLeft(find.text('Amazon · Mid · Backend')).dy));
-    // A toggle per goal.
-    expect(find.byType(Switch), findsNWidgets(2));
+    expect(find.textContaining('No upcoming round'), findsOneWidget);
+    // Dated interview sorts above the undated one.
+    expect(tester.getTopLeft(find.text('Google')).dy,
+        lessThan(tester.getTopLeft(find.text('Amazon')).dy));
     expect(tester.takeException(), isNull);
   });
 
@@ -62,10 +63,10 @@ void main() {
     await tester.pumpWidget(_app(const []));
     await tester.pumpAndSettle();
     expect(find.text('No interviews planned yet'), findsOneWidget);
-    expect(find.byType(Switch), findsNothing);
   });
 
-  testWidgets('a decided goal shows its outcome', (tester) async {
+  testWidgets('ended interviews live in a collapsible Past section',
+      (tester) async {
     await tester.pumpWidget(_app([
       const PrepGoal(
         id: 'g1',
@@ -73,10 +74,17 @@ void main() {
         tier: CompanyTier.faang,
         level: SeniorityLevel.senior,
         track: Track.backend,
-        outcome: GoalOutcome.failed,
+        status: InterviewStatus.rejected,
       ),
     ]));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Didn'), findsOneWidget); // "Didn’t pass"
+    // Collapsed by default: a "Past interviews (1)" toggle, no card yet.
+    expect(find.textContaining('Past interviews (1)'), findsOneWidget);
+    expect(find.text('Google'), findsNothing);
+    // Expand → the card appears with its outcome.
+    await tester.tap(find.textContaining('Past interviews (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Google'), findsOneWidget);
+    expect(find.textContaining('Didn'), findsWidgets); // "Didn't pass"
   });
 }

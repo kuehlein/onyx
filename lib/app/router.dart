@@ -7,7 +7,6 @@ import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
-import '../features/interview/interview_planner_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/practice/practice_screen.dart';
@@ -58,10 +57,6 @@ GoRouter createRouter() => GoRouter(
         // The AI interview-readiness report, launched from Home.
         GoRoute(
             path: '/report', builder: (_, __) => const ReadinessReportScreen()),
-        // The AI interview planner — describe an interview → active prep goal.
-        GoRoute(
-            path: '/plan-interview',
-            builder: (_, __) => const InterviewPlannerScreen()),
         // The upcoming-interviews list — toggle/remove/practice for prep goals.
         GoRoute(
             path: '/interviews',
