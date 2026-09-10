@@ -11,6 +11,7 @@ import '../../shared/providers/algo.dart';
 import '../../shared/providers/explain_chat.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/chat_view.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the explain-mode interviewer for one problem: talk through approach,
 /// complexity, and edge cases (no coding), then self-grade recognition. Grading
@@ -68,31 +69,12 @@ class _ExplainSheet extends ConsumerWidget {
         height: MediaQuery.of(context).size.height * 0.9,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Row(
-                children: [
-                  Icon(Icons.record_voice_over_outlined,
-                      color: theme.colorScheme.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Explain — ${section.heading}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium),
-                        Text(card.title,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            SheetHeader(
+              icon: Icons.record_voice_over_outlined,
+              title: 'Explain — ${section.heading}',
+              subtitle: card.title,
+              divider: true,
             ),
-            const Divider(height: 1),
             Expanded(
               child: !hasKey
                   ? const _NoKey()

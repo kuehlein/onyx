@@ -8,6 +8,7 @@ import '../../shared/coach_settings.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/coach_chat.dart';
 import '../../shared/widgets/chat_view.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the "talk about it" strategist chat for a coach [update], seeded with
 /// the learner's current numbers (readiness + both tracks' load) so it can
@@ -65,18 +66,8 @@ class _CoachChatSheet extends ConsumerWidget {
         height: MediaQuery.of(context).size.height * 0.8,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Row(
-                children: [
-                  Icon(Icons.psychology_outlined,
-                      color: theme.colorScheme.primary),
-                  const SizedBox(width: 10),
-                  Text('Coach', style: theme.textTheme.titleMedium),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
+            const SheetHeader(
+                icon: Icons.psychology_outlined, title: 'Coach', divider: true),
             Expanded(
               child: !hasKey
                   ? const _NoKey()
