@@ -257,18 +257,25 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     );
   }
 
-  // Behind the interview date — offer a choice, don't command.
+  // Behind on COVERAGE for the interview date — offer a choice, don't command.
+  // Scoped to coverage (finishing the material), which is the prerequisite for
+  // readiness; the calendar shows the stricter ready-by date. Behind on coverage
+  // ⟹ behind on readiness, so this is always a valid leading-indicator warning.
   if (s.behind && s.requiredPerDay != null && s.recentPerDay != null) {
     return CoachUpdate(
       kind: CoachInsightKind.behindPace,
       tone: CoachTone.caution,
       headline:
-          'Behind for your date — ~${_rate(s.requiredPerDay!)}/day needed '
-          "(you're ~${_rate(s.recentPerDay!)}). Push, or move the date?",
-      why: 'At your recent ~${_rate(s.recentPerDay!)} sections/day you’ll miss '
-          'the target; ~${_rate(s.requiredPerDay!)}/day gets there. You can '
-          'raise your daily learning, trim scope, or shift the date — your '
-          'call. Steady daily wins beat last-minute cramming.',
+          'Behind on coverage — ~${_rate(s.requiredPerDay!)}/day to get through '
+          "your material by then (you're ~${_rate(s.recentPerDay!)}). Push, or "
+          'move the date?',
+      why:
+          'At your recent ~${_rate(s.recentPerDay!)} new sections/day you won’t '
+          'have covered everything before your date; ~${_rate(s.requiredPerDay!)}'
+          '/day finishes the material in time. Covering it comes first — reviews '
+          'then deepen it into readiness (the calendar shows your ready-by '
+          'date). Raise your daily learning, trim scope, or shift the date — '
+          'your call. Steady daily wins beat last-minute cramming.',
       actionLabel: 'Learn now',
       actionRoute: '/learn',
     );
@@ -383,22 +390,38 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     );
   }
 
-  // Genuinely on track: on pace toward a set date, or solid readiness. Only
-  // here do we affirm — never at low readiness just because nothing's on fire.
+  // Genuinely on track: solid readiness, or on pace to finish covering toward a
+  // set date. Only here do we affirm — never at low readiness just because
+  // nothing's on fire. When it's coverage-pace (not yet solid recall) the copy
+  // stays scoped to coverage so it never over-claims "ready" — the calendar owns
+  // the ready-by date.
   if ((s.hasDate && s.onPace) || s.overall >= CoachSignals.solidBar) {
+    final solid = s.overall >= CoachSignals.solidBar;
     const affirms = [
       'On track — steady daily reps are doing the work.',
       'Nicely paced. Keep the daily habit going.',
       'Solid — your consistency is compounding.',
     ];
+    final headline = solid
+        ? (s.studiedToday
+            ? affirms[s.affirmSeed % affirms.length]
+            : 'On track — a quick session today keeps it that way.')
+        : (s.studiedToday
+            ? 'On pace to cover your material — reviews will deepen it into '
+                'readiness.'
+            : 'On pace to cover your material — a quick session keeps it '
+                'going.');
     return CoachUpdate(
       kind: CoachInsightKind.onTrack,
       tone: CoachTone.positive,
-      headline: s.studiedToday
-          ? affirms[s.affirmSeed % affirms.length]
-          : 'On track — a quick session today keeps it that way.',
-      why: 'Readiness is ~${pct(s.overall)}% and your pace looks healthy. '
-          'Nothing needs fixing — keep showing up.',
+      headline: headline,
+      why: solid
+          ? 'Readiness is ~${pct(s.overall)}% and your pace looks healthy. '
+              'Nothing needs fixing — keep showing up.'
+          : 'You’re on pace to finish covering your material; recall is still '
+              'maturing (~${pct(s.overall)}%). Keep going — reviews turn '
+              'coverage into readiness, and the calendar shows your ready-by '
+              'date.',
       actionLabel: s.dueCount > 0 ? 'Review now' : null,
       actionRoute: s.dueCount > 0 ? '/quiz' : null,
     );

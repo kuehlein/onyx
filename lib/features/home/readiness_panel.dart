@@ -400,7 +400,8 @@ class _PaceRow extends StatelessWidget {
         return (
           Icons.trending_up,
           green,
-          'On track — interview $inDays, at ~${_rate(pace.recentPerDay)}/day.'
+          'On pace to cover your material — interview $inDays, at '
+              '~${_rate(pace.recentPerDay)}/day.'
         );
       case PaceStatus.slightlyBehind:
         return (

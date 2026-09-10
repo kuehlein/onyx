@@ -699,6 +699,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final async = ref.watch(readinessForecastProvider);
+    final r = ref.watch(readinessProvider).asData?.value;
     final limit = ref.watch(newCardLimitProvider).asData?.value ??
         NewCardLimit.defaultValue;
 
@@ -733,9 +734,24 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
     final maxPace = f.maxSampledPerDay.clamp(perDay + 1, NewCardLimit.max);
     const minPace = NewCardLimit.min;
     final value = perDay.clamp(minPace, maxPace);
+
+    // Two DISTINCT, non-competing dates (see the coverage-vs-readiness split):
+    //   1. Coverage: when you'll have SEEN every section at this pace (cheap,
+    //      linear — remaining / pace). This is "time to get through the deck".
+    //   2. Readiness: when recall MATURES past the target (the FSRS forecast).
+    // Readiness is always on/after coverage — covering is the prerequisite.
+    final total = r == null ? 0 : r.domains.fold(0, (a, d) => a + d.total);
+    final studied = r == null ? 0 : r.domains.fold(0, (a, d) => a + d.studied);
+    final remaining = (total - studied).clamp(0, total);
+    final coveragePct = total == 0 ? 0 : (studied / total * 100).round();
+    final coverDate = remaining == 0
+        ? null
+        : f.today.add(Duration(days: (remaining / value).ceil()));
+    final coverText =
+        remaining == 0 ? 'done — all cards seen' : _fmtDate(coverDate!);
     final readyDate = f.readyDateFor(value);
-    final dateText = readyDate == null
-        ? 'not within a year even at this pace'
+    final readyText = readyDate == null
+        ? 'over a year out at this pace'
         : _fmtDate(readyDate);
 
     return Column(
@@ -752,20 +768,24 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text.rich(TextSpan(
-                      style: theme.textTheme.bodyMedium,
-                      children: [
-                        TextSpan(text: 'At ~$value new/day, ready by '),
-                        TextSpan(
-                            text: dateText,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
-                        const TextSpan(text: '.'),
-                      ],
-                    )),
+                    Text('At ~$value new/day:',
+                        style: theme.textTheme.bodyMedium),
+                    const SizedBox(height: 4),
+                    _PaceLine(
+                        label: 'Get through all cards',
+                        value: coverText,
+                        color: theme.colorScheme.primary),
+                    _PaceLine(
+                        label: 'Interview-ready',
+                        value: readyText,
+                        color: statusGood),
+                    const SizedBox(height: 4),
                     Text(
-                      'A what-if forecast for your saved target — recall '
-                      'maturation only (mocks are a separate axis).',
+                      total == 0
+                          ? 'A what-if forecast for your saved target.'
+                          : 'Covered ~$coveragePct% so far. Seeing the material '
+                              'comes first; reviews then deepen it into readiness '
+                              '(recall only — mocks are a separate axis).',
                       style: theme.textTheme.bodySmall?.copyWith(color: muted),
                     ),
                   ],
@@ -813,6 +833,50 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+}
+
+/// One labelled milestone line in the pace planner (a colour dot + "label:
+/// value"), used to show the coverage and readiness dates distinctly.
+class _PaceLine extends StatelessWidget {
+  const _PaceLine(
+      {required this.label, required this.value, required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(TextSpan(
+              style: theme.textTheme.bodyMedium,
+              children: [
+                TextSpan(text: '$label: '),
+                TextSpan(
+                    text: value,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ],
+            )),
+          ),
+        ],
+      ),
+    );
   }
 }
 
