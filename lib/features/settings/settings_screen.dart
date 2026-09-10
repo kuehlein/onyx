@@ -21,6 +21,7 @@ import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/stats.dart';
 import '../../shared/providers/settings.dart';
+import '../../shared/status_colors.dart';
 import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -110,6 +111,8 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+          const _SectionHeader('Pace planner'),
+          const _PacePlanner(),
           const _SectionHeader('Algorithms'),
           const _AlgoDailySetting(),
           const _SectionHeader('Gym mode'),
@@ -674,6 +677,142 @@ class SettingsScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+/// A "what-if" pace planner: drag the new-sections/day and see when relevance-
+/// weighted recall readiness would cross your target, reusing the same forecast
+/// curve as Home's calendar (#49). Lets you apply the pace in one tap, so
+/// planning and the actual setting stay in sync.
+class _PacePlanner extends ConsumerStatefulWidget {
+  const _PacePlanner();
+
+  @override
+  ConsumerState<_PacePlanner> createState() => _PacePlannerState();
+}
+
+class _PacePlannerState extends ConsumerState<_PacePlanner> {
+  int? _perDay; // null → track the saved new-cards/day
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final async = ref.watch(readinessForecastProvider);
+    final limit = ref.watch(newCardLimitProvider).asData?.value ??
+        NewCardLimit.defaultValue;
+
+    if (async.isLoading) {
+      return const ListTile(
+        leading: Icon(Icons.timeline_outlined),
+        title: Text('Pace planner'),
+        subtitle: Text('Estimating your timeline…'),
+      );
+    }
+    final f = async.asData?.value;
+    if (f == null) {
+      return ListTile(
+        leading: const Icon(Icons.timeline_outlined),
+        title: const Text('Pace planner'),
+        subtitle: Text(
+            'Set a target on Home and study a little to plan a pace.',
+            style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+      );
+    }
+    if (f.alreadyReady) {
+      return ListTile(
+        leading: const Icon(Icons.timeline_outlined),
+        title: const Text('Pace planner'),
+        subtitle: Text('You’re already at your target for this aim.',
+            style: theme.textTheme.bodySmall?.copyWith(color: statusGood)),
+      );
+    }
+
+    final perDay = _perDay ?? f.currentPerDay;
+    // Slider spans a light floor up to the fastest pace we simulated.
+    final maxPace = f.maxSampledPerDay.clamp(perDay + 1, NewCardLimit.max);
+    const minPace = NewCardLimit.min;
+    final value = perDay.clamp(minPace, maxPace);
+    final readyDate = f.readyDateFor(value);
+    final dateText = readyDate == null
+        ? 'not within a year even at this pace'
+        : _fmtDate(readyDate);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.timeline_outlined, color: muted),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(TextSpan(
+                      style: theme.textTheme.bodyMedium,
+                      children: [
+                        TextSpan(text: 'At ~$value new/day, ready by '),
+                        TextSpan(
+                            text: dateText,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                        const TextSpan(text: '.'),
+                      ],
+                    )),
+                    Text(
+                      'A what-if forecast for your saved target — recall '
+                      'maturation only (mocks are a separate axis).',
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Slider(
+            value: value.toDouble(),
+            min: minPace.toDouble(),
+            max: maxPace.toDouble(),
+            divisions: (maxPace - minPace).clamp(1, 100),
+            label: '$value/day',
+            onChanged: (v) => setState(() => _perDay = v.round()),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(56, 0, 16, 8),
+          child: Row(
+            children: [
+              Text('Your pace: $limit/day',
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+              const Spacer(),
+              if (value != limit)
+                TextButton(
+                  onPressed: () {
+                    ref.read(newCardLimitProvider.notifier).set(value);
+                    setState(() => _perDay = null); // follow the saved value
+                  },
+                  child: Text('Set to $value/day'),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _fmtDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
+    ];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
 
