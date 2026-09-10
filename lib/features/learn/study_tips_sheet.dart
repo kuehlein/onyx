@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/study/study_tips.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the full list of evidence-based study tips as a bottom sheet. Available
 /// from the Learn app bar (studying / first exposure), not while testing.
@@ -26,26 +27,13 @@ class _StudyTipsSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-            child: Row(
-              children: [
-                Icon(Icons.tips_and_updates_outlined,
-                    color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
-                Text('Study tips', style: theme.textTheme.titleLarge),
-              ],
-            ),
+          const SheetHeader(
+            icon: Icons.tips_and_updates_outlined,
+            title: 'Study tips',
+            subtitle:
+                'Habits that make learning stick — worth keeping in mind.',
+            divider: true,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              'Habits that make learning stick — worth keeping in mind as you go.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ),
-          const Divider(height: 1),
           Expanded(
             child: FadingScrollEdges(
               color: theme.colorScheme.surfaceContainerLow,

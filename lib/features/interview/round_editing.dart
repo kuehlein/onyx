@@ -90,11 +90,11 @@ class _RoundDialogState extends State<_RoundDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    final dated = _date != null;
     return AlertDialog(
-      // Wider + roomier than the default content-sized dialog, which felt
-      // cramped for three labelled fields.
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      // Roomier than the default content-sized dialog, which felt cramped.
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
       title: Text('Round ${widget.existing.number}'),
       content: SizedBox(
         width: double.maxFinite,
@@ -102,54 +102,65 @@ class _RoundDialogState extends State<_RoundDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Type',
-                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-            const SizedBox(height: 6),
+            // Type — a bordered dropdown with a floating label.
             DropdownButtonFormField<InterviewRoundType>(
               initialValue: _type,
               isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Type',
+                border: OutlineInputBorder(),
+              ),
               items: [
                 for (final t in InterviewRoundType.values)
                   DropdownMenuItem(value: t, child: Text(t.label)),
               ],
               onChanged: (v) => setState(() => _type = v ?? _type),
             ),
-            const SizedBox(height: 18),
-            Text('Date',
-                style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.event, size: 18),
-                    label:
-                        Text(_date == null ? 'Set a date' : _fmtDate(_date!)),
-                    onPressed: _pickDate,
-                  ),
+            const SizedBox(height: 16),
+            // Date — a matching bordered field that opens the picker on tap.
+            InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Date',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.event, size: 20),
+                  suffixIcon: dated
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          tooltip: 'Clear date',
+                          onPressed: () => setState(() => _date = null),
+                        )
+                      : null,
                 ),
-                if (_date != null)
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    tooltip: 'Clear date',
-                    onPressed: () => setState(() => _date = null),
-                  ),
-              ],
+                child: Text(
+                  dated ? _fmtDate(_date!) : 'Not set',
+                  style: dated
+                      ? theme.textTheme.bodyLarge
+                      : theme.textTheme.bodyLarge?.copyWith(color: muted),
+                ),
+              ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             Text('Outcome',
                 style: theme.textTheme.labelMedium?.copyWith(color: muted)),
-            const SizedBox(height: 6),
-            SegmentedButton<GoalOutcome>(
-              segments: const [
-                ButtonSegment(
-                    value: GoalOutcome.pending, label: Text('Pending')),
-                ButtonSegment(value: GoalOutcome.passed, label: Text('Passed')),
-                ButtonSegment(value: GoalOutcome.failed, label: Text('Failed')),
-              ],
-              selected: {_outcome},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) => setState(() => _outcome = s.first),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<GoalOutcome>(
+                segments: const [
+                  ButtonSegment(
+                      value: GoalOutcome.pending, label: Text('Pending')),
+                  ButtonSegment(
+                      value: GoalOutcome.passed, label: Text('Passed')),
+                  ButtonSegment(
+                      value: GoalOutcome.failed, label: Text('Failed')),
+                ],
+                selected: {_outcome},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setState(() => _outcome = s.first),
+              ),
             ),
           ],
         ),

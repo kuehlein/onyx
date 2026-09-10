@@ -23,7 +23,7 @@ extension InterviewRoundTypeLabel on InterviewRoundType {
         InterviewRoundType.systemDesign => 'System design',
         InterviewRoundType.behavioral => 'Behavioral',
         InterviewRoundType.onsite => 'Onsite',
-        InterviewRoundType.other => 'Other',
+        InterviewRoundType.other => 'Interview',
       };
 }
 

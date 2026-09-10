@@ -7,6 +7,7 @@ import '../../core/readiness/prep_goal.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/sheet_header.dart';
 import 'round_editing.dart';
 
 /// The learner's upcoming interviews — the prep goals, soonest first. Toggle each
@@ -211,91 +212,97 @@ class _InterviewDetailSheet extends ConsumerWidget {
     final topDomain = _topDomain(goal);
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(goal.label,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            if (goal.notes != null && goal.notes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: CardMarkdown(goal.notes!, compact: true),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SheetHeader(title: goal.label),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Rounds',
-                    style: theme.textTheme.labelLarge?.copyWith(color: muted)),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: addRound,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add round'),
-                  style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                if (goal.notes != null && goal.notes!.isNotEmpty) ...[
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: CardMarkdown(goal.notes!, compact: true),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                // A rule sets the rounds list apart from the plan/notes above.
+                const Divider(height: 8),
+                Row(
+                  children: [
+                    Text('Rounds',
+                        style:
+                            theme.textTheme.labelLarge?.copyWith(color: muted)),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: addRound,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add round'),
+                      style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    ),
+                  ],
+                ),
+                for (final r in rounds)
+                  _RoundTile(
+                    round: r,
+                    today: today,
+                    onEdit: () => editRound(r),
+                    onRemove: () => removeRound(r),
+                  ),
+                const SizedBox(height: 16),
+                if (topDomain != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/practice/$topDomain'
+                            '?for=${Uri.encodeComponent(goal.label)}');
+                      },
+                      icon: const Icon(Icons.psychology_outlined),
+                      label: const Text('Practice for this interview'),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.push('/debrief/${goal.id}');
+                    },
+                    icon: const Icon(Icons.rate_review_outlined),
+                    label: const Text('Debrief — how did it go?'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final ok = await _confirmRemove(context, goal);
+                      if (ok) {
+                        await notifier.remove(goal.id);
+                        if (context.mounted) Navigator.pop(context);
+                      }
+                    },
+                    icon: Icon(Icons.delete_outline,
+                        color: theme.colorScheme.error),
+                    label: Text('Remove interview',
+                        style: TextStyle(color: theme.colorScheme.error)),
+                  ),
                 ),
               ],
             ),
-            for (final r in rounds)
-              _RoundTile(
-                round: r,
-                today: today,
-                onEdit: () => editRound(r),
-                onRemove: () => removeRound(r),
-              ),
-            const SizedBox(height: 16),
-            if (topDomain != null)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    context.push('/practice/$topDomain'
-                        '?for=${Uri.encodeComponent(goal.label)}');
-                  },
-                  icon: const Icon(Icons.psychology_outlined),
-                  label: const Text('Practice for this interview'),
-                ),
-              ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/debrief/${goal.id}');
-                },
-                icon: const Icon(Icons.rate_review_outlined),
-                label: const Text('Debrief — how did it go?'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () async {
-                  final ok = await _confirmRemove(context, goal);
-                  if (ok) {
-                    await notifier.remove(goal.id);
-                    if (context.mounted) Navigator.pop(context);
-                  }
-                },
-                icon:
-                    Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                label: Text('Remove interview',
-                    style: TextStyle(color: theme.colorScheme.error)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

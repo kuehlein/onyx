@@ -9,6 +9,7 @@ import '../providers/clock.dart';
 import '../providers/interview.dart';
 import '../providers/readiness.dart';
 import '../status_colors.dart';
+import 'sheet_header.dart';
 
 /// The self-report you log after solving an interview question on your own
 /// machine (LeetCode/NeetCode) — the return path Onyx can't see otherwise. Maps
@@ -93,62 +94,61 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
       padding: EdgeInsets.only(bottom: viewInsets),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Log a solve',
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text(widget.card.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _insight,
-                minLines: 1,
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: 'The key insight or what tripped you (optional)',
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('How did it go?',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              for (final o in _outcomes) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _saving ? null : () => _log(o),
-                    style: FilledButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                      backgroundColor: o.color.withValues(alpha: 0.16),
-                      foregroundColor: o.color,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SheetHeader(title: 'Log a solve', subtitle: widget.card.title),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _insight,
+                    minLines: 1,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText:
+                          'The key insight or what tripped you (optional)',
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    child: Text(o.label,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ],
-          ),
+                  const SizedBox(height: 16),
+                  Text('How did it go?',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 8),
+                  for (final o in _outcomes) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _saving ? null : () => _log(o),
+                        style: FilledButton.styleFrom(
+                          alignment: Alignment.centerLeft,
+                          backgroundColor: o.color.withValues(alpha: 0.16),
+                          foregroundColor: o.color,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                        ),
+                        child: Text(o.label,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

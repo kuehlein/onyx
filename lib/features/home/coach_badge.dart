@@ -13,6 +13,7 @@ import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
+import '../../shared/widgets/sheet_header.dart';
 import 'coach_chat_sheet.dart';
 import 'load_checkin_sheet.dart';
 
@@ -123,90 +124,86 @@ class CoachBadge extends ConsumerWidget {
       builder: (ctx) {
         final theme = Theme.of(ctx);
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SheetHeader(
+                  icon: _icon(u.kind), iconColor: color, title: u.headline),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(_icon(u.kind), size: 20, color: color),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(u.headline,
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(u.why,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface, height: 1.4)),
+                    const SizedBox(height: 20),
+                    if (u.proposal != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _applyProposal(context, ref, u.proposal!);
+                          },
+                          icon: const Icon(Icons.check, size: 18),
+                          label: Text(u.proposal!.applyLabel),
+                        ),
+                      )
+                    else if (u.hasAction)
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.push(u.actionRoute!);
+                          },
+                          child: Text(u.actionLabel!),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          showCoachChatSheet(
+                            context,
+                            update: u,
+                            overallPct: seed.overallPct,
+                            coveragePct: seed.coveragePct,
+                            targetLabel: seed.targetLabel,
+                            daysToInterview: seed.days,
+                            newPerDay: load.newPerDay,
+                            reviewBacklog: load.backlog,
+                            algoMin: load.algoMin,
+                            algoMax: load.algoMax,
+                          );
+                        },
+                        icon: const Icon(Icons.forum_outlined, size: 18),
+                        label: const Text('Talk about it'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // The deep dive lives here (progressive disclosure) rather than
+                    // as its own Home button.
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          context.push('/report');
+                        },
+                        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                        label: const Text('Full readiness report'),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(u.why,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface, height: 1.4)),
-                const SizedBox(height: 20),
-                if (u.proposal != null)
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _applyProposal(context, ref, u.proposal!);
-                      },
-                      icon: const Icon(Icons.check, size: 18),
-                      label: Text(u.proposal!.applyLabel),
-                    ),
-                  )
-                else if (u.hasAction)
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.push(u.actionRoute!);
-                      },
-                      child: Text(u.actionLabel!),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      showCoachChatSheet(
-                        context,
-                        update: u,
-                        overallPct: seed.overallPct,
-                        coveragePct: seed.coveragePct,
-                        targetLabel: seed.targetLabel,
-                        daysToInterview: seed.days,
-                        newPerDay: load.newPerDay,
-                        reviewBacklog: load.backlog,
-                        algoMin: load.algoMin,
-                        algoMax: load.algoMax,
-                      );
-                    },
-                    icon: const Icon(Icons.forum_outlined, size: 18),
-                    label: const Text('Talk about it'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // The deep dive lives here (progressive disclosure) rather than
-                // as its own Home button.
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.push('/report');
-                    },
-                    icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-                    label: const Text('Full readiness report'),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
