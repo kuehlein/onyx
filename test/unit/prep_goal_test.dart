@@ -182,6 +182,47 @@ void main() {
       expect(g.nextRoundDate(DateTime(2026, 10, 5)), DateTime(2026, 9, 30));
     });
 
+    test('normalized() resets a future-dated resolved round to pending', () {
+      // The Uber bug: a round dated in the future left "passed" by an old build.
+      final g = PrepGoal(
+        id: 'uber',
+        companyName: 'Uber',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.mid,
+        track: Track.backend,
+        rounds: [
+          InterviewRound(
+              id: 'uber-r1',
+              number: 1,
+              date: DateTime(2026, 10, 29),
+              outcome: GoalOutcome.passed),
+        ],
+      );
+      final fixed = g.normalized(DateTime(2026, 9, 10));
+      expect(fixed.currentRound?.id, 'uber-r1');
+      expect(fixed.currentRound?.outcome, GoalOutcome.pending);
+    });
+
+    test('normalized() leaves a past resolved round alone + is identity if ok',
+        () {
+      final past = PrepGoal(
+        id: 'g',
+        tier: CompanyTier.faang,
+        level: SeniorityLevel.mid,
+        track: Track.backend,
+        rounds: [
+          InterviewRound(
+              id: 'r1',
+              number: 1,
+              date: DateTime(2026, 9, 1),
+              outcome: GoalOutcome.passed),
+        ],
+      );
+      final n = past.normalized(DateTime(2026, 9, 10));
+      expect(n.effectiveRounds.first.outcome, GoalOutcome.passed);
+      expect(identical(n, past), isTrue); // unchanged → same instance
+    });
+
     test('encodeList / decodeList round-trip; junk decodes to empty', () {
       final goals = [
         const PrepGoal(

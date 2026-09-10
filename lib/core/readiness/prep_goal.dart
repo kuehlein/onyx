@@ -199,6 +199,28 @@ class PrepGoal {
           if (r.outcome != GoalOutcome.pending) r,
       ];
 
+  /// Heal stale data: a round dated in the FUTURE can't have a logged result
+  /// (you haven't interviewed yet), so reset any such round to pending. Guards
+  /// against artifacts like a round left "passed" by an older build. Returns the
+  /// same instance when nothing needs fixing.
+  PrepGoal normalized(DateTime today) {
+    final t = DateTime(today.year, today.month, today.day);
+    var changed = false;
+    final fixed = <InterviewRound>[];
+    for (final r in effectiveRounds) {
+      final d = r.date;
+      if (d != null &&
+          r.outcome != GoalOutcome.pending &&
+          DateTime(d.year, d.month, d.day).isAfter(t)) {
+        fixed.add(r.copyWith(outcome: GoalOutcome.pending));
+        changed = true;
+      } else {
+        fixed.add(r);
+      }
+    }
+    return changed ? copyWith(rounds: fixed) : this;
+  }
+
   /// All scheduled round dates (date-only), for calendar flags.
   List<DateTime> get roundDates => [
         for (final r in effectiveRounds)

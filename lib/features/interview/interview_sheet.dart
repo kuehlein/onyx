@@ -13,9 +13,10 @@ import 'interview_actions.dart';
 import 'round_editing.dart';
 
 /// The single place to act on an interview — opened by tapping any [InterviewCard]
-/// anywhere. Shows the round history + the current round, and the lifecycle
-/// actions: reschedule, log a result (which advances or ends the loop), withdraw,
-/// reopen, or delete. Watches the goal live so it updates as you act.
+/// anywhere. Shows the round history + current round, and CONTEXTUAL actions:
+/// before the round you reschedule; after it you log the result (which advances
+/// or ends the loop). Secondary/destructive actions live in the header overflow
+/// to keep the body uncluttered. Watches the goal live.
 Future<void> showInterviewSheet(BuildContext context, String goalId) =>
     showModalBottomSheet<void>(
       context: context,
@@ -42,11 +43,14 @@ class _InterviewSheet extends ConsumerWidget {
     final notifier = ref.read(prepGoalsProvider.notifier);
     final role =
         '${goal.level.label} · ${goal.tier.label} · ${goal.track.label}';
+    final ended = goal.status.isEnded;
+    final cur = goal.currentRound;
+    // "Occurred" = the round's day has arrived; only then can you log a result.
+    final occurred = cur?.date != null && !cur!.date!.isAfter(refDate);
 
     Future<void> save(PrepGoal g) => notifier.upsert(g);
 
     Future<void> reschedule() async {
-      final cur = goal.currentRound;
       if (cur == null) return;
       final edited = await showRoundDialog(context,
           today: refDate, existing: cur, title: 'Reschedule round');
@@ -68,7 +72,7 @@ class _InterviewSheet extends ConsumerWidget {
       if (context.mounted) Navigator.pop(context);
     }
 
-    Future<void> delete() async {
+    Future<void> confirmDelete() async {
       final ok = await _confirmDelete(context, goal);
       if (ok) {
         await notifier.remove(goal.id);
@@ -83,50 +87,77 @@ class _InterviewSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SheetHeader(title: title, subtitle: role),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (goal.status.isEnded) _EndedBanner(status: goal.status),
-                  _Timeline(goal: goal, today: refDate),
-                  if (goal.notes != null && goal.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    CardMarkdown(goal.notes!, compact: true),
-                  ],
-                  if (!goal.status.isEnded)
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                      title: const Text('Prioritize my study for this'),
-                      subtitle: const Text(
-                          'Active interviews bias which cards come up.'),
-                      value: goal.active,
-                      onChanged: (v) => save(goal.copyWith(active: v)),
+          SheetHeader(
+            title: title,
+            subtitle: role,
+            trailing: _overflow(
+              context,
+              ended: ended,
+              onReschedule: cur != null ? reschedule : null,
+              onArchive: () => save(archiveInterview(goal)),
+              onReopen: () => save(reopenInterview(goal)),
+              onDelete: confirmDelete,
+            ),
+          ),
+          SheetScrollBody(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (ended) _EndedBanner(status: goal.status),
+                _Timeline(goal: goal, today: refDate),
+                if (goal.notes != null && goal.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  CardMarkdown(goal.notes!, compact: true),
+                ],
+                const SizedBox(height: 16),
+                if (ended)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => save(reopenInterview(goal)),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Reopen — still in progress'),
                     ),
+                  )
+                else if (occurred) ...[
+                  Text('How did it go?',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 8),
-                  if (!goal.status.isEnded)
-                    ..._activeActions(context, ref, goal,
-                        reschedule: reschedule,
-                        passAndNext: passAndNext,
-                        end: end)
-                  else
-                    ..._endedActions(context, ref, goal, save: save),
-                  const SizedBox(height: 8),
+                  _OutcomeRow(
+                    onPassed: passAndNext,
+                    onOffer: () => end(InterviewStatus.offer),
+                    onRejected: () => end(InterviewStatus.rejected),
+                  ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: delete,
-                      icon: Icon(Icons.delete_outline,
-                          color: theme.colorScheme.error),
-                      label: Text('Delete',
-                          style: TextStyle(color: theme.colorScheme.error)),
+                      onPressed: reschedule,
+                      icon: const Icon(Icons.event_repeat, size: 16),
+                      label: const Text('It was rescheduled'),
                     ),
                   ),
+                ] else if (cur != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: reschedule,
+                      icon: const Icon(Icons.event, size: 18),
+                      label: Text(cur.date == null
+                          ? 'Set the date'
+                          : 'Reschedule this round'),
+                    ),
+                  ),
+                if (!ended) ...[
+                  const SizedBox(height: 8),
+                  _practiceButton(context, goal),
+                  const Divider(height: 28),
+                  _StudyToggle(
+                    value: goal.active,
+                    onChanged: (v) => save(goal.copyWith(active: v)),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ],
@@ -134,93 +165,55 @@ class _InterviewSheet extends ConsumerWidget {
     );
   }
 
-  List<Widget> _activeActions(
-    BuildContext context,
-    WidgetRef ref,
-    PrepGoal goal, {
-    required Future<void> Function() reschedule,
-    required Future<void> Function() passAndNext,
-    required Future<void> Function(InterviewStatus) end,
+  Widget _overflow(
+    BuildContext context, {
+    required bool ended,
+    required VoidCallback? onReschedule,
+    required VoidCallback onArchive,
+    required VoidCallback onReopen,
+    required VoidCallback onDelete,
   }) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final topDomain = _topDomain(goal);
-    final hasRound = goal.currentRound != null;
-    return [
-      if (hasRound)
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: reschedule,
-            icon: const Icon(Icons.event_repeat, size: 18),
-            label: const Text('Reschedule this round'),
-          ),
-        ),
-      const SizedBox(height: 16),
-      Text('How did it go?',
-          style: theme.textTheme.labelLarge?.copyWith(color: muted)),
-      const SizedBox(height: 8),
-      _ActionButton(
-        icon: Icons.arrow_forward,
-        label: 'Passed — schedule the next round',
-        color: statusGood,
-        onPressed: passAndNext,
-      ),
-      const SizedBox(height: 8),
-      _ActionButton(
-        icon: Icons.celebration_outlined,
-        label: 'Got an offer',
-        color: statusGood,
-        onPressed: () => end(InterviewStatus.offer),
-      ),
-      const SizedBox(height: 8),
-      _ActionButton(
-        icon: Icons.do_not_disturb_alt,
-        label: "Didn't pass",
-        color: statusBad,
-        onPressed: () => end(InterviewStatus.rejected),
-      ),
-      const SizedBox(height: 16),
-      if (topDomain != null)
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.tonalIcon(
-            onPressed: () {
-              Navigator.pop(context);
-              context.push('/practice/$topDomain'
-                  '?for=${Uri.encodeComponent(goal.label)}');
-            },
-            icon: const Icon(Icons.psychology_outlined, size: 18),
-            label: const Text('Practice for this interview'),
-          ),
-        ),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton(
-          onPressed: () => end(InterviewStatus.withdrawn),
-          child: Text('Withdraw',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-        ),
-      ),
-    ];
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_horiz),
+      tooltip: 'More',
+      onSelected: (v) {
+        switch (v) {
+          case 'reschedule':
+            onReschedule?.call();
+          case 'archive':
+            onArchive();
+          case 'reopen':
+            onReopen();
+          case 'delete':
+            onDelete();
+        }
+      },
+      itemBuilder: (_) => [
+        if (!ended && onReschedule != null)
+          const PopupMenuItem(value: 'reschedule', child: Text('Reschedule')),
+        if (!ended)
+          const PopupMenuItem(value: 'archive', child: Text('Archive')),
+        if (ended) const PopupMenuItem(value: 'reopen', child: Text('Reopen')),
+        const PopupMenuItem(value: 'delete', child: Text('Delete')),
+      ],
+    );
   }
 
-  List<Widget> _endedActions(
-    BuildContext context,
-    WidgetRef ref,
-    PrepGoal goal, {
-    required Future<void> Function(PrepGoal) save,
-  }) {
-    return [
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => save(reopenInterview(goal)),
-          icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('Reopen — still in progress'),
-        ),
+  Widget _practiceButton(BuildContext context, PrepGoal goal) {
+    final top = _topDomain(goal);
+    if (top == null) return const SizedBox.shrink();
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: () {
+          Navigator.pop(context);
+          context.push('/practice/$top'
+              '?for=${Uri.encodeComponent(goal.label)}');
+        },
+        icon: const Icon(Icons.psychology_outlined, size: 18),
+        label: const Text('Practice for this interview'),
       ),
-    ];
+    );
   }
 
   String? _topDomain(PrepGoal goal) {
@@ -238,7 +231,7 @@ class _InterviewSheet extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete interview?'),
         content: Text('This permanently deletes “$title” and its history. '
-            'To keep the record, withdraw or archive instead.'),
+            'To keep the record, archive it instead.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -253,35 +246,75 @@ class _InterviewSheet extends ConsumerWidget {
   }
 }
 
-/// A full-width tinted action button used for the "how did it go?" choices.
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onPressed,
+/// The three post-round outcomes on one row, coloured like the FSRS grade
+/// buttons: blue (advance), green (offer), red (rejected).
+class _OutcomeRow extends StatelessWidget {
+  const _OutcomeRow({
+    required this.onPassed,
+    required this.onOffer,
+    required this.onRejected,
   });
 
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onPressed;
+  final VoidCallback onPassed;
+  final VoidCallback onOffer;
+  final VoidCallback onRejected;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          backgroundColor: color.withValues(alpha: 0.16),
-          foregroundColor: color,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        icon: Icon(icon, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+    return Row(
+      children: [
+        Expanded(
+            child: _btn('Passed', statusInfo, Icons.arrow_forward, onPassed)),
+        const SizedBox(width: 8),
+        Expanded(
+            child:
+                _btn('Offer', statusGood, Icons.celebration_outlined, onOffer)),
+        const SizedBox(width: 8),
+        Expanded(
+            child: _btn("Didn't pass", statusBad, Icons.do_not_disturb_alt,
+                onRejected)),
+      ],
+    );
+  }
+
+  Widget _btn(String label, Color color, IconData icon, VoidCallback onTap) {
+    return FilledButton.tonalIcon(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: color.withValues(alpha: 0.16),
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       ),
+      icon: Icon(icon, size: 16),
+      label: Text(label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+/// A clean settings-style row for the study-bias toggle (was an awkward
+/// mid-body SwitchListTile).
+class _StudyToggle extends StatelessWidget {
+  const _StudyToggle({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      secondary: Icon(Icons.tune, color: theme.colorScheme.onSurfaceVariant),
+      title: const Text('Prioritize my study for this'),
+      subtitle: Text('Biases which cards come up.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      value: value,
+      onChanged: onChanged,
     );
   }
 }
@@ -394,7 +427,7 @@ class _Timeline extends StatelessWidget {
 
   String _daysAway(DateTime d) {
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
-    if (days < 0) return 'past';
+    if (days < 0) return 'overdue';
     if (days == 0) return 'today';
     if (days < 14) return 'in $days days';
     return 'in ${(days / 7).round()} wks';

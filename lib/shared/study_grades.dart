@@ -8,7 +8,7 @@ const studyGrades = <({int value, String label, Color color})>[
   (value: 1, label: 'Again', color: statusBad),
   (value: 2, label: 'Hard', color: statusWarn),
   (value: 3, label: 'Good', color: statusGood),
-  (value: 4, label: 'Easy', color: Color(0xFF5AA7E6)),
+  (value: 4, label: 'Easy', color: statusInfo),
 ];
 
 /// Grades offered in **Learn** (first exposure). Excludes Easy: on a brand-new

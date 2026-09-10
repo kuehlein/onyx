@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/interview/critic.dart';
@@ -130,6 +132,21 @@ class PrepGoals extends _$PrepGoals {
 
   @override
   Future<List<PrepGoal>> build() async {
+    final loaded = await _load();
+    // Heal stale data (e.g. a future round left "passed" by an older build).
+    final today = (await ref.watch(clockProvider.future)).today();
+    final healed = [for (final g in loaded) g.normalized(today)];
+    final changed = healed.length != loaded.length ||
+        [for (var i = 0; i < loaded.length; i++) loaded[i] == healed[i]]
+            .contains(false);
+    if (changed) {
+      // Persist the fix once, after this build settles.
+      unawaited(Future(() => _persist(healed)));
+    }
+    return healed;
+  }
+
+  Future<List<PrepGoal>> _load() async {
     final source = ref.watch(vaultSourceProvider);
     if (source != null) {
       final fromVault = await GoalsService(source).load();

@@ -144,6 +144,18 @@ String buildInterviewPlannerSystem({
         'unspecified interview, "onsite" for a full loop. Emit the <plan> block '
         'at most once, only when ready.')
     ..writeln()
+    ..writeln('FORMAT the "summary" field CONSISTENTLY — it renders in a small '
+        'card, so use compact Markdown with NO headings (#) and NO tables. '
+        'Exactly these parts, in order, omitting any that are empty:')
+    ..writeln('1. One plain sentence: the company, role/level, and how far out '
+        'it is.')
+    ..writeln('2. A line "**Focus:**" then 3–5 "- " bullets — deck areas to '
+        'prioritize, most important first, each a few words on why.')
+    ..writeln('3. A line "**Outside Onyx:**" then 1–3 "- " bullets — what to '
+        'prep elsewhere (behavioral, live coding, domain reading).')
+    ..writeln('Keep the whole summary under ~10 lines. Do not restate the raw '
+        'weights or dates; those are shown separately.')
+    ..writeln()
     ..writeln('Deck domains: '
         '${deckDomains.isEmpty ? '(none)' : deckDomains.join(', ')}')
     ..writeln('Deck concepts: '

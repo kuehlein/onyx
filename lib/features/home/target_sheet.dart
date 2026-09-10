@@ -14,17 +14,23 @@ import '../interview/interview_planner_sheet.dart';
 /// Opens the target-selection sheet. Lets the user pick the interview they're
 /// aiming at (level × company × track) and an optional date; both re-shape the
 /// readiness roll-up and drive the pace readout.
-Future<void> showTargetSheet(BuildContext context) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      // Open tall (up to 92% of the screen) so the calendar + forecast aren't
-      // clipped below the fold; the body scrolls within if it's still taller.
-      constraints:
-          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
-      builder: (_) => const _TargetSheet(),
-    );
+Future<void> showTargetSheet(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    // Open tall (up to 92% of the screen) so the calendar + forecast aren't
+    // clipped below the fold; the body scrolls within if it's still taller.
+    // A maxWidth just under the screen insets it from the edges so it reads as a
+    // layered card (like the shorter sheets), not a full-width page.
+    constraints: BoxConstraints(
+      maxHeight: size.height * 0.92,
+      maxWidth: size.width - 24,
+    ),
+    builder: (_) => const _TargetSheet(),
+  );
+}
 
 class _TargetSheet extends ConsumerStatefulWidget {
   const _TargetSheet();
@@ -99,176 +105,171 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     }
 
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SheetHeader(title: 'Your target'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Target dimensions: a form-field-style panel that expands to
-                  // the level/company/track pickers. Open by default until
-                  // configured; AnimatedSize gives a drawer-like open/close.
-                  Container(
-                    decoration: BoxDecoration(
-                      border:
-                          Border.all(color: theme.colorScheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: AnimatedSize(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeInOut,
-                      alignment: Alignment.topCenter,
-                      child: showDims
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                InkWell(
-                                  onTap: () =>
-                                      setState(() => _showDims = false),
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        14, 10, 10, 4),
-                                    child: Row(children: [
-                                      Text('Target',
-                                          style: theme.textTheme.labelLarge
-                                              ?.copyWith(color: muted)),
-                                      const Spacer(),
-                                      Icon(Icons.expand_less,
-                                          size: 20, color: muted),
-                                    ]),
-                                  ),
-                                ),
-                                Padding(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SheetHeader(title: 'Your target'),
+          SheetScrollBody(
+            color: theme.colorScheme.surface,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Target dimensions: a form-field-style panel that expands to
+                // the level/company/track pickers. Open by default until
+                // configured; AnimatedSize gives a drawer-like open/close.
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeInOut,
+                    alignment: Alignment.topCenter,
+                    child: showDims
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: () => setState(() => _showDims = false),
+                                child: Padding(
                                   padding:
-                                      const EdgeInsets.fromLTRB(14, 0, 14, 6),
-                                  child: Column(
-                                    children: [
-                                      _ChipGroup<SeniorityLevel>(
-                                        label: 'Level',
-                                        values: SeniorityLevel.values,
-                                        selected: t.level,
-                                        labelOf: (v) => v.label,
-                                        onSelected: (v) =>
-                                            _set(t.copyWith(level: v)),
-                                      ),
-                                      _ChipGroup<CompanyTier>(
-                                        label: 'Company',
-                                        values: CompanyTier.values,
-                                        selected: t.company,
-                                        labelOf: (v) => v.label,
-                                        onSelected: (v) =>
-                                            _set(t.copyWith(company: v)),
-                                      ),
-                                      _ChipGroup<Track>(
-                                        label: 'Track',
-                                        values: Track.values,
-                                        selected: t.track,
-                                        labelOf: (v) => v.label,
-                                        onSelected: (v) =>
-                                            _set(t.copyWith(track: v)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : InkWell(
-                              onTap: () => setState(() => _showDims = true),
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 10, 10, 10),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.flag_outlined,
-                                        size: 18,
-                                        color: theme.colorScheme.primary),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text('Target',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(color: muted)),
-                                          const SizedBox(height: 1),
-                                          Text(t.label,
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600)),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(Icons.expand_more,
+                                      const EdgeInsets.fromLTRB(14, 10, 10, 4),
+                                  child: Row(children: [
+                                    Text('Target',
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(color: muted)),
+                                    const Spacer(),
+                                    Icon(Icons.expand_less,
                                         size: 20, color: muted),
+                                  ]),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                                child: Column(
+                                  children: [
+                                    _ChipGroup<SeniorityLevel>(
+                                      label: 'Level',
+                                      values: SeniorityLevel.values,
+                                      selected: t.level,
+                                      labelOf: (v) => v.label,
+                                      onSelected: (v) =>
+                                          _set(t.copyWith(level: v)),
+                                    ),
+                                    _ChipGroup<CompanyTier>(
+                                      label: 'Company',
+                                      values: CompanyTier.values,
+                                      selected: t.company,
+                                      labelOf: (v) => v.label,
+                                      onSelected: (v) =>
+                                          _set(t.copyWith(company: v)),
+                                    ),
+                                    _ChipGroup<Track>(
+                                      label: 'Track',
+                                      values: Track.values,
+                                      selected: t.track,
+                                      labelOf: (v) => v.label,
+                                      onSelected: (v) =>
+                                          _set(t.copyWith(track: v)),
+                                    ),
                                   ],
                                 ),
                               ),
+                            ],
+                          )
+                        : InkWell(
+                            onTap: () => setState(() => _showDims = true),
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.flag_outlined,
+                                      size: 18,
+                                      color: theme.colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Target',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(color: muted)),
+                                        const SizedBox(height: 1),
+                                        Text(t.label,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.w600)),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.expand_more,
+                                      size: 20, color: muted),
+                                ],
+                              ),
                             ),
-                    ),
+                          ),
                   ),
-                  const SizedBox(height: 12),
-                  // Forecast readout ABOVE the calendar (the headline outcome).
-                  _ForecastBlock(chosenDate: date, dims: dims),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Text('Interview date (optional)',
-                          style: theme.textTheme.labelLarge
-                              ?.copyWith(color: muted)),
-                      const Spacer(),
-                      if (date != null)
-                        TextButton(
-                          onPressed: () =>
-                              _set(t.copyWith(interviewDate: null)),
-                          child: const Text('Clear'),
-                        ),
-                    ],
+                ),
+                const SizedBox(height: 12),
+                // Forecast readout ABOVE the calendar (the headline outcome).
+                _ForecastBlock(chosenDate: date, dims: dims),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Text('Interview date (optional)',
+                        style:
+                            theme.textTheme.labelLarge?.copyWith(color: muted)),
+                    const Spacer(),
+                    if (date != null)
+                      TextButton(
+                        onPressed: () => _set(t.copyWith(interviewDate: null)),
+                        child: const Text('Clear'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Inline calendar with per-day readiness-zone markers (the OS picker
+                // can't colour individual cells). Tapping a day sets the date.
+                _ZoneCalendar(
+                  forecast: forecast,
+                  selected: date,
+                  roundsByDate: roundsByDate,
+                  onSelect: (d) => _set(t.copyWith(interviewDate: d)),
+                ),
+                const SizedBox(height: 8),
+                const _CalendarLegend(),
+                const SizedBox(height: 10),
+                // Scheduled interviews (flagged above) + the entry to plan one.
+                _ScheduledSection(
+                  goals: scheduled,
+                  today: today,
+                  onAdd: openPlanner,
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      await ref
+                          .read(readinessTargetControllerProvider.notifier)
+                          .save(t);
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+                    child: const Text('Save target'),
                   ),
-                  const SizedBox(height: 4),
-                  // Inline calendar with per-day readiness-zone markers (the OS picker
-                  // can't colour individual cells). Tapping a day sets the date.
-                  _ZoneCalendar(
-                    forecast: forecast,
-                    selected: date,
-                    roundsByDate: roundsByDate,
-                    onSelect: (d) => _set(t.copyWith(interviewDate: d)),
-                  ),
-                  const SizedBox(height: 8),
-                  const _CalendarLegend(),
-                  const SizedBox(height: 10),
-                  // Scheduled interviews (flagged above) + the entry to plan one.
-                  _ScheduledSection(
-                    goals: scheduled,
-                    today: today,
-                    onAdd: openPlanner,
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () async {
-                        await ref
-                            .read(readinessTargetControllerProvider.notifier)
-                            .save(t);
-                        if (context.mounted) Navigator.of(context).pop();
-                      },
-                      child: const Text('Save target'),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
