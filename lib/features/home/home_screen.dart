@@ -109,6 +109,15 @@ class HomeScreen extends ConsumerWidget {
                         : 'Algorithms'),
                   ),
                   const SizedBox(height: 12),
+                  // System-design mock-interview track (its own paced flow,
+                  // graded into readiness; a mock is long so it's pick-a-problem,
+                  // not a daily count).
+                  FilledButton.tonalIcon(
+                    onPressed: () => context.push('/system-design'),
+                    icon: const Icon(Icons.architecture_outlined),
+                    label: const Text('System design'),
+                  ),
+                  const SizedBox(height: 12),
                   // Secondary actions as a compact pair (Browse lives in the
                   // bottom-nav, so it isn't duplicated here). Mock interview is
                   // applied/transfer practice, independent of the FSRS due queue
