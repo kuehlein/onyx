@@ -22,11 +22,13 @@ Future<void> showTargetSheet(BuildContext context) {
     showDragHandle: true,
     // Open tall (up to 92% of the screen) so the calendar + forecast aren't
     // clipped below the fold; the body scrolls within if it's still taller.
-    // A maxWidth just under the screen insets it from the edges so it reads as a
-    // layered card (like the shorter sheets), not a full-width page.
+    // Inset from the edges so it reads as a layered card (like the shorter
+    // sheets), not a full-width page — and capped so it doesn't balloon on a
+    // wide (desktop) window. It's a touch wider than the chat sheets because it
+    // holds a calendar, but no wider than it needs to be.
     constraints: BoxConstraints(
       maxHeight: size.height * 0.92,
-      maxWidth: size.width - 80,
+      maxWidth: size.width - 80 < 560 ? size.width - 80 : 560,
     ),
     builder: (_) => const _TargetSheet(),
   );

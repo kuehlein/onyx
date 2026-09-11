@@ -105,6 +105,12 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       });
     }
 
+    // Whether the candidate has actually answered (beyond the hard-coded opener).
+    // If not, "End" is really a cancel: pop without grading or spending tokens,
+    // and without touching FSRS/stats.
+    final answered = state.messages
+        .any((m) => m.role == CoachRole.user && !_isKickoff(m.text));
+
     return Scaffold(
       appBar: AppBar(
         title: Text(card.title, overflow: TextOverflow.ellipsis),
@@ -116,15 +122,29 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
               onPressed: () => _adjust(level, autoSupport),
             ),
           if (running && !state.busy)
-            TextButton(
-              onPressed: () => session.endAndGrade(
-                  card: card, level: level, company: company, support: support),
-              child: const Text('End'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: TextButton.icon(
+                onPressed: answered
+                    ? () => session.endAndGrade(
+                        card: card,
+                        level: level,
+                        company: company,
+                        support: support)
+                    : () => Navigator.of(context).maybePop(),
+                icon: Icon(answered ? Icons.flag_outlined : Icons.close,
+                    size: 18),
+                label: Text(answered ? 'End & grade' : 'Cancel'),
+              ),
             ),
           if (done)
-            TextButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              child: const Text('Done'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Done'),
+              ),
             ),
         ],
       ),
@@ -132,13 +152,17 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
         children: [
           if (running || state.phase == SdMockPhase.grading)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
               child: Row(
                 children: [
+                  _SettingsPill(
+                    level: level,
+                    support: support,
+                    onTap: () => _adjust(level, autoSupport),
+                  ),
+                  const Spacer(),
                   const SessionTimer(
                       mode: TimerMode.countUp, idleLabel: 'Answer timer'),
-                  const Spacer(),
-                  _ModeChip(support: support),
                 ],
               ),
             ),
@@ -232,35 +256,50 @@ class _AdjustSheet extends StatelessWidget {
                       style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 6),
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(
-                          value: 'auto',
-                          label: Text('Auto (${autoSupport.name})')),
-                      const ButtonSegment(
-                          value: 'coaching', label: Text('Coaching')),
-                      const ButtonSegment(
-                          value: 'realistic', label: Text('Realistic')),
-                    ],
-                    selected: {supportOverride?.name ?? 'auto'},
-                    onSelectionChanged: (s) {
-                      onSupport(switch (s.first) {
-                        'coaching' => SdSupportMode.coaching,
-                        'realistic' => SdSupportMode.realistic,
-                        _ => null,
-                      });
-                      setSheet(() {});
-                    },
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: 'auto', label: Text('Auto')),
+                        ButtonSegment(
+                            value: 'coaching', label: Text('Coaching')),
+                        ButtonSegment(
+                            value: 'realistic', label: Text('Realistic')),
+                      ],
+                      selected: {supportOverride?.name ?? 'auto'},
+                      onSelectionChanged: (s) {
+                        onSupport(switch (s.first) {
+                          'coaching' => SdSupportMode.coaching,
+                          'realistic' => SdSupportMode.realistic,
+                          _ => null,
+                        });
+                        setSheet(() {});
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    (supportOverride ?? autoSupport) == SdSupportMode.coaching
-                        ? 'Coaching: the interviewer steps in and helps if you '
-                            'get stuck.'
-                        : 'Realistic: hands-off, like the real thing. Ask '
-                            'explicitly for a hint.',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  const SizedBox(height: 12),
+                  // What the choices mean — most users leave this on Auto.
+                  _Explain(
+                    'Auto',
+                    'picks Coaching while you\'re new to these mocks, then '
+                        'switches to Realistic as your scores improve. Right now: '
+                        '${autoSupport.name}.',
+                    theme,
+                  ),
+                  const SizedBox(height: 6),
+                  _Explain(
+                    'Coaching',
+                    'the interviewer notices when you\'re stuck and steps in with '
+                        'a hint — good while you\'re learning.',
+                    theme,
+                  ),
+                  const SizedBox(height: 6),
+                  _Explain(
+                    'Realistic',
+                    'hands-off, like the real thing; ask explicitly if you want a '
+                        'hint.',
+                    theme,
                   ),
                 ],
               ),
@@ -272,36 +311,83 @@ class _AdjustSheet extends StatelessWidget {
   }
 }
 
-/// A small chip showing the active support mode during the interview.
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({required this.support});
+/// A "**Term** — explanation" line for the adjust sheet.
+class _Explain extends StatelessWidget {
+  const _Explain(this.term, this.desc, this.theme);
+  final String term;
+  final String desc;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = theme.textTheme.bodySmall
+        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return RichText(
+      text: TextSpan(
+        style: base,
+        children: [
+          TextSpan(
+              text: '$term — ',
+              style: base?.copyWith(fontWeight: FontWeight.w700)),
+          TextSpan(text: desc),
+        ],
+      ),
+    );
+  }
+}
+
+/// The active level + support, as a tappable pill (opens the adjust sheet) with
+/// a tooltip explaining what the mode means and that it's editable.
+class _SettingsPill extends StatelessWidget {
+  const _SettingsPill({
+    required this.level,
+    required this.support,
+    required this.onTap,
+  });
+
+  final SeniorityLevel level;
   final SdSupportMode support;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final coaching = support == SdSupportMode.coaching;
     final color = coaching ? statusInfo : theme.colorScheme.onSurfaceVariant;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+    return Tooltip(
+      message: coaching
+          ? 'Coaching — the interviewer steps in and helps if you get stuck.\n'
+              'Tap to change interview level or support.'
+          : 'Realistic — hands-off, like a real interview.\n'
+              'Tap to change interview level or support.',
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-              coaching
-                  ? Icons.volunteer_activism_outlined
-                  : Icons.gavel_outlined,
-              size: 14,
-              color: color),
-          const SizedBox(width: 6),
-          Text(coaching ? 'Coaching' : 'Realistic',
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: color, fontWeight: FontWeight.w600)),
-        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                  coaching
+                      ? Icons.volunteer_activism_outlined
+                      : Icons.gavel_outlined,
+                  size: 14,
+                  color: color),
+              const SizedBox(width: 6),
+              Text('${level.label} · ${coaching ? 'Coaching' : 'Realistic'}',
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 4),
+              Icon(Icons.tune,
+                  size: 12, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }
