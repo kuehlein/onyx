@@ -6,7 +6,6 @@ import '../../core/readiness/readiness.dart';
 import '../../core/srs/recognition_repository.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
-import '../models/card.dart';
 import '../../core/srs/srs_scheduler.dart';
 import 'clock.dart';
 import 'coach.dart';
@@ -70,11 +69,11 @@ Future<ReviewQueueData> reviewQueue(Ref ref) async {
   final states = await repo.loadStates();
   final dueByKey = {for (final e in states.entries) e.key: e.value.dueAt};
   final queue = buildReviewQueue(
-    // Algorithm cards live on their own paced track (see algoQueueProvider), not
-    // the general review queue.
+    // Practice-track cards (Algorithms, System Design) live on their own paced
+    // queues (see algoQueueProvider), not the general review queue.
     cards: [
       for (final c in index.cards)
-        if (c.type != CardType.algorithm) c,
+        if (!c.type.isPracticeTrack) c,
     ],
     dueByKey: dueByKey,
     now: clock.now(),

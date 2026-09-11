@@ -134,6 +134,11 @@ class CardParser {
     } else if (type == CardType.algorithm) {
       // Algorithm cards: every section is a problem = its own practice unit.
       quizzable = true;
+    } else if (type == CardType.systemDesign) {
+      // System-design cards: sections are interview phases, not independent
+      // recall units. The whole problem is practised as a mock, so no section
+      // is scheduled (no srs_state) — the track has its own queue.
+      quizzable = false;
     } else if (type == CardType.interviewQuestion) {
       // Interview questions default to quizzing only the Approach section.
       quizzable = slug == 'approach';

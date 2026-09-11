@@ -13,7 +13,6 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
 import '../../core/readiness/targeting.dart';
-import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
@@ -214,12 +213,12 @@ Future<Readiness> readiness(Ref ref) async {
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
-  // Algorithms are a separate execution-clock track: solving them counts toward
-  // readiness through the ds-a *transfer* factor (they record applied attempts),
-  // not the recall-coverage denominator — so they don't drag knowledge-base
-  // coverage down as unlearned "concept" sections.
+  // Practice tracks (Algorithms, System Design) are separate: they count toward
+  // readiness through the *transfer* factor (they record applied attempts), not
+  // the recall-coverage denominator — so they don't drag knowledge-base coverage
+  // down as unlearned "concept" sections.
   final conceptCards =
-      index.cards.where((c) => c.type != CardType.algorithm).toList();
+      index.cards.where((c) => !c.type.isPracticeTrack).toList();
   final domains = <String>{
     for (final c in conceptCards)
       if (c.domain != null) c.domain!,
@@ -246,8 +245,9 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
   return computeLadderPosition(
-    // Concept cards only — algorithms feed readiness via transfer, not coverage.
-    cards: index.cards.where((c) => c.type != CardType.algorithm).toList(),
+    // Concept cards only — practice tracks feed readiness via transfer, not
+    // coverage.
+    cards: index.cards.where((c) => !c.type.isPracticeTrack).toList(),
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,
@@ -294,9 +294,9 @@ Future<ReadinessForecast?> readinessForecastFor(
       level: dims.level, company: dims.company, track: dims.track);
   final today = (await ref.watch(clockProvider.future)).today();
 
-  // Concept cards only — algorithms feed readiness via transfer, not recall
+  // Concept cards only — practice tracks feed readiness via transfer, not recall
   // coverage (matches the readiness provider).
-  final cards = index.cards.where((c) => c.type != CardType.algorithm).toList();
+  final cards = index.cards.where((c) => !c.type.isPracticeTrack).toList();
   if (cards.isEmpty) return null;
 
   final stateByKey = {

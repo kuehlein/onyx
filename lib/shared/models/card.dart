@@ -6,15 +6,32 @@
 /// pattern (e.g. "Two Pointers"), each H2 section is one problem (name +
 /// `practice_url`). They're scheduled on their own paced queue, not the main
 /// review/learn queues — see docs/algorithm-track-design.md.
+///
+/// [systemDesign] cards drive the System-Design practice track: the card is one
+/// canonical design problem (e.g. "Design a Rate Limiter"), each H2 section is an
+/// interview phase (Requirements, Estimation, API, …) that doubles as the
+/// reference solution and the mock rubric. The whole problem is the practice
+/// unit, so — unlike algorithm cards — its sections are NOT independently
+/// scheduled; it's practised via mocks on its own queue and feeds readiness
+/// through applied-transfer, not recall coverage. See
+/// docs/system-design-track-design.md.
 enum CardType {
   flashcard('flashcard'),
   interviewQuestion('interview-question'),
-  algorithm('algorithm');
+  algorithm('algorithm'),
+  systemDesign('system-design');
 
   const CardType(this.value);
 
   /// The exact string written in frontmatter.
   final String value;
+
+  /// Whether this type is a separate paced *practice track* (Algorithms,
+  /// System Design) rather than part of the spaced concept deck. Practice-track
+  /// cards are excluded from the general review/learn queues and from the
+  /// recall-coverage denominator; they feed readiness via applied-transfer.
+  bool get isPracticeTrack =>
+      this == CardType.algorithm || this == CardType.systemDesign;
 
   static CardType? fromString(String? raw) {
     for (final type in CardType.values) {

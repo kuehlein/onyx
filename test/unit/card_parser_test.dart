@@ -83,6 +83,41 @@ Time: O(n). Space: O(n).
 - [[hash-map]]
 ''';
 
+const _systemDesignCard = '''
+---
+id: design-rate-limiter
+type: system-design
+tags:
+  - system-design
+  - rate-limiting
+tiers:
+  system-design: 2
+created: 2026-09-11
+confidence: high
+---
+
+# Design a Rate Limiter
+
+Cap request rate fairly without becoming a bottleneck.
+
+## Problem & Requirements
+
+Functional and non-functional requirements.
+
+## Estimation
+
+Back-of-envelope QPS and storage.
+
+## Deep Dives
+
+Token bucket vs sliding window.
+
+## Related
+
+- [[rate-limiting]]
+- [[caching]]
+''';
+
 // A fenced code block containing a line that looks like an H2 must NOT be
 // parsed as a new section.
 const _fenceCard = '''
@@ -211,6 +246,24 @@ void main() {
 
     test('quizzes only the Approach section by default', () {
       expect(card.quizzableSections.map((s) => s.slug), ['approach']);
+    });
+  });
+
+  group('system-design card', () {
+    late final Card card;
+    setUpAll(() => card = _parser.parse(_systemDesignCard, filePath: 'sd.md')!);
+
+    test('parses as a system-design card', () {
+      expect(card.type, CardType.systemDesign);
+      expect(card.type.isPracticeTrack, isTrue);
+      expect(card.title, 'Design a Rate Limiter');
+    });
+
+    test('no section is quizzable (the whole problem is the practice unit)',
+        () {
+      expect(card.quizzableSections, isEmpty);
+      expect(card.sections.map((s) => s.heading),
+          containsAll(<String>['Problem & Requirements', 'Estimation']));
     });
   });
 
