@@ -33,7 +33,7 @@ ExplainOutcome scoreToRecurrence(int score) => score >= 70
 
 /// System-design practice problems ordered by **spaced recurrence**: overdue
 /// re-mocks first (most overdue first), then never-mocked, then upcoming (soonest
-/// due first). A real "what to practise next" — consistent with the rest of the
+/// due first). A real "what to practice next" — consistent with the rest of the
 /// app (browse ALL problems in Browse; this is the scheduled queue).
 @riverpod
 Future<List<Card>> systemDesignProblems(Ref ref) async {

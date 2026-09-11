@@ -12,7 +12,7 @@
 /// interview phase (Requirements, Estimation, API, …) that doubles as the
 /// reference solution and the mock rubric. The whole problem is the practice
 /// unit, so — unlike algorithm cards — its sections are NOT independently
-/// scheduled; it's practised via mocks on its own queue and feeds readiness
+/// scheduled; it's practiced via mocks on its own queue and feeds readiness
 /// through applied-transfer, not recall coverage. See
 /// docs/system-design-track-design.md.
 enum CardType {
@@ -85,7 +85,7 @@ enum Priority {
 
 /// Section headings that hold study REFERENCE code rather than a recall target.
 /// Kept in the card but never quizzed (reconstruct code from the approach, don't
-/// memorise it verbatim — see docs/learning-science.md), and expanded by default
+/// memorize it verbatim — see docs/learning-science.md), and expanded by default
 /// in the full-card view since they're the reason to open it.
 const implementationHeadings = <String>{
   'implementation',

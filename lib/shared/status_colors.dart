@@ -1,6 +1,6 @@
 import 'package:flutter/painting.dart';
 
-/// Semantic status colours shared across dashboards, grade buttons, confidence
+/// Semantic status colors shared across dashboards, grade buttons, confidence
 /// badges, and callouts — one source of truth instead of ~30 copy-pasted hex
 /// literals. Deliberately subject-agnostic (good / developing / weak), so a
 /// future per-subject theme can restyle them in a single place.

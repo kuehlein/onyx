@@ -49,8 +49,8 @@ class ChatView extends StatefulWidget {
   /// Always shown after the messages (e.g. a proposed-plan result card).
   final Widget? trailing;
 
-  /// The colour the transcript fades into at its edges; defaults to the scaffold
-  /// background. Pass a surface colour when the chat sits on a panel/sheet.
+  /// The color the transcript fades into at its edges; defaults to the scaffold
+  /// background. Pass a surface color when the chat sits on a panel/sheet.
   final Color? fadeColor;
 
   /// When false, the composer is disabled (e.g. no API key configured).

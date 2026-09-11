@@ -237,7 +237,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 ),
                 const SizedBox(height: 4),
                 // Inline calendar with per-day readiness-zone markers (the OS picker
-                // can't colour individual cells). Tapping a day sets the date.
+                // can't color individual cells). Tapping a day sets the date.
                 _ZoneCalendar(
                   forecast: forecast,
                   selected: date,
@@ -456,8 +456,8 @@ class _ForecastBlock extends ConsumerWidget {
 /// An inline month calendar whose day cells are **underlined by readiness zone**:
 /// green = comfortable at your pace, amber = reachable but needs a faster pace,
 /// red = not reachable even at the fastest sampled pace. Tapping a day sets the
-/// interview date. Replaces the OS date picker (whose theme colours are per-state,
-/// not per-date, so it can't zone-colour cells) — plain widgets, no runtime jank.
+/// interview date. Replaces the OS date picker (whose theme colors are per-state,
+/// not per-date, so it can't zone-color cells) — plain widgets, no runtime jank.
 class _ZoneCalendar extends StatefulWidget {
   const _ZoneCalendar({
     required this.forecast,
@@ -718,7 +718,7 @@ class _DayCell extends StatelessWidget {
   }
 }
 
-/// Legend for the zone-coloured calendar cells.
+/// Legend for the zone-colored calendar cells.
 class _CalendarLegend extends StatelessWidget {
   const _CalendarLegend();
 

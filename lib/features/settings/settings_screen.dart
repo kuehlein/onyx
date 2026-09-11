@@ -836,7 +836,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
   }
 }
 
-/// One labelled milestone line in the pace planner (a colour dot + "label:
+/// One labeled milestone line in the pace planner (a color dot + "label:
 /// value"), used to show the coverage and readiness dates distinctly.
 class _PaceLine extends StatelessWidget {
   const _PaceLine(

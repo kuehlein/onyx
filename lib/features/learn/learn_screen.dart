@@ -64,7 +64,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           },
         ),
         actions: [
-          // A labelled accent button so it pairs cleanly with the Coach button
+          // A labeled accent button so it pairs cleanly with the Coach button
           // (rather than a lone bare icon).
           Padding(
             padding: const EdgeInsets.only(right: 4),

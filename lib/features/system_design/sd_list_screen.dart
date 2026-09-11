@@ -92,7 +92,7 @@ class _SdListScreenState extends ConsumerState<SdListScreen> {
                   const SizedBox(height: 20),
                   Text(
                     'Problems surface on a spaced schedule — this is the one to '
-                    'practise next. Looking for a specific problem?',
+                    'practice next. Looking for a specific problem?',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -333,7 +333,7 @@ class _Empty extends StatelessWidget {
   }
 }
 
-/// Spaced-recurrence status label + colour for a problem.
+/// Spaced-recurrence status label + color for a problem.
 (String, Color) sdStatus(DateTime? due, DateTime? now) {
   if (due == null) return ('New', statusInfo);
   if (now == null) return ('Scheduled', Colors.grey);

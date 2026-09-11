@@ -39,7 +39,7 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   if (remaining <= 0) return const [];
   final targeting = await ref.watch(targetingProvider.future);
   return buildLearnQueue(
-    // Practice-track cards (Algorithms, System Design) are practised on their
+    // Practice-track cards (Algorithms, System Design) are practiced on their
     // own tracks, not learned here.
     cards: [
       for (final c in index.cards)

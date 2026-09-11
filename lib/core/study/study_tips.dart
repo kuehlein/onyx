@@ -27,14 +27,14 @@ const studyTips = <StudyTip>[
   ),
   StudyTip(
     'Ask “when would I use this?”',
-    'Recognising which pattern a problem calls for is the real interview skill. '
+    'Recognizing which pattern a problem calls for is the real interview skill. '
         'Study the trigger — the signals that point to this approach — not just '
         'the fact.',
   ),
   StudyTip(
     'A little struggle is good',
     'If recall feels effortful, it’s working. Don’t mark something easy just '
-        'because it looks familiar — recognising isn’t the same as recalling.',
+        'because it looks familiar — recognizing isn’t the same as recalling.',
   ),
   StudyTip(
     'Connect it to what you know',

@@ -29,7 +29,7 @@ Card _card() => const Card(
 
 void main() {
   group('buildCoachSystem', () {
-    test('hidden answer instructs hint-not-spoiler behaviour', () {
+    test('hidden answer instructs hint-not-spoiler behavior', () {
       final prompt = buildCoachSystem(
         card: _card(),
         section: _card().sections.first,

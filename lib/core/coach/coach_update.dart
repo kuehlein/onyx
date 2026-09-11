@@ -137,7 +137,7 @@ class CoachSignals {
   final LoadFeel? loadFeel;
 
   /// They've actually been showing up lately (used to gate ramping up — don't
-  /// pile on load for someone who isn't practising). Defaults true.
+  /// pile on load for someone who isn't practicing). Defaults true.
   final bool activeRecently;
 
   // --- Grounded thresholds (labeled heuristics; see memory) ---

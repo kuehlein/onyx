@@ -129,7 +129,7 @@ void main() {
     // The prompt that went out carried the real target + deck scope, proving the
     // whole gather→prompt→call path is wired.
     expect(sentBody, isNotNull);
-    final decoded = jsonEncode(jsonDecode(sentBody!)); // normalise
+    final decoded = jsonEncode(jsonDecode(sentBody!)); // normalize
     expect(decoded, contains('Senior · FAANG · General'));
     expect(decoded, contains('Load balancing')); // system-design deck topic
     expect(decoded, contains('recall')); // system prompt reasoning cue

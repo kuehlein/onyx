@@ -247,7 +247,7 @@ class _InterviewSheet extends ConsumerWidget {
   }
 }
 
-/// The three post-round outcomes on one row, coloured like the FSRS grade
+/// The three post-round outcomes on one row, colored like the FSRS grade
 /// buttons: blue (advance), green (offer), red (rejected).
 class _OutcomeRow extends StatelessWidget {
   const _OutcomeRow({

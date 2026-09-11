@@ -10,7 +10,7 @@ import 'interview_actions.dart';
 import 'interview_sheet.dart';
 
 /// The one interview row used everywhere (target sheet + upcoming list) so the
-/// behaviour is identical: tap opens the [InterviewSheet]; swipe archives (undo)
+/// behavior is identical: tap opens the [InterviewSheet]; swipe archives (undo)
 /// an active loop or deletes (confirm) an ended one. Shows the current round +
 /// a pace status judged against the interview's OWN role.
 class InterviewCard extends ConsumerWidget {

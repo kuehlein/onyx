@@ -85,7 +85,7 @@ String buildSystemDesignInterviewerSystem({
     ..writeln(
         '- Ask ONE thing at a time. Keep every turn SHORT (2-4 sentences): '
         'the candidate answers out loud via speech-to-text, so be concise and '
-        'unambiguous, and do not penalise informal phrasing, filler, or '
+        'unambiguous, and do not penalize informal phrasing, filler, or '
         'transcription noise — judge the ideas.')
     ..writeln()
     ..writeln('# How to probe')

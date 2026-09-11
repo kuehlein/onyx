@@ -154,7 +154,7 @@ void main() {
       expect(past.desiredRetentionForCard(_card('ds-a'), today: today), 0.90);
     });
 
-    test('a card the goal does not emphasise is not bumped', () {
+    test('a card the goal does not emphasize is not bumped', () {
       final t = Targeting(base: _base, goals: [goalOn(today)]); // boosts ds-a
       // system-design isn't boosted and the role weights it same as base.
       expect(t.desiredRetentionForCard(_card('system-design'), today: today),

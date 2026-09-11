@@ -19,7 +19,7 @@ class SheetScrollBody extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
 
-  /// The colour the content fades into — pass the sheet's background so the fade
+  /// The color the content fades into — pass the sheet's background so the fade
   /// blends into it (defaults to the scaffold background).
   final Color? color;
 
@@ -56,7 +56,7 @@ class SheetHeader extends StatelessWidget {
   final String title;
   final IconData? icon;
 
-  /// Defaults to the theme's primary colour.
+  /// Defaults to the theme's primary color.
   final Color? iconColor;
   final String? subtitle;
 

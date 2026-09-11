@@ -11,8 +11,8 @@ import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
 import 'explain_sheet.dart';
 
-// Colour comes from each outcome's FSRS grade (clean=4 … failed=1) via
-// [gradeColor], so these buttons share the quiz's four-colour grade scale.
+// Color comes from each outcome's FSRS grade (clean=4 … failed=1) via
+// [gradeColor], so these buttons share the quiz's four-color grade scale.
 const _outcomes = <({SolveOutcome outcome, String label})>[
   (outcome: SolveOutcome.clean, label: 'Solved it cleanly'),
   (outcome: SolveOutcome.hinted, label: 'Solved, needed a hint'),
@@ -252,7 +252,7 @@ class _AltButton extends StatelessWidget {
 }
 
 /// The solve-and-log block: an optional insight note + the four outcome
-/// buttons, coloured by the FSRS grade they map to.
+/// buttons, colored by the FSRS grade they map to.
 class _SolveBlock extends StatelessWidget {
   const _SolveBlock({
     required this.note,

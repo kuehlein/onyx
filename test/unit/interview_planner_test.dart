@@ -111,7 +111,7 @@ void main() {
   test('a plan reply parses; accept() persists an active prep goal', () async {
     if (!_sqliteAvailable) return;
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
-    const reply = 'Prioritising system design; behavioral is on you.\n'
+    const reply = 'Prioritizing system design; behavioral is on you.\n'
         '<plan>{"company":"Google","role":"Senior Backend",'
         '"level":"senior","tier":"faang","track":"backend",'
         '"date":"2026-09-20","domainWeights":{"system-design":1.6},'
@@ -126,7 +126,7 @@ void main() {
 
     final s = c.read(interviewPlannerProvider);
     expect(s.messages.last.text,
-        'Prioritising system design; behavioral is on you.');
+        'Prioritizing system design; behavioral is on you.');
     expect(s.plan, isNotNull);
     expect(s.plan!.company, 'Google');
     expect(s.plan!.appGaps, ['behavioral']);

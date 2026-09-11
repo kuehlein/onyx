@@ -47,7 +47,7 @@ class CardParser {
     // as browse/reference (visible in-flow via "View full card").
     'variants',
     // Code/implementation is study REFERENCE, not a recall target — you should
-    // reconstruct it from the approach, not memorise it verbatim (see
+    // reconstruct it from the approach, not memorize it verbatim (see
     // docs/learning-science.md). Kept in the card and viewable in-flow via
     // "View full card"; actual implementation practice is the Solve loop.
     ...implementationHeadings,
@@ -136,7 +136,7 @@ class CardParser {
       quizzable = true;
     } else if (type == CardType.systemDesign) {
       // System-design cards: sections are interview phases, not independent
-      // recall units. The whole problem is practised as a mock, so no section
+      // recall units. The whole problem is practiced as a mock, so no section
       // is scheduled (no srs_state) — the track has its own queue.
       quizzable = false;
     } else if (type == CardType.interviewQuestion) {
