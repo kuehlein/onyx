@@ -11,6 +11,7 @@ import '../../shared/providers/algo.dart';
 import '../../shared/providers/explain_chat.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/chat_view.dart';
+import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the explain-mode interviewer for one problem: talk through approach,
@@ -139,28 +140,16 @@ class _GradeBar extends StatelessWidget {
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                for (final g in _grades) ...[
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => onGrade(g.outcome),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: g.color.withValues(
-                            alpha: suggested == g.outcome ? 0.28 : 0.14),
-                        foregroundColor: g.color,
-                        side: suggested == g.outcome
-                            ? BorderSide(color: g.color, width: 1.5)
-                            : null,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: Text(g.label,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ),
+            GradeButtons(
+              verticalPadding: 12,
+              buttons: [
+                for (final g in _grades)
+                  GradeButton(
+                    label: g.label,
+                    color: g.color,
+                    onTap: () => onGrade(g.outcome),
+                    highlighted: suggested == g.outcome,
                   ),
-                  if (g.outcome != _grades.last.outcome)
-                    const SizedBox(width: 8),
-                ],
               ],
             ),
           ],

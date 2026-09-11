@@ -9,15 +9,16 @@ import '../../shared/status_colors.dart';
 import '../../shared/study_grades.dart' show gradeColor;
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/grade_buttons.dart';
 import 'explain_sheet.dart';
 
 // Color comes from each outcome's FSRS grade (clean=4 … failed=1) via
 // [gradeColor], so these buttons share the quiz's four-color grade scale.
 const _outcomes = <({SolveOutcome outcome, String label})>[
-  (outcome: SolveOutcome.clean, label: 'Solved it cleanly'),
-  (outcome: SolveOutcome.hinted, label: 'Solved, needed a hint'),
-  (outcome: SolveOutcome.struggled, label: 'Struggled through it'),
-  (outcome: SolveOutcome.failed, label: 'Couldn’t solve it'),
+  (outcome: SolveOutcome.clean, label: 'Clean'),
+  (outcome: SolveOutcome.hinted, label: 'Hinted'),
+  (outcome: SolveOutcome.struggled, label: 'Struggled'),
+  (outcome: SolveOutcome.failed, label: 'Failed'),
 ];
 
 final _urlRe = RegExp(r'https?://\S+');
@@ -289,28 +290,17 @@ class _SolveBlock extends StatelessWidget {
         Text('Solve it, then log how it went:',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
-        for (final o in _outcomes) ...[
-          () {
-            final color = gradeColor(o.outcome.spec.grade);
-            return SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => onLog(o.outcome),
-                style: FilledButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  backgroundColor: color.withValues(alpha: 0.16),
-                  foregroundColor: color,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                child: Text(o.label,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        GradeButtons(
+          buttons: [
+            for (final o in _outcomes)
+              GradeButton(
+                label: o.label,
+                color: gradeColor(o.outcome.spec.grade),
+                onTap: () => onLog(o.outcome),
               ),
-            );
-          }(),
-          const SizedBox(height: 6),
-        ],
+          ],
+        ),
       ],
     );
   }

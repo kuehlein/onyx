@@ -17,6 +17,7 @@ import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
@@ -301,25 +302,15 @@ class _ActionBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: revealed
-            ? Row(
-                children: [
-                  for (final (:value, :label, :color) in studyGrades) ...[
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => onGrade(value),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: color.withValues(alpha: 0.18),
-                          foregroundColor: color,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: suggestedGrade == value
-                              ? BorderSide(color: color, width: 2)
-                              : null,
-                        ),
-                        child: Text(label),
-                      ),
+            ? GradeButtons(
+                buttons: [
+                  for (final (:value, :label, :color) in studyGrades)
+                    GradeButton(
+                      label: label,
+                      color: color,
+                      onTap: () => onGrade(value),
+                      highlighted: suggestedGrade == value,
                     ),
-                    if (value != 4) const SizedBox(width: 8),
-                  ],
                 ],
               )
             : Column(
