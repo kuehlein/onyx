@@ -8,11 +8,25 @@ import 'sd_mock_screen.dart';
 /// buffer/list page — spaced recurrence picks the problem due next and drops you
 /// straight into the mock. (The full library of problems is browsable in Browse;
 /// level/support are adjustable from the mock's tune action.)
-class SdEntryScreen extends ConsumerWidget {
+///
+/// It fixes the chosen problem **once** (on first load): grading a mock
+/// invalidates the queue, and we must NOT swap the screen to a different problem
+/// mid-session — you stay on this one until you leave.
+class SdEntryScreen extends ConsumerStatefulWidget {
   const SdEntryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SdEntryScreen> createState() => _SdEntryScreenState();
+}
+
+class _SdEntryScreenState extends ConsumerState<SdEntryScreen> {
+  String? _problemId;
+
+  @override
+  Widget build(BuildContext context) {
+    // Once we've locked onto a problem, render it and ignore later queue changes.
+    if (_problemId != null) return SdMockScreen(problemId: _problemId!);
+
     final problems = ref.watch(systemDesignProblemsProvider);
     return problems.when(
       loading: () =>
@@ -21,9 +35,14 @@ class SdEntryScreen extends ConsumerWidget {
         appBar: AppBar(title: const Text('System design')),
         body: Center(child: Text('Could not load problems: $e')),
       ),
-      data: (cards) => cards.isEmpty
-          ? const _EmptySd()
-          : SdMockScreen(problemId: cards.first.id),
+      data: (cards) {
+        if (cards.isEmpty) return const _EmptySd();
+        // Lock onto the next-due problem after this frame.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _problemId = cards.first.id);
+        });
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
     );
   }
 }

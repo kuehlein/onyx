@@ -151,18 +151,26 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       body: Column(
         children: [
           if (running || state.phase == SdMockPhase.grading)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
+            Material(
+              color: theme.colorScheme.surfaceContainerLow,
+              child: Column(
                 children: [
-                  _SettingsPill(
-                    level: level,
-                    support: support,
-                    onTap: () => _adjust(level, autoSupport),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+                    child: Row(
+                      children: [
+                        const SessionTimer(
+                            mode: TimerMode.countUp, idleLabel: 'Answer timer'),
+                        const Spacer(),
+                        _SettingsPill(
+                          level: level,
+                          support: support,
+                          onTap: () => _adjust(level, autoSupport),
+                        ),
+                      ],
+                    ),
                   ),
-                  const Spacer(),
-                  const SessionTimer(
-                      mode: TimerMode.countUp, idleLabel: 'Answer timer'),
+                  const Divider(height: 1),
                 ],
               ),
             ),
@@ -196,8 +204,11 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
 }
 
 /// The tucked-away "adjust this mock" sheet: level + support. Most users never
-/// open it — the defaults follow the target and recent-mock competence.
-class _AdjustSheet extends StatelessWidget {
+/// open it — the defaults follow the target and recent-mock competence. Holds its
+/// own state so the form reflects a change immediately; the callbacks push the
+/// change to the mock screen (which applies it to the interviewer from the next
+/// message).
+class _AdjustSheet extends StatefulWidget {
   const _AdjustSheet({
     required this.level,
     required this.supportOverride,
@@ -213,99 +224,123 @@ class _AdjustSheet extends StatelessWidget {
   final ValueChanged<SdSupportMode?> onSupport;
 
   @override
+  State<_AdjustSheet> createState() => _AdjustSheetState();
+}
+
+class _AdjustSheetState extends State<_AdjustSheet> {
+  late SeniorityLevel _level = widget.level;
+  late SdSupportMode? _supportOverride = widget.supportOverride;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return StatefulBuilder(
-      builder: (context, setSheet) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SheetHeader(
-              icon: Icons.tune,
-              title: 'Adjust this mock',
-              subtitle: 'Defaults follow your target and your recent mocks.',
-              divider: true,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Interview level',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 6),
-                  DropdownButton<SeniorityLevel>(
-                    value: level,
-                    isExpanded: true,
-                    onChanged: (l) {
-                      if (l != null) {
-                        onLevel(l);
-                        setSheet(() {});
-                      }
-                    },
-                    items: [
-                      for (final l in SeniorityLevel.values)
-                        DropdownMenuItem(value: l, child: Text(l.label)),
+    final effective = _supportOverride ?? widget.autoSupport;
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SheetHeader(
+            icon: Icons.tune,
+            title: 'Adjust this mock',
+            subtitle: 'Defaults follow your target and your recent mocks.',
+            divider: true,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Interview level',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 6),
+                DropdownButton<SeniorityLevel>(
+                  value: _level,
+                  isExpanded: true,
+                  onChanged: (l) {
+                    if (l != null) {
+                      setState(() => _level = l);
+                      widget.onLevel(l);
+                    }
+                  },
+                  items: [
+                    for (final l in SeniorityLevel.values)
+                      DropdownMenuItem(value: l, child: Text(l.label)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text('Support',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: 'auto', label: Text('Auto')),
+                      ButtonSegment(value: 'coaching', label: Text('Coaching')),
+                      ButtonSegment(
+                          value: 'realistic', label: Text('Realistic')),
                     ],
+                    selected: {_supportOverride?.name ?? 'auto'},
+                    onSelectionChanged: (s) {
+                      final next = switch (s.first) {
+                        'coaching' => SdSupportMode.coaching,
+                        'realistic' => SdSupportMode.realistic,
+                        _ => null,
+                      };
+                      setState(() => _supportOverride = next);
+                      widget.onSupport(next);
+                    },
                   ),
-                  const SizedBox(height: 20),
-                  Text('Support',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<String>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(value: 'auto', label: Text('Auto')),
-                        ButtonSegment(
-                            value: 'coaching', label: Text('Coaching')),
-                        ButtonSegment(
-                            value: 'realistic', label: Text('Realistic')),
-                      ],
-                      selected: {supportOverride?.name ?? 'auto'},
-                      onSelectionChanged: (s) {
-                        onSupport(switch (s.first) {
-                          'coaching' => SdSupportMode.coaching,
-                          'realistic' => SdSupportMode.realistic,
-                          _ => null,
-                        });
-                        setSheet(() {});
-                      },
+                ),
+                const SizedBox(height: 12),
+                // What the choices mean — most users leave this on Auto.
+                _Explain(
+                  'Auto',
+                  'picks Coaching while you\'re new to these mocks, then '
+                      'switches to Realistic as your scores improve. Right now: '
+                      '${widget.autoSupport.name}.',
+                  theme,
+                ),
+                const SizedBox(height: 6),
+                _Explain(
+                  'Coaching',
+                  'the interviewer notices when you\'re stuck and steps in with '
+                      'a hint — good while you\'re learning.',
+                  theme,
+                ),
+                const SizedBox(height: 6),
+                _Explain(
+                  'Realistic',
+                  'hands-off, like the real thing; ask explicitly if you want a '
+                      'hint.',
+                  theme,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 15, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Now: ${_level.label} · '
+                        '${effective == SdSupportMode.coaching ? 'Coaching' : 'Realistic'}. '
+                        'Applies to the interviewer from your next message.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  // What the choices mean — most users leave this on Auto.
-                  _Explain(
-                    'Auto',
-                    'picks Coaching while you\'re new to these mocks, then '
-                        'switches to Realistic as your scores improve. Right now: '
-                        '${autoSupport.name}.',
-                    theme,
-                  ),
-                  const SizedBox(height: 6),
-                  _Explain(
-                    'Coaching',
-                    'the interviewer notices when you\'re stuck and steps in with '
-                        'a hint — good while you\'re learning.',
-                    theme,
-                  ),
-                  const SizedBox(height: 6),
-                  _Explain(
-                    'Realistic',
-                    'hands-off, like the real thing; ask explicitly if you want a '
-                        'hint.',
-                    theme,
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
