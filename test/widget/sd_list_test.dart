@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/clock.dart';
 import 'package:onyx/features/system_design/sd_list_screen.dart';
 import 'package:onyx/shared/models/card.dart';
+import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/system_design.dart';
 
 Card _sd(String id, String title) => Card(
@@ -21,6 +23,9 @@ Card _sd(String id, String title) => Card(
 Widget _app(List<Card> problems) => ProviderScope(
       overrides: [
         systemDesignProblemsProvider.overrideWith((ref) async => problems),
+        clockProvider.overrideWith((ref) async => Clock.real),
+        for (final c in problems)
+          systemDesignDueProvider(c.id).overrideWith((ref) async => null),
       ],
       child: const MaterialApp(home: SdListScreen()),
     );
@@ -36,7 +41,7 @@ void main() {
 
     expect(find.text('Design a Rate Limiter'), findsOneWidget);
     expect(find.text('Design a URL Shortener'), findsOneWidget);
-    expect(find.text('Suggested next'), findsOneWidget);
+    expect(find.textContaining('Suggested next'), findsOneWidget);
   });
 
   testWidgets('shows an empty state when there are no problems',

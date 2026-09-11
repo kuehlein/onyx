@@ -7,43 +7,86 @@ import '../../core/ai/system_design_interviewer.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/interview/system_design_grader.dart';
 import '../../core/readiness/target.dart';
+import '../../core/srs/recognition.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';
+import 'srs.dart';
 import 'vault.dart';
 
 part 'system_design.g.dart';
 
-/// System-design practice problems (the `type: system-design` cards), ordered
-/// **weakest-first**: never-mocked problems first, then those mocked longest ago.
-/// This is the queue the track surfaces (a mock is long, so cadence is per-week,
-/// not per-day — the ordering is what matters, not a hard daily count).
+/// The recognition-clock section key for a problem's re-mock schedule.
+const _recognitionSlug = 'mock';
+
+/// Maps a mock's overall score to a spaced-recurrence outcome for the recognition
+/// clock — the same lightweight expanding-interval scheduler the algo track uses.
+/// It carries NO readiness weight; it only decides when a problem is due to
+/// re-mock. Readiness comes from applied-transfer, separately.
+ExplainOutcome scoreToRecurrence(int score) => score >= 70
+    ? ExplainOutcome.solid
+    : score >= 45
+        ? ExplainOutcome.shaky
+        : ExplainOutcome.lost;
+
+/// System-design practice problems ordered by **spaced recurrence**: overdue
+/// re-mocks first (most overdue first), then never-mocked, then upcoming (soonest
+/// due first). A real "what to practise next" — consistent with the rest of the
+/// app (browse ALL problems in Browse; this is the scheduled queue).
 @riverpod
 Future<List<Card>> systemDesignProblems(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
+  final states = await ref.watch(recognitionRepositoryProvider).loadStates();
+  final now = (await ref.watch(clockProvider.future)).now();
   final problems = [
     for (final c in index.cards)
       if (c.type == CardType.systemDesign) c,
   ];
-  final attempts = await ref
-      .watch(appliedRepositoryProvider)
-      .attempts(); // most recent first
-  final lastMock = <String, DateTime>{};
-  for (final a in attempts) {
-    if (a.source != 'sd-practice') continue;
-    lastMock.putIfAbsent(a.cardId, () => a.occurredAt);
+  DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
+  // 0 = overdue, 1 = never mocked, 2 = upcoming.
+  int bucket(Card c) {
+    final d = dueOf(c);
+    if (d == null) return 1;
+    return d.isAfter(now) ? 2 : 0;
   }
+
   problems.sort((a, b) {
-    final la = lastMock[a.id];
-    final lb = lastMock[b.id];
-    if (la == null && lb == null) return a.title.compareTo(b.title);
-    if (la == null) return -1; // never mocked → first
-    if (lb == null) return 1;
-    return la.compareTo(lb); // oldest mock → first
+    final ba = bucket(a), bb = bucket(b);
+    if (ba != bb) return ba.compareTo(bb);
+    final da = dueOf(a), db = dueOf(b);
+    if (da != null && db != null) return da.compareTo(db);
+    return a.title.compareTo(b.title);
   });
   return problems;
+}
+
+/// The due date for a problem's next re-mock, or null if never mocked.
+@riverpod
+Future<DateTime?> systemDesignDue(Ref ref, String problemId) async {
+  final states = await ref.watch(recognitionRepositoryProvider).loadStates();
+  return states['$problemId::$_recognitionSlug']?.dueAt;
+}
+
+/// Auto support mode from demonstrated competence: **coaching** until the
+/// candidate has completed a few mocks AND is scoring decently, then **realistic**
+/// (scaffolding fade; avoids the expertise-reversal effect). Overridable per
+/// session in the UI.
+@riverpod
+Future<SdSupportMode> sdAutoSupportMode(Ref ref) async {
+  final attempts = await ref
+      .watch(appliedRepositoryProvider)
+      .attempts(domain: 'system-design');
+  final mocks = [
+    for (final a in attempts)
+      if (a.source == 'sd-practice') a,
+  ];
+  if (mocks.length < 3) return SdSupportMode.coaching;
+  final recent = mocks.take(3).toList();
+  final mean =
+      recent.map((a) => a.appliedScore).reduce((x, y) => x + y) / recent.length;
+  return mean >= 60 ? SdSupportMode.realistic : SdSupportMode.coaching;
 }
 
 /// One turn's phase of the mock session.
@@ -84,9 +127,11 @@ class SdMockState {
       );
 }
 
-/// Drives one system-design mock interview for a problem: relays turns to the
-/// interviewer persona, then on end runs an adversarial grader **panel** over the
-/// cold transcript and records the applied-transfer attempt. Ephemeral, keyed by
+/// Drives one system-design mock interview: a terse hard-coded opener, interviewer
+/// turns (calibrated by level + support mode), then on End an interviewer debrief
+/// plus an adversarial grader **panel** over the cold transcript that records the
+/// applied-transfer attempt and advances the spaced-recurrence clock. After the
+/// mock the candidate can keep chatting with a tutor to learn. Ephemeral per
 /// problem id.
 @riverpod
 class SdMockSession extends _$SdMockSession {
@@ -110,55 +155,68 @@ class SdMockSession extends _$SdMockSession {
     return claude;
   }
 
-  /// Kick off the interview: the interviewer gives its opening.
-  Future<void> start({
-    required Card card,
-    required SeniorityLevel level,
-    required CompanyTier company,
-  }) async {
-    if (state.phase != SdMockPhase.intro || state.busy) return;
-    final claude = _claudeOrError();
-    if (claude == null) return;
-    // Anthropic turns must start with the candidate; a short kickoff reads
-    // naturally and prompts the interviewer's opener.
-    final history = [
-      const CoachMessage(CoachRole.user, "I'm ready — let's begin."),
-    ];
+  // Anthropic turns must start with the candidate; the hard-coded opener is a
+  // UI-only assistant message, so drop leading assistant turns for the API.
+  List<({String role, String content})> _apiTurns(List<CoachMessage> history) =>
+      coachChatTurns(
+          history.skipWhile((m) => m.role == CoachRole.assistant).toList());
+
+  /// Kick off the interview with a terse, hard-coded opener (instant — no
+  /// generation, and it doesn't leak the requirements the candidate should ask).
+  void start({required Card card}) {
+    if (state.phase != SdMockPhase.intro) return;
     state = state.copyWith(
-        phase: SdMockPhase.running,
-        messages: history,
-        busy: true,
-        clearError: true);
-    await _reply(claude, card, level, company, history);
+      phase: SdMockPhase.running,
+      messages: [
+        CoachMessage(CoachRole.assistant, systemDesignOpeningLine(card))
+      ],
+      clearError: true,
+    );
   }
 
-  /// Send the candidate's turn.
+  /// Send the candidate's turn. Routes to the interviewer while running, or to the
+  /// post-mock tutor once done.
   Future<void> send(
     String text, {
     required Card card,
     required SeniorityLevel level,
     required CompanyTier company,
+    required SdSupportMode support,
   }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || state.busy || state.phase != SdMockPhase.running) {
-      return;
-    }
+    if (trimmed.isEmpty || state.busy) return;
     final claude = _claudeOrError();
     if (claude == null) return;
     final history = [...state.messages, CoachMessage(CoachRole.user, trimmed)];
-    state = state.copyWith(messages: history, busy: true, clearError: true);
-    await _reply(claude, card, level, company, history);
+
+    if (state.phase == SdMockPhase.running) {
+      state = state.copyWith(messages: history, busy: true, clearError: true);
+      await _respond(
+        claude,
+        history,
+        buildSystemDesignInterviewerSystem(
+            card: card, level: level, company: company, support: support),
+        700,
+      );
+    } else if (state.phase == SdMockPhase.done) {
+      state = state.copyWith(messages: history, busy: true, clearError: true);
+      await _respond(
+        claude,
+        history,
+        buildSystemDesignTutorSystem(card: card, level: level),
+        600,
+      );
+    }
   }
 
-  Future<void> _reply(ClaudeService claude, Card card, SeniorityLevel level,
-      CompanyTier company, List<CoachMessage> history) async {
+  Future<void> _respond(ClaudeService claude, List<CoachMessage> history,
+      String system, int maxTokens) async {
     try {
       final raw = await claude.chat(
-        system: buildSystemDesignInterviewerSystem(
-            card: card, level: level, company: company),
+        system: system,
         model: _model,
-        maxTokens: 700,
-        messages: coachChatTurns(history),
+        maxTokens: maxTokens,
+        messages: _apiTurns(history),
       );
       state = state.copyWith(
         messages: [...history, CoachMessage(CoachRole.assistant, raw.trim())],
@@ -171,12 +229,14 @@ class SdMockSession extends _$SdMockSession {
     }
   }
 
-  /// End the interview: get the interviewer's debrief, run the adversarial
-  /// grader panel over the transcript, and record the applied attempt.
+  /// End the interview: interviewer debrief, adversarial grader panel over the
+  /// transcript, record the applied attempt (assisted mocks are softer evidence),
+  /// and advance the spaced-recurrence clock.
   Future<void> endAndGrade({
     required Card card,
     required SeniorityLevel level,
     required CompanyTier company,
+    required SdSupportMode support,
   }) async {
     if (state.busy || state.phase != SdMockPhase.running) return;
     final claude = _claudeOrError();
@@ -190,14 +250,28 @@ class SdMockSession extends _$SdMockSession {
     ];
     state = state.copyWith(
         phase: SdMockPhase.grading, messages: history, busy: true);
-    await _reply(claude, card, level, company, history);
+    try {
+      final raw = await claude.chat(
+        system: buildSystemDesignInterviewerSystem(
+            card: card, level: level, company: company, support: support),
+        model: _model,
+        maxTokens: 700,
+        messages: _apiTurns(history),
+      );
+      state = state.copyWith(messages: [
+        ...history,
+        CoachMessage(CoachRole.assistant, raw.trim())
+      ]);
+    } catch (_) {
+      // A failed debrief shouldn't block grading; carry on with what we have.
+    }
 
     // 2) Adversarial grader panel over the cold transcript (the honest number).
     final transcript = buildSdGraderTranscript([
       for (final m in state.messages)
         (
           role: m.role == CoachRole.user ? 'user' : 'assistant',
-          content: m.text
+          content: m.text,
         ),
     ]);
     final graderSystem = buildSdGraderSystem(card: card, level: level);
@@ -221,7 +295,6 @@ class SdMockSession extends _$SdMockSession {
 
     SdGrade? finalGrade;
     if (score01 != null) {
-      // Rubric/note from the panel's median-scoring grade (most representative).
       final sorted = [...panel]
         ..sort((a, b) => a.appliedScore.compareTo(b.appliedScore));
       final median = sorted[sorted.length ~/ 2];
@@ -239,11 +312,24 @@ class SdMockSession extends _$SdMockSession {
             assessment: AppliedAssessment(
               appliedScore: finalGrade.appliedScore,
               rubric: finalGrade.rubric,
+              // Coaching-mode mocks were assisted → softer evidence (hintLevel>0)
+              // so learning reps don't inflate readiness.
+              hintLevel: support == SdSupportMode.coaching ? 1 : 0,
               note: finalGrade.note,
             ),
           );
-      ref.invalidate(appliedTransferProvider);
-      ref.invalidate(systemDesignProblemsProvider);
+      // Advance the spaced-recurrence clock (schedules the next re-mock).
+      await ref.read(recognitionRepositoryProvider).recordExplain(
+            cardId: card.id,
+            sectionSlug: _recognitionSlug,
+            outcome: scoreToRecurrence(finalGrade.appliedScore),
+            now: now,
+          );
+      ref
+        ..invalidate(appliedTransferProvider)
+        ..invalidate(systemDesignProblemsProvider)
+        ..invalidate(systemDesignDueProvider)
+        ..invalidate(sdAutoSupportModeProvider);
     }
     state =
         state.copyWith(phase: SdMockPhase.done, busy: false, grade: finalGrade);

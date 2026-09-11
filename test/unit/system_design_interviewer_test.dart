@@ -52,6 +52,47 @@ void main() {
     });
   });
 
+  group('systemDesignOpeningLine', () {
+    test('is terse and does not leak the requirements/ground truth', () {
+      final line = systemDesignOpeningLine(_card());
+      expect(line, contains('design a Rate Limiter'));
+      expect(line, isNot(contains('SECRET_GROUND_TRUTH_MARKER')));
+      expect(line.length, lessThan(160));
+    });
+  });
+
+  group('support mode', () {
+    test('coaching invites stepping in; realistic is hands-off', () {
+      final coaching = buildSystemDesignInterviewerSystem(
+        card: _card(),
+        level: SeniorityLevel.mid,
+        company: CompanyTier.faang,
+        support: SdSupportMode.coaching,
+      );
+      final realistic = buildSystemDesignInterviewerSystem(
+        card: _card(),
+        level: SeniorityLevel.mid,
+        company: CompanyTier.faang,
+        support: SdSupportMode.realistic,
+      );
+      expect(coaching, contains('COACHING mode'));
+      expect(coaching, contains('STEP IN'));
+      expect(realistic, contains('REALISTIC mode'));
+      expect(realistic, contains('hands-off'));
+    });
+  });
+
+  group('buildSystemDesignTutorSystem', () {
+    test('drops the act and may use the reference solution', () {
+      final t = buildSystemDesignTutorSystem(
+          card: _card(), level: SeniorityLevel.senior);
+      expect(t, contains('drop the interviewer act'));
+      expect(t, contains('reference solution'));
+      // The tutor is allowed to see the ground truth (teaching).
+      expect(t, contains('SECRET_GROUND_TRUTH_MARKER'));
+    });
+  });
+
   group('buildSdGraderSystem (adversarial)', () {
     test('is skeptical, level-calibrated, and asks for the SD rubric', () {
       final g = buildSdGraderSystem(card: _card(), level: SeniorityLevel.staff);
