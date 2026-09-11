@@ -70,6 +70,21 @@ const sweRubricDimensions = <String>[
   'independence',
 ];
 
+/// The system-design mock-interview rubric dimensions (flow 3). Distinct from the
+/// coding [sweRubricDimensions]: a design interview grades scoping, estimation,
+/// architecture, data modeling, depth, trade-off justification, and communication.
+/// One holistic [AppliedAssessment.appliedScore] still drives readiness; these
+/// per-dimension scores power insights (surfacing a consistently-weak dimension).
+const systemDesignRubricDimensions = <String>[
+  'requirements',
+  'estimation',
+  'highLevelDesign',
+  'dataModeling',
+  'deepDive',
+  'tradeoffReasoning',
+  'communication',
+];
+
 /// A human-readable label for a rubric dimension key.
 String rubricLabel(String key) => switch (key) {
       'communication' => 'Communication',
@@ -78,5 +93,12 @@ String rubricLabel(String key) => switch (key) {
       'complexity' => 'Complexity analysis',
       'edgeCases' => 'Edge cases',
       'independence' => 'Independence',
+      // System-design dimensions.
+      'requirements' => 'Requirements & scoping',
+      'estimation' => 'Estimation',
+      'highLevelDesign' => 'High-level design',
+      'dataModeling' => 'Data modeling',
+      'deepDive' => 'Deep-dive depth',
+      'tradeoffReasoning' => 'Trade-off reasoning',
       _ => key,
     };
