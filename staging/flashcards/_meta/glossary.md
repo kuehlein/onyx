@@ -203,6 +203,9 @@ In the CAP theorem, a system that favors Consistency and Partition tolerance, re
 ## CQL
 Cassandra Query Language — Cassandra's SQL-like language that permits efficient filtering only on partition and clustering keys.
 
+## CQRS
+Command Query Responsibility Segregation — separating the model that writes/changes state (commands) from the model that reads it (queries), so each can be shaped, stored, and scaled for its own workload; the read side is typically an asynchronously-updated, eventually-consistent derived view.
+
 ## CRC
 Cyclic Redundancy Check — a fast non-cryptographic checksum (e.g. CRC32) for detecting accidental corruption, not deliberate tampering.
 
