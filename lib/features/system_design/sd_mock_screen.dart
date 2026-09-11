@@ -14,12 +14,14 @@ import '../../shared/providers/vault.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/session_timer.dart';
+import '../../shared/widgets/sheet_header.dart';
 
-/// A live system-design mock interview for one problem. It auto-starts on load
-/// (level + support come from the launcher), so — like the Algorithms session —
-/// you land straight in the interview. A count-up stopwatch times the spoken/STT
-/// answer; on End an adversarial grader panel scores the transcript into
-/// readiness; afterward you can keep chatting with a tutor to learn.
+/// A live system-design mock interview for one problem. Like the Algorithms
+/// session, you land straight in it — it auto-starts (level and support are
+/// auto-derived from your target and recent mocks; tweak them from the tune
+/// action). A count-up stopwatch times the spoken/STT answer; on End an
+/// adversarial grader panel scores the transcript into readiness; afterward you
+/// can keep chatting with a tutor to learn.
 class SdMockScreen extends ConsumerStatefulWidget {
   const SdMockScreen({
     super.key,
@@ -37,7 +39,12 @@ class SdMockScreen extends ConsumerStatefulWidget {
 }
 
 class _SdMockScreenState extends ConsumerState<SdMockScreen> {
+  // In-session overrides from the tune action (null = use the auto-derived value).
+  SeniorityLevel? _levelOverride;
+  SdSupportMode? _supportOverride;
+
   SeniorityLevel _level(SeniorityLevel? target) {
+    if (_levelOverride != null) return _levelOverride!;
     for (final l in SeniorityLevel.values) {
       if (l.name == widget.levelName) return l;
     }
@@ -45,10 +52,27 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   }
 
   SdSupportMode _support(SdSupportMode auto) {
+    if (_supportOverride != null) return _supportOverride!;
     for (final s in SdSupportMode.values) {
       if (s.name == widget.supportName) return s;
     }
     return auto; // 'auto' or absent
+  }
+
+  Future<void> _adjust(SeniorityLevel level, SdSupportMode autoSupport) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      builder: (_) => _AdjustSheet(
+        level: level,
+        supportOverride: _supportOverride,
+        autoSupport: autoSupport,
+        onLevel: (l) => setState(() => _levelOverride = l),
+        onSupport: (s) => setState(() => _supportOverride = s),
+      ),
+    );
   }
 
   @override
@@ -85,6 +109,12 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       appBar: AppBar(
         title: Text(card.title, overflow: TextOverflow.ellipsis),
         actions: [
+          if (!done)
+            IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'Adjust level & support',
+              onPressed: () => _adjust(level, autoSupport),
+            ),
           if (running && !state.busy)
             TextButton(
               onPressed: () => session.endAndGrade(
@@ -139,6 +169,107 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   }
 
   static bool _isKickoff(String t) => t.startsWith("I'm ready");
+}
+
+/// The tucked-away "adjust this mock" sheet: level + support. Most users never
+/// open it — the defaults follow the target and recent-mock competence.
+class _AdjustSheet extends StatelessWidget {
+  const _AdjustSheet({
+    required this.level,
+    required this.supportOverride,
+    required this.autoSupport,
+    required this.onLevel,
+    required this.onSupport,
+  });
+
+  final SeniorityLevel level;
+  final SdSupportMode? supportOverride;
+  final SdSupportMode autoSupport;
+  final ValueChanged<SeniorityLevel> onLevel;
+  final ValueChanged<SdSupportMode?> onSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return StatefulBuilder(
+      builder: (context, setSheet) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SheetHeader(
+              icon: Icons.tune,
+              title: 'Adjust this mock',
+              subtitle: 'Defaults follow your target and your recent mocks.',
+              divider: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Interview level',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  DropdownButton<SeniorityLevel>(
+                    value: level,
+                    isExpanded: true,
+                    onChanged: (l) {
+                      if (l != null) {
+                        onLevel(l);
+                        setSheet(() {});
+                      }
+                    },
+                    items: [
+                      for (final l in SeniorityLevel.values)
+                        DropdownMenuItem(value: l, child: Text(l.label)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Support',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                          value: 'auto',
+                          label: Text('Auto (${autoSupport.name})')),
+                      const ButtonSegment(
+                          value: 'coaching', label: Text('Coaching')),
+                      const ButtonSegment(
+                          value: 'realistic', label: Text('Realistic')),
+                    ],
+                    selected: {supportOverride?.name ?? 'auto'},
+                    onSelectionChanged: (s) {
+                      onSupport(switch (s.first) {
+                        'coaching' => SdSupportMode.coaching,
+                        'realistic' => SdSupportMode.realistic,
+                        _ => null,
+                      });
+                      setSheet(() {});
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    (supportOverride ?? autoSupport) == SdSupportMode.coaching
+                        ? 'Coaching: the interviewer steps in and helps if you '
+                            'get stuck.'
+                        : 'Realistic: hands-off, like the real thing. Ask '
+                            'explicitly for a hint.',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// A small chip showing the active support mode during the interview.

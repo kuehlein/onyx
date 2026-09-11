@@ -14,7 +14,7 @@ import '../features/quiz/quiz_screen.dart';
 import '../features/reader/reader_screen.dart';
 import '../features/report/readiness_report_screen.dart';
 import '../features/settings/settings_screen.dart';
-import '../features/system_design/sd_list_screen.dart';
+import '../features/system_design/sd_entry_screen.dart';
 import '../features/system_design/sd_mock_screen.dart';
 
 /// Builds the app router: a persistent bottom-nav shell (indexed stack, so each
@@ -32,7 +32,7 @@ GoRouter createRouter() => GoRouter(
         GoRoute(path: '/algorithms', builder: (_, __) => const AlgoScreen()),
         // The system-design practice track: pick a problem, run a mock.
         GoRoute(
-            path: '/system-design', builder: (_, __) => const SdListScreen()),
+            path: '/system-design', builder: (_, __) => const SdEntryScreen()),
         GoRoute(
           path: '/system-design/mock/:id',
           builder: (_, state) => SdMockScreen(
