@@ -109,31 +109,80 @@ excluded from review/learn/gym and from the algo queue:
   reveal the reference section → self-grade recognition (solid/shaky/lost) →
   recognition clock advances. No readiness weight.
 
-## Variable-length mocks (future — model the hooks now)
+## Shorter mocks (future — two axes; scoped-problem is primary)
 
-A full mock is ~40 min, which won't always fit. Rather than a special "micro
-mode," treat **session length as a continuous knob = coverage**: how many of the
-problem's phases/dimensions the session actually exercised.
+A full mock is ~40 min, which won't always fit. There are **two ways to make a
+shorter session**, and the better one for real practice is a narrower *problem*,
+not fewer *phases*:
 
-- **Full** (~40 min): all phases. **Medium**: a subset. **Micro** (~10 min): one
-  phase (estimation-only, API-only, a single deep-dive curveball).
-- **The full-mock due clock is cleared ONLY by a full-coverage session.** A
-  shorter session leaves the full interview *still due* — the same guardrail as
-  the algo track (a partial rep never satisfies the real clock).
-- A shorter session still logs **honest, coverage-weighted, dimension-scoped
-  evidence.** The transfer math already weights samples and shrinks toward a
-  pessimistic prior, so a micro contributes *some* signal for the dimension it
-  tested without letting easy 10-min reps game "ready."
-- Interviewers really do run focused rounds ("design just the storage", "walk me
-  through estimation"), so a focused drill is realistic, and focused-phase reps
-  are good interleaving practice for a specific weak dimension.
+1. **Scoped sub-problem (PRIMARY).** Instead of "design YouTube," practise a
+   focused component that still goes through the *full depth* of an interview
+   (requirements → estimation → API → data → design → deep-dive → trade-offs) on a
+   smaller surface — e.g. "design YouTube's **live-streaming** ingest/fan-out," or
+   "design **just the notification fan-out** for a feed." You get the complete
+   interview *shape* and senior signal in ~10-15 min because there's simply less
+   to design. This is realistic — interviewers routinely scope down or zoom into
+   one component — and it's the highest-value short format.
+   - Modelled as its own `system-design` card, tagged as a *scoped/component*
+     variant with an `estMinutes` hint and (optionally) a `parent:` link to the
+     full problem it's carved from. The scheduler offers "short (~15m)" vs
+     "full (~40m)" simply by which card it surfaces. No new mechanics — just more
+     cards, some full-scope, some component-scope.
+2. **Partial coverage (secondary).** Drill a single phase of a full problem
+   (estimation-only, one deep-dive curveball). Useful for hammering a specific
+   weak *dimension*, but it does NOT give the full interview shape.
 
-**Phase-1 hook:** the `AppliedAttempts` row for a mock records a `coverage`
-descriptor (which phases/dimensions were graded) from day one, and the clock is
-cleared on full coverage. Phase 1 only *produces* full-coverage sessions; the
-shorter-session picker is a later phase — but no schema/clock rewrite is needed to
-add it. (Micro sessions remain conversational AI mocks — distinct from the
-non-graded scaffold checklist.)
+**Clock/readiness rule (applies to both):** the **full-problem mock clock is
+cleared only by a full session of that problem.** A scoped variant is its *own*
+schedulable item (its own clock); a partial-coverage session of a full problem
+leaves that problem still due. Every session logs honest, coverage-weighted,
+dimension-scoped evidence — the transfer math shrinks toward a pessimistic prior,
+so short sessions contribute *some* signal without letting easy reps game "ready."
+
+**Phase-1 hook:** the `AppliedAttempts` row records a `coverage` descriptor (which
+phases/dimensions were graded) from day one. Authoring scoped-variant cards and
+the short/full picker is a later phase; no schema/clock rewrite is needed to add
+either. (Research the exact scoped-problem catalogue when we build phase 5 — good
+component-level prompts matter as much as the full ones.)
+
+## Timing the answer (a real need — STT hides it)
+
+Practice is done by *talking* (speech-to-text), so the AI interviewer can't
+reliably know how long the candidate took. A visible **count-up stopwatch** on the
+mock screen lets the candidate see/record elapsed time (and compare against the
+card's `estMinutes`). Build this by **generalising the existing gym `RestTimer`**
+(`lib/features/quiz/rest_timer.dart`, currently count-*down*) into a shared timer
+widget supporting both count-down (gym rest) and count-**up** (elapsed) modes —
+reused by the SD mock and, optionally, the algo session. This DRY/generalisation
+also serves the hardening goal (#51). The elapsed time can be stored on the
+attempt as soft metadata (not a hard grade input).
+
+## The AI interviewer — the highest-bar component (research-heavy)
+
+The mock interviewer is the part of the app that most depends on AI quality. It is
+an **in-app system prompt / persona** (sent to the Claude API via
+`claude_service.dart`, like the existing coach personas) — NOT a Claude Code
+"skill." Getting it right is a *prompt-engineering + interaction-design* problem,
+and it must be researched thoroughly before writing. The interviewer must be
+competent at:
+- **Conducting** a senior/staff SD interview: opening prompt, letting the
+  candidate drive, time-boxing phases, when to zoom in vs move on, not leading.
+- **Probing** like a strong interviewer: "why this over X?", pushing on
+  bottlenecks/failure modes/scale, injecting curveballs and changed constraints,
+  detecting hand-waving and asking for specifics, following the candidate's design
+  rather than a fixed script.
+- **Subject-matter depth**: knowing the canonical solutions, the real trade-offs,
+  the numbers, and the common candidate mistakes for each problem — enough to
+  evaluate correctness and to challenge convincingly.
+- **Calibration**: grading to a real rubric and seniority bar (what separates a
+  mid from a staff answer), staying firm but never hostile, and giving a useful
+  debrief.
+
+**Plan:** a dedicated deep-research pass (how top companies run + evaluate SD
+interviews; interviewer playbooks; rubrics; probing techniques; per-problem
+gotchas) feeds a rigorous, layered system prompt (persona + conduct rules +
+per-phase guidance + the specific problem's reference/rubric/pitfalls injected
+from the card). Reuse the coach chat framework; the *prompt* is the hard part.
 
 ## Readiness & insights (Decision — yes, mocks feed readiness)
 
@@ -170,7 +219,9 @@ Xu-verbatim), with `## Related` links to existing concept cards.
    main queues/gym/algo); seed the ~6-8 starter problems; the SD queue +
    weakest-first + per-week cadence.
 2. **Mock mode:** the interviewer session UI + SD system prompt (phase-driven,
-   trade-off-forcing) + SD rubric + critic → `AppliedAttempts`.
+   trade-off-forcing; **research-heavy — see above**) + SD rubric + critic →
+   `AppliedAttempts`. Includes the **count-up stopwatch** (generalised `RestTimer`)
+   and the `coverage` hook on the attempt.
 3. **Scaffold mode:** phase checklist + reveal + recognition clock upkeep.
 4. **Readiness & insights:** wire applied-transfer for system-design; the
    Insights section + coach nudge; expand content toward full Xu Vol 1+2.
