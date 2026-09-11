@@ -35,8 +35,11 @@ GoRouter createRouter() => GoRouter(
             path: '/system-design', builder: (_, __) => const SdListScreen()),
         GoRoute(
           path: '/system-design/mock/:id',
-          builder: (_, state) =>
-              SdMockScreen(problemId: state.pathParameters['id']!),
+          builder: (_, state) => SdMockScreen(
+            problemId: state.pathParameters['id']!,
+            levelName: state.uri.queryParameters['level'],
+            supportName: state.uri.queryParameters['support'],
+          ),
         ),
         // The concept-card review session. A full-screen flow launched from
         // Home (like Learn / Algorithms), not a bottom-nav tab — the tabs are

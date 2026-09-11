@@ -15,23 +15,41 @@ import '../../shared/status_colors.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/session_timer.dart';
 
-/// A live system-design mock interview for one problem: the interviewer persona
-/// drives the session (level- and support-calibrated), a count-up stopwatch times
-/// the spoken/STT answer, and on End an adversarial grader panel scores the
-/// transcript into readiness. Afterward the candidate can keep chatting with a
-/// tutor to learn.
+/// A live system-design mock interview for one problem. It auto-starts on load
+/// (level + support come from the launcher), so — like the Algorithms session —
+/// you land straight in the interview. A count-up stopwatch times the spoken/STT
+/// answer; on End an adversarial grader panel scores the transcript into
+/// readiness; afterward you can keep chatting with a tutor to learn.
 class SdMockScreen extends ConsumerStatefulWidget {
-  const SdMockScreen({super.key, required this.problemId});
+  const SdMockScreen({
+    super.key,
+    required this.problemId,
+    this.levelName,
+    this.supportName,
+  });
 
   final String problemId;
+  final String? levelName;
+  final String? supportName;
 
   @override
   ConsumerState<SdMockScreen> createState() => _SdMockScreenState();
 }
 
 class _SdMockScreenState extends ConsumerState<SdMockScreen> {
-  SeniorityLevel? _levelOverride;
-  SdSupportMode? _supportOverride;
+  SeniorityLevel _level(SeniorityLevel? target) {
+    for (final l in SeniorityLevel.values) {
+      if (l.name == widget.levelName) return l;
+    }
+    return target ?? SeniorityLevel.senior;
+  }
+
+  SdSupportMode _support(SdSupportMode auto) {
+    for (final s in SdSupportMode.values) {
+      if (s.name == widget.supportName) return s;
+    }
+    return auto; // 'auto' or absent
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +62,24 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       return const Scaffold(body: Center(child: Text('Problem not found.')));
     }
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
-    final level = _levelOverride ?? target?.level ?? SeniorityLevel.senior;
-    final company = target?.company ?? CompanyTier.faang;
     final autoSupport = ref.watch(sdAutoSupportModeProvider).asData?.value ??
         SdSupportMode.coaching;
-    final support = _supportOverride ?? autoSupport;
+    final level = _level(target?.level);
+    final company = target?.company ?? CompanyTier.faang;
+    final support = _support(autoSupport);
 
     final state = ref.watch(sdMockSessionProvider(widget.problemId));
     final session = ref.read(sdMockSessionProvider(widget.problemId).notifier);
     final theme = Theme.of(context);
     final running = state.phase == SdMockPhase.running;
     final done = state.phase == SdMockPhase.done;
+
+    // Land straight in the interview (like the Algorithms session).
+    if (state.phase == SdMockPhase.intro) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) session.start(card: card);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -89,41 +114,24 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
             ),
           if (state.grade != null) _GradeSummary(grade: state.grade!),
           Expanded(
-            child: switch (state.phase) {
-              SdMockPhase.intro => _Intro(
-                  card: card,
-                  level: level,
-                  support: support,
-                  supportIsAuto: _supportOverride == null,
-                  autoSupport: autoSupport,
-                  onLevel: (l) => setState(() => _levelOverride = l),
-                  onSupport: (s) => setState(() => _supportOverride = s),
-                  onStart: () => session.start(card: card),
-                  error: state.error,
-                ),
-              _ => ChatView(
-                  messages: [
-                    for (final m in state.messages)
-                      if (m.role != CoachRole.user || !_isKickoff(m.text))
-                        ChatTurn(
-                            isUser: m.role == CoachRole.user, text: m.text),
-                  ],
-                  onSend: (t) => session.send(t,
-                      card: card,
-                      level: level,
-                      company: company,
-                      support: support),
-                  busy: state.busy,
-                  error: state.error,
-                  enabled: running || done,
-                  hintText: running
-                      ? 'Speak or type your answer…'
-                      : done
-                          ? 'Ask the coach how to improve…'
-                          : 'Grading…',
-                  fadeColor: theme.colorScheme.surface,
-                ),
-            },
+            child: ChatView(
+              messages: [
+                for (final m in state.messages)
+                  if (m.role != CoachRole.user || !_isKickoff(m.text))
+                    ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
+              ],
+              onSend: (t) => session.send(t,
+                  card: card, level: level, company: company, support: support),
+              busy: state.busy,
+              error: state.error,
+              enabled: running || done,
+              hintText: running
+                  ? 'Speak or type your answer…'
+                  : done
+                      ? 'Ask the coach how to improve…'
+                      : 'Grading…',
+              fadeColor: theme.colorScheme.surface,
+            ),
           ),
         ],
       ),
@@ -131,143 +139,6 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   }
 
   static bool _isKickoff(String t) => t.startsWith("I'm ready");
-}
-
-/// The intro: choose level + support, then start. Kept lightweight.
-class _Intro extends StatelessWidget {
-  const _Intro({
-    required this.card,
-    required this.level,
-    required this.support,
-    required this.supportIsAuto,
-    required this.autoSupport,
-    required this.onLevel,
-    required this.onSupport,
-    required this.onStart,
-    this.error,
-  });
-
-  final Card card;
-  final SeniorityLevel level;
-  final SdSupportMode support;
-  final bool supportIsAuto;
-  final SdSupportMode autoSupport;
-  final ValueChanged<SeniorityLevel> onLevel;
-  final ValueChanged<SdSupportMode?> onSupport;
-  final VoidCallback onStart;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.architecture_outlined,
-                size: 40, color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(card.title,
-                style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'A ~40-minute mock. You drive: clarify requirements, sketch the '
-              'design, and justify your trade-offs. Answer out loud '
-              '(speech-to-text) or type. Tap "End" for an honest debrief and a '
-              'graded readiness signal.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 24),
-            // Level.
-            _Labeled(
-              label: 'Interview level',
-              child: DropdownButton<SeniorityLevel>(
-                value: level,
-                isExpanded: true,
-                onChanged: (l) => l == null ? null : onLevel(l),
-                items: [
-                  for (final l in SeniorityLevel.values)
-                    DropdownMenuItem(value: l, child: Text(l.label)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Support mode.
-            _Labeled(
-              label: 'Support',
-              child: SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(
-                      value: 'auto', label: Text('Auto (${autoSupport.name})')),
-                  const ButtonSegment(
-                      value: 'coaching', label: Text('Coaching')),
-                  const ButtonSegment(
-                      value: 'realistic', label: Text('Realistic')),
-                ],
-                selected: {
-                  supportIsAuto ? 'auto' : support.name,
-                },
-                onSelectionChanged: (s) => onSupport(switch (s.first) {
-                  'coaching' => SdSupportMode.coaching,
-                  'realistic' => SdSupportMode.realistic,
-                  _ => null,
-                }),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              support == SdSupportMode.coaching
-                  ? 'Coaching: the interviewer will step in and help if you get '
-                      'stuck.'
-                  : 'Realistic: hands-off, like the real thing. Ask explicitly if '
-                      'you want a hint.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 16),
-              Text(error!,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.error)),
-            ],
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onStart,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Start the mock'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Labeled extends StatelessWidget {
-  const _Labeled({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
 }
 
 /// A small chip showing the active support mode during the interview.
