@@ -8,6 +8,7 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
 import 'interview_actions.dart';
 import 'round_editing.dart';
@@ -262,35 +263,25 @@ class _OutcomeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-            child: _btn('Passed', statusInfo, Icons.arrow_forward, onPassed)),
-        const SizedBox(width: 8),
-        Expanded(
-            child:
-                _btn('Offer', statusGood, Icons.celebration_outlined, onOffer)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: _btn("Didn't pass", statusBad, Icons.do_not_disturb_alt,
-                onRejected)),
+    return GradeButtons(
+      verticalPadding: 12,
+      buttons: [
+        GradeButton(
+            label: 'Passed',
+            color: statusInfo,
+            icon: Icons.arrow_forward,
+            onTap: onPassed),
+        GradeButton(
+            label: 'Offer',
+            color: statusGood,
+            icon: Icons.celebration_outlined,
+            onTap: onOffer),
+        GradeButton(
+            label: "Didn't pass",
+            color: statusBad,
+            icon: Icons.do_not_disturb_alt,
+            onTap: onRejected),
       ],
-    );
-  }
-
-  Widget _btn(String label, Color color, IconData icon, VoidCallback onTap) {
-    return FilledButton.tonalIcon(
-      onPressed: onTap,
-      style: FilledButton.styleFrom(
-        backgroundColor: color.withValues(alpha: 0.16),
-        foregroundColor: color,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      ),
-      icon: Icon(icon, size: 16),
-      label: Text(label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }

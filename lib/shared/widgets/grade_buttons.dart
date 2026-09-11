@@ -6,6 +6,7 @@ class GradeButton {
     required this.label,
     required this.color,
     required this.onTap,
+    this.icon,
     this.highlighted = false,
   });
 
@@ -14,6 +15,9 @@ class GradeButton {
   /// The button's accent (background is a tint of it; foreground is it).
   final Color color;
   final VoidCallback onTap;
+
+  /// Optional leading icon (e.g. the interview-outcome row).
+  final IconData? icon;
 
   /// Draws an outline — used for an advisory/suggested grade.
   final bool highlighted;
@@ -38,24 +42,30 @@ class GradeButtons extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < buttons.length; i++) ...[
-          Expanded(
-            child: FilledButton(
-              onPressed: buttons[i].onTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: buttons[i].color.withValues(alpha: 0.18),
-                foregroundColor: buttons[i].color,
-                padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                side: buttons[i].highlighted
-                    ? BorderSide(color: buttons[i].color, width: 2)
-                    : null,
-              ),
-              child: Text(buttons[i].label,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ),
+          Expanded(child: _button(buttons[i])),
           if (i != buttons.length - 1) const SizedBox(width: 8),
         ],
       ],
     );
+  }
+
+  Widget _button(GradeButton b) {
+    final style = FilledButton.styleFrom(
+      backgroundColor: b.color.withValues(alpha: 0.18),
+      foregroundColor: b.color,
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: verticalPadding),
+      side: b.highlighted ? BorderSide(color: b.color, width: 2) : null,
+    );
+    final label = Text(b.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w600));
+    return b.icon == null
+        ? FilledButton(onPressed: b.onTap, style: style, child: label)
+        : FilledButton.icon(
+            onPressed: b.onTap,
+            style: style,
+            icon: Icon(b.icon, size: 16),
+            label: label);
   }
 }
