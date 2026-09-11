@@ -52,10 +52,31 @@ Future<MockSkills> mockSkills(Ref ref) async {
   final attempts = await ref.watch(appliedRepositoryProvider).attempts();
   return computeMockSkills([
     // Exclude self-reported solves (external + algo track) — this section is the
-    // coach-mock rubric breakdown, and self-reports carry no rubric. They still
-    // count as applied evidence toward readiness.
+    // coach-mock rubric breakdown, and self-reports carry no rubric. Also exclude
+    // system-design mocks: they use a different rubric and get their own section.
+    // All still count as applied evidence toward readiness.
     for (final a in attempts)
-      if (a.source != 'external' && a.source != 'algo')
+      if (a.source != 'external' &&
+          a.source != 'algo' &&
+          a.source != 'sd-practice')
+        (
+          appliedScore: a.appliedScore,
+          hintLevel: a.hintLevel,
+          novel: a.novel,
+          rubric: AppliedAssessment.decodeRubric(a.rubric),
+        ),
+  ]);
+}
+
+/// System-design mock performance + rubric breakdown (its own rubric, distinct
+/// from the coding mock skills). Recomputes on a new mock.
+@riverpod
+Future<MockSkills> systemDesignSkills(Ref ref) async {
+  await ref.watch(appliedTransferProvider.future); // refresh on new mocks
+  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+  return computeMockSkills([
+    for (final a in attempts)
+      if (a.source == 'sd-practice')
         (
           appliedScore: a.appliedScore,
           hintLevel: a.hintLevel,
