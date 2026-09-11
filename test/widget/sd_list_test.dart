@@ -34,7 +34,8 @@ Widget _app(List<Card> problems) => ProviderScope(
     );
 
 void main() {
-  testWidgets('leads with the next mock and offers others', (tester) async {
+  testWidgets('leads with a single next mock (no problem menu)',
+      (tester) async {
     await tester.pumpWidget(_app([
       _sd('design-rate-limiter', 'Design a Rate Limiter'),
       _sd('design-url-shortener', 'Design a URL Shortener'),
@@ -42,10 +43,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your next mock'), findsOneWidget);
-    expect(find.text('Design a Rate Limiter'), findsOneWidget); // hero
+    expect(find.text('Design a Rate Limiter'), findsOneWidget); // the one due
     expect(find.text('Start the mock'), findsOneWidget);
-    expect(find.text('Or practise another'), findsOneWidget);
-    expect(find.text('Design a URL Shortener'), findsOneWidget); // in the list
+    expect(find.text('Adjust'), findsOneWidget); // tucked-away config
+    // No browse-like menu of other problems (spaced recurrence picks one).
+    expect(find.text('Design a URL Shortener'), findsNothing);
   });
 
   testWidgets('shows an empty state when there are no problems',

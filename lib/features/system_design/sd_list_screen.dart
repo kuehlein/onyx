@@ -10,12 +10,13 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/system_design.dart';
 import '../../shared/status_colors.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 /// The System-design track entry: a single-problem "your next mock" launcher
-/// (like the Algorithms session), not a browser. It leads with the problem that's
-/// due next by spaced recurrence, lets you pick level + support, and starts the
-/// mock. Other due problems are a quiet secondary list; the full library lives in
-/// Browse.
+/// (like the Algorithms session), not a browser. Spaced recurrence decides which
+/// problem is next; the level + support are auto-derived (target + competence) and
+/// shown only as a compact reference you can tweak from a tucked-away sheet. The
+/// full library of problems lives in Browse.
 class SdListScreen extends ConsumerStatefulWidget {
   const SdListScreen({super.key});
 
@@ -27,13 +28,26 @@ class _SdListScreenState extends ConsumerState<SdListScreen> {
   SeniorityLevel? _levelOverride;
   SdSupportMode? _supportOverride;
 
-  void _startMock(Card card, SeniorityLevel level, SdSupportMode? support) {
-    final q = {
-      'level': level.name,
-      'support': support?.name ?? 'auto',
-    };
-    final query = q.entries.map((e) => '${e.key}=${e.value}').join('&');
-    context.push('/system-design/mock/${card.id}?$query');
+  void _startMock(Card card, SeniorityLevel level) {
+    final support = _supportOverride?.name ?? 'auto';
+    context.push(
+        '/system-design/mock/${card.id}?level=${level.name}&support=$support');
+  }
+
+  Future<void> _adjust(SeniorityLevel level, SdSupportMode autoSupport) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      builder: (_) => _AdjustSheet(
+        level: level,
+        supportOverride: _supportOverride,
+        autoSupport: autoSupport,
+        onLevel: (l) => setState(() => _levelOverride = l),
+        onSupport: (s) => setState(() => _supportOverride = s),
+      ),
+    );
   }
 
   @override
@@ -54,84 +68,45 @@ class _SdListScreenState extends ConsumerState<SdListScreen> {
         data: (cards) {
           if (cards.isEmpty) return const _Empty();
           final suggested = cards.first;
-          final rest = cards.skip(1).toList();
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            children: [
-              _NextMockCard(card: suggested),
-              const SizedBox(height: 20),
-              _Labeled(
-                label: 'Interview level',
-                child: DropdownButton<SeniorityLevel>(
-                  value: level,
-                  isExpanded: true,
-                  onChanged: (l) =>
-                      l == null ? null : setState(() => _levelOverride = l),
-                  items: [
-                    for (final l in SeniorityLevel.values)
-                      DropdownMenuItem(value: l, child: Text(l.label)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _Labeled(
-                label: 'Support',
-                child: SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                        value: 'auto',
-                        label: Text('Auto (${autoSupport.name})')),
-                    const ButtonSegment(
-                        value: 'coaching', label: Text('Coaching')),
-                    const ButtonSegment(
-                        value: 'realistic', label: Text('Realistic')),
-                  ],
-                  selected: {_supportOverride?.name ?? 'auto'},
-                  onSelectionChanged: (s) => setState(() {
-                    _supportOverride = switch (s.first) {
-                      'coaching' => SdSupportMode.coaching,
-                      'realistic' => SdSupportMode.realistic,
-                      _ => null,
-                    };
-                  }),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                support == SdSupportMode.coaching
-                    ? 'Coaching: the interviewer steps in and helps if you get '
-                        'stuck.'
-                    : 'Realistic: hands-off, like the real thing. Ask explicitly '
-                        'for a hint.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: () => _startMock(suggested, level, _supportOverride),
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start the mock'),
-                style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14)),
-              ),
-              if (rest.isNotEmpty) ...[
-                const SizedBox(height: 28),
-                Text('Or practise another', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 4),
-                for (final c in rest)
-                  _ProblemTile(
-                    card: c,
-                    onTap: () => _startMock(c, level, _supportOverride),
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+                children: [
+                  _NextMockCard(
+                    card: suggested,
+                    level: level,
+                    support: support,
+                    supportIsAuto: _supportOverride == null,
+                    onAdjust: () => _adjust(level, autoSupport),
                   ),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                'Ordered by when each is due to re-practise. Browse the full '
-                'library of problems in Browse.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () => _startMock(suggested, level),
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start the mock'),
+                    style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15)),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Problems surface on a spaced schedule — this is the one to '
+                    'practise next. Looking for a specific problem?',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.go('/browse'),
+                      child: const Text('Browse all problems'),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),
@@ -139,10 +114,22 @@ class _SdListScreenState extends ConsumerState<SdListScreen> {
   }
 }
 
-/// The prominent "next mock" hero card for the suggested problem.
+/// The prominent "next mock" hero card: the problem, its due status, and a
+/// compact, tappable line showing the (auto-derived) level + support.
 class _NextMockCard extends ConsumerWidget {
-  const _NextMockCard({required this.card});
+  const _NextMockCard({
+    required this.card,
+    required this.level,
+    required this.support,
+    required this.supportIsAuto,
+    required this.onAdjust,
+  });
+
   final Card card;
+  final SeniorityLevel level;
+  final SdSupportMode support;
+  final bool supportIsAuto;
+  final VoidCallback onAdjust;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -150,6 +137,9 @@ class _NextMockCard extends ConsumerWidget {
     final due = ref.watch(systemDesignDueProvider(card.id)).asData?.value;
     final now = ref.watch(clockProvider).asData?.value.now();
     final (status, color) = sdStatus(due, now);
+    final supportLabel =
+        support == SdSupportMode.coaching ? 'Coaching' : 'Realistic';
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
@@ -173,32 +163,132 @@ class _NextMockCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(card.title, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 16),
+          // Compact, unobtrusive settings reference — tap to adjust.
+          InkWell(
+            onTap: onAdjust,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.tune,
+                      size: 15, color: theme.colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${level.label} level · $supportLabel'
+                      '${supportIsAuto ? ' (auto)' : ''}',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                  Text('Adjust',
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: theme.colorScheme.primary)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// A quiet row for an alternative problem.
-class _ProblemTile extends ConsumerWidget {
-  const _ProblemTile({required this.card, required this.onTap});
-  final Card card;
-  final VoidCallback onTap;
+/// The tucked-away "adjust this mock" sheet: level + support. Most users never
+/// open this — the defaults are derived from the target and your competence.
+class _AdjustSheet extends StatelessWidget {
+  const _AdjustSheet({
+    required this.level,
+    required this.supportOverride,
+    required this.autoSupport,
+    required this.onLevel,
+    required this.onSupport,
+  });
+
+  final SeniorityLevel level;
+  final SdSupportMode? supportOverride;
+  final SdSupportMode autoSupport;
+  final ValueChanged<SeniorityLevel> onLevel;
+  final ValueChanged<SdSupportMode?> onSupport;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final due = ref.watch(systemDesignDueProvider(card.id)).asData?.value;
-    final now = ref.watch(clockProvider).asData?.value.now();
-    final (status, color) = sdStatus(due, now);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.architecture_outlined),
-      title: Text(card.title),
-      subtitle: Text(status,
-          style: theme.textTheme.bodySmall?.copyWith(color: color)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    final effective = supportOverride ?? autoSupport;
+    return StatefulBuilder(
+      builder: (context, setSheet) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SheetHeader(
+              icon: Icons.tune,
+              title: 'Adjust this mock',
+              subtitle: 'Defaults follow your target and your recent mocks.',
+              divider: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Interview level',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  DropdownButton<SeniorityLevel>(
+                    value: level,
+                    isExpanded: true,
+                    onChanged: (l) => l == null ? null : onLevel(l),
+                    items: [
+                      for (final l in SeniorityLevel.values)
+                        DropdownMenuItem(value: l, child: Text(l.label)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Support',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                          value: 'auto',
+                          label: Text('Auto (${autoSupport.name})')),
+                      const ButtonSegment(
+                          value: 'coaching', label: Text('Coaching')),
+                      const ButtonSegment(
+                          value: 'realistic', label: Text('Realistic')),
+                    ],
+                    selected: {supportOverride?.name ?? 'auto'},
+                    onSelectionChanged: (s) {
+                      onSupport(switch (s.first) {
+                        'coaching' => SdSupportMode.coaching,
+                        'realistic' => SdSupportMode.realistic,
+                        _ => null,
+                      });
+                      setSheet(() {});
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    effective == SdSupportMode.coaching
+                        ? 'Coaching: the interviewer steps in and helps if you '
+                            'get stuck.'
+                        : 'Realistic: hands-off, like the real thing. Ask '
+                            'explicitly for a hint.',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -223,27 +313,6 @@ class _StatusChip extends StatelessWidget {
       );
 }
 
-class _Labeled extends StatelessWidget {
-  const _Labeled({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
-}
-
 class _Empty extends StatelessWidget {
   const _Empty();
 
@@ -264,7 +333,7 @@ class _Empty extends StatelessWidget {
   }
 }
 
-/// Spaced-recurrence status label + colour for a problem, shared across tiles.
+/// Spaced-recurrence status label + colour for a problem.
 (String, Color) sdStatus(DateTime? due, DateTime? now) {
   if (due == null) return ('New', statusInfo);
   if (now == null) return ('Scheduled', Colors.grey);
