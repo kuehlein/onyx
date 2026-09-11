@@ -196,6 +196,61 @@ from the card). Reuse the coach chat framework; the *prompt* is the hard part.
   weakest dimensions across attempts — e.g. "estimation" consistently low), and
   the coach can nudge "you haven't mocked a design in N days."
 
+### How mock grades fold into readiness (the "we already have so much data" worry)
+
+The grade-at-the-end-of-the-mock feature the user asked for is exactly what the
+existing **Phase B** machinery was built to absorb — the concern is calibration,
+not architecture. Why it composes cleanly rather than clashing with the existing
+pile of signals (FSRS recall + algo transfer + applied attempts):
+
+1. **Readiness is domain-decomposed, and transfer is per-domain.** The mock writes
+   one `AppliedAttempts` row (`source: 'sd-practice'`) whose overall `appliedScore`
+   (0-100, derived from the rubric) becomes a transfer *sample for the
+   `system-design` domain only*. It lands in that one slice; it cannot slosh into
+   ds-a, networking, etc. So it adds a signal exactly where system-design readiness
+   is computed, and nowhere else.
+2. **No double-counting.** `system-design` cards are already excluded from recall
+   coverage, so they contribute to readiness *only* through this transfer channel
+   (identical discipline to algo cards). A mock is not also counted as "studied
+   sections."
+3. **Transfer GATES recall — it doesn't add a competing number.** The domain score
+   is `recall × (τ + (1-τ)·transfer)`. Before any mocks, the system-design domain
+   is recall-only and *capped* (you've studied it but not shown you can apply it —
+   correct). Mock evidence raises its transfer factor, "unlocking" that recall into
+   interview-ready. This is why it feels additive without being a separate bar.
+4. **Seniority weighting already points the right way.** System-design's domain
+   weight rises with target level, so mock evidence matters *most* for senior/staff
+   targets — precisely when SD interviews dominate the loop.
+5. **Small-N is self-protecting.** The transfer estimator shrinks toward a
+   pessimistic prior and weights by `effectiveN`, so one or two mocks won't swing
+   "ready"; a handful of solid, recent mocks move it meaningfully. Recency
+   (60-day half-life) is already handled.
+
+**The genuinely-careful decisions (settle in phase 4, don't rush):**
+- **One holistic score drives readiness; the 7-dim rubric drives *insights*.** Store
+  the full rubric map on the attempt, but feed readiness a single `appliedScore`
+  (weakest-link or weighted mean of the dims). Do NOT inject seven separate transfer
+  signals — that would over-weight one mock and complicate the model. The per-dim
+  breakdown powers "your estimation is consistently your weakest dimension."
+- **Reconcile the three grade sources** (interviewer debrief, adversarial critic,
+  candidate self-assessment) the way the algo track does: critic-anchored, averaged
+  with one other for variance reduction; self-assessment is for reflection/insights,
+  weighted low or zero in the number. Decide the exact blend in phase 4.
+- **Attribute to `system-design` only (for now).** A mock touches caching, sharding,
+  etc., but crediting every concept it grazed would diffuse the signal and risk soft
+  double-counting. Keep it in the system-design domain; revisit spreading the
+  *deep-dive* dimension to specific concepts later if useful.
+- **Coverage-weight shorter sessions.** A full mock is stronger evidence than a
+  10-min scoped/partial one; weight the sample by the `coverage` descriptor so short
+  reps contribute proportionally less (ties into the variable-length hook).
+- **Keep it visible and honest.** Show *why* system-design readiness is where it is
+  (recall solid but few mocks → "practise more mocks to prove transfer"), so the
+  number is explainable rather than a black box amid all the other data.
+
+Net: it is **one more per-domain transfer input** in a model already designed for
+exactly this — the work is tuning how much a mock moves the needle, not bolting on a
+parallel scoring system. See [[phase-b-readiness-math]].
+
 ## Content (Decision 2 — starter set first)
 
 Author a **starter set of ~6-8 highest-frequency Xu problems**, validate the loop,
