@@ -48,8 +48,18 @@ class SrsScheduler {
   static const _defaultRetention = 0.9;
   final _cache = <double, fsrs.Scheduler>{};
 
+  // No same-day learning steps: Onyx's Learn flow IS the first-exposure step, so
+  // a graded-Good new card graduates straight to a spaced (multi-day) interval
+  // rather than FSRS's default 1m/10m steps — which would make a just-learned card
+  // reappear in Review the same day (churn, and the confusing "Learn spawned
+  // Review" the daily plan showed). Relearning steps stay on: a genuine lapse
+  // (Again in Review) should still come back soon to re-cement.
   fsrs.Scheduler _for(double retention) => _cache.putIfAbsent(
-      retention, () => fsrs.Scheduler(desiredRetention: retention));
+      retention,
+      () => fsrs.Scheduler(
+            desiredRetention: retention,
+            learningSteps: const [],
+          ));
 
   /// Apply [grade] (1=Again … 4=Easy) to a section. Pass the section's current
   /// persisted state, or leave the state fields null for a section being

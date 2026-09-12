@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../core/plan/practice_plan.dart';
+import '../../core/plan/practice_plan.dart'
+    show kLearnMinutes, kReviewMinutes, kSystemDesignMinutes;
 import 'clock.dart';
 import 'daily_plan.dart';
 import 'interview.dart';
@@ -8,69 +9,59 @@ import 'srs.dart';
 
 part 'today_progress.g.dart';
 
-/// The day's at-a-glance progress for the Home ring: how many of today's flows
-/// are finished vs. still in scope, and how many estimated minutes remain.
-///
-/// A track counts as "in scope today" if it still has planned work OR you've
-/// already touched it today; it's "done" once you've touched it today and it has
-/// no remaining planned work (its queue emptied). This stays honest as the plan
-/// recomputes — finishing Review drops it from the plan, so it flips to done.
-class TodayProgress {
-  const TodayProgress({
-    required this.done,
-    required this.total,
-    required this.minutesLeft,
-  });
+/// A rough per-solve minute estimate for the Algorithms track (they vary; medium
+/// is the fallback), used only to weight today's completed work in the ring.
+const double _kAlgoNominalMinutes = 25;
 
-  final int done;
-  final int total;
-  final int minutesLeft;
+/// The day's at-a-glance progress for the Home ring — how much of today's work is
+/// done, by estimated MINUTES (so partial progress in a flow counts: doing half
+/// of a Learn block that's half the day reads as ~a quarter done, not zero). Done
+/// = today's completed units × their per-flow estimate; remaining = the plan's
+/// still-scheduled minutes. Behavioral is excluded (it's a hub/last-mile track,
+/// not part of the daily plan).
+class TodayProgress {
+  const TodayProgress(
+      {required this.doneMinutes, required this.remainingMinutes});
+
+  final int doneMinutes;
+  final int remainingMinutes;
+
+  int get totalMinutes => doneMinutes + remainingMinutes;
+
+  double get fraction =>
+      totalMinutes == 0 ? 0 : (doneMinutes / totalMinutes).clamp(0.0, 1.0);
+
+  int get percent => (fraction * 100).round();
 
   /// True when there was work today and it's all finished (ring fully closed).
-  bool get allDone => total > 0 && done >= total;
+  bool get allDone => totalMinutes > 0 && remainingMinutes == 0;
 
   /// True when there's genuinely nothing scheduled or done today.
-  bool get nothingScheduled => total == 0;
-
-  double get fraction => total == 0 ? 0 : (done / total).clamp(0.0, 1.0);
+  bool get nothingScheduled => totalMinutes == 0;
 }
 
 @riverpod
 Future<TodayProgress> todayProgress(Ref ref) async {
   final plan = await ref.watch(dailyPlanProvider.future);
   final clock = await ref.watch(clockProvider.future);
-  final now = clock.now();
-  final startOfToday = DateTime(now.year, now.month, now.day);
+  final startOfToday = clock.today();
 
   final srs = ref.watch(srsRepositoryProvider);
-  final reviewedToday = (await srs.reviewGradesSince(startOfToday)).isNotEmpty;
-  final learnedToday =
-      (await srs.learnTimestamps(since: startOfToday)).isNotEmpty;
+  final reviewsToday = (await srs.reviewGradesSince(startOfToday)).length;
+  final learnsToday = (await srs.learnTimestamps(since: startOfToday)).length;
   final attemptsToday =
       await ref.watch(appliedRepositoryProvider).attempts(since: startOfToday);
-  final algoToday = attemptsToday.any((a) => a.source == 'algo');
-  final sdToday = attemptsToday.any((a) => a.source == 'sd-practice');
+  final algoToday = attemptsToday.where((a) => a.source == 'algo').length;
+  final sdToday = attemptsToday.where((a) => a.source == 'sd-practice').length;
 
-  final pending = {for (final t in plan.tracks) t.track};
-  final didToday = {
-    if (reviewedToday) TrackId.review,
-    if (learnedToday) TrackId.learn,
-    if (algoToday) TrackId.algorithms,
-    if (sdToday) TrackId.systemDesign,
-  };
-
-  var total = 0;
-  var done = 0;
-  for (final t in TrackId.values) {
-    final inScope = pending.contains(t) || didToday.contains(t);
-    if (!inScope) continue;
-    total++;
-    if (didToday.contains(t) && !pending.contains(t)) done++;
-  }
+  final doneMinutes = (reviewsToday * kReviewMinutes +
+          learnsToday * kLearnMinutes +
+          algoToday * _kAlgoNominalMinutes +
+          sdToday * kSystemDesignMinutes)
+      .round();
 
   return TodayProgress(
-    done: done,
-    total: total,
-    minutesLeft: plan.plannedMinutes.round(),
+    doneMinutes: doneMinutes,
+    remainingMinutes: plan.plannedMinutes.round(),
   );
 }

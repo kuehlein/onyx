@@ -14,11 +14,13 @@ import 'explain_sheet.dart';
 
 // Color comes from each outcome's FSRS grade (clean=4 … failed=1) via
 // [gradeColor], so these buttons share the quiz's four-color grade scale.
+// Ordered worst → best (grade 1 → 4) to match the Review/Learn buttons
+// (Again → Easy), so rating order is consistent across every flow.
 const _outcomes = <({SolveOutcome outcome, String label})>[
-  (outcome: SolveOutcome.clean, label: 'Clean'),
-  (outcome: SolveOutcome.hinted, label: 'Hinted'),
-  (outcome: SolveOutcome.struggled, label: 'Struggled'),
   (outcome: SolveOutcome.failed, label: 'Failed'),
+  (outcome: SolveOutcome.struggled, label: 'Struggled'),
+  (outcome: SolveOutcome.hinted, label: 'Hinted'),
+  (outcome: SolveOutcome.clean, label: 'Clean'),
 ];
 
 final _urlRe = RegExp(r'https?://\S+');

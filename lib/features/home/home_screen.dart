@@ -254,8 +254,9 @@ class _TodayHero extends ConsumerWidget {
         return TodayRing(
           fraction: p.fraction,
           done: p.allDone,
-          centerLine: p.allDone ? '' : '${p.done} / ${p.total}',
-          subLine: p.allDone ? 'Done for today' : '~${p.minutesLeft} min left',
+          centerLine: p.allDone ? '' : '${p.percent}%',
+          subLine:
+              p.allDone ? 'Done for today' : '~${p.remainingMinutes} min left',
         );
       },
     );

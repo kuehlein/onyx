@@ -63,7 +63,7 @@ void main() {
               const DailyPlan(tracks: [], budgetMinutes: 90, locked: [])),
           clockProvider.overrideWith((ref) async => Clock.real),
           todayProgressProvider.overrideWith((ref) async =>
-              const TodayProgress(done: 0, total: 0, minutesLeft: 0)),
+              const TodayProgress(doneMinutes: 0, remainingMinutes: 0)),
           startupRestoreProvider.overrideWith((ref) async {}),
           glossaryProvider.overrideWith((ref) async => const {}),
           readinessTargetControllerProvider

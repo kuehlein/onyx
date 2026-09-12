@@ -21,24 +21,39 @@ part 'algo.g.dart';
 @riverpod
 Future<List<AlgoTask>> algoQueue(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
-  final repo = ref.watch(srsRepositoryProvider);
-  final recognitionRepo = ref.watch(recognitionRepositoryProvider);
+  // Watch srsStates + solvedToday so the queue recomputes after a solve (a solved
+  // problem reschedules out, and today's tally shrinks the day's remaining work).
+  final states = await ref.watch(srsStatesProvider.future);
+  final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
   final clock = await ref.watch(clockProvider.future);
   final min = await ref.watch(algoDailyMinProvider.future);
   final max = await ref.watch(algoDailyMaxProvider.future);
-  final states = await repo.loadStates();
-  final recog = await recognitionRepo.loadStates();
+  final solvedToday = await ref.watch(algoSolvedTodayProvider.future);
   return buildAlgoQueue(
     cards: [
       for (final c in index.cards)
         if (c.type == CardType.algorithm) c,
     ],
-    dueByKey: {for (final e in states.entries) e.key: e.value.dueAt},
+    dueByKey: {for (final e in states.byKey.entries) e.key: e.value.dueAt},
     explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
     now: clock.now(),
     min: min,
     max: max,
+    solvedToday: solvedToday,
   );
+}
+
+/// How many algorithm problems have been *solved* today (applied attempts with
+/// `source: algo`) — shrinks the day's queue so the track completes instead of
+/// endlessly refilling new problems. Reactive: [appliedTransferProvider] is
+/// invalidated on each solve.
+@riverpod
+Future<int> algoSolvedToday(Ref ref) async {
+  await ref.watch(appliedTransferProvider.future); // recompute on each solve
+  final clock = await ref.watch(clockProvider.future);
+  final attempts =
+      await ref.watch(appliedRepositoryProvider).attempts(since: clock.today());
+  return attempts.where((a) => a.source == 'algo').length;
 }
 
 /// In-progress Algorithms session: the day's queue, the state snapshot it was
@@ -98,7 +113,10 @@ extension SolveOutcomeSpec on SolveOutcome {
 class AlgoSession extends _$AlgoSession {
   @override
   Future<AlgoSessionState> build() async {
-    final queue = await ref.watch(algoQueueProvider.future);
+    // read (not watch): snapshot the queue once for this session so logging a
+    // solve — which invalidates the queue for Home/the plan — doesn't rebuild the
+    // session and reset the cursor mid-run. Re-entering makes a fresh session.
+    final queue = await ref.read(algoQueueProvider.future);
     final states = await ref.read(srsRepositoryProvider).loadStates();
     return AlgoSessionState(queue: queue, statesByKey: states);
   }
@@ -224,25 +242,8 @@ Future<({int due, int maintained})> algoRecognition(Ref ref) async {
 /// invalidated on each log, so Home tracks remaining work. Distinct from
 /// [algoDueCount], which is just the raw due-re-solve count the coach nudges on.
 @riverpod
-Future<int> algoTodayCount(Ref ref) async {
-  final index = await ref.watch(vaultIndexProvider.future);
-  final srs = await ref.watch(srsRepositoryProvider).loadStates();
-  final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
-  final clock = await ref.watch(clockProvider.future);
-  final min = await ref.watch(algoDailyMinProvider.future);
-  final max = await ref.watch(algoDailyMaxProvider.future);
-  return buildAlgoQueue(
-    cards: [
-      for (final c in index.cards)
-        if (c.type == CardType.algorithm) c,
-    ],
-    dueByKey: {for (final e in srs.entries) e.key: e.value.dueAt},
-    explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
-    now: clock.now(),
-    min: min,
-    max: max,
-  ).length;
-}
+Future<int> algoTodayCount(Ref ref) async =>
+    (await ref.watch(algoQueueProvider.future)).length;
 
 /// How many algorithm problems are due for a re-solve right now (drives the
 /// coach's re-solve nudge). Ignores the daily min/max — it's the raw due count.

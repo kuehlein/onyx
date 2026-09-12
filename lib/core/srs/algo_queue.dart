@@ -40,6 +40,11 @@ class AlgoTask {
 /// solve. A problem with no scheduling state yet is "new"; the first solve seeds
 /// its state. [explainDueByKey] maps `"$cardId::$sectionSlug"` → recognition due
 /// date. [min] is clamped to [max] defensively.
+///
+/// [solvedToday] is how many problems were already worked today; it shrinks both
+/// the floor and the max so the day's session *completes* — otherwise new
+/// problems would refill the floor forever and the track would never clear from
+/// Home. Once [solvedToday] ≥ [max], only nothing is scheduled (day done).
 List<AlgoTask> buildAlgoQueue({
   required List<Card> cards,
   required Map<String, DateTime> dueByKey,
@@ -47,8 +52,11 @@ List<AlgoTask> buildAlgoQueue({
   required int min,
   required int max,
   Map<String, DateTime> explainDueByKey = const {},
+  int solvedToday = 0,
 }) {
-  final floor = min > max ? max : min;
+  final cap = (max - solvedToday).clamp(0, max);
+  final floor = (((min > max ? max : min) - solvedToday)).clamp(0, cap);
+  if (cap == 0) return const [];
   final solveDue = <({ReviewItem item, DateTime dueAt})>[];
   final explainDue = <({ReviewItem item, DateTime dueAt})>[];
   final fresh = <ReviewItem>[];
@@ -85,7 +93,7 @@ List<AlgoTask> buildAlgoQueue({
 
   final result = <AlgoTask>[];
   void add(ReviewItem item, AlgoMode mode, String reason) {
-    if (result.length < max) {
+    if (result.length < cap) {
       result.add(AlgoTask(item: item, mode: mode, reason: reason));
     }
   }
