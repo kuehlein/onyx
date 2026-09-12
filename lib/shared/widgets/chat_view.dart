@@ -116,16 +116,25 @@ class _ChatViewState extends State<ChatView> {
         Expanded(
           child: FadingScrollEdges(
             color: widget.fadeColor,
-            child: ListView(
+            // A SingleChildScrollView (not a lazy ListView): these transcripts are
+            // short but very heterogeneous — a tall report/markdown header above
+            // small chat bubbles. A ListView estimates off-screen extent from the
+            // children it has laid out, so scrolling past the big header makes it
+            // revise maxScrollExtent, which visibly jumps/resizes the scrollbar.
+            // Laying everything out gives an exact extent and smooth scrolling.
+            child: SingleChildScrollView(
               controller: _scroll,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              children: [
-                if (widget.header != null) widget.header!,
-                if (widget.messages.isEmpty && widget.opener != null)
-                  widget.opener!,
-                for (final m in widget.messages) _Bubble(turn: m),
-                if (widget.trailing != null) widget.trailing!,
-              ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.header != null) widget.header!,
+                  if (widget.messages.isEmpty && widget.opener != null)
+                    widget.opener!,
+                  for (final m in widget.messages) _Bubble(turn: m),
+                  if (widget.trailing != null) widget.trailing!,
+                ],
+              ),
             ),
           ),
         ),

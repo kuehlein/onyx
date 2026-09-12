@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
+import '../../core/readiness/target.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
@@ -10,6 +11,7 @@ import '../../shared/providers/readiness.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
+import 'target_sheet.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
 
@@ -37,38 +39,132 @@ class HomeScreen extends ConsumerWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            children: [
-              _Greeting(clock: ref.watch(clockProvider).asData?.value),
-              const SizedBox(height: 16),
-              const Center(child: _TodayHero()),
-              const SizedBox(height: 24),
-              if (noVault)
-                _Prompt(
-                  icon: Icons.folder_open_outlined,
-                  title: 'No vault configured yet',
-                  subtitle: 'Point Onyx at your Obsidian vault in Settings.',
-                  onTap: () => context.go('/settings'),
-                )
-              else
-                const TodayFlows(),
-              const SizedBox(height: 20),
-              const CoachBadge(),
-              const SizedBox(height: 16),
-              // Low-emphasis extras: applied mock practice + interview planning.
-              const _SecondaryActions(),
-              if (needsKey) ...[
-                const SizedBox(height: 20),
-                _Prompt(
-                  icon: Icons.auto_awesome_outlined,
-                  title: 'Enable AI features',
-                  subtitle: 'Add your Anthropic API key in Settings.',
-                  onTap: () => context.go('/settings'),
+          // Distribute the (short) content down the viewport so it breathes
+          // instead of clustering at the top, while still scrolling on small
+          // screens (minHeight = viewport; see the column note below).
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  // mainAxisSize.min → the column sizes to its real content
+                  // (clamped up to the viewport by the ConstrainedBox), so
+                  // spaceBetween spreads the slack when there's room and it
+                  // simply scrolls when there isn't — no IntrinsicHeight
+                  // (which mis-measures ListTile/markdown and overflows).
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top: greeting + the interview target (glanceable, taps
+                      // to edit — resurfaces the "Your target" sheet).
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _Greeting(
+                              clock: ref.watch(clockProvider).asData?.value),
+                          const SizedBox(height: 10),
+                          const _TargetLine(),
+                        ],
+                      ),
+                      // Middle: today's ring hero + the priority flow stack.
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Center(child: _TodayHero()),
+                          const SizedBox(height: 28),
+                          if (noVault)
+                            _Prompt(
+                              icon: Icons.folder_open_outlined,
+                              title: 'No vault configured yet',
+                              subtitle:
+                                  'Point Onyx at your Obsidian vault in Settings.',
+                              onTap: () => context.go('/settings'),
+                            )
+                          else
+                            const TodayFlows(),
+                        ],
+                      ),
+                      // Bottom: the coach nudge + low-emphasis extras.
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const CoachBadge(),
+                          const SizedBox(height: 12),
+                          const _SecondaryActions(),
+                          if (needsKey) ...[
+                            const SizedBox(height: 16),
+                            _Prompt(
+                              icon: Icons.auto_awesome_outlined,
+                              title: 'Enable AI features',
+                              subtitle:
+                                  'Add your Anthropic API key in Settings.',
+                              onTap: () => context.go('/settings'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The interview target as one glanceable, tappable line — the goal the readiness
+/// ring is measured against. Taps open the "Your target" sheet (its only route in
+/// now that the old readiness panel is gone). Shows a set-it prompt when unset.
+class _TargetLine extends ConsumerWidget {
+  const _TargetLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final clock = ref.watch(clockProvider).asData?.value;
+    final unset = target == null || identical(target, ReadinessTarget.fallback);
+
+    String text;
+    if (unset) {
+      text = 'Set your interview target';
+    } else {
+      final parts = [target.label];
+      final d = target.interviewDate;
+      if (d != null && clock != null) {
+        final days =
+            DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
+        parts.add(days <= 0
+            ? 'interview now'
+            : 'in $days day${days == 1 ? '' : 's'}');
+      }
+      text = parts.join('  ·  ');
+    }
+
+    return InkWell(
+      onTap: () => showTargetSheet(context),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Icon(Icons.flag_outlined,
+                size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(text,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ),
+            Icon(Icons.chevron_right,
+                size: 18, color: theme.colorScheme.onSurfaceVariant),
+          ],
         ),
       ),
     );
