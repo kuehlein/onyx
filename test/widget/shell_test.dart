@@ -3,9 +3,12 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
+import 'package:onyx/core/clock.dart';
 import 'package:onyx/core/interview/transfer.dart';
 import 'package:onyx/core/plan/daily_plan.dart';
+import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
+import 'package:onyx/shared/providers/today_progress.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -58,6 +61,9 @@ void main() {
           learnQueueProvider.overrideWith((ref) async => const []),
           dailyPlanProvider.overrideWith((ref) async =>
               const DailyPlan(tracks: [], budgetMinutes: 90, locked: [])),
+          clockProvider.overrideWith((ref) async => Clock.real),
+          todayProgressProvider.overrideWith((ref) async =>
+              const TodayProgress(done: 0, total: 0, minutesLeft: 0)),
           startupRestoreProvider.overrideWith((ref) async {}),
           glossaryProvider.overrideWith((ref) async => const {}),
           readinessTargetControllerProvider
