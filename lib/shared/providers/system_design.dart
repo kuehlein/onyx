@@ -6,6 +6,7 @@ import '../../core/ai/coach_update_chat.dart' show coachChatTurns;
 import '../../core/ai/system_design_interviewer.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/interview/system_design_grader.dart';
+import '../../core/practice/mock_grader.dart';
 import '../../core/readiness/target.dart';
 import '../../core/srs/recognition.dart';
 import '../models/card.dart';
@@ -266,7 +267,8 @@ class SdMockSession extends _$SdMockSession {
       // A failed debrief shouldn't block grading; carry on with what we have.
     }
 
-    // 2) Adversarial grader panel over the cold transcript (the honest number).
+    // 2) Adversarial grader panel over the cold transcript (the honest number) —
+    // the shared "AI mock" grading core, parameterized by the SD rubric + prompt.
     final transcript = buildSdGraderTranscript([
       for (final m in state.messages)
         (
@@ -274,35 +276,18 @@ class SdMockSession extends _$SdMockSession {
           content: m.text,
         ),
     ]);
-    final graderSystem = buildSdGraderSystem(card: card, level: level);
-    final results = await Future.wait([
-      for (var i = 0; i < _panelSize; i++)
-        claude
-            .chat(
-              system: graderSystem,
-              model: _model,
-              maxTokens: 400,
-              messages: [(role: 'user', content: transcript)],
-            )
-            .then<SdGrade?>(parseSdGrade)
-            .catchError((_) => null),
-    ]);
-    final panel = [
-      for (final g in results)
-        if (g != null) g,
-    ];
-    final score01 = reconcilePanel01(panel);
+    final reconciled = await runAdversarialPanel(
+      claude: claude,
+      model: _model,
+      panelSize: _panelSize,
+      graderSystem: buildSdGraderSystem(card: card, level: level),
+      transcript: transcript,
+      dimensions: systemDesignRubricDimensions.toSet(),
+    );
 
     SdGrade? finalGrade;
-    if (score01 != null) {
-      final sorted = [...panel]
-        ..sort((a, b) => a.appliedScore.compareTo(b.appliedScore));
-      final median = sorted[sorted.length ~/ 2];
-      finalGrade = SdGrade(
-        appliedScore: (score01 * 100).round(),
-        rubric: median.rubric,
-        note: median.note,
-      );
+    if (reconciled != null) {
+      finalGrade = reconciled.grade;
       final now = (await ref.read(clockProvider.future)).now();
       await ref.read(appliedRepositoryProvider).record(
             cardId: card.id,
