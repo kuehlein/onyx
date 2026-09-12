@@ -12,6 +12,12 @@ import 'mock_grader.dart';
 /// Notifier can delegate without a shared base class.
 enum MockPhase { intro, running, grading, done }
 
+/// How much the interviewer helps — scaffolding that fades with demonstrated
+/// competence (avoiding the expertise-reversal effect). Shared across mock tracks.
+/// [coaching] steps in when the candidate is stuck; [realistic] is hands-off. An
+/// explicit request for help is always honoured in either mode.
+enum SupportMode { coaching, realistic }
+
 class MockSessionState {
   const MockSessionState({
     this.phase = MockPhase.intro,

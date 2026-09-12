@@ -85,6 +85,21 @@ const systemDesignRubricDimensions = <String>[
   'communication',
 ];
 
+/// The behavioral mock-interview rubric dimensions (flow 4). STAR+L structure plus
+/// the highest-signal behavioral dimensions from the research (ownership, quantified
+/// result, competency/leadership signal, level-appropriate scope, reflection) and
+/// communication. The starred four (ownership, result, signal, scope, reflection)
+/// carry the most weight; structure & communication are hygiene.
+const behavioralRubricDimensions = <String>[
+  'structure',
+  'ownership',
+  'result',
+  'signal',
+  'scope',
+  'reflection',
+  'communication',
+];
+
 /// A human-readable label for a rubric dimension key.
 String rubricLabel(String key) => switch (key) {
       'communication' => 'Communication',
@@ -100,5 +115,12 @@ String rubricLabel(String key) => switch (key) {
       'dataModeling' => 'Data modeling',
       'deepDive' => 'Deep-dive depth',
       'tradeoffReasoning' => 'Trade-off reasoning',
+      // Behavioral dimensions.
+      'structure' => 'Structure (STAR+L)',
+      'ownership' => 'Ownership',
+      'result' => 'Quantified result',
+      'signal' => 'Competency signal',
+      'scope' => 'Scope vs level',
+      'reflection' => 'Reflection & learning',
       _ => key,
     };
