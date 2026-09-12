@@ -349,6 +349,40 @@ void main() {
     }
   }, skip: !Directory('staging/flashcards').existsSync());
 
+  group('behavioral cards', () {
+    final card = _parser.parse('''
+---
+id: behavioral-conflict-and-backbone
+type: behavioral
+tags: [behavioral, conflict]
+---
+
+# Conflict & Backbone
+
+Disagree, then commit.
+
+## Prompts
+
+- Tell me about a disagreement with your manager.
+
+## What strong looks like
+
+Real stakes, upward influence, commitment.
+''', filePath: 'b.md')!;
+
+    test('parses the behavioral type and is a practice track', () {
+      expect(card.type, CardType.behavioral);
+      expect(card.type.isPracticeTrack, isTrue);
+      expect(card.domain, 'behavioral');
+    });
+
+    test('sections are non-quizzable (prompt bank / grader ground truth)', () {
+      expect(card.sections.map((s) => s.slug),
+          containsAll(['prompts', 'what-strong-looks-like']));
+      expect(card.quizzableSections, isEmpty);
+    });
+  });
+
   group('est_minutes override', () {
     Card parse(String fm) => _parser.parse('''
 ---

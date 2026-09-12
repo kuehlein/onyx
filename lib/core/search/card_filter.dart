@@ -18,6 +18,7 @@ extension CardTypeLabel on CardType {
         CardType.interviewQuestion => 'Interview question',
         CardType.algorithm => 'Algorithm',
         CardType.systemDesign => 'System design',
+        CardType.behavioral => 'Behavioral',
       };
 }
 
@@ -182,6 +183,12 @@ CardType? _parseType(String v) => switch (v) {
       'sd' ||
       'design' =>
         CardType.systemDesign,
+      'behavioral' ||
+      'behaviour' ||
+      'behavior' ||
+      'star' ||
+      'bq' =>
+        CardType.behavioral,
       _ => null,
     };
 

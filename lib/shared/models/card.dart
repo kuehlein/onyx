@@ -15,11 +15,18 @@
 /// scheduled; it's practiced via mocks on its own queue and feeds readiness
 /// through applied-transfer, not recall coverage. See
 /// docs/system-design-track-design.md.
+///
+/// [behavioral] cards drive the Behavioral practice track: the card is one
+/// competency (e.g. "Conflict & Backbone"), whose H2 sections are the interviewer's
+/// private prompt bank + what-strong-looks-like signals. Like system-design, the
+/// whole card is the practice unit (a mock over that competency); sections are not
+/// independently scheduled and it's not fact-recall. See behavioral-flow-design.
 enum CardType {
   flashcard('flashcard'),
   interviewQuestion('interview-question'),
   algorithm('algorithm'),
-  systemDesign('system-design');
+  systemDesign('system-design'),
+  behavioral('behavioral');
 
   const CardType(this.value);
 
@@ -27,11 +34,14 @@ enum CardType {
   final String value;
 
   /// Whether this type is a separate paced *practice track* (Algorithms,
-  /// System Design) rather than part of the spaced concept deck. Practice-track
-  /// cards are excluded from the general review/learn queues and from the
-  /// recall-coverage denominator; they feed readiness via applied-transfer.
+  /// System Design, Behavioral) rather than part of the spaced concept deck.
+  /// Practice-track cards are excluded from the general review/learn queues and
+  /// from the recall-coverage denominator; they feed readiness via
+  /// applied-transfer.
   bool get isPracticeTrack =>
-      this == CardType.algorithm || this == CardType.systemDesign;
+      this == CardType.algorithm ||
+      this == CardType.systemDesign ||
+      this == CardType.behavioral;
 
   static CardType? fromString(String? raw) {
     for (final type in CardType.values) {
