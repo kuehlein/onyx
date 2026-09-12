@@ -25,6 +25,7 @@ Future<void> showCoachChatSheet(
   required int reviewBacklog,
   required int algoMin,
   required int algoMax,
+  String? todayPlan,
 }) {
   final system = buildCoachChatSystem(
     update: update,
@@ -37,6 +38,7 @@ Future<void> showCoachChatSheet(
     reviewBacklog: reviewBacklog,
     algoMin: algoMin,
     algoMax: algoMax,
+    todayPlan: todayPlan,
   );
   return showModalBottomSheet<void>(
     context: context,

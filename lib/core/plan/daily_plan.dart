@@ -140,6 +140,31 @@ class DailyPlan {
   bool get isEmpty => tracks.isEmpty;
 }
 
+/// A compact, human-readable summary of the day's plan, for the coach's context
+/// (so it can talk about today's load, sequencing, and what to trim without
+/// another round-trip). Pure.
+String describeDailyPlan(DailyPlan plan) {
+  if (plan.tracks.isEmpty && plan.locked.isEmpty) {
+    return 'Today: nothing scheduled — all caught up '
+        '(budget ~${plan.budgetMinutes.round()} min/day).';
+  }
+  final b = StringBuffer()
+    ..writeln("Today's plan (~${plan.plannedMinutes.round()} of "
+        '${plan.budgetMinutes.round()} min budget):');
+  for (final t in plan.tracks) {
+    final n = t.units.length;
+    final core = t.nonNegotiable ? ', must-do' : '';
+    final later = t.deferred > 0 ? ', +${t.deferred} deferred' : '';
+    b.writeln('  - ${t.track.label}: $n item${n == 1 ? '' : 's'}, '
+        '~${t.estMinutes.round()} min$core$later');
+  }
+  for (final l in plan.locked) {
+    b.writeln('  - ${l.track.label}: locked — '
+        '${l.gateReason ?? 'prerequisites not yet met'}');
+  }
+  return b.toString().trimRight();
+}
+
 /// Build the day's plan. Pure. [budgetMinutes] is the day's time budget.
 DailyPlan buildDailyPlan({
   required List<TrackAvailability> availabilities,

@@ -17,6 +17,9 @@ TrackAvailability _avail(TrackId t, List<double> mins,
       ],
     );
 
+PracticeUnit _u(TrackId t, String id, double m) =>
+    PracticeUnit(track: t, id: id, label: id, estMinutes: m);
+
 PlannedTrack? _track(DailyPlan p, TrackId t) {
   for (final pt in p.tracks) {
     if (pt.track == t) return pt;
@@ -159,6 +162,52 @@ void main() {
       expect(learnTaperFactor(daysUntilInterview: 7), closeTo(0.5, 1e-9));
       expect(learnTaperFactor(daysUntilInterview: 0), 0.2); // floor
       expect(learnTaperFactor(daysUntilInterview: 1), 0.2); // floored
+    });
+  });
+
+  group('describeDailyPlan', () {
+    test('summarizes tracks, budget, must-do, deferred and locked', () {
+      final plan = DailyPlan(
+        budgetMinutes: 90,
+        locked: const [
+          TrackAvailability(
+            track: TrackId.systemDesign,
+            units: [],
+            unlocked: false,
+            gateReason: 'Unlocks as you get comfortable with rate limiting',
+          ),
+        ],
+        tracks: [
+          PlannedTrack(
+            track: TrackId.review,
+            units: [_u(TrackId.review, 'a', 1.5), _u(TrackId.review, 'b', 1.5)],
+            deferred: 0,
+            nonNegotiable: true,
+          ),
+          PlannedTrack(
+            track: TrackId.algorithms,
+            units: [_u(TrackId.algorithms, 'two-sum', 25)],
+            deferred: 3,
+            nonNegotiable: false,
+          ),
+        ],
+      );
+      final s = describeDailyPlan(plan);
+      expect(s, contains('~28 of 90 min'));
+      expect(s, contains('Review: 2 items'));
+      expect(s, contains('must-do'));
+      expect(s, contains('Algorithms: 1 item'));
+      expect(s, contains('+3 deferred'));
+      expect(s, contains('System design: locked'));
+      expect(s, contains('rate limiting'));
+    });
+
+    test('reports the caught-up state when nothing is scheduled', () {
+      expect(
+        describeDailyPlan(
+            const DailyPlan(tracks: [], budgetMinutes: 90, locked: [])),
+        contains('all caught up'),
+      );
     });
   });
 

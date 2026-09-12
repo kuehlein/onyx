@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
 import '../../core/coach/coach_update.dart';
+import '../../core/plan/daily_plan.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/coach_settings.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/coach_update.dart';
+import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
@@ -57,6 +59,10 @@ class CoachBadge extends ConsumerWidget {
       algoMax: ref.watch(algoDailyMaxProvider).asData?.value ??
           AlgoDailyMax.defaultValue,
     );
+    // Today's assembled plan, so "talk about it" can reason about the actual
+    // queue (what to keep, defer, sequence) — null until it's ready.
+    final plan = ref.watch(dailyPlanProvider).asData?.value;
+    final todayPlan = plan == null ? null : describeDailyPlan(plan);
 
     final theme = Theme.of(context);
     final color = _toneColor(update.tone, theme);
@@ -67,7 +73,7 @@ class CoachBadge extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: () => update.kind == CoachInsightKind.loadCheckin
             ? showLoadCheckInSheet(context, ref)
-            : _showDetail(context, ref, update, color, seed, load),
+            : _showDetail(context, ref, update, color, seed, load, todayPlan),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -117,7 +123,7 @@ class CoachBadge extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, WidgetRef ref, CoachUpdate u,
-      Color color, _ChatSeed seed, _Load load) {
+      Color color, _ChatSeed seed, _Load load, String? todayPlan) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -180,6 +186,7 @@ class CoachBadge extends ConsumerWidget {
                             reviewBacklog: load.backlog,
                             algoMin: load.algoMin,
                             algoMax: load.algoMax,
+                            todayPlan: todayPlan,
                           );
                         },
                         icon: const Icon(Icons.forum_outlined, size: 18),

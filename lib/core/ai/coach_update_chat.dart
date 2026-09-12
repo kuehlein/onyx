@@ -28,6 +28,7 @@ String buildCoachChatSystem({
   required int reviewBacklog,
   required int algoMin,
   required int algoMax,
+  String? todayPlan,
 }) {
   final b = StringBuffer();
   b
@@ -55,6 +56,21 @@ String buildCoachChatSystem({
     ..writeln('  2. Algorithms track (problem-solving practice): $algoMin–'
         '$algoMax problems/day (a floor and a ceiling).')
     ..writeln()
+    ..writeln();
+  if (todayPlan != null && todayPlan.trim().isNotEmpty) {
+    b
+      ..writeln("Here is the app's prioritized plan for today — a time-boxed "
+          'queue across the tracks, sized to a daily budget that ramps as the '
+          'habit builds and tapers new learning as an interview nears:')
+      ..writeln(todayPlan.trim())
+      ..writeln('Reason about this concretely: if they are short on time, tell '
+          'them what to keep (must-do rows first) and what can slip; help them '
+          'sequence or trim it. But you only change ongoing load via the <set/> '
+          'tag below — the plan itself recomputes from those settings plus their '
+          'progress, so never claim you edited today\'s list directly.')
+      ..writeln();
+  }
+  b
     ..writeln('You can CHANGE either track for them. When you and the learner '
         'land on a specific change, end that reply with ONE tag on its own '
         'final line: <set setting="new-per-day|algo-min|algo-max" delta="±N"/> '
