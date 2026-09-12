@@ -7,7 +7,7 @@ Widget _wrap(Widget child) =>
 
 void main() {
   group('SessionTimer count-up (stopwatch)', () {
-    testWidgets('starts on tap, counts up, and reports elapsed via onTick',
+    testWidgets('starts, counts up, then pauses and resumes (keeps elapsed)',
         (tester) async {
       final ticks = <int>[];
       await tester.pumpWidget(_wrap(
@@ -28,13 +28,25 @@ void main() {
 
       expect(ticks, [1, 2]);
       expect(find.text('2s'), findsOneWidget);
-      expect(find.text('tap to reset'), findsOneWidget);
+      expect(find.text('tap to pause'), findsOneWidget);
 
-      // Tap again resets to idle.
+      // Tap pauses: elapsed is kept, ticker stops.
       await tester.tap(find.byType(SessionTimer));
       await tester.pump();
-      expect(find.text('Timer'), findsOneWidget);
-      expect(ticks.last, 0);
+      expect(find.text('2s'), findsOneWidget);
+      expect(find.text('tap to resume'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('2s'), findsOneWidget); // didn't advance while paused
+
+      // Tap resumes from where it left off.
+      await tester.tap(find.byType(SessionTimer));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('3s'), findsOneWidget);
+
+      // Clean up the running ticker.
+      await tester.tap(find.byType(SessionTimer));
+      await tester.pump();
     });
   });
 

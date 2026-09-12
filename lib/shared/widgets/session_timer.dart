@@ -65,10 +65,12 @@ class SessionTimer extends StatefulWidget {
 class _SessionTimerState extends State<SessionTimer> {
   Timer? _ticker;
   int _seconds = 0;
-  bool _running = false;
+  bool _running = false; // ticker active
+  bool _started = false; // count-up: has begun (distinguishes idle from paused)
   bool _done = false;
 
   bool get _isCountUp => widget.mode == TimerMode.countUp;
+  bool get _paused => _isCountUp && _started && !_running;
 
   @override
   void dispose() {
@@ -76,13 +78,8 @@ class _SessionTimerState extends State<SessionTimer> {
     super.dispose();
   }
 
-  void _start() {
+  void _startTicker() {
     _ticker?.cancel();
-    setState(() {
-      _seconds = _isCountUp ? 0 : widget.durationSeconds;
-      _running = true;
-      _done = false;
-    });
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_isCountUp) {
         setState(() => _seconds++);
@@ -103,14 +100,50 @@ class _SessionTimerState extends State<SessionTimer> {
     });
   }
 
+  void _start() {
+    setState(() {
+      _seconds = _isCountUp ? 0 : widget.durationSeconds;
+      _running = true;
+      _started = true;
+      _done = false;
+    });
+    _startTicker();
+  }
+
+  // Count-up only: pause keeps the elapsed time; resume continues from it.
+  void _pause() {
+    _ticker?.cancel();
+    setState(() => _running = false);
+  }
+
+  void _resume() {
+    setState(() => _running = true);
+    _startTicker();
+  }
+
   void _reset() {
     _ticker?.cancel();
     setState(() {
       _running = false;
+      _started = false;
       _done = false;
       _seconds = 0;
     });
     widget.onTick?.call(0);
+  }
+
+  void _onTap() {
+    if (_isCountUp) {
+      if (!_started) {
+        _start();
+      } else if (_running) {
+        _pause();
+      } else {
+        _resume();
+      }
+    } else {
+      _running ? _reset() : _start();
+    }
   }
 
   @override
@@ -119,11 +152,27 @@ class _SessionTimerState extends State<SessionTimer> {
     const green = statusGood;
     final scheme = theme.colorScheme;
 
+    final bool showElapsed = _isCountUp ? _started : _running;
     final (label, color, icon) = _done
         ? (widget.doneLabel, green, widget.doneIcon)
-        : _running
-            ? (_fmt(_seconds), scheme.primary, widget.runningIcon)
+        : showElapsed
+            ? (
+                _fmt(_seconds),
+                _paused ? scheme.onSurfaceVariant : scheme.primary,
+                _paused ? Icons.pause_circle_outline : widget.runningIcon,
+              )
             : (widget.idleLabel, scheme.onSurfaceVariant, widget.runningIcon);
+
+    final String hint;
+    if (_isCountUp) {
+      hint = !_started
+          ? widget.idleHint
+          : _running
+              ? 'tap to pause'
+              : 'tap to resume';
+    } else {
+      hint = _running ? widget.runningHint : widget.idleHint;
+    }
 
     return Material(
       color: _done
@@ -132,7 +181,7 @@ class _SessionTimerState extends State<SessionTimer> {
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: _running ? _reset : _start,
+        onTap: _onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -145,7 +194,7 @@ class _SessionTimerState extends State<SessionTimer> {
                       color: color,
                       fontFeatures: const [FontFeature.tabularFigures()])),
               const SizedBox(width: 8),
-              Text(_running ? widget.runningHint : widget.idleHint,
+              Text(hint,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: scheme.onSurfaceVariant)),
             ],
