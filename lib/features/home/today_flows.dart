@@ -64,27 +64,33 @@ class _FlowButton extends StatelessWidget {
         '~${track.estMinutes.round()}m');
     if (track.deferred > 0) detail.write('  +${track.deferred}');
 
+    final cs = theme.colorScheme;
     final isPrimary = emphasis == 0;
-    final onSurfaceForRow = isPrimary
-        ? theme.colorScheme.onPrimary
-        : theme.colorScheme.onSurfaceVariant;
+    // Each button variant paints on a different surface, so the label/icon must
+    // use that variant's matching foreground (textTheme styles carry the dark
+    // onSurface colour, which is unreadable on the filled primary button).
+    final fg = switch (emphasis) {
+      0 => cs.onPrimary,
+      1 => cs.onSecondaryContainer,
+      _ => cs.onSurface,
+    };
 
     final child = Padding(
       padding: EdgeInsets.symmetric(vertical: isPrimary ? 6 : 2),
       child: Row(
         children: [
-          Icon(meta.icon, size: 20),
+          Icon(meta.icon, size: 20, color: fg),
           const SizedBox(width: 12),
           Expanded(
             child: Text(track.track.label,
                 style: (isPrimary
                         ? theme.textTheme.titleMedium
                         : theme.textTheme.titleSmall)
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+                    ?.copyWith(fontWeight: FontWeight.w600, color: fg)),
           ),
           Text(detail.toString(),
-              style:
-                  theme.textTheme.bodySmall?.copyWith(color: onSurfaceForRow)),
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: fg.withValues(alpha: isPrimary ? 0.9 : 0.7))),
         ],
       ),
     );

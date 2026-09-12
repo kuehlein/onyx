@@ -34,7 +34,15 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Onyx'),
-        actions: const [_ReadinessChip(), SizedBox(width: 8)],
+        actions: [
+          const _ReadinessChip(),
+          IconButton(
+            onPressed: () => context.push('/interviews'),
+            icon: const Icon(Icons.event_note_outlined),
+            tooltip: 'Interviews',
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -58,15 +66,15 @@ class HomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Top: greeting + the interview target (glanceable, taps
-                      // to edit — resurfaces the "Your target" sheet).
+                      // Top: the date + the interview target card (glanceable,
+                      // taps to edit — resurfaces the "Your target" sheet).
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _Greeting(
+                          _DateHeader(
                               clock: ref.watch(clockProvider).asData?.value),
-                          const SizedBox(height: 10),
-                          const _TargetLine(),
+                          const SizedBox(height: 12),
+                          const _TargetCard(),
                         ],
                       ),
                       // Middle: today's ring hero + the priority flow stack.
@@ -87,13 +95,11 @@ class HomeScreen extends ConsumerWidget {
                             const TodayFlows(),
                         ],
                       ),
-                      // Bottom: the coach nudge + low-emphasis extras.
+                      // Bottom: the coach nudge (+ the key prompt when needed).
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const CoachBadge(),
-                          const SizedBox(height: 12),
-                          const _SecondaryActions(),
                           if (needsKey) ...[
                             const SizedBox(height: 16),
                             _Prompt(
@@ -118,74 +124,117 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// The interview target as one glanceable, tappable line — the goal the readiness
+/// The interview target as a contained, tappable card — the goal the readiness
 /// ring is measured against. Taps open the "Your target" sheet (its only route in
 /// now that the old readiness panel is gone). Shows a set-it prompt when unset.
-class _TargetLine extends ConsumerWidget {
-  const _TargetLine();
+class _TargetCard extends ConsumerWidget {
+  const _TargetCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
     final unset = target == null || identical(target, ReadinessTarget.fallback);
 
-    String text;
+    final String title;
+    String? countdown;
     if (unset) {
-      text = 'Set your interview target';
+      title = 'Set your interview target';
     } else {
-      final parts = [target.label];
+      title = target.label;
       final d = target.interviewDate;
       if (d != null && clock != null) {
         final days =
             DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
-        parts.add(days <= 0
-            ? 'interview now'
-            : 'in $days day${days == 1 ? '' : 's'}');
+        countdown = days <= 0
+            ? 'interview is today'
+            : '$days day${days == 1 ? '' : 's'} to go';
       }
-      text = parts.join('  ·  ');
     }
 
-    return InkWell(
-      onTap: () => showTargetSheet(context),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            Icon(Icons.flag_outlined,
-                size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(text,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ),
-            Icon(Icons.chevron_right,
-                size: 18, color: theme.colorScheme.onSurfaceVariant),
-          ],
+    return Material(
+      color: cs.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => showTargetSheet(context),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.flag_outlined, size: 20, color: cs.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(unset ? 'Target' : 'Your target',
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: cs.onSurfaceVariant)),
+                    const SizedBox(height: 1),
+                    Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              if (countdown != null) ...[
+                const SizedBox(width: 10),
+                Text(countdown,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.primary, fontWeight: FontWeight.w700)),
+              ],
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _Greeting extends StatelessWidget {
-  const _Greeting({required this.clock});
+/// A quiet, factual date header — replaces the old time-of-day greeting, which
+/// wasn't grounded in anything and misread late-night hours as "morning".
+class _DateHeader extends StatelessWidget {
+  const _DateHeader({required this.clock});
   final Clock? clock;
+
+  static const _weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+  static const _months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final hour = clock?.now().hour;
-    final word = hour == null
-        ? 'Welcome back'
-        : hour < 12
-            ? 'Good morning'
-            : hour < 18
-                ? 'Good afternoon'
-                : 'Good evening';
-    return Text(word, style: Theme.of(context).textTheme.headlineSmall);
+    final now = clock?.now();
+    final text = now == null
+        ? 'Today'
+        : '${_weekdays[now.weekday - 1]}, ${_months[now.month - 1]} ${now.day}';
+    return Text(text, style: Theme.of(context).textTheme.headlineSmall);
   }
 }
 
@@ -242,35 +291,6 @@ class _ReadinessChip extends ConsumerWidget {
         label: Text('Ready $pct%'),
         visualDensity: VisualDensity.compact,
       ),
-    );
-  }
-}
-
-class _SecondaryActions extends ConsumerWidget {
-  const _SecondaryActions();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
-    return Row(
-      children: [
-        Expanded(
-          child: TextButton.icon(
-            onPressed: weakest == null
-                ? null
-                : () => context.push('/practice/$weakest'),
-            icon: const Icon(Icons.psychology_outlined, size: 18),
-            label: const Text('Mock'),
-          ),
-        ),
-        Expanded(
-          child: TextButton.icon(
-            onPressed: () => context.push('/interviews'),
-            icon: const Icon(Icons.event_note_outlined, size: 18),
-            label: const Text('Interviews'),
-          ),
-        ),
-      ],
     );
   }
 }
