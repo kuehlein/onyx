@@ -188,7 +188,8 @@ disclosure, don't clutter.** Proposed Home, top → bottom:
    priority-ordered rows with per-task est-time + "why" (due/weak/neglected); a
    "short on time → do these" marker; completed rows recede. This **replaces the
    flow buttons**.
-3. **Coach** — a compact card/entry that speaks to today's plan (see §6).
+3. **Coach** — KEEP the existing front-page coach (not removed); make it
+   plan-aware (see §6). It stays a first-class element of Home.
 
 (A light research pass on home information-density/overload is worth doing before
 finalizing the exact layout — offered below.)
@@ -259,3 +260,57 @@ Each phase is shippable and testable; 1–2 are the load-bearing foundation.
 7. **More research?** A targeted pass on (a) home-screen information density /
    cognitive overload and (b) habit-formation ramp curves would sharpen §4–§5;
    worth it, or proceed on established principles and refine in build?
+
+---
+
+## 10. Refinements from discussion (2026-09-11) — CONFIRMED
+
+**Per-flow time allocation (the "capping" clarified).** The meta-scheduler splits
+the day's budget *across* flows (e.g. "~1h each") rather than draining it on the
+single most-overdue flow. If 2h of reviews are due but the flow's allotment is 1h,
+surface ~1h of the highest-value reviews and roll the rest over — likewise trim
+algos/SD to their allotments. This deliberately **limits per-domain exposure per
+day** to avoid going overboard on one at the expense of others (aligns with
+interleaving + the fatigue ceiling). Deferred reviews get marginally more overdue;
+the coach flags a growing backlog. Allotments come from the priority weights
+(§3) normalized to the budget.
+
+**Per-item time estimates + priority bin-packing (the "box" problem).** Problems
+aren't uniform (implementing a BST ≪ knapsack), so you can't allot "30 min" to a
+40-min problem. Fix:
+- **`estMinutes` on the card** (frontmatter), used by the scheduler. Algos vary
+  widely → per-problem estimates matter most; Learn → optional per-card override
+  over a default (some concepts are genuinely harder); Review → a small default
+  per card (× due count); **System design → time-boxed by format (~40 min full, or
+  a ~15-min scoped drill), so SD is the *flexible* flow that absorbs leftover
+  time.** Sensible type/tier defaults when a card omits it.
+- **Bin-pack by priority within each flow's allotment:** take highest-priority
+  items that *fit* the remaining minutes; if the top item (e.g. knapsack, 40m)
+  doesn't fit today, schedule the next that fits (e.g. isPalindrome, 10m). The
+  bumped item stays due and the FSRS/priority signal **elevates it further**, so
+  it's #1 the next day and won't be bumped again. (No half-problems; important
+  long problems aren't permanently squeezed out.)
+
+**Prerequisite gating for the algo track too (not just SD).** Advanced algo groups
+gate on their concept prerequisites; foundational groups are ungated from day 1
+(you can do string/array problems immediately without "mastering strings" first).
+Proposed mapping (a `requires:` frontmatter list on the `algo-*` card, or a
+group→concept map; ungated if empty):
+- **Ungated (day 1):** arrays-and-hashing, two-pointers, sliding-window, stack,
+  binary-search, linked-list.
+- **Gated on concept comfort:** trees ← binary-tree/bst; tries ← trie; heap ← heap;
+  backtracking ← backtracking/recursion; graphs ← graphs/bfs/dfs; advanced-graphs ←
+  dijkstra/mst/union-find; 1-D DP ← dynamic-programming-1d; 2-D DP ←
+  dynamic-programming-2d; greedy ← greedy; intervals ← intervals. (math-and-geometry,
+  bit-manipulation: ungated or lightly gated — no strong concept-card prereq.)
+This generalizes the gate: a track/item unlocks when the prerequisite concept(s)
+reach a comfort threshold (coverage/strength), same mechanism as SD.
+
+**Show the time budget + a pausable stopwatch (inform, don't enforce).** Surface
+each problem's expected time (e.g. "~40 min") where the user can see it, and give
+the count-up `SessionTimer` a **pause** (not just start/reset). The app/AI never
+*enforces* the limit — it just makes the intended dedication visible so the user
+can self-manage.
+
+**Keep the coach on Home.** Confirmed — the front-page coach stays; it's made
+plan-aware (§6), not removed.
