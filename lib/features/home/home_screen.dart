@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/providers/ai.dart';
-import '../../shared/providers/algo.dart';
 import '../../shared/providers/backup.dart';
-import '../../shared/providers/learn.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
 import 'readiness_panel.dart';
+import 'today_plan.dart';
 
 /// Landing screen: what's ready to review, what's new to learn, and the ways in.
 class HomeScreen extends ConsumerWidget {
@@ -22,11 +20,6 @@ class HomeScreen extends ConsumerWidget {
     // Kick off the one-time restore-from-vault-if-empty on app start.
     ref.watch(startupRestoreProvider);
     final index = ref.watch(vaultIndexProvider);
-    final reviewData = ref.watch(reviewQueueProvider).asData?.value;
-    final dueCount = reviewData?.queue.length;
-    final hasProgress = reviewData?.statesByKey.isNotEmpty ?? false;
-    final newCount = ref.watch(learnQueueProvider).asData?.value.length;
-    final algoToday = ref.watch(algoTodayCountProvider).asData?.value;
     final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
@@ -45,15 +38,11 @@ class HomeScreen extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Status line only for informational states (indexing, no
-                  // vault, all caught up). When there's actual due/new work the
-                  // Review/Learn buttons already show those counts, so we skip
-                  // it to save a redundant line of height.
+                  // No vault yet is the one blocking state the Today card can't
+                  // speak to — surface it (and index errors) inline; otherwise the
+                  // Today queue is the day's whole story.
                   ...index.when(
-                    loading: () => const [
-                      Text('Indexing vault…', textAlign: TextAlign.center),
-                      SizedBox(height: 14),
-                    ],
+                    loading: () => const <Widget>[],
                     error: (e, _) => [
                       Text('Index error: $e',
                           textAlign: TextAlign.center,
@@ -61,12 +50,9 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                     ],
                     data: (r) {
-                      final msg = r.cardCount == 0
-                          ? 'No vault configured yet — open Settings.'
-                          : _statusLine(dueCount, newCount, r.cardCount);
-                      if (msg == null) return const <Widget>[];
+                      if (r.cardCount != 0) return const <Widget>[];
                       return [
-                        Text(msg,
+                        Text('No vault configured yet — open Settings.',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
@@ -74,50 +60,8 @@ class HomeScreen extends ConsumerWidget {
                       ];
                     },
                   ),
-                  FilledButton.icon(
-                    // Always tappable; the label tracks the day's concept-recall
-                    // work, and /quiz guides you (learn first → review → extra
-                    // practice) from its context-aware empty state.
-                    onPressed: () => context.go('/quiz'),
-                    icon: const Icon(Icons.school_outlined),
-                    label: Text(
-                      (dueCount ?? 0) > 0
-                          ? 'Review — $dueCount due'
-                          : (hasProgress ? 'Review' : 'Get started'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: (newCount ?? 0) == 0
-                        ? null
-                        : () => context.go('/learn'),
-                    icon: const Icon(Icons.auto_stories_outlined),
-                    label: Text(
-                      (newCount ?? 0) == 0
-                          ? 'Nothing new to learn'
-                          : 'Learn — $newCount new',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Algorithms — its own paced daily track; always tappable
-                  // (there are always new problems to start).
-                  FilledButton.tonalIcon(
-                    onPressed: () => context.push('/algorithms'),
-                    icon: const Icon(Icons.terminal_outlined),
-                    label: Text((algoToday ?? 0) > 0
-                        ? 'Algorithms — $algoToday today'
-                        : 'Algorithms'),
-                  ),
-                  const SizedBox(height: 12),
-                  // System-design mock-interview track (its own paced flow,
-                  // graded into readiness; a mock is long so it's pick-a-problem,
-                  // not a daily count).
-                  FilledButton.tonalIcon(
-                    onPressed: () => context.push('/system-design'),
-                    icon: const Icon(Icons.architecture_outlined),
-                    label: const Text('System design'),
-                  ),
-                  const SizedBox(height: 12),
+                  const TodayPlan(),
+                  const SizedBox(height: 16),
                   // Secondary actions as a compact pair (Browse lives in the
                   // bottom-nav, so it isn't duplicated here). Mock interview is
                   // applied/transfer practice, independent of the FSRS due queue
@@ -169,14 +113,5 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  /// Informational status only. Returns null when there's actionable work
-  /// (due/new) — the Review/Learn buttons already show those counts, so we don't
-  /// repeat them and cost a line of height.
-  String? _statusLine(int? due, int? newCount, int cardCount) {
-    if (due == null && newCount == null) return '$cardCount cards indexed';
-    if ((due ?? 0) > 0 || (newCount ?? 0) > 0) return null;
-    return 'All caught up';
   }
 }

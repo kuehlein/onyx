@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/app.dart';
 import 'package:onyx/core/interview/transfer.dart';
+import 'package:onyx/core/plan/daily_plan.dart';
+import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -54,6 +56,8 @@ void main() {
             (ref) async => const ReviewQueueData(queue: [], statesByKey: {}),
           ),
           learnQueueProvider.overrideWith((ref) async => const []),
+          dailyPlanProvider.overrideWith((ref) async =>
+              const DailyPlan(tracks: [], budgetMinutes: 90, locked: [])),
           startupRestoreProvider.overrideWith((ref) async {}),
           glossaryProvider.overrideWith((ref) async => const {}),
           readinessTargetControllerProvider
@@ -88,8 +92,8 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
     expect(find.text('Study'), findsNothing);
-    // Home reflects the (empty) review + learn queues.
-    expect(find.text('All caught up'), findsOneWidget);
+    // Home shows the Today queue; with an empty plan it's the caught-up state.
+    expect(find.textContaining('All caught up'), findsOneWidget);
   });
 
   testWidgets('Browse tab lists indexed cards by title', (tester) async {
