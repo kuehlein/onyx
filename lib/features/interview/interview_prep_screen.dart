@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/readiness/target.dart';
+import '../../core/story/competency.dart';
+import '../../core/story/coverage.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/story.dart';
 import '../home/target_sheet.dart';
 
 /// The "Interview prep" hub — everything about a *specific* interview you're
@@ -81,6 +84,9 @@ class InterviewPrepScreen extends ConsumerWidget {
                 color: theme.colorScheme.surfaceContainerHigh,
                 child: Column(
                   children: [
+                    _StoryCoverageTile(
+                        onTap: () => context.push('/behavioral/story-bank')),
+                    const Divider(height: 1),
                     ListTile(
                       leading: Icon(Icons.auto_stories_outlined,
                           color: theme.colorScheme.primary),
@@ -107,6 +113,31 @@ class InterviewPrepScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A tile summarizing story coverage (N/8 competencies), tapping to the bank.
+class _StoryCoverageTile extends ConsumerWidget {
+  const _StoryCoverageTile({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final stories = ref.watch(storiesProvider).asData?.value ?? const [];
+    final covered = coveredCompetencies(stories).length;
+    final total = kBehavioralCompetencies.length;
+    return ListTile(
+      leading:
+          Icon(Icons.checklist_rtl_outlined, color: theme.colorScheme.primary),
+      title: const Text('Your stories'),
+      subtitle: Text(stories.isEmpty
+          ? 'No stories yet — build some to cover the 8 competencies.'
+          : '$covered of $total competencies covered · ${stories.length} '
+              'stor${stories.length == 1 ? 'y' : 'ies'}'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

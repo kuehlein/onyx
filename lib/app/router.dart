@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/algorithms/algo_screen.dart';
 import '../features/behavioral/behavioral_entry_screen.dart';
 import '../features/behavioral/behavioral_mock_screen.dart';
+import '../features/behavioral/story_bank_screen.dart';
 import '../features/behavioral/story_capture_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
@@ -57,6 +58,10 @@ GoRouter createRouter() => GoRouter(
         GoRoute(
             path: '/behavioral/stories',
             builder: (_, __) => const StoryCaptureScreen()),
+        // The story bank: coverage matrix + your saved stories.
+        GoRoute(
+            path: '/behavioral/story-bank',
+            builder: (_, __) => const StoryBankScreen()),
         GoRoute(
           path: '/behavioral/mock/:id',
           builder: (_, state) => BehavioralMockScreen(
