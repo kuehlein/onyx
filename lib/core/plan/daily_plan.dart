@@ -22,6 +22,48 @@ library;
 
 import 'practice_plan.dart';
 
+/// The sustained daily target once the habit is established (~2.5 h). Effective
+/// deliberate practice tops out ~2–4 h/day; this is the default aim, adjustable.
+const double kDailyTargetMinutes = 150;
+
+/// Where the ramp starts on day one — a shorter session to seat the routine
+/// without dropping a new user straight into a full 2.5-hour day.
+const double kEaseInStartMinutes = 90;
+
+/// Ramp the daily budget from [easeInStartMinutes] up to [targetMinutes] as the
+/// habit takes hold — reaching the target after ~[rampDays] recent active days.
+/// A short on-ramp (days, not weeks), because a real interview deadline can't wait
+/// out a slow ramp. A missed day barely dents it (driven by *recent* active days,
+/// not a fragile streak).
+double rampedBudgetMinutes({
+  double targetMinutes = kDailyTargetMinutes,
+  double easeInStartMinutes = kEaseInStartMinutes,
+  required int recentActiveDays,
+  int rampDays = 7,
+}) {
+  final t = (recentActiveDays / rampDays).clamp(0.0, 1.0);
+  final b = easeInStartMinutes + (targetMinutes - easeInStartMinutes) * t;
+  return b.clamp(easeInStartMinutes, targetMinutes);
+}
+
+/// As an interview nears, taper *new-learning* load (preserve retrieval/mocks).
+/// Returns a 0..1 multiplier for the Learn track's weight — 1.0 when far out or no
+/// date, easing down to [floor] by the interview day.
+double learnTaperFactor({
+  int? daysUntilInterview,
+  int taperStartDays = 14,
+  double floor = 0.2,
+}) {
+  if (daysUntilInterview == null || daysUntilInterview >= taperStartDays) {
+    return 1;
+  }
+  if (daysUntilInterview <= 0) {
+    return floor;
+  }
+  final f = daysUntilInterview / taperStartDays;
+  return f < floor ? floor : f;
+}
+
 /// Default per-track importance when the caller supplies none.
 const double kDefaultBaseWeight = 0.5;
 

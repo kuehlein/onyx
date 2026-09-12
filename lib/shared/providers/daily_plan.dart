@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
+import '../../core/readiness/prep_goal.dart';
 import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
@@ -13,10 +14,20 @@ import 'vault.dart';
 
 part 'daily_plan.g.dart';
 
-/// The day's time budget (minutes). A flat default for now; phase 4 ramps this up
-/// with sustained consistency and tapers it near a prep date.
+/// The day's time budget (minutes): ramps from a short ease-in up to the ~2.5-hour
+/// target as the habit takes hold (driven by recent active days). User-adjustable
+/// target is a later setting; the taper near an interview is applied to the Learn
+/// track in [dailyPlan], not by shrinking the whole budget.
 @riverpod
-double dailyBudgetMinutes(Ref ref) => 90;
+Future<double> dailyBudgetMinutes(Ref ref) async {
+  final clock = await ref.watch(clockProvider.future);
+  final since = clock.now().subtract(const Duration(days: 14));
+  final ts =
+      await ref.watch(srsRepositoryProvider).studyTimestamps(since: since);
+  final activeDays =
+      {for (final d in ts) DateTime(d.year, d.month, d.day)}.length;
+  return rampedBudgetMinutes(recentActiveDays: activeDays);
+}
 
 /// The assembled daily plan: raw availability (phase 1) + prerequisite gating +
 /// level/recency/cadence context, run through the pure meta-scheduler (phase 2).
@@ -29,7 +40,22 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final targeting = await ref.watch(targetingProvider.future);
   final clock = await ref.watch(clockProvider.future);
   final now = clock.now();
-  final budget = ref.watch(dailyBudgetMinutesProvider);
+  final budget = await ref.watch(dailyBudgetMinutesProvider.future);
+
+  // Days until the nearest upcoming interview (for the learn taper).
+  final goals = await ref.watch(prepGoalsProvider.future);
+  final today = DateTime(now.year, now.month, now.day);
+  int? daysUntilInterview;
+  for (final g in goals) {
+    if (g.status.isEnded) continue;
+    final d = g.currentRound?.date;
+    if (d == null) continue;
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    if (days >= 0 &&
+        (daysUntilInterview == null || days < daysUntilInterview)) {
+      daysUntilInterview = days;
+    }
+  }
 
   // Per-concept comfort = fraction of a concept card's sections that are studied.
   final comfort = <String, double>{};
@@ -68,7 +94,9 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // with level (junior → algos heavier, staff → system design heavier).
   final baseWeight = <TrackId, double>{
     TrackId.review: 1.2,
-    TrackId.learn: 1.0,
+    // Taper new learning as an interview nears (preserve retrieval + mocks).
+    TrackId.learn:
+        1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
     TrackId.algorithms: targeting.weightForDomain('ds-a'),
     TrackId.systemDesign: targeting.weightForDomain('system-design'),
   };

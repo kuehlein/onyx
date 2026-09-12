@@ -141,6 +141,27 @@ void main() {
     expect(_track(p, TrackId.algorithms)!.units.length, 2);
   });
 
+  group('rampedBudgetMinutes', () {
+    test('starts at the ease-in and reaches the target after ~a week', () {
+      expect(rampedBudgetMinutes(recentActiveDays: 0), 90);
+      expect(rampedBudgetMinutes(recentActiveDays: 7), 150);
+      expect(rampedBudgetMinutes(recentActiveDays: 30), 150); // capped
+      final mid = rampedBudgetMinutes(recentActiveDays: 3);
+      expect(mid, greaterThan(90));
+      expect(mid, lessThan(150));
+    });
+  });
+
+  group('learnTaperFactor', () {
+    test('is full far out and eases to the floor by interview day', () {
+      expect(learnTaperFactor(daysUntilInterview: null), 1);
+      expect(learnTaperFactor(daysUntilInterview: 30), 1);
+      expect(learnTaperFactor(daysUntilInterview: 7), closeTo(0.5, 1e-9));
+      expect(learnTaperFactor(daysUntilInterview: 0), 0.2); // floor
+      expect(learnTaperFactor(daysUntilInterview: 1), 0.2); // floored
+    });
+  });
+
   test('marks the top-priority track non-negotiable when none reserved', () {
     final p = buildDailyPlan(
       availabilities: [
