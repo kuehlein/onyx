@@ -22,4 +22,10 @@ abstract class VaultSource {
 
   /// Atomically writes [content] to `_meta/[name]`, creating `_meta/` if needed.
   Future<void> writeMeta(String name, String content);
+
+  /// Atomically writes [content] to the vault file at [relativePath] (POSIX,
+  /// relative to the root), creating parent folders as needed. Used for
+  /// app-authored notes that live IN the vault as first-class markdown — e.g. the
+  /// behavioral story bank under `stories/`.
+  Future<void> writeFile(String relativePath, String content);
 }

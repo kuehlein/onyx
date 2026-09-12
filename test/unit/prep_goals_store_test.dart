@@ -35,6 +35,8 @@ class _FakeSource implements VaultSource {
   @override
   Future<void> writeMeta(String name, String content) async =>
       meta[name] = content;
+  @override
+  Future<void> writeFile(String relativePath, String content) async {}
 }
 
 PrepGoal _goal(String id, {String company = '', bool active = true}) =>

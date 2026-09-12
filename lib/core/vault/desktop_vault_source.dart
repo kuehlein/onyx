@@ -56,6 +56,17 @@ class DesktopVaultSource implements VaultSource {
     await tmp.rename(target);
   }
 
+  @override
+  Future<void> writeFile(String relativePath, String content) async {
+    final target = p.join(rootPath, p.joinAll(p.posix.split(relativePath)));
+    final dir = Directory(p.dirname(target));
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    // Atomic: write to a temp file, then rename over the target.
+    final tmp = File('$target.tmp');
+    await tmp.writeAsString(content, flush: true);
+    await tmp.rename(target);
+  }
+
   /// Skip `_meta/` (vault metadata) and hidden folders like `.obsidian/`.
   bool _excluded(String relative) => p
       .split(relative)
