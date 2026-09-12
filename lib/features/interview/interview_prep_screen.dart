@@ -83,11 +83,12 @@ class InterviewPrepScreen extends ConsumerWidget {
                   children: [
                     ListTile(
                       leading: Icon(Icons.auto_stories_outlined,
-                          color: theme.colorScheme.onSurfaceVariant),
+                          color: theme.colorScheme.primary),
                       title: const Text('Build your stories'),
                       subtitle: const Text(
-                          'Coach-guided STAR story bank — coming soon.'),
-                      enabled: false,
+                          'Coach-guided STAR story bank from your career.'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/behavioral/stories'),
                     ),
                     const Divider(height: 1),
                     ListTile(

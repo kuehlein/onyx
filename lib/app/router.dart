@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/algorithms/algo_screen.dart';
 import '../features/behavioral/behavioral_entry_screen.dart';
 import '../features/behavioral/behavioral_mock_screen.dart';
+import '../features/behavioral/story_capture_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
@@ -52,6 +53,10 @@ GoRouter createRouter() => GoRouter(
         GoRoute(
             path: '/behavioral',
             builder: (_, __) => const BehavioralEntryScreen()),
+        // The career brain-dump: build your STAR story bank with the coach.
+        GoRoute(
+            path: '/behavioral/stories',
+            builder: (_, __) => const StoryCaptureScreen()),
         GoRoute(
           path: '/behavioral/mock/:id',
           builder: (_, state) => BehavioralMockScreen(
