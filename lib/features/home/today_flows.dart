@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/practice_plan.dart';
 import '../../shared/providers/daily_plan.dart';
+import '../../shared/providers/readiness.dart';
 
 /// Today's flows as a priority-ordered action stack (task #57 / Home redesign).
 /// The plan decides the order; emphasis follows Material 3's button hierarchy —
@@ -18,7 +19,6 @@ class TodayFlows extends ConsumerWidget {
     final plan = ref.watch(dailyPlanProvider).asData?.value;
     if (plan == null) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -30,19 +30,71 @@ class TodayFlows extends ConsumerWidget {
           const SizedBox(height: 10),
           _LockedRow(track: locked),
         ],
-        // Everything scheduled is bigger than what's left in the budget: be
-        // explicit rather than looking "all caught up".
-        if (plan.tracks.isEmpty && plan.locked.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              'Nothing scheduled right now — new reviews and problems surface as '
-              'they come due.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ),
+        // Nothing required left today → offer the optional extra-practice run
+        // (only when the day is clear, so it never competes with the plan).
+        if (plan.tracks.isEmpty) ...[
+          if (plan.locked.isNotEmpty) const SizedBox(height: 12),
+          const _ExtraPractice(),
+        ],
       ],
+    );
+  }
+}
+
+/// The "if you're feeling good, study more" affordance — surfaced only once the
+/// day's scheduled flows are cleared. A short, non-grading coach run over the
+/// weakest area that never touches the review schedule (so it can't create a
+/// backlog). Deliberately optional and clearly framed as extra.
+class _ExtraPractice extends ConsumerWidget {
+  const _ExtraPractice();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
+
+    return Material(
+      color: cs.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap:
+            weakest == null ? null : () => context.push('/practice/$weakest'),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Row(
+            children: [
+              Icon(Icons.bolt_outlined, size: 22, color: cs.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("You're clear for today",
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    Text(
+                      weakest == null
+                          ? 'Extra practice unlocks once you have some studied '
+                              'material to draw on.'
+                          : 'Feeling good? Do an optional coach-led run over your '
+                              "weakest area — it won't affect your review schedule.",
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              if (weakest != null) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

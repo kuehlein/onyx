@@ -67,11 +67,11 @@ void main() {
         find.textContaining('Unlocks as you get comfortable'), findsOneWidget);
   });
 
-  testWidgets('shows a nothing-scheduled note when the plan is empty',
+  testWidgets('offers optional extra practice when the plan is empty',
       (tester) async {
     await tester.pumpWidget(
         _harness(const DailyPlan(tracks: [], budgetMinutes: 90, locked: [])));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Nothing scheduled'), findsOneWidget);
+    expect(find.textContaining('clear for today'), findsOneWidget);
   });
 }
