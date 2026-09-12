@@ -5,7 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analytics/insights.dart' show PatternMastery;
 import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart'
-    show rubricLabel, sweRubricDimensions, systemDesignRubricDimensions;
+    show
+        behavioralRubricDimensions,
+        rubricLabel,
+        sweRubricDimensions,
+        systemDesignRubricDimensions;
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
@@ -24,9 +28,11 @@ class InsightsScreen extends ConsumerWidget {
     final retention = ref.watch(retentionByDomainProvider).asData?.value;
     final mocks = ref.watch(mockSkillsProvider).asData?.value;
     final algo = ref.watch(algoStatsProvider).asData?.value;
+    final behavioral = ref.watch(behavioralSkillsProvider).asData?.value;
     final bare = (retention?.isEmpty ?? true) &&
         (mocks?.isEmpty ?? true) &&
-        (algo?.isEmpty ?? true);
+        (algo?.isEmpty ?? true) &&
+        (behavioral?.isEmpty ?? true);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
@@ -37,6 +43,7 @@ class InsightsScreen extends ConsumerWidget {
               children: const [
                 _MockSkillsSection(),
                 _SystemDesignSection(),
+                _BehavioralSection(),
                 _AlgoSection(),
                 _PatternsSection(),
                 _RetentionSection(),
@@ -311,6 +318,56 @@ class _SystemDesignSection extends ConsumerWidget {
               if (m.dims.containsKey(k)) k,
             for (final k in m.dims.keys)
               if (!systemDesignRubricDimensions.contains(k)) k,
+          ];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${m.count} mock${m.count == 1 ? '' : 's'} · avg score '
+                '${m.avgScore.round()}/100',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              for (final k in keys)
+                _StatBar(
+                  label: rubricLabel(k),
+                  fraction: m.dims[k]! / 5,
+                  value: m.dims[k]!.toStringAsFixed(1),
+                  color: _dimColor(m.dims[k]!, theme.colorScheme),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── 1a-iii. Behavioral mocks ────────────────────────────────────────────────
+class _BehavioralSection extends ConsumerWidget {
+  const _BehavioralSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final async = ref.watch(behavioralSkillsProvider);
+    return _Section(
+      title: 'Behavioral mocks',
+      subtitle: 'How you deliver your STAR stories under probing.',
+      child: async.when(
+        loading: () => const _NoData('Loading…'),
+        error: (e, _) => _NoData('Error: $e'),
+        data: (m) {
+          if (m.isEmpty) {
+            return const _NoData(
+                'No behavioral mocks yet — run one from Interview prep.');
+          }
+          final keys = [
+            for (final k in behavioralRubricDimensions)
+              if (m.dims.containsKey(k)) k,
+            for (final k in m.dims.keys)
+              if (!behavioralRubricDimensions.contains(k)) k,
           ];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,

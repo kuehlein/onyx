@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/readiness/target.dart';
 import '../../core/story/competency.dart';
 import '../../core/story/coverage.dart';
+import '../../shared/providers/behavioral_readiness.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/story.dart';
@@ -79,6 +80,8 @@ class InterviewPrepScreen extends ConsumerWidget {
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 12),
+              const _BehavioralReadinessBanner(),
+              const SizedBox(height: 12),
               Card(
                 margin: EdgeInsets.zero,
                 color: theme.colorScheme.surfaceContainerHigh,
@@ -112,6 +115,45 @@ class InterviewPrepScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A compact banner of behavioral readiness stage + its next-step hint.
+class _BehavioralReadinessBanner extends ConsumerWidget {
+  const _BehavioralReadinessBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final r = ref.watch(behavioralReadinessProvider).asData?.value;
+    if (r == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.insights_outlined, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(r.stage.label,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(r.stage.hint,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -58,7 +58,8 @@ Future<MockSkills> mockSkills(Ref ref) async {
     for (final a in attempts)
       if (a.source != 'external' &&
           a.source != 'algo' &&
-          a.source != 'sd-practice')
+          a.source != 'sd-practice' &&
+          a.source != 'behavioral')
         (
           appliedScore: a.appliedScore,
           hintLevel: a.hintLevel,
@@ -77,6 +78,24 @@ Future<MockSkills> systemDesignSkills(Ref ref) async {
   return computeMockSkills([
     for (final a in attempts)
       if (a.source == 'sd-practice')
+        (
+          appliedScore: a.appliedScore,
+          hintLevel: a.hintLevel,
+          novel: a.novel,
+          rubric: AppliedAssessment.decodeRubric(a.rubric),
+        ),
+  ]);
+}
+
+/// Behavioral mock performance + STAR+L rubric breakdown (its own rubric). Its
+/// own Insights section so it doesn't mix with the coding/SD mock skills.
+@riverpod
+Future<MockSkills> behavioralSkills(Ref ref) async {
+  await ref.watch(appliedTransferProvider.future); // refresh on new mocks
+  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+  return computeMockSkills([
+    for (final a in attempts)
+      if (a.source == 'behavioral')
         (
           appliedScore: a.appliedScore,
           hintLevel: a.hintLevel,
