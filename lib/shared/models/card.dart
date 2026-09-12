@@ -153,6 +153,7 @@ class Card {
     this.domains = const [],
     this.concepts = const [],
     this.priority = Priority.normal,
+    this.estMinutes,
   });
 
   /// UUID v4 from frontmatter — the stable primary key across filename renames.
@@ -203,6 +204,11 @@ class Card {
 
   /// Retention priority → FSRS desired-retention target. Defaults to normal.
   final Priority priority;
+
+  /// Optional `est_minutes:` frontmatter override for the daily-plan time budget
+  /// (per practice unit). Null → the plan falls back to its per-track default
+  /// (e.g. algorithm difficulty, or the review/learn/system-design constants).
+  final double? estMinutes;
 
   /// The domain tag (first tag by convention), or null if untagged.
   String? get domain => tags.isNotEmpty ? tags.first : null;

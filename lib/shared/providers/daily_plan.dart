@@ -9,14 +9,15 @@ import 'clock.dart';
 import 'interview.dart';
 import 'practice_plan.dart';
 import 'readiness.dart';
+import 'settings.dart';
 import 'srs.dart';
 import 'vault.dart';
 
 part 'daily_plan.g.dart';
 
-/// The day's time budget (minutes): ramps from a short ease-in up to the ~2.5-hour
-/// target as the habit takes hold (driven by recent active days). User-adjustable
-/// target is a later setting; the taper near an interview is applied to the Learn
+/// The day's time budget (minutes): ramps from a short ease-in up to the
+/// user's [DailyTargetMinutes] (default ~2.5 h) as the habit takes hold (driven
+/// by recent active days). The taper near an interview is applied to the Learn
 /// track in [dailyPlan], not by shrinking the whole budget.
 @riverpod
 Future<double> dailyBudgetMinutes(Ref ref) async {
@@ -26,7 +27,16 @@ Future<double> dailyBudgetMinutes(Ref ref) async {
       await ref.watch(srsRepositoryProvider).studyTimestamps(since: since);
   final activeDays =
       {for (final d in ts) DateTime(d.year, d.month, d.day)}.length;
-  return rampedBudgetMinutes(recentActiveDays: activeDays);
+  final target = await ref.watch(dailyTargetMinutesProvider.future);
+  // Never ramp toward a target below the ease-in floor (small custom targets
+  // are the whole budget, no ramp).
+  final easeIn =
+      target < kEaseInStartMinutes ? target.toDouble() : kEaseInStartMinutes;
+  return rampedBudgetMinutes(
+    recentActiveDays: activeDays,
+    targetMinutes: target.toDouble(),
+    easeInStartMinutes: easeIn,
+  );
 }
 
 /// The assembled daily plan: raw availability (phase 1) + prerequisite gating +
@@ -105,12 +115,14 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final since = now.subtract(const Duration(days: 7));
   final attempts =
       await ref.watch(appliedRepositoryProvider).attempts(since: since);
-  final reviewTs =
-      await ref.watch(srsRepositoryProvider).studyTimestamps(since: since);
+  final srs = ref.watch(srsRepositoryProvider);
+  final reviewTs = await srs.studyTimestamps(since: since);
+  final learnTs = await srs.learnTimestamps(since: since);
   int days(Iterable<DateTime> ds) =>
       {for (final d in ds) DateTime(d.year, d.month, d.day)}.length;
   final recency = <TrackId, double>{
     TrackId.review: days(reviewTs) / 7,
+    TrackId.learn: days(learnTs) / 7,
     TrackId.algorithms: days([
           for (final a in attempts)
             if (a.source == 'algo') a.occurredAt
@@ -121,7 +133,6 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
             if (a.source == 'sd-practice') a.occurredAt
         ]) /
         7,
-    // Learn recency is left at 0 for now (its activity isn't in these logs).
   };
 
   // Reserved: review is a daily non-negotiable; a system-design mock is reserved

@@ -105,6 +105,32 @@ class AlgoDailyMax extends _$AlgoDailyMax {
   }
 }
 
+/// The sustained daily study-time target (minutes) the plan ramps toward once
+/// the habit is established — the ceiling on the day's time budget. Defaults to
+/// ~2.5 h (effective deliberate practice tops out ~2–4 h/day); adjustable from a
+/// light 30 min to a 4 h max. The plan still eases in from a shorter session
+/// (see rampedBudgetMinutes) and tapers new learning near an interview.
+@Riverpod(keepAlive: true)
+class DailyTargetMinutes extends _$DailyTargetMinutes {
+  static const prefKey = 'daily_target_minutes';
+  static const defaultValue = 150;
+  static const min = 30;
+  static const max = 240;
+  static const step = 15;
+
+  @override
+  Future<int> build() async {
+    final raw = await ref.watch(preferencesRepositoryProvider).get(prefKey);
+    return int.tryParse(raw ?? '') ?? defaultValue;
+  }
+
+  Future<void> set(int value) async {
+    final clamped = value.clamp(min, max);
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
+    ref.invalidateSelf();
+  }
+}
+
 /// The opt-in weekly "how's the load feeling?" check-in. Off by default (a
 /// recurring prompt can nag; the learner opts in). When on, the coach asks at
 /// most weekly on a calm day and factors the answer into its load suggestions.

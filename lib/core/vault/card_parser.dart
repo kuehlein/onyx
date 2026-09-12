@@ -109,6 +109,7 @@ class CardParser {
       concepts: _stringList(frontmatter['concepts']) ?? const [],
       priority: Priority.fromString(frontmatter['priority'] as String?) ??
           Priority.normal,
+      estMinutes: _positiveNum(frontmatter['est_minutes']),
     );
   }
 
@@ -229,6 +230,16 @@ class CardParser {
     if (value == null) return null;
     if (value is List) return value.map((e) => e.toString()).toList();
     return [value.toString()];
+  }
+
+  /// A positive number from frontmatter (int or double, or a numeric string),
+  /// or null. Used for `est_minutes:`; non-positive or unparseable → null so the
+  /// plan falls back to its default estimate.
+  static double? _positiveNum(dynamic value) {
+    if (value == null) return null;
+    final n =
+        value is num ? value.toDouble() : double.tryParse(value.toString());
+    return (n != null && n > 0) ? n : null;
   }
 
   static Map<String, int> _intMap(dynamic value) {

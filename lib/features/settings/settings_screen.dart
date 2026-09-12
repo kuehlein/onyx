@@ -71,6 +71,35 @@ class SettingsScreen extends ConsumerWidget {
                 'What the daily levers mean + a start-slow ramp plan.'),
             onTap: () => showStudyLoadHelp(context),
           ),
+          ref.watch(dailyTargetMinutesProvider).when(
+                loading: () => const ListTile(
+                  leading: Icon(Icons.schedule_outlined),
+                  title: Text('Daily study time'),
+                  subtitle: Text('Loading…'),
+                ),
+                error: (e, _) => ListTile(
+                  leading: const Icon(Icons.schedule_outlined),
+                  title: const Text('Daily study time'),
+                  subtitle: Text('Error: $e'),
+                ),
+                data: (target) => ListTile(
+                  leading: const Icon(Icons.schedule_outlined),
+                  title: const Text('Daily study time'),
+                  subtitle: Text(
+                      '${_prettyMinutes(target)} target — the day\'s plan across '
+                      'all tracks. It eases in from shorter sessions and ramps to '
+                      'this as the habit sticks; new learning tapers near an '
+                      'interview.'),
+                  trailing: _Stepper(
+                    value: target,
+                    min: DailyTargetMinutes.min,
+                    max: DailyTargetMinutes.max,
+                    step: DailyTargetMinutes.step,
+                    onChanged: (v) =>
+                        ref.read(dailyTargetMinutesProvider.notifier).set(v),
+                  ),
+                ),
+              ),
           ref.watch(loadCheckInProvider).when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -886,6 +915,15 @@ String _loadLabel(int sections) {
   if (sections <= 10) return 'a light load';
   if (sections <= 25) return 'a moderate load';
   return 'a heavy load';
+}
+
+/// Minutes as a friendly "90 min (~1.5 h)" label for the daily-time setting.
+String _prettyMinutes(int minutes) {
+  final hours = minutes / 60;
+  final h = hours == hours.roundToDouble()
+      ? hours.toStringAsFixed(0)
+      : hours.toStringAsFixed(1);
+  return '$minutes min (~$h h)';
 }
 
 /// A plain-language load rating for a daily problems-per-day target, grounded in

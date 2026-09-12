@@ -143,6 +143,19 @@ class SrsRepository {
     ];
   }
 
+  /// Timestamps of `'learn'` events (new sections introduced) since [since] —
+  /// the Learn track's own activity, distinct from reviews. Used to give the
+  /// daily plan a Learn recency signal (variety across tracks). Device-local
+  /// (`activity_log`), like [sectionsStartedSince].
+  Future<List<DateTime>> learnTimestamps({required DateTime since}) async {
+    final rows = await (_db.select(_db.activityLog)
+          ..where((a) =>
+              a.eventType.equals('learn') &
+              a.occurredAt.isBiggerOrEqualValue(since)))
+        .get();
+    return [for (final r in rows) r.occurredAt];
+  }
+
   /// DEV/E2E: make every given `(cardId, sectionSlug)` due right now, so the
   /// whole review queue is immediately exercisable. Seeds a default review state
   /// for un-studied sections and pulls existing ones forward to now — without

@@ -348,4 +348,33 @@ void main() {
       });
     }
   }, skip: !Directory('staging/flashcards').existsSync());
+
+  group('est_minutes override', () {
+    Card parse(String fm) => _parser.parse('''
+---
+id: 22222222-2222-4222-8222-222222222222
+type: flashcard
+tags: [ds-a]
+$fm---
+
+# T
+
+## When to Use
+
+a
+''', filePath: 't.md')!;
+
+    test('is null when absent', () {
+      expect(parse('').estMinutes, isNull);
+    });
+    test('parses a positive number', () {
+      expect(parse('est_minutes: 12\n').estMinutes, 12);
+      expect(parse('est_minutes: 7.5\n').estMinutes, 7.5);
+    });
+    test('rejects zero, negatives and junk', () {
+      expect(parse('est_minutes: 0\n').estMinutes, isNull);
+      expect(parse('est_minutes: -5\n').estMinutes, isNull);
+      expect(parse('est_minutes: soon\n').estMinutes, isNull);
+    });
+  });
 }
