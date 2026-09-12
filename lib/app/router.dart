@@ -9,6 +9,7 @@ import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
+import '../features/interview/interview_prep_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/practice/practice_screen.dart';
@@ -43,6 +44,10 @@ GoRouter createRouter() => GoRouter(
             supportName: state.uri.queryParameters['support'],
           ),
         ),
+        // The interview-prep hub: target + scheduled interviews + behavioral.
+        GoRoute(
+            path: '/interview-prep',
+            builder: (_, __) => const InterviewPrepScreen()),
         // The behavioral practice track: pick a competency, run a mock.
         GoRoute(
             path: '/behavioral',

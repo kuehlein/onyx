@@ -11,7 +11,6 @@ import '../../shared/providers/readiness.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
-import 'target_sheet.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
 
@@ -34,15 +33,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Onyx'),
-        actions: [
-          const _ReadinessChip(),
-          IconButton(
-            onPressed: () => context.push('/interviews'),
-            icon: const Icon(Icons.event_note_outlined),
-            tooltip: 'Interviews',
-          ),
-          const SizedBox(width: 4),
-        ],
+        actions: const [_ReadinessChip(), SizedBox(width: 8)],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -158,7 +149,7 @@ class _TargetCard extends ConsumerWidget {
       color: cs.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: () => showTargetSheet(context),
+        onTap: () => context.push('/interview-prep'),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

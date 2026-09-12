@@ -116,7 +116,6 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
         1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
     TrackId.algorithms: targeting.weightForDomain('ds-a'),
     TrackId.systemDesign: targeting.weightForDomain('system-design'),
-    TrackId.behavioral: targeting.weightForDomain('behavioral'),
   };
 
   // Recency = fraction of the last 7 days each track was practiced (variety).
@@ -141,11 +140,6 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
             if (a.source == 'sd-practice') a.occurredAt
         ]) /
         7,
-    TrackId.behavioral: days([
-          for (final a in attempts)
-            if (a.source == 'behavioral') a.occurredAt
-        ]) /
-        7,
   };
 
   // Reserved: review is a daily non-negotiable; a mock track (system design,
@@ -167,7 +161,6 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   }
 
   if (anyMockDue(TrackId.systemDesign)) reserved.add(TrackId.systemDesign);
-  if (anyMockDue(TrackId.behavioral)) reserved.add(TrackId.behavioral);
 
   return buildDailyPlan(
     availabilities: gated,

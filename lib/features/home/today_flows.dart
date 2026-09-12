@@ -208,7 +208,4 @@ _TrackMeta _trackMeta(TrackId t) => switch (t) {
       TrackId.systemDesign => const _TrackMeta(
           Icons.architecture_outlined, '/system-design', 'mock',
           push: true),
-      TrackId.behavioral => const _TrackMeta(
-          Icons.record_voice_over_outlined, '/behavioral', 'mock',
-          push: true),
     };

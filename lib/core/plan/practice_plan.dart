@@ -13,7 +13,7 @@
 library;
 
 /// The four practice flows.
-enum TrackId { review, learn, algorithms, systemDesign, behavioral }
+enum TrackId { review, learn, algorithms, systemDesign }
 
 extension TrackIdLabel on TrackId {
   String get label => switch (this) {
@@ -21,7 +21,6 @@ extension TrackIdLabel on TrackId {
         TrackId.learn => 'Learn',
         TrackId.algorithms => 'Algorithms',
         TrackId.systemDesign => 'System design',
-        TrackId.behavioral => 'Behavioral',
       };
 }
 
@@ -39,9 +38,6 @@ const double kLearnMinutes = 3;
 
 /// Minutes for one full system-design mock.
 const double kSystemDesignMinutes = 40;
-
-/// Minutes for one behavioral competency mock (one story + probing).
-const double kBehavioralMinutes = 15;
 
 /// Minutes for an algorithm problem, from its difficulty (parsed from the card
 /// section, e.g. "… · Medium"). Falls back to the medium estimate.

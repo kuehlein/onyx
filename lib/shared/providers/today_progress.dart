@@ -50,7 +50,6 @@ Future<TodayProgress> todayProgress(Ref ref) async {
       await ref.watch(appliedRepositoryProvider).attempts(since: startOfToday);
   final algoToday = attemptsToday.any((a) => a.source == 'algo');
   final sdToday = attemptsToday.any((a) => a.source == 'sd-practice');
-  final behavioralToday = attemptsToday.any((a) => a.source == 'behavioral');
 
   final pending = {for (final t in plan.tracks) t.track};
   final didToday = {
@@ -58,7 +57,6 @@ Future<TodayProgress> todayProgress(Ref ref) async {
     if (learnedToday) TrackId.learn,
     if (algoToday) TrackId.algorithms,
     if (sdToday) TrackId.systemDesign,
-    if (behavioralToday) TrackId.behavioral,
   };
 
   var total = 0;
