@@ -1,5 +1,5 @@
 ---
-id: 711f3a9a-76d7-49b3-ad76-e11367287af4
+id: binary-tree
 type: flashcard
 tags:
   - ds-a

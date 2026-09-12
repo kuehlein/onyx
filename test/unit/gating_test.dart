@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/plan/gating.dart';
 import 'package:onyx/core/plan/practice_plan.dart';
+import 'package:onyx/core/vault/card_parser.dart';
 
 PracticeUnit _unit(TrackId t, String cardId, [String? slug]) => PracticeUnit(
       track: t,
@@ -118,4 +121,41 @@ void main() {
       expect(gated.single.units.map((u) => u.id), ['design-rate-limiter']);
     });
   });
+
+  // Guards the class of bug where algoGroupPrereqs keys/values drift from the
+  // real vault card ids — which silently either never-gates or permanently-locks
+  // a whole algorithm category. Skipped when the staged vault isn't present.
+  group('algoGroupPrereqs matches the real vault', () {
+    const parser = CardParser();
+    final dir = Directory('staging/flashcards');
+    final ids = <String>{};
+    if (dir.existsSync()) {
+      for (final f in dir.listSync(recursive: true).whereType<File>()) {
+        if (!f.path.endsWith('.md')) continue;
+        try {
+          final c = parser.parse(f.readAsStringSync(), filePath: f.path);
+          if (c != null) ids.add(c.id);
+        } catch (_) {/* malformed/idless — not relevant here */}
+      }
+    }
+
+    test('every GATED group key is a real algorithm card id', () {
+      final missing = [
+        for (final e in algoGroupPrereqs.entries)
+          if (e.value.isNotEmpty && !ids.contains(e.key)) e.key,
+      ];
+      expect(missing, isEmpty,
+          reason: 'gated group keys with no matching card: $missing');
+    });
+
+    test('every prerequisite concept slug is a real concept card id', () {
+      final prereqSlugs = {for (final v in algoGroupPrereqs.values) ...v};
+      final missing = [
+        for (final s in prereqSlugs)
+          if (!ids.contains(s)) s,
+      ];
+      expect(missing, isEmpty,
+          reason: 'prereq concept slugs with no matching card: $missing');
+    });
+  }, skip: !Directory('staging/flashcards').existsSync());
 }

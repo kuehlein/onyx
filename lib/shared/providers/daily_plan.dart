@@ -68,10 +68,17 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   }
 
   // Per-concept comfort = fraction of a concept card's sections that are studied.
+  // Also index concept cards by filename slug, because `## Related` wikilinks
+  // resolve by FILENAME while comfort is keyed by card id — and the vault mixes
+  // id conventions (some slug, some UUID), so a filename→id hop is required for
+  // gating to see the prerequisite at all.
   final comfort = <String, double>{};
   final conceptLabel = <String, String>{};
+  final conceptIdByFile = <String, String>{};
   for (final c in index.cards) {
     if (c.type != CardType.flashcard) continue;
+    final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
+    conceptIdByFile[slug] = c.id;
     final q = c.quizzableSections.toList();
     if (q.isEmpty) continue;
     final studied =
@@ -80,15 +87,15 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     conceptLabel[c.id] = c.title;
   }
 
-  // Prerequisites: algorithm groups (static) + system-design problems (their
-  // `## Related` concept links that resolve to real concept cards).
-  final conceptIds = comfort.keys.toSet();
+  // Prerequisites: algorithm groups (static, keyed by concept card id) +
+  // system-design problems (their `## Related` links, each resolved
+  // filename→card id and kept only if we can gauge its comfort).
   final prereqs = <String, List<String>>{...algoGroupPrereqs};
   for (final c in index.cards) {
     if (c.type != CardType.systemDesign) continue;
     prereqs[c.id] = [
       for (final w in c.wikilinks)
-        if (conceptIds.contains(w)) w,
+        if (conceptIdByFile[w] case final id? when comfort.containsKey(id)) id,
     ];
   }
 

@@ -1,5 +1,5 @@
 ---
-id: 7f3a2c1e-84b6-4d09-b2f7-e5c3a1d09f82
+id: graphs
 type: flashcard
 tags:
   - ds-a

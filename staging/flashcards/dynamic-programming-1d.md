@@ -1,5 +1,5 @@
 ---
-id: 7f3a2c81-94e6-4b17-bc2d-e05f18a63d94
+id: dynamic-programming-1d
 type: flashcard
 tags:
   - ds-a

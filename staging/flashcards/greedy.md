@@ -1,5 +1,5 @@
 ---
-id: 0b944f23-5f7a-4650-84c4-ee970441cee8
+id: greedy
 type: flashcard
 tags:
   - ds-a

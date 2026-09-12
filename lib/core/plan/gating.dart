@@ -51,8 +51,8 @@ const Map<String, List<String>> algoGroupPrereqs = {
     'minimum-spanning-tree',
     'union-find',
   ],
-  'algo-1d-dp': ['dynamic-programming-1d'],
-  'algo-2d-dp': ['dynamic-programming-2d'],
+  'algo-1d-dynamic-programming': ['dynamic-programming-1d'],
+  'algo-2d-dynamic-programming': ['dynamic-programming-2d'],
   'algo-greedy': ['greedy'],
   'algo-intervals': ['intervals'],
 };
