@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/algorithms/algo_screen.dart';
+import '../features/behavioral/behavioral_entry_screen.dart';
+import '../features/behavioral/behavioral_mock_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/home/home_screen.dart';
@@ -37,6 +39,18 @@ GoRouter createRouter() => GoRouter(
           path: '/system-design/mock/:id',
           builder: (_, state) => SdMockScreen(
             problemId: state.pathParameters['id']!,
+            levelName: state.uri.queryParameters['level'],
+            supportName: state.uri.queryParameters['support'],
+          ),
+        ),
+        // The behavioral practice track: pick a competency, run a mock.
+        GoRoute(
+            path: '/behavioral',
+            builder: (_, __) => const BehavioralEntryScreen()),
+        GoRoute(
+          path: '/behavioral/mock/:id',
+          builder: (_, state) => BehavioralMockScreen(
+            competencyId: state.pathParameters['id']!,
             levelName: state.uri.queryParameters['level'],
             supportName: state.uri.queryParameters['support'],
           ),

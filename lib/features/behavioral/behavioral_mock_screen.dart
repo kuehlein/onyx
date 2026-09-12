@@ -3,12 +3,12 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/coach.dart' show CoachRole;
-import '../../core/ai/system_design_interviewer.dart' show SdSupportMode;
 import '../../core/interview/assessment.dart';
+import '../../core/practice/mock_session.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/behavioral.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/system_design.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/status_colors.dart';
 import '../../shared/widgets/chat_view.dart';
@@ -16,32 +16,31 @@ import '../../shared/widgets/mock_grade_summary.dart';
 import '../../shared/widgets/session_timer.dart';
 import '../../shared/widgets/sheet_header.dart';
 
-/// A live system-design mock interview for one problem. Like the Algorithms
-/// session, you land straight in it — it auto-starts (level and support are
-/// auto-derived from your target and recent mocks; tweak them from the tune
-/// action). A count-up stopwatch times the spoken/STT answer; on End an
-/// adversarial grader panel scores the transcript into readiness; afterward you
-/// can keep chatting with a tutor to learn.
-class SdMockScreen extends ConsumerStatefulWidget {
-  const SdMockScreen({
+/// A live behavioral mock interview for one competency. You land straight in it —
+/// it auto-starts (level from your target; support auto-derived from recent mocks,
+/// adjustable from the tune action). A count-up stopwatch times the spoken/STT
+/// answer; on End an adversarial grader panel scores the STAR+L transcript into
+/// readiness; afterward you can keep chatting with a coach to improve the story.
+class BehavioralMockScreen extends ConsumerStatefulWidget {
+  const BehavioralMockScreen({
     super.key,
-    required this.problemId,
+    required this.competencyId,
     this.levelName,
     this.supportName,
   });
 
-  final String problemId;
+  final String competencyId;
   final String? levelName;
   final String? supportName;
 
   @override
-  ConsumerState<SdMockScreen> createState() => _SdMockScreenState();
+  ConsumerState<BehavioralMockScreen> createState() =>
+      _BehavioralMockScreenState();
 }
 
-class _SdMockScreenState extends ConsumerState<SdMockScreen> {
-  // In-session overrides from the tune action (null = use the auto-derived value).
+class _BehavioralMockScreenState extends ConsumerState<BehavioralMockScreen> {
   SeniorityLevel? _levelOverride;
-  SdSupportMode? _supportOverride;
+  SupportMode? _supportOverride;
 
   SeniorityLevel _level(SeniorityLevel? target) {
     if (_levelOverride != null) return _levelOverride!;
@@ -51,15 +50,15 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
     return target ?? SeniorityLevel.senior;
   }
 
-  SdSupportMode _support(SdSupportMode auto) {
+  SupportMode _support(SupportMode auto) {
     if (_supportOverride != null) return _supportOverride!;
-    for (final s in SdSupportMode.values) {
+    for (final s in SupportMode.values) {
       if (s.name == widget.supportName) return s;
     }
-    return auto; // 'auto' or absent
+    return auto;
   }
 
-  Future<void> _adjust(SeniorityLevel level, SdSupportMode autoSupport) async {
+  Future<void> _adjust(SeniorityLevel level, SupportMode autoSupport) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -80,36 +79,34 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
     final index = ref.watch(vaultIndexProvider).asData?.value;
     final card = index?.cards
         .where(
-            (c) => c.id == widget.problemId && c.type == CardType.systemDesign)
+            (c) => c.id == widget.competencyId && c.type == CardType.behavioral)
         .firstOrNull;
     if (card == null) {
-      return const Scaffold(body: Center(child: Text('Problem not found.')));
+      return const Scaffold(body: Center(child: Text('Competency not found.')));
     }
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
-    final autoSupport = ref.watch(sdAutoSupportModeProvider).asData?.value ??
-        SdSupportMode.coaching;
+    final autoSupport =
+        ref.watch(behavioralAutoSupportModeProvider).asData?.value ??
+            SupportMode.coaching;
     final level = _level(target?.level);
-    final company = target?.company ?? CompanyTier.faang;
     final support = _support(autoSupport);
 
-    final state = ref.watch(sdMockSessionProvider(widget.problemId));
-    final session = ref.read(sdMockSessionProvider(widget.problemId).notifier);
+    final state = ref.watch(behavioralMockSessionProvider(widget.competencyId));
+    final session =
+        ref.read(behavioralMockSessionProvider(widget.competencyId).notifier);
     final theme = Theme.of(context);
-    final running = state.phase == SdMockPhase.running;
-    final done = state.phase == SdMockPhase.done;
+    final running = state.phase == MockPhase.running;
+    final done = state.phase == MockPhase.done;
 
-    // Land straight in the interview (like the Algorithms session).
-    if (state.phase == SdMockPhase.intro) {
+    // Land straight in the interview.
+    if (state.phase == MockPhase.intro) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) session.start(card: card);
       });
     }
 
-    // Whether the candidate has actually answered (beyond the hard-coded opener).
-    // If not, "End" is really a cancel: pop without grading or spending tokens,
-    // and without touching FSRS/stats.
-    final answered = state.messages
-        .any((m) => m.role == CoachRole.user && !_isKickoff(m.text));
+    // "End" is a real cancel until the candidate has actually answered.
+    final answered = state.messages.any((m) => m.role == CoachRole.user);
 
     return Scaffold(
       appBar: AppBar(
@@ -127,10 +124,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
               child: TextButton.icon(
                 onPressed: answered
                     ? () => session.endAndGrade(
-                        card: card,
-                        level: level,
-                        company: company,
-                        support: support)
+                        card: card, level: level, support: support)
                     : () => Navigator.of(context).maybePop(),
                 icon: Icon(answered ? Icons.flag_outlined : Icons.close,
                     size: 18),
@@ -150,7 +144,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       ),
       body: Column(
         children: [
-          if (running || state.phase == SdMockPhase.grading)
+          if (running || state.phase == MockPhase.grading)
             Material(
               color: theme.colorScheme.surfaceContainerLow,
               child: Column(
@@ -177,18 +171,17 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
           if (state.grade != null)
             MockGradeSummary(
               grade: state.grade!,
-              dimensions: systemDesignRubricDimensions,
-              feedsLabel: 'Feeds your system-design readiness',
+              dimensions: behavioralRubricDimensions,
+              feedsLabel: 'Feeds your behavioral readiness',
             ),
           Expanded(
             child: ChatView(
               messages: [
                 for (final m in state.messages)
-                  if (m.role != CoachRole.user || !_isKickoff(m.text))
-                    ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
+                  ChatTurn(isUser: m.role == CoachRole.user, text: m.text),
               ],
-              onSend: (t) => session.send(t,
-                  card: card, level: level, company: company, support: support),
+              onSend: (t) =>
+                  session.send(t, card: card, level: level, support: support),
               busy: state.busy,
               error: state.error,
               enabled: running || done,
@@ -204,15 +197,11 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
       ),
     );
   }
-
-  static bool _isKickoff(String t) => t.startsWith("I'm ready");
 }
 
-/// The tucked-away "adjust this mock" sheet: level + support. Most users never
-/// open it — the defaults follow the target and recent-mock competence. Holds its
-/// own state so the form reflects a change immediately; the callbacks push the
-/// change to the mock screen (which applies it to the interviewer from the next
-/// message).
+/// The tucked-away "adjust this mock" sheet: level + support. Defaults follow the
+/// target and recent-mock competence. Holds its own state so the form reflects a
+/// change immediately.
 class _AdjustSheet extends StatefulWidget {
   const _AdjustSheet({
     required this.level,
@@ -223,10 +212,10 @@ class _AdjustSheet extends StatefulWidget {
   });
 
   final SeniorityLevel level;
-  final SdSupportMode? supportOverride;
-  final SdSupportMode autoSupport;
+  final SupportMode? supportOverride;
+  final SupportMode autoSupport;
   final ValueChanged<SeniorityLevel> onLevel;
-  final ValueChanged<SdSupportMode?> onSupport;
+  final ValueChanged<SupportMode?> onSupport;
 
   @override
   State<_AdjustSheet> createState() => _AdjustSheetState();
@@ -234,7 +223,7 @@ class _AdjustSheet extends StatefulWidget {
 
 class _AdjustSheetState extends State<_AdjustSheet> {
   late SeniorityLevel _level = widget.level;
-  late SdSupportMode? _supportOverride = widget.supportOverride;
+  late SupportMode? _supportOverride = widget.supportOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -293,37 +282,14 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                     selected: {_supportOverride?.name ?? 'auto'},
                     onSelectionChanged: (s) {
                       final next = switch (s.first) {
-                        'coaching' => SdSupportMode.coaching,
-                        'realistic' => SdSupportMode.realistic,
+                        'coaching' => SupportMode.coaching,
+                        'realistic' => SupportMode.realistic,
                         _ => null,
                       };
                       setState(() => _supportOverride = next);
                       widget.onSupport(next);
                     },
                   ),
-                ),
-                const SizedBox(height: 12),
-                // What the choices mean — most users leave this on Auto.
-                _Explain(
-                  'Auto',
-                  'picks Coaching while you\'re new to these mocks, then '
-                      'switches to Realistic as your scores improve. Right now: '
-                      '${widget.autoSupport.name}.',
-                  theme,
-                ),
-                const SizedBox(height: 6),
-                _Explain(
-                  'Coaching',
-                  'the interviewer notices when you\'re stuck and steps in with '
-                      'a hint — good while you\'re learning.',
-                  theme,
-                ),
-                const SizedBox(height: 6),
-                _Explain(
-                  'Realistic',
-                  'hands-off, like the real thing; ask explicitly if you want a '
-                      'hint.',
-                  theme,
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -334,8 +300,8 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                     Expanded(
                       child: Text(
                         'Now: ${_level.label} · '
-                        '${effective == SdSupportMode.coaching ? 'Coaching' : 'Realistic'}. '
-                        'Applies to the interviewer from your next message.',
+                        '${effective == SupportMode.coaching ? 'Coaching' : 'Realistic'}. '
+                        'Applies from your next message.',
                         style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant),
                       ),
@@ -351,33 +317,7 @@ class _AdjustSheetState extends State<_AdjustSheet> {
   }
 }
 
-/// A "**Term** — explanation" line for the adjust sheet.
-class _Explain extends StatelessWidget {
-  const _Explain(this.term, this.desc, this.theme);
-  final String term;
-  final String desc;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final base = theme.textTheme.bodySmall
-        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
-    return RichText(
-      text: TextSpan(
-        style: base,
-        children: [
-          TextSpan(
-              text: '$term — ',
-              style: base?.copyWith(fontWeight: FontWeight.w700)),
-          TextSpan(text: desc),
-        ],
-      ),
-    );
-  }
-}
-
-/// The active level + support, as a tappable pill (opens the adjust sheet) with
-/// a tooltip explaining what the mode means and that it's editable.
+/// The active level + support, as a tappable pill (opens the adjust sheet).
 class _SettingsPill extends StatelessWidget {
   const _SettingsPill({
     required this.level,
@@ -386,17 +326,17 @@ class _SettingsPill extends StatelessWidget {
   });
 
   final SeniorityLevel level;
-  final SdSupportMode support;
+  final SupportMode support;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final coaching = support == SdSupportMode.coaching;
+    final coaching = support == SupportMode.coaching;
     final color = coaching ? statusInfo : theme.colorScheme.onSurfaceVariant;
     return Tooltip(
       message: coaching
-          ? 'Coaching — the interviewer steps in and helps if you get stuck.\n'
+          ? 'Coaching — the interviewer helps if you get stuck.\n'
               'Tap to change interview level or support.'
           : 'Realistic — hands-off, like a real interview.\n'
               'Tap to change interview level or support.',
