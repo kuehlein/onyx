@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/plan/practice_plan.dart';
 import 'algo.dart';
+import 'behavioral.dart';
 import 'learn.dart';
 import 'srs.dart';
 import 'system_design.dart';
@@ -23,6 +24,7 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
   final learn = await ref.watch(learnQueueProvider.future);
   final algo = await ref.watch(algoQueueProvider.future);
   final sd = await ref.watch(systemDesignProblemsProvider.future);
+  final behavioral = await ref.watch(behavioralCompetenciesProvider.future);
 
   return [
     TrackAvailability(
@@ -71,6 +73,18 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
             id: c.id,
             label: c.title,
             estMinutes: c.estMinutes ?? kSystemDesignMinutes,
+          ),
+      ],
+    ),
+    TrackAvailability(
+      track: TrackId.behavioral,
+      units: [
+        for (final c in behavioral)
+          PracticeUnit(
+            track: TrackId.behavioral,
+            id: c.id,
+            label: c.title,
+            estMinutes: c.estMinutes ?? kBehavioralMinutes,
           ),
       ],
     ),

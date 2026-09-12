@@ -116,6 +116,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
         1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
     TrackId.algorithms: targeting.weightForDomain('ds-a'),
     TrackId.systemDesign: targeting.weightForDomain('system-design'),
+    TrackId.behavioral: targeting.weightForDomain('behavioral'),
   };
 
   // Recency = fraction of the last 7 days each track was practiced (variety).
@@ -140,25 +141,33 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
             if (a.source == 'sd-practice') a.occurredAt
         ]) /
         7,
+    TrackId.behavioral: days([
+          for (final a in attempts)
+            if (a.source == 'behavioral') a.occurredAt
+        ]) /
+        7,
   };
 
-  // Reserved: review is a daily non-negotiable; a system-design mock is reserved
-  // only when one is genuinely due to re-practice (its spaced clock is overdue),
-  // so it surfaces on cadence (~2–3×/week), never back-to-back.
+  // Reserved: review is a daily non-negotiable; a mock track (system design,
+  // behavioral) is reserved only when one is genuinely due to re-practice (its
+  // spaced clock is overdue), so it surfaces on cadence (~2–3×/week), never
+  // back-to-back.
   final reserved = <TrackId>{TrackId.review};
-  final sd = gated.firstWhere(
-    (a) => a.track == TrackId.systemDesign,
-    orElse: () =>
-        const TrackAvailability(track: TrackId.systemDesign, units: []),
-  );
-  if (sd.unlocked && sd.units.isNotEmpty) {
-    final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
-    final anyDue = sd.units.any((u) {
+  final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
+  bool anyMockDue(TrackId track) {
+    final a = gated.firstWhere(
+      (a) => a.track == track,
+      orElse: () => TrackAvailability(track: track, units: const []),
+    );
+    if (!a.unlocked || a.units.isEmpty) return false;
+    return a.units.any((u) {
       final st = recog['${u.id}::mock'];
       return st != null && !st.dueAt.isAfter(now);
     });
-    if (anyDue) reserved.add(TrackId.systemDesign);
   }
+
+  if (anyMockDue(TrackId.systemDesign)) reserved.add(TrackId.systemDesign);
+  if (anyMockDue(TrackId.behavioral)) reserved.add(TrackId.behavioral);
 
   return buildDailyPlan(
     availabilities: gated,
