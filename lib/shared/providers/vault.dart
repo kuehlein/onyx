@@ -6,6 +6,7 @@ import '../../core/vault/desktop_vault_source.dart';
 import '../../core/vault/vault_indexer.dart';
 import '../../core/vault/vault_source.dart';
 import 'database.dart';
+import 'subject.dart';
 
 part 'vault.g.dart';
 
@@ -27,6 +28,9 @@ VaultSource? vaultSource(Ref ref) {
 /// Re-run after edits or a re-sync with `ref.invalidate(vaultIndexProvider)`.
 @riverpod
 Future<IndexResult> vaultIndex(Ref ref) async {
+  // Ensure the active subject config is loaded (activeSubject set) BEFORE parsing
+  // — the parser reads the flow definitions from it (#30 Phase 5).
+  await ref.watch(activeSubjectConfigProvider.future);
   final source = ref.watch(vaultSourceProvider);
   if (source == null) {
     return const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0);

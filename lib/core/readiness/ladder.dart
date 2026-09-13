@@ -25,11 +25,13 @@ class Rung {
 
 /// The rungs in increasing demand — level-major, first context value before the
 /// second (SWE: Typical before FAANG), generated from the active subject config.
-final readinessLadder = <Rung>[
-  for (final level in activeSubject.target.levels)
-    for (final context in activeSubject.target.contexts)
-      Rung(level.id, context.id, '${level.label} · ${context.label}'),
-];
+/// A getter (not a memoized final) so it always reflects the current
+/// [activeSubject] — which the vault loader may set after startup (#30 Phase 5).
+List<Rung> get readinessLadder => [
+      for (final level in activeSubject.target.levels)
+        for (final context in activeSubject.target.contexts)
+          Rung(level.id, context.id, '${level.label} · ${context.label}'),
+    ];
 
 /// The overall recall score at which a rung counts as "solidly cleared".
 const ladderReadyThreshold = 0.7;
