@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analytics/insights.dart' show PatternMastery;
+import '../../core/analytics/insights.dart' show MockSkills, PatternMastery;
 import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart'
     show
@@ -13,45 +13,318 @@ import '../../core/interview/assessment.dart'
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
+import '../../shared/providers/readiness.dart';
+import '../home/readiness_panel.dart';
 
-/// Insights (task #27+): how well memory is holding and how mock performance is
-/// trending — all from data already logged (no AI, no new capture). A bottom-nav
-/// destination, not a Home button.
+/// Insights (task #27+, redesigned #62): the "details" tier of the app's
+/// progress story — how ready you are, how well memory is holding, how you
+/// perform under pressure, and whether you're showing up. All from data already
+/// logged (no AI, no new capture). A bottom-nav destination, not a Home button.
+///
+/// Structure follows the dataviz research (see the dataviz-principles memory):
+/// a critical-few SUMMARY strip up top, then progressive-disclosure GROUPS
+/// (Readiness → Memory & recall → Applied performance → Habits) that expand to
+/// the detailed bars. Comparison/trend is shown with bars, never rings; tone is
+/// non-judgmental ("focus areas", not "failures").
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Show the global empty state only when the two core signals are both empty
-    // (a brand-new user); otherwise render every section (each handles its own
-    // sparse case) so the page is never a wall of placeholders.
+    // Show the global empty state only when every core signal is empty (a
+    // brand-new user); otherwise render the groups (each handles its own sparse
+    // case, and non-lead groups are collapsed) so the page is never a wall.
+    final readiness = ref.watch(readinessProvider).asData?.value;
     final retention = ref.watch(retentionByDomainProvider).asData?.value;
     final mocks = ref.watch(mockSkillsProvider).asData?.value;
-    final algo = ref.watch(algoStatsProvider).asData?.value;
+    final sd = ref.watch(systemDesignSkillsProvider).asData?.value;
     final behavioral = ref.watch(behavioralSkillsProvider).asData?.value;
-    final bare = (retention?.isEmpty ?? true) &&
+    final algo = ref.watch(algoStatsProvider).asData?.value;
+    final consistency = ref.watch(studyConsistencyProvider).asData?.value;
+
+    final bare = (readiness?.isEmpty ?? true) &&
+        (retention?.isEmpty ?? true) &&
         (mocks?.isEmpty ?? true) &&
-        (algo?.isEmpty ?? true) &&
-        (behavioral?.isEmpty ?? true);
+        (sd?.isEmpty ?? true) &&
+        (behavioral?.isEmpty ?? true) &&
+        (algo?.isEmpty ?? true);
+
+    if (bare) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Insights')),
+        body: const _Empty(),
+      );
+    }
+
+    // Aggregates for the summary strip + group headers.
+    final anyStudied = readiness != null && !readiness.isEmpty;
+    final recall = _recallAgg(retention);
+    final mockAgg = _mockAgg([mocks, sd, behavioral]);
+    final active7 = _active7(consistency);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
-      body: bare
-          ? const _Empty()
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-              children: const [
-                _MockSkillsSection(),
-                _SystemDesignSection(),
-                _BehavioralSection(),
-                _AlgoSection(),
-                _PatternsSection(),
-                _RetentionSection(),
-                _DueForecastSection(),
-                _StrugglingSection(),
-                _ConsistencySection(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        children: [
+          _SummaryStrip(kpis: [
+            if (anyStudied)
+              _Kpi(
+                value: '${(readiness.overall * 100).round()}%',
+                label: 'Readiness',
+                color: _readinessColor(readiness.overall, _cs(context)),
+              ),
+            if (recall != null)
+              _Kpi(
+                value: '${(recall * 100).round()}%',
+                label: 'Recall',
+                color: _recallColor(recall, _cs(context)),
+              ),
+            if (mockAgg.count > 0)
+              _Kpi(
+                value: '${mockAgg.avg.round()}',
+                label: 'Mock avg',
+                color: _dimColor(mockAgg.avg / 20, _cs(context)),
+              ),
+            if (active7 > 0)
+              _Kpi(
+                value: '$active7/7',
+                label: 'This week',
+                color: _cs(context).primary,
+              ),
+          ]),
+          const SizedBox(height: 22),
+          // Lead group, expanded: the full readiness breakdown (reuses the rich
+          // panel that Home dropped in its ring-hero redesign).
+          _Group(
+            title: 'Readiness',
+            icon: Icons.insights_outlined,
+            summary: anyStudied
+                ? '${(readiness.overall * 100).round()}% toward target'
+                : 'Not started',
+            initiallyExpanded: true,
+            children: const [ReadinessPanel()],
+          ),
+          _Group(
+            title: 'Memory & recall',
+            icon: Icons.psychology_outlined,
+            summary: recall == null
+                ? 'No reviews yet'
+                : '${(recall * 100).round()}% recall, last '
+                    '${retentionWindow.inDays}d',
+            children: const [
+              _RetentionSection(),
+              _DueForecastSection(),
+              _StrugglingSection(),
+            ],
+          ),
+          _Group(
+            title: 'Applied performance',
+            icon: Icons.speed_outlined,
+            summary: mockAgg.count > 0
+                ? '${mockAgg.count} mock${mockAgg.count == 1 ? '' : 's'} · avg '
+                    '${mockAgg.avg.round()}'
+                : (algo != null && !algo.isEmpty
+                    ? '${(algo.cleanRate * 100).round()}% clean solves'
+                    : 'Not started'),
+            children: const [
+              _MockSkillsSection(),
+              _SystemDesignSection(),
+              _BehavioralSection(),
+              _AlgoSection(),
+              _PatternsSection(),
+            ],
+          ),
+          _Group(
+            title: 'Habits',
+            icon: Icons.calendar_month_outlined,
+            summary:
+                active7 > 0 ? '$active7 of the last 7 days' : 'No study yet',
+            children: const [_ConsistencySection()],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+ColorScheme _cs(BuildContext context) => Theme.of(context).colorScheme;
+
+/// Reviews-weighted mean recall across domains (0..1), or null if no reviews.
+double? _recallAgg(List<DomainRetention>? domains) {
+  if (domains == null) return null;
+  var reviews = 0;
+  var acc = 0.0;
+  for (final d in domains) {
+    final r = d.recall;
+    if (r != null) {
+      reviews += d.reviews;
+      acc += r * d.reviews;
+    }
+  }
+  return reviews == 0 ? null : acc / reviews;
+}
+
+/// Combined mock count + count-weighted average score across the mock tracks.
+({int count, double avg}) _mockAgg(List<MockSkills?> tracks) {
+  var count = 0;
+  var sum = 0.0;
+  for (final m in tracks) {
+    if (m != null && m.count > 0) {
+      count += m.count;
+      sum += m.avgScore * m.count;
+    }
+  }
+  return (count: count, avg: count == 0 ? 0 : sum / count);
+}
+
+/// Active days in the last 7 of the consistency series.
+int _active7(List<int>? consistency) {
+  if (consistency == null || consistency.isEmpty) return 0;
+  final last7 = consistency.length <= 7
+      ? consistency
+      : consistency.sublist(consistency.length - 7);
+  return last7.where((c) => c > 0).length;
+}
+
+Color _readinessColor(double v, ColorScheme cs) =>
+    v >= 0.75 ? statusGood : (v >= 0.45 ? statusWarn : cs.error);
+
+// ── Summary strip ───────────────────────────────────────────────────────────
+
+class _Kpi {
+  const _Kpi({required this.value, required this.label, required this.color});
+  final String value;
+  final String label;
+  final Color color;
+}
+
+/// The critical-few KPI strip: at most four glanceable tiles, only for signals
+/// that have data. The "summary" tier above the progressive-disclosure groups.
+class _SummaryStrip extends StatelessWidget {
+  const _SummaryStrip({required this.kpis});
+  final List<_Kpi> kpis;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kpis.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 12.0;
+        // Two per row so numbers stay large and legible.
+        final w = (c.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [for (final k in kpis) SizedBox(width: w, child: _Tile(k))],
+        );
+      },
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile(this.kpi);
+  final _Kpi kpi;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(kpi.value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                  color: kpi.color, fontWeight: FontWeight.w700, height: 1.0)),
+          const SizedBox(height: 4),
+          Text(kpi.label,
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Collapsible group (progressive disclosure) ──────────────────────────────
+
+/// A titled, collapsible group of sections with a one-line summary in the header
+/// (so you get the signal without expanding). Non-lead groups start collapsed —
+/// this is the "details" tier revealed on demand.
+class _Group extends StatefulWidget {
+  const _Group({
+    required this.title,
+    required this.icon,
+    required this.children,
+    this.summary,
+    this.initiallyExpanded = false,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? summary;
+  final bool initiallyExpanded;
+  final List<Widget> children;
+
+  @override
+  State<_Group> createState() => _GroupState();
+}
+
+class _GroupState extends State<_Group> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 10),
+                Text(widget.title,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                const Spacer(),
+                if (widget.summary != null && !_expanded)
+                  Flexible(
+                    child: Text(widget.summary!,
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            theme.textTheme.bodySmall?.copyWith(color: muted)),
+                  ),
+                const SizedBox(width: 6),
+                Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20, color: muted),
               ],
             ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: widget.children,
+            ),
+          ),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
+      ],
     );
   }
 }
@@ -73,7 +346,7 @@ class _Section extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: theme.textTheme.titleMedium
+              style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w700)),
           if (subtitle != null) ...[
             const SizedBox(height: 2),
