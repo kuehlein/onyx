@@ -300,28 +300,38 @@ class _CardTile extends StatelessWidget {
 
   final Card card;
 
+  /// The type-specific icon. Same vocabulary as the Today flows / coach so a
+  /// card reads the same everywhere: concept decks vs each practice track.
+  IconData get _icon => switch (card.type) {
+        CardType.flashcard => Icons.style_outlined,
+        CardType.interviewQuestion => Icons.forum_outlined,
+        CardType.algorithm => Icons.terminal_outlined,
+        CardType.systemDesign => Icons.architecture_outlined,
+        CardType.behavioral => Icons.record_voice_over_outlined,
+      };
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isInterview = card.type == CardType.interviewQuestion;
+    final cs = Theme.of(context).colorScheme;
+    // Color groups the two kinds of card so a concept and a same-named practice
+    // card never look identical: the spaced concept deck (flashcard / interview
+    // question) vs the separate practice tracks (algorithm / SD / behavioral).
+    final practice = card.type.isPracticeTrack;
+    final bg = practice ? cs.tertiaryContainer : cs.primaryContainer;
+    final fg = practice ? cs.onTertiaryContainer : cs.onPrimaryContainer;
     final sectionCount = card.quizzableSections.length;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: isInterview
-            ? theme.colorScheme.tertiaryContainer
-            : theme.colorScheme.primaryContainer,
-        child: Icon(
-          isInterview ? Icons.forum_outlined : Icons.style_outlined,
-          size: 20,
-          color: isInterview
-              ? theme.colorScheme.onTertiaryContainer
-              : theme.colorScheme.onPrimaryContainer,
-        ),
+        backgroundColor: bg,
+        child: Icon(_icon, size: 20, color: fg),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      // Lead with the type label so same-titled cards are unambiguous even when
+      // the line truncates (e.g. "Algorithm · ds-a" vs "Flashcard · ds-a").
       subtitle: Text(
         [
+          card.type.label,
           if (card.domain != null) card.domain!,
           '$sectionCount quizzable',
         ].join(' · '),
