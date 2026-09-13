@@ -110,6 +110,7 @@ class CoachSignals {
     this.loadFeel,
     this.activeRecently = true,
     this.daysToInterview,
+    this.daysToReady,
     this.behavioralStage,
   });
 
@@ -144,26 +145,53 @@ class CoachSignals {
   /// pile on load for someone who isn't practicing). Defaults true.
   final bool activeRecently;
 
-  /// Days until the nearest upcoming interview, or null if none set. Gates the
-  /// last-mile behavioral nudge (behavioral is a hub track, surfaced on Home only
-  /// when an interview is close).
+  /// Days until the nearest upcoming interview, or null if none set. A scheduled
+  /// interview is the safety-net trigger for the behavioral nudge (below).
   final int? daysToInterview;
+
+  /// Days until, at the current study pace, readiness is forecast to cross the
+  /// target ("ready to interview") — or null if no forecast / unreachable in the
+  /// horizon. This is the PRIMARY trigger for the behavioral nudge: when you're
+  /// ~a month from ready you should start applying, and behavioral prep is the
+  /// last-mile work that begins then — before any interview is even scheduled.
+  final int? daysToReady;
 
   /// Behavioral delivery readiness stage, or null when behavioral isn't relevant
   /// (no stories/mocks and no interview). Drives the behavioral nudge's copy.
   final BehavioralStage? behavioralStage;
 
-  /// Within this many days of an interview, behavioral practice becomes worth
-  /// surfacing on Home (it's otherwise last-mile / hub-only).
+  /// Within this many days of a scheduled interview, behavioral practice is worth
+  /// surfacing regardless of the readiness forecast (imminent — no time to wait).
+  /// This is the safety net; the primary trigger is [behavioralForecastDays].
   static const behavioralWindowDays = 28;
 
-  /// An interview is close and behavioral delivery isn't sharp yet.
-  bool get behavioralNear =>
+  /// When the readiness forecast says you're within this many days of ready, it's
+  /// time to start applying — and to begin behavioral prep. Chosen at ~a month so
+  /// stories are built and rehearsed before interviews (which you land only after
+  /// applying) actually arrive, not scrambled after one is scheduled.
+  static const behavioralForecastDays = 35;
+
+  /// Whether an actual interview is imminent (a scheduled prep-goal round soon).
+  bool get _interviewImminent =>
       daysToInterview != null &&
       daysToInterview! >= 0 &&
-      daysToInterview! <= behavioralWindowDays &&
-      behavioralStage != null &&
-      behavioralStage != BehavioralStage.sharp;
+      daysToInterview! <= behavioralWindowDays;
+
+  /// Whether the pace forecast puts "ready to interview" within reach — the cue
+  /// to start applying (and thus to start behavioral prep).
+  bool get _readySoon =>
+      daysToReady != null &&
+      daysToReady! >= 0 &&
+      daysToReady! <= behavioralForecastDays;
+
+  /// Behavioral delivery isn't sharp yet AND it's time to work it — either the
+  /// forecast says you're about ready to apply, or an interview is already close.
+  bool get behavioralDue {
+    if (behavioralStage == null || behavioralStage == BehavioralStage.sharp) {
+      return false;
+    }
+    return _readySoon || _interviewImminent;
+  }
 
   // --- Grounded thresholds (labeled heuristics; see memory) ---
   /// Below this recent review success, cards are running too hard / load too
@@ -320,22 +348,37 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     );
   }
 
-  // An interview is close and behavioral delivery isn't sharp — the last-mile
-  // prompt. Behavioral lives in the Interview-prep hub, not the daily queue, so
-  // this is how it surfaces on Home: only when it's genuinely time to work it.
-  if (s.behavioralNear) {
-    final d = s.daysToInterview!;
+  // You're about ready to apply (pace forecast) — or an interview is already
+  // close — and behavioral delivery isn't sharp. The last-mile prompt. Behavioral
+  // lives in the Interview-prep hub, not the daily queue, so this is how it
+  // surfaces on Home: only when it's genuinely time to work it. Forecast-driven
+  // is primary because you start behavioral when you begin APPLYING, well before
+  // any interview is scheduled — not four weeks after one lands on the calendar.
+  if (s.behavioralDue) {
     final building = s.behavioralStage == BehavioralStage.notStarted ||
         s.behavioralStage == BehavioralStage.buildingStories;
+    final verb =
+        building ? 'build your behavioral stories' : 'rehearse your stories';
+    // An imminent scheduled interview is the more urgent framing; otherwise lead
+    // with the "ready to apply" forecast.
+    final d = s.daysToInterview;
+    final imminent =
+        d != null && d >= 0 && d <= CoachSignals.behavioralWindowDays;
     return CoachUpdate(
       kind: CoachInsightKind.behavioralPrep,
-      tone: d <= 14 ? CoachTone.caution : CoachTone.info,
-      headline: 'Interview in $d day${d == 1 ? '' : 's'} — '
-          '${building ? 'build your behavioral stories' : 'rehearse your stories'}.',
-      why:
-          'Behavioral rounds are last-mile: ${s.behavioralStage!.hint} A strong '
-          'story per competency, said out loud a few times (not memorized), is '
-          'what carries the round.',
+      tone: imminent && d <= 14 ? CoachTone.caution : CoachTone.info,
+      headline: imminent
+          ? 'Interview in $d day${d == 1 ? '' : 's'} — $verb.'
+          : 'You’re about ready to apply — $verb.',
+      why: imminent
+          ? 'Behavioral rounds are last-mile: ${s.behavioralStage!.hint} A strong '
+              'story per competency, said out loud a few times (not memorized), is '
+              'what carries the round.'
+          : 'At your current pace you’re on track to be interview-ready soon, so '
+              'it’s time to start applying — and behavioral is the last-mile work '
+              'that starts now, before interviews land. ${s.behavioralStage!.hint} '
+              'A strong story per competency, said out loud a few times (not '
+              'memorized), is what carries the round.',
       actionLabel: 'Open interview prep',
       actionRoute: '/interview-prep',
     );

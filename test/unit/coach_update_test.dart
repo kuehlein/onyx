@@ -26,6 +26,7 @@ CoachSignals sig({
   LoadFeel? loadFeel,
   bool activeRecently = true,
   int? daysToInterview,
+  int? daysToReady,
   BehavioralStage? behavioralStage,
 }) =>
     CoachSignals(
@@ -50,31 +51,47 @@ CoachSignals sig({
       loadFeel: loadFeel,
       activeRecently: activeRecently,
       daysToInterview: daysToInterview,
+      daysToReady: daysToReady,
       behavioralStage: behavioralStage,
     );
 
 void main() {
   group('behavioral nudge', () {
-    test('interview near + not sharp → behavioralPrep → /interview-prep', () {
+    test('forecast ready-soon + not sharp → behavioralPrep (no interview set)',
+        () {
+      // The PRIMARY trigger: at the current pace you're ~a month from ready, so
+      // it's time to start applying — behavioral prep begins now, before any
+      // interview is scheduled.
+      final u = buildCoachUpdate(sig(
+        daysToReady: 30,
+        behavioralStage: BehavioralStage.readyToRehearse,
+      ))!;
+      expect(u.kind, CoachInsightKind.behavioralPrep);
+      expect(u.actionRoute, '/interview-prep');
+      expect(u.tone, CoachTone.info); // no imminent date → informational
+      expect(u.headline, contains('ready to apply'));
+    });
+
+    test('scheduled interview near is a safety net + urgent framing', () {
       final u = buildCoachUpdate(sig(
         daysToInterview: 10,
         behavioralStage: BehavioralStage.readyToRehearse,
       ))!;
       expect(u.kind, CoachInsightKind.behavioralPrep);
-      expect(u.actionRoute, '/interview-prep');
       expect(u.tone, CoachTone.caution); // ≤14 days
+      expect(u.headline, contains('Interview in 10 days'));
     });
 
-    test('does not fire when far out, sharp, or no interview', () {
+    test('does not fire when ready is far out, sharp, or no signal', () {
       expect(
           buildCoachUpdate(sig(
-                  daysToInterview: 60,
+                  daysToReady: 120,
                   behavioralStage: BehavioralStage.readyToRehearse))
               ?.kind,
           isNot(CoachInsightKind.behavioralPrep));
       expect(
-          buildCoachUpdate(sig(
-                  daysToInterview: 5, behavioralStage: BehavioralStage.sharp))
+          buildCoachUpdate(
+                  sig(daysToReady: 20, behavioralStage: BehavioralStage.sharp))
               ?.kind,
           isNot(CoachInsightKind.behavioralPrep));
       expect(
@@ -85,7 +102,7 @@ void main() {
 
     test('health/overload still outranks the behavioral nudge', () {
       final u = buildCoachUpdate(sig(
-        daysToInterview: 5,
+        daysToReady: 20,
         behavioralStage: BehavioralStage.readyToRehearse,
         dueCount: 999, // big backlog
       ))!;

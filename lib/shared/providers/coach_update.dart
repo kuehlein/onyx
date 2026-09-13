@@ -66,6 +66,12 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     }
   }
   final behavioral = await ref.watch(behavioralReadinessProvider.future);
+  // Days until, at the current pace, readiness is forecast to cross the target.
+  // This (not a scheduled date) is the primary trigger for the behavioral nudge:
+  // when you're ~a month from ready you start applying, and behavioral prep is
+  // the last-mile work that begins then — before interviews are on the calendar.
+  final forecast = await ref.watch(readinessForecastProvider.future);
+  final daysToReady = forecast?.currentReadyDay;
 
   final weakest = readiness.weakestDomain;
   // Overall coverage = studied sections / all in-scope sections.
@@ -96,6 +102,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     loadFeel: loadFeel,
     activeRecently: activeRecently,
     daysToInterview: daysToInterview,
+    daysToReady: daysToReady,
     behavioralStage: behavioral.stage,
   );
   return buildCoachUpdate(signals);
