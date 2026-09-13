@@ -244,7 +244,7 @@ class PrepGoal {
 
   /// This goal as a [ReadinessTarget] — the adapter the existing readiness/pace/
   /// weighting code consumes (so Phase 0 changes nothing downstream).
-  ReadinessTarget toTarget() => ReadinessTarget(
+  ReadinessTarget toTarget() => ReadinessTarget.of(
         level: level,
         company: tier,
         track: track,

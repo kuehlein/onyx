@@ -4,7 +4,7 @@ import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/readiness/targeting.dart';
 import 'package:onyx/shared/models/card.dart';
 
-const _base = ReadinessTarget(
+final _base = ReadinessTarget.of(
   level: SeniorityLevel.senior,
   company: CompanyTier.faang,
   track: Track.general,
@@ -26,7 +26,7 @@ Card _card(String domain, {List<String> concepts = const []}) => Card(
 void main() {
   group('Targeting', () {
     test('no active goals → identical to the base target weighting', () {
-      const t = Targeting(base: _base, goals: []);
+      final t = Targeting(base: _base, goals: []);
       expect(t.weightForDomain('ds-a'), domainWeight(_base, 'ds-a'));
       expect(t.weightForDomain('system-design'),
           domainWeight(_base, 'system-design'));
@@ -44,7 +44,7 @@ void main() {
         track: Track.general,
         domainWeights: {'ds-a': 5.0},
       );
-      const t = Targeting(base: _base, goals: [goal]);
+      final t = Targeting(base: _base, goals: [goal]);
       // base ds-a weight is modest; the goal's +5 boost dominates.
       expect(t.weightForDomain('ds-a'),
           greaterThan(domainWeight(_base, 'ds-a') + 4));
@@ -62,7 +62,7 @@ void main() {
         track: Track.general,
         conceptWeights: {'consistent-hashing': 3.0, 'irrelevant': 1.0},
       );
-      const t = Targeting(base: _base, goals: [goal]);
+      final t = Targeting(base: _base, goals: [goal]);
       final w = t.weightForCard(
           _card('ds-a', concepts: ['consistent-hashing', 'irrelevant']));
       // domain weight + the max matching concept boost (3.0, not 1.0, not 4.0).
@@ -92,7 +92,7 @@ void main() {
     });
 
     test('governingDate is null when nothing is scheduled', () {
-      const t = Targeting(base: _base, goals: []);
+      final t = Targeting(base: _base, goals: []);
       expect(t.governingDate, isNull);
     });
 
@@ -125,7 +125,7 @@ void main() {
         );
 
     test('no goals → the card base (its priority) unchanged', () {
-      const t = Targeting(base: _base, goals: []);
+      final t = Targeting(base: _base, goals: []);
       // default card priority is normal → 0.90.
       expect(t.desiredRetentionForCard(_card('ds-a'), today: today), 0.90);
     });

@@ -12,7 +12,7 @@ import 'package:onyx/shared/providers/stats.dart';
 /// Serves a fixed target without reaching the DB / vault.
 class _FakeTargetController extends ReadinessTargetController {
   @override
-  Future<ReadinessTarget> build() async => const ReadinessTarget(
+  Future<ReadinessTarget> build() async => ReadinessTarget.of(
         level: SeniorityLevel.senior,
         company: CompanyTier.faang,
         track: Track.general,

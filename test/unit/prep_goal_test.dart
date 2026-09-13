@@ -42,7 +42,7 @@ void main() {
     });
 
     test('fromTarget seeds a baseline goal (no company, default id)', () {
-      const target = ReadinessTarget(
+      final target = ReadinessTarget.of(
         level: SeniorityLevel.mid,
         company: CompanyTier.typical,
         track: Track.frontend,

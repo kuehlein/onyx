@@ -20,7 +20,7 @@ Card _c(String id, String domain, int tier) => Card(
 
 void main() {
   final today = DateTime.utc(2026, 1, 1);
-  const senior = ReadinessTarget(
+  final senior = ReadinessTarget.of(
       level: SeniorityLevel.senior,
       company: CompanyTier.faang,
       track: Track.backend);

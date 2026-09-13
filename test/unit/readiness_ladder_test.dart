@@ -41,7 +41,7 @@ void main() {
           _card('A', 'ds-a', 1, ['s1'])
         ],
         stabilityByKey: const {'A::s1': 400},
-        target: const ReadinessTarget(
+        target: ReadinessTarget.of(
           level: SeniorityLevel.newGrad,
           company: CompanyTier.typical,
           track: Track.general,
@@ -68,7 +68,7 @@ void main() {
           _card('E', 'system-design', 4, ['s1']), // advanced SD — UNSTUDIED
         ],
         stabilityByKey: const {'A::s1': 300, 'B::s1': 300}, // C–E unstudied
-        target: const ReadinessTarget(
+        target: ReadinessTarget.of(
           level: SeniorityLevel.senior,
           company: CompanyTier.faang,
           track: Track.general,

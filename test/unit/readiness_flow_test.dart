@@ -91,7 +91,7 @@ void main() {
 
     Future<double> read(SeniorityLevel level, Track track) async {
       await c.read(readinessTargetControllerProvider.notifier).save(
-          ReadinessTarget(
+          ReadinessTarget.of(
               level: level, company: CompanyTier.faang, track: track));
       return (await c.read(readinessProvider.future)).overall;
     }

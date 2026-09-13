@@ -290,7 +290,7 @@ Future<ReadinessForecast?> readinessForecastFor(
     Ref ref, ForecastDims dims) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final target = ReadinessTarget(
+  final target = ReadinessTarget.of(
       level: dims.level, company: dims.company, track: dims.track);
   final today = (await ref.watch(clockProvider.future)).today();
 

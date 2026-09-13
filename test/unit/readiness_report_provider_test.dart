@@ -20,7 +20,7 @@ import 'package:onyx/shared/providers/vault.dart';
 
 class _FakeTarget extends ReadinessTargetController {
   @override
-  Future<ReadinessTarget> build() async => const ReadinessTarget(
+  Future<ReadinessTarget> build() async => ReadinessTarget.of(
         level: SeniorityLevel.senior,
         company: CompanyTier.faang,
         track: Track.general,

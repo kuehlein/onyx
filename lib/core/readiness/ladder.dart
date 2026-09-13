@@ -8,30 +8,27 @@
 library;
 
 import '../../shared/models/card.dart';
+import '../subject/active_subject.dart';
 import '../interview/transfer.dart';
 import 'readiness.dart';
 import 'target.dart';
 
-/// One rung: a (level, company) pair. Track is held to the user's choice.
+/// One rung: a (level, context) pair by slot id. Track is held to the user's
+/// choice. #30 Phase 2: generated from the active subject's slots, not hardcoded.
 class Rung {
-  const Rung(this.level, this.company);
+  const Rung(this.levelId, this.contextId, this.label);
 
-  final SeniorityLevel level;
-  final CompanyTier company;
-
-  String get label => '${level.label} · ${company.label}';
+  final String levelId;
+  final String contextId;
+  final String label;
 }
 
-/// The rungs in increasing demand — level-major, Typical before FAANG.
-const readinessLadder = <Rung>[
-  Rung(SeniorityLevel.newGrad, CompanyTier.typical),
-  Rung(SeniorityLevel.newGrad, CompanyTier.faang),
-  Rung(SeniorityLevel.mid, CompanyTier.typical),
-  Rung(SeniorityLevel.mid, CompanyTier.faang),
-  Rung(SeniorityLevel.senior, CompanyTier.typical),
-  Rung(SeniorityLevel.senior, CompanyTier.faang),
-  Rung(SeniorityLevel.staff, CompanyTier.typical),
-  Rung(SeniorityLevel.staff, CompanyTier.faang),
+/// The rungs in increasing demand — level-major, first context value before the
+/// second (SWE: Typical before FAANG), generated from the active subject config.
+final readinessLadder = <Rung>[
+  for (final level in activeSubject.target.levels)
+    for (final context in activeSubject.target.contexts)
+      Rung(level.id, context.id, '${level.label} · ${context.label}'),
 ];
 
 /// The overall recall score at which a rung counts as "solidly cleared".
@@ -89,7 +86,7 @@ LadderPosition computeLadderPosition({
 
   final scores = <double>[];
   for (final rung in readinessLadder) {
-    final t = target.copyWith(level: rung.level, company: rung.company);
+    final t = target.copyWith(levelId: rung.levelId, contextId: rung.contextId);
     final r = computeReadiness(
       cards: cards,
       stabilityByKey: stabilityByKey,
@@ -120,7 +117,7 @@ LadderPosition computeLadderPosition({
       cleared < n ? (scores[cleared] / threshold).clamp(0.0, 1.0) : 0.0;
   final youFraction = ((cleared + partial) / n).clamp(0.0, 1.0).toDouble();
 
-  final goalIndex = _rungIndex(target.level, target.company);
+  final goalIndex = _rungIndex(target.levelId, target.contextId);
   final goalFraction = ((goalIndex + 1) / n).clamp(0.0, 1.0).toDouble();
 
   return LadderPosition(
@@ -134,10 +131,10 @@ LadderPosition computeLadderPosition({
   );
 }
 
-int _rungIndex(SeniorityLevel level, CompanyTier company) {
+int _rungIndex(String levelId, String contextId) {
   for (var i = 0; i < readinessLadder.length; i++) {
-    if (readinessLadder[i].level == level &&
-        readinessLadder[i].company == company) {
+    if (readinessLadder[i].levelId == levelId &&
+        readinessLadder[i].contextId == contextId) {
       return i;
     }
   }

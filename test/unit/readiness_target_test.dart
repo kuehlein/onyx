@@ -25,7 +25,7 @@ void main() {
       // Seniority must not reshuffle whole-domain weights — that let a harder
       // target read as closer. Depth (tierRelevance) carries level instead.
       double w(SeniorityLevel l, String d) => domainWeight(
-            ReadinessTarget(
+            ReadinessTarget.of(
                 level: l, company: CompanyTier.faang, track: Track.general),
             d,
           );
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('frontend track lightens DS&A', () {
-      const base = ReadinessTarget(
+      final base = ReadinessTarget.of(
           level: SeniorityLevel.mid,
           company: CompanyTier.faang,
           track: Track.general);
@@ -52,7 +52,7 @@ void main() {
     });
 
     test('backend-knowledge domains weigh like system design', () {
-      const senior = ReadinessTarget(
+      final senior = ReadinessTarget.of(
           level: SeniorityLevel.senior,
           company: CompanyTier.faang,
           track: Track.backend);
@@ -73,7 +73,7 @@ void main() {
 
   group('ReadinessTarget serialization', () {
     test('round-trips including date', () {
-      final t = ReadinessTarget(
+      final t = ReadinessTarget.of(
         level: SeniorityLevel.senior,
         company: CompanyTier.faang,
         track: Track.backend,
@@ -178,7 +178,7 @@ void main() {
   });
 
   group('relevance-weighted coverage', () {
-    const senior = ReadinessTarget(
+    final senior = ReadinessTarget.of(
         level: SeniorityLevel.senior,
         company: CompanyTier.faang,
         track: Track.backend);

@@ -80,40 +80,42 @@ void main() {
     });
   });
 
-  group('ladder + labels + fallback (cross-check pre-Phase-2)', () {
-    test('config level × context reproduces readinessLadder order + labels',
-        () {
-      final expected = [
-        for (final level in t.levels)
-          for (final context in t.contexts) (level, context),
+  group('ladder + labels + fallback', () {
+    test('readinessLadder is the 8 SWE rungs, level-major, in order', () {
+      const expected = [
+        ('newGrad', 'typical', 'New-grad · Typical'),
+        ('newGrad', 'faang', 'New-grad · FAANG'),
+        ('mid', 'typical', 'Mid · Typical'),
+        ('mid', 'faang', 'Mid · FAANG'),
+        ('senior', 'typical', 'Senior · Typical'),
+        ('senior', 'faang', 'Senior · FAANG'),
+        ('staff', 'typical', 'Staff · Typical'),
+        ('staff', 'faang', 'Staff · FAANG'),
       ];
-      expect(expected.length, readinessLadder.length);
-      for (var i = 0; i < readinessLadder.length; i++) {
-        final rung = readinessLadder[i];
-        final (level, context) = expected[i];
-        expect(level.id, rung.level.name, reason: 'rung $i level');
-        expect(context.id, rung.company.name, reason: 'rung $i context');
-        expect('${level.label} · ${context.label}', rung.label,
-            reason: 'rung $i label');
+      expect(readinessLadder.length, expected.length);
+      for (var i = 0; i < expected.length; i++) {
+        final (levelId, contextId, label) = expected[i];
+        expect(readinessLadder[i].levelId, levelId, reason: 'rung $i level');
+        expect(readinessLadder[i].contextId, contextId, reason: 'rung $i ctx');
+        expect(readinessLadder[i].label, label, reason: 'rung $i label');
       }
     });
 
-    test('slot labels match the legacy enum labels', () {
-      for (final level in SeniorityLevel.values) {
-        expect(t.levelById(level.name).label, level.label);
-      }
-      for (final c in CompanyTier.values) {
-        expect(t.contextById(c.name).label, c.label);
-      }
-      for (final track in Track.values) {
-        expect(t.trackById(track.name).label, track.label);
-      }
+    test('slot labels (literal snapshot)', () {
+      expect(t.levelById('newGrad').label, 'New-grad');
+      expect(t.levelById('staff').label, 'Staff');
+      expect(t.contextById('faang').label, 'FAANG');
+      expect(t.trackById('backend').label, 'Backend');
+      expect(t.trackById('fullStack').label, 'Full-stack');
     });
 
-    test('fallback ids match ReadinessTarget.fallback', () {
-      expect(t.fallbackLevelId, ReadinessTarget.fallback.level.name);
-      expect(t.fallbackContextId, ReadinessTarget.fallback.company.name);
-      expect(t.fallbackTrackId, ReadinessTarget.fallback.track.name);
+    test('fallback is mid · faang · general', () {
+      expect(t.fallbackLevelId, 'mid');
+      expect(t.fallbackContextId, 'faang');
+      expect(t.fallbackTrackId, 'general');
+      expect(ReadinessTarget.fallback.levelId, 'mid');
+      expect(ReadinessTarget.fallback.contextId, 'faang');
+      expect(ReadinessTarget.fallback.trackId, 'general');
     });
   });
 }

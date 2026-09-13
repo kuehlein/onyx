@@ -50,55 +50,92 @@ extension TrackLabel on Track {
       };
 }
 
+/// The chosen target, stored as subject-config slot **ids** (level × context ×
+/// track) plus an optional interview date. #30 Phase 2 moved this off the SWE
+/// enums so the picker/persistence can carry any subject's values; the enums
+/// remain as SWE's value set (exposed via [level]/[company]/[track] views) until
+/// Phase 4 makes the AI calibration config-driven too.
 class ReadinessTarget {
   const ReadinessTarget({
-    required this.level,
-    required this.company,
-    required this.track,
+    required this.levelId,
+    required this.contextId,
+    required this.trackId,
     this.interviewDate,
   });
 
-  final SeniorityLevel level;
-  final CompanyTier company;
-  final Track track;
+  /// Ergonomic construction from the SWE enums (maps to slot ids). Transitional.
+  factory ReadinessTarget.of({
+    required SeniorityLevel level,
+    required CompanyTier company,
+    required Track track,
+    DateTime? interviewDate,
+  }) =>
+      ReadinessTarget(
+        levelId: level.name,
+        contextId: company.name,
+        trackId: track.name,
+        interviewDate: interviewDate,
+      );
+
+  final String levelId;
+  final String contextId;
+  final String trackId;
 
   /// Date-only (local midnight) of the interview, or null if not set.
   final DateTime? interviewDate;
 
   static const fallback = ReadinessTarget(
-    level: SeniorityLevel.mid,
-    company: CompanyTier.faang,
-    track: Track.general,
+    levelId: 'mid',
+    contextId: 'faang',
+    trackId: 'general',
   );
 
-  /// A compact human label, e.g. "Senior · FAANG · Backend".
-  String get label => '${level.label} · ${company.label} · ${track.label}';
+  /// Enum views of the slot ids — resolve to the SWE enums, falling back to the
+  /// default for ids outside the SWE value set. Lets the many enum-based readers
+  /// (AI calibration, projection, ladder scoring) stay unchanged this phase.
+  SeniorityLevel get level =>
+      enumByName(SeniorityLevel.values, levelId) ?? SeniorityLevel.mid;
+  CompanyTier get company =>
+      enumByName(CompanyTier.values, contextId) ?? CompanyTier.faang;
+  Track get track => enumByName(Track.values, trackId) ?? Track.general;
 
-  /// The FSRS stability (days) at which recall counts as fully durable — read
-  /// from the active subject's **context** slot (SWE: FAANG 120 else 90). See
-  /// #30 Phase 1 / docs/generalization-plan.md.
+  /// A compact human label, e.g. "Senior · FAANG · Backend" — from the active
+  /// subject's slot labels.
+  String get label {
+    final t = activeSubject.target;
+    return '${t.levelById(levelId).label} · ${t.contextById(contextId).label} · '
+        '${t.trackById(trackId).label}';
+  }
+
+  /// The FSRS stability (days) at which recall counts as fully durable — the
+  /// active subject's **context** slot (SWE: FAANG 120 else 90). See #30.
   double get stabilityTarget =>
-      activeSubject.target.stabilityTargetDays(company.name);
+      activeSubject.target.stabilityTargetDays(contextId);
 
   ReadinessTarget copyWith({
     SeniorityLevel? level,
     CompanyTier? company,
     Track? track,
+    String? levelId,
+    String? contextId,
+    String? trackId,
     Object? interviewDate = _unset,
   }) =>
       ReadinessTarget(
-        level: level ?? this.level,
-        company: company ?? this.company,
-        track: track ?? this.track,
+        levelId: levelId ?? level?.name ?? this.levelId,
+        contextId: contextId ?? company?.name ?? this.contextId,
+        trackId: trackId ?? track?.name ?? this.trackId,
         interviewDate: interviewDate == _unset
             ? this.interviewDate
             : interviewDate as DateTime?,
       );
 
+  // JSON keys stay level/company/track (values are slot ids == legacy enum
+  // names), so existing onyx-target.json / onyx-goals.json files load unchanged.
   Map<String, dynamic> toJson() => {
-        'level': level.name,
-        'company': company.name,
-        'track': track.name,
+        'level': levelId,
+        'company': contextId,
+        'track': trackId,
         if (interviewDate != null)
           'interviewDate': '${interviewDate!.year.toString().padLeft(4, '0')}-'
               '${interviewDate!.month.toString().padLeft(2, '0')}-'
@@ -108,10 +145,9 @@ class ReadinessTarget {
   String encode() => jsonEncode(toJson());
 
   static ReadinessTarget fromJson(Map<String, dynamic> m) => ReadinessTarget(
-        level: enumByName(SeniorityLevel.values, m['level']) ?? fallback.level,
-        company:
-            enumByName(CompanyTier.values, m['company']) ?? fallback.company,
-        track: enumByName(Track.values, m['track']) ?? fallback.track,
+        levelId: (m['level'] as String?) ?? fallback.levelId,
+        contextId: (m['company'] as String?) ?? fallback.contextId,
+        trackId: (m['track'] as String?) ?? fallback.trackId,
         interviewDate: _parseDate(m['interviewDate']),
       );
 
@@ -146,7 +182,7 @@ DateTime? _parseDate(Object? v) {
 /// domains — an inversion (verified 2026-09). Track still shapes emphasis
 /// because interview *type* genuinely differs by track.
 double domainWeight(ReadinessTarget target, String domain) =>
-    activeSubject.target.domainWeight(target.track.name, domain);
+    activeSubject.target.domainWeight(target.trackId, domain);
 
 /// Relevance weight (0..1) of knowledge at a given **tier** (knowledge-hierarchy
 /// depth, 1 = foundational → higher = specialist) for a target [level]'s

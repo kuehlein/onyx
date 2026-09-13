@@ -3,7 +3,7 @@ import 'package:onyx/core/ai/interview_plan.dart';
 import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
 
-const _base = ReadinessTarget(
+final _base = ReadinessTarget.of(
   level: SeniorityLevel.senior,
   company: CompanyTier.faang,
   track: Track.general,
