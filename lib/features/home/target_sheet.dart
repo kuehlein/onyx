@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
+import '../../core/subject/active_subject.dart';
+import '../../core/subject/subject_config.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/status_colors.dart';
@@ -155,29 +157,32 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                     const EdgeInsets.fromLTRB(14, 0, 14, 6),
                                 child: Column(
                                   children: [
-                                    _ChipGroup<SeniorityLevel>(
+                                    _ChipGroup<LevelValue>(
                                       label: 'Level',
-                                      values: SeniorityLevel.values,
-                                      selected: t.level,
+                                      values: activeSubject.target.levels,
+                                      selected: activeSubject.target
+                                          .levelById(t.levelId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>
-                                          _set(t.copyWith(level: v)),
+                                          _set(t.copyWith(levelId: v.id)),
                                     ),
-                                    _ChipGroup<CompanyTier>(
+                                    _ChipGroup<ContextValue>(
                                       label: 'Company',
-                                      values: CompanyTier.values,
-                                      selected: t.company,
+                                      values: activeSubject.target.contexts,
+                                      selected: activeSubject.target
+                                          .contextById(t.contextId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>
-                                          _set(t.copyWith(company: v)),
+                                          _set(t.copyWith(contextId: v.id)),
                                     ),
-                                    _ChipGroup<Track>(
+                                    _ChipGroup<TrackValue>(
                                       label: 'Track',
-                                      values: Track.values,
-                                      selected: t.track,
+                                      values: activeSubject.target.tracks,
+                                      selected: activeSubject.target
+                                          .trackById(t.trackId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>
-                                          _set(t.copyWith(track: v)),
+                                          _set(t.copyWith(trackId: v.id)),
                                     ),
                                   ],
                                 ),
