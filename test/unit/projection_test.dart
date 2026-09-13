@@ -92,11 +92,10 @@ void main() {
     expect(push, isNotNull);
     expect(cur, isNotNull);
     expect(chill, isNotNull);
-    // Non-increasing as pace rises, ± a sampling-window/FSRS-fuzz wobble — on a
-    // maturation-bound deck all three land near the same day, so strict ordering
-    // is noise-sensitive (mirrors the tolerance in the pace-curve test below).
-    expect(push!, lessThanOrEqualTo(cur! + 7));
-    expect(cur, lessThanOrEqualTo(chill! + 7));
+    // Strictly non-increasing as pace rises — the projection is deterministic
+    // (fuzz disabled for forecasts), so no wobble tolerance is needed.
+    expect(push!, lessThanOrEqualTo(cur!));
+    expect(cur, lessThanOrEqualTo(chill!));
   });
 
   test(
@@ -111,10 +110,9 @@ void main() {
     );
     final reached = c.curve.where((p) => p.readyDay != null).toList();
     expect(reached.length, greaterThan(1));
-    // ready-day is non-increasing as pace rises (± a sampling-window wobble)
+    // ready-day is non-increasing as pace rises (deterministic — fuzz disabled).
     for (var i = 1; i < reached.length; i++) {
-      expect(reached[i].readyDay!,
-          lessThanOrEqualTo(reached[i - 1].readyDay! + 7));
+      expect(reached[i].readyDay!, lessThanOrEqualTo(reached[i - 1].readyDay!));
     }
     final f = ReadinessForecast(
       curve: c.curve,

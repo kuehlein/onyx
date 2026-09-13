@@ -234,7 +234,9 @@ ReadinessProjection projectReadiness({
   int sampleEvery = 7,
   SrsScheduler? scheduler,
 }) {
-  final sched = scheduler ?? SrsScheduler();
+  // No fuzz in a forecast: the projected ready-date must be deterministic (stable
+  // run-to-run) and monotonic across paces — fuzz would jitter both.
+  final sched = scheduler ?? SrsScheduler(enableFuzzing: false);
   final tierWeights = tierWeightsFor(target);
   final domains = <String>{
     for (final c in cards)

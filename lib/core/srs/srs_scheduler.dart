@@ -41,9 +41,14 @@ class ReviewOutcome {
 /// harder — see [Priority]); since FSRS holds desired retention on the Scheduler,
 /// we cache one underlying scheduler per retention value (a handful at most).
 class SrsScheduler {
-  SrsScheduler({fsrs.Scheduler? scheduler}) {
+  SrsScheduler({fsrs.Scheduler? scheduler, this.enableFuzzing = true}) {
     if (scheduler != null) _cache[_defaultRetention] = scheduler;
   }
+
+  /// FSRS interval fuzz. On in production (spreads due dates to avoid review
+  /// pile-ups); the forward-simulation projection turns it OFF so a forecast is
+  /// deterministic (a ready-date shouldn't jitter run-to-run).
+  final bool enableFuzzing;
 
   static const _defaultRetention = 0.9;
   final _cache = <double, fsrs.Scheduler>{};
@@ -59,6 +64,7 @@ class SrsScheduler {
       () => fsrs.Scheduler(
             desiredRetention: retention,
             learningSteps: const [],
+            enableFuzzing: enableFuzzing,
           ));
 
   /// Apply [grade] (1=Again … 4=Easy) to a section. Pass the section's current
