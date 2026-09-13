@@ -310,20 +310,28 @@ class _CardTile extends StatelessWidget {
         CardType.behavioral => Icons.record_voice_over_outlined,
       };
 
+  /// A distinct hue per type so every card kind — including the three practice
+  /// tracks — is visually separable at a glance (not just by icon).
+  MaterialColor get _color => switch (card.type) {
+        CardType.flashcard => Colors.indigo,
+        CardType.interviewQuestion => Colors.teal,
+        CardType.algorithm => Colors.deepOrange,
+        CardType.systemDesign => Colors.purple,
+        CardType.behavioral => Colors.green,
+      };
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    // Color groups the two kinds of card so a concept and a same-named practice
-    // card never look identical: the spaced concept deck (flashcard / interview
-    // question) vs the separate practice tracks (algorithm / SD / behavioral).
-    final practice = card.type.isPracticeTrack;
-    final bg = practice ? cs.tertiaryContainer : cs.primaryContainer;
-    final fg = practice ? cs.onTertiaryContainer : cs.onPrimaryContainer;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // Tint the avatar with the type's hue: a soft fill plus a readable-on-both-
+    // themes icon shade.
+    final color = _color;
+    final fg = dark ? color.shade200 : color.shade700;
     final sectionCount = card.quizzableSections.length;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: bg,
+        backgroundColor: color.withValues(alpha: dark ? 0.24 : 0.14),
         child: Icon(_icon, size: 20, color: fg),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
