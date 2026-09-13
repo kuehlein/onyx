@@ -1,6 +1,8 @@
 import 'package:yaml/yaml.dart';
 
 import '../../shared/models/card.dart';
+import '../subject/active_subject.dart';
+import '../subject/subject_config.dart';
 
 /// Parses a single Obsidian markdown file into a [Card].
 ///
@@ -132,19 +134,22 @@ class CardParser {
     final bool quizzable;
     if (quizOverride != null && quizOverride.isNotEmpty) {
       quizzable = quizOverride.contains(slug);
-    } else if (type == CardType.algorithm) {
-      // Algorithm cards: every section is a problem = its own practice unit.
-      quizzable = true;
-    } else if (type == CardType.systemDesign || type == CardType.behavioral) {
-      // System-design & behavioral cards: sections are interview phases / prompt
-      // banks, not independent recall units. The whole card is practiced as a
-      // mock, so no section is scheduled (no srs_state) — each has its own queue.
-      quizzable = false;
-    } else if (type == CardType.interviewQuestion) {
-      // Interview questions default to quizzing only the Approach section.
-      quizzable = slug == 'approach';
     } else {
-      quizzable = !_blocklist.contains(heading.trim().toLowerCase());
+      // Which sections are quizzable is the flow's policy (task #30 Phase 3),
+      // configured per card type; unknown types fall back to the concept blocklist.
+      final policy = activeSubject.flowForType(type.value)?.quizzability ??
+          QuizzabilityPolicy.blocklist;
+      quizzable = switch (policy) {
+        // Every section is a problem = its own practice unit (algorithms).
+        QuizzabilityPolicy.allSections => true,
+        // Whole card is one mock unit; no section is scheduled (SD / behavioral).
+        QuizzabilityPolicy.noSections => false,
+        // Interview questions default to quizzing only the Approach section.
+        QuizzabilityPolicy.approachOnly => slug == 'approach',
+        // Concept cards: everything but the shared reference/blocklist headings.
+        QuizzabilityPolicy.blocklist =>
+          !_blocklist.contains(heading.trim().toLowerCase()),
+      };
     }
     return CardSection(
       heading: heading,

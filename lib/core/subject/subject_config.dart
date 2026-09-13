@@ -13,6 +13,10 @@
 /// structure.
 library;
 
+import 'flow_spec.dart';
+
+export 'flow_spec.dart';
+
 /// One selectable value of the ordered **level** slot — "how deep must knowledge
 /// go". [tierCurve] index `i` maps to tier `i+1`; the last entry applies to that
 /// tier and everything deeper. Higher levels carry curves that stay high into the
@@ -136,11 +140,27 @@ class TargetSpec {
   }
 }
 
-/// A configured study subject. Grows across the #30 phases; Phase 0 is [id] +
-/// [target].
+/// A configured study subject. Grows across the #30 phases; currently [id],
+/// [target] (Phase 0/2), and [flows] (Phase 3).
 class SubjectConfig {
-  const SubjectConfig({required this.id, required this.target});
+  const SubjectConfig({
+    required this.id,
+    required this.target,
+    this.flows = const [],
+  });
 
   final String id;
   final TargetSpec target;
+
+  /// One flow per card `type:`. See [flowForType].
+  final List<FlowSpec> flows;
+
+  /// The flow describing a card `type:` value, or null if the subject declares
+  /// none (callers fall back to a safe default).
+  FlowSpec? flowForType(String cardType) {
+    for (final f in flows) {
+      if (f.cardType == cardType) return f;
+    }
+    return null;
+  }
 }

@@ -2,16 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/subject/subject_config.dart';
 
 /// Golden tests for task #30: the SWE reference [softwareInterviewsConfig] locks
-/// the readiness math. Phase 1 rewired target.dart to READ from this config, so
+/// the readiness math + flow definitions. The app reads from this config, so
 /// these assert against **literal snapshots** (independent of the implementation)
-/// rather than cross-checking the now-delegating functions — a regression in
-/// either the config values or the resolution logic fails here. Pure computation
-/// only, no UI, so a later UI rework (#50) can't disturb them.
-///
-/// The ladder/label/fallback checks still cross-check the not-yet-migrated
-/// enum-based ladder.dart/target.dart (those migrate to config in Phase 2).
+/// — a regression in either the config values or the resolution logic fails here.
+/// Pure computation only, no UI, so a later UI rework (#50) can't disturb them.
 void main() {
   final t = softwareInterviewsConfig.target;
 
@@ -116,6 +113,34 @@ void main() {
       expect(ReadinessTarget.fallback.levelId, 'mid');
       expect(ReadinessTarget.fallback.contextId, 'faang');
       expect(ReadinessTarget.fallback.trackId, 'general');
+    });
+  });
+
+  group('flows (Phase 3) → scheduling + quizzability per card type', () {
+    const expected = {
+      'flashcard': (SchedulingModel.recall, QuizzabilityPolicy.blocklist),
+      'interview-question': (
+        SchedulingModel.recall,
+        QuizzabilityPolicy.approachOnly
+      ),
+      'algorithm': (SchedulingModel.twoClock, QuizzabilityPolicy.allSections),
+      'system-design': (SchedulingModel.mock, QuizzabilityPolicy.noSections),
+      'behavioral': (SchedulingModel.mock, QuizzabilityPolicy.noSections),
+    };
+
+    test('literal snapshot per card type', () {
+      expected.forEach((cardType, spec) {
+        final flow = softwareInterviewsConfig.flowForType(cardType);
+        expect(flow, isNotNull, reason: cardType);
+        final (scheduling, quizzability) = spec;
+        expect(flow!.scheduling, scheduling, reason: '$cardType scheduling');
+        expect(flow.quizzability, quizzability,
+            reason: '$cardType quizzability');
+      });
+    });
+
+    test('unknown card type has no flow (caller falls back)', () {
+      expect(softwareInterviewsConfig.flowForType('nonexistent'), isNull);
     });
   });
 }

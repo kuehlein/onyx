@@ -76,4 +76,32 @@ const softwareInterviewsConfig = SubjectConfig(
     fallbackContextId: 'faang',
     fallbackTrackId: 'general',
   ),
+  // One flow per card type — mirrors the parser's current per-CardType rules.
+  flows: [
+    FlowSpec(
+      cardType: 'flashcard',
+      scheduling: SchedulingModel.recall,
+      quizzability: QuizzabilityPolicy.blocklist,
+    ),
+    FlowSpec(
+      cardType: 'interview-question',
+      scheduling: SchedulingModel.recall,
+      quizzability: QuizzabilityPolicy.approachOnly,
+    ),
+    FlowSpec(
+      cardType: 'algorithm',
+      scheduling: SchedulingModel.twoClock,
+      quizzability: QuizzabilityPolicy.allSections,
+    ),
+    FlowSpec(
+      cardType: 'system-design',
+      scheduling: SchedulingModel.mock,
+      quizzability: QuizzabilityPolicy.noSections,
+    ),
+    FlowSpec(
+      cardType: 'behavioral',
+      scheduling: SchedulingModel.mock,
+      quizzability: QuizzabilityPolicy.noSections,
+    ),
+  ],
 );
