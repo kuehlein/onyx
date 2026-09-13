@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/status_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/analytics/insights.dart' show MockSkills, PatternMastery;
 import '../../core/analytics/retention.dart';
@@ -26,11 +27,69 @@ import '../home/readiness_panel.dart';
 /// (Readiness → Memory & recall → Applied performance → Habits) that expand to
 /// the detailed bars. Comparison/trend is shown with bars, never rings; tone is
 /// non-judgmental ("focus areas", not "failures").
-class InsightsScreen extends ConsumerWidget {
-  const InsightsScreen({super.key});
+class InsightsScreen extends ConsumerStatefulWidget {
+  const InsightsScreen({super.key, this.focus});
+
+  /// Optional group to reveal on open (`readiness` / `memory` / `applied` /
+  /// `habits`), set by a Home metric deep-linking to its explanation here.
+  final String? focus;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InsightsScreen> createState() => _InsightsScreenState();
+}
+
+class _InsightsScreenState extends ConsumerState<InsightsScreen> {
+  // One key per group so a tapped KPI (or a Home deep-link) can expand it and
+  // scroll it into view.
+  final _readinessKey = GlobalKey<_GroupState>();
+  final _memoryKey = GlobalKey<_GroupState>();
+  final _appliedKey = GlobalKey<_GroupState>();
+  final _habitsKey = GlobalKey<_GroupState>();
+
+  /// A pending deep-link focus, applied once the groups actually exist (data may
+  /// still be loading on the first build, so they aren't built yet then).
+  String? _pendingFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _pendingFocus = widget.focus;
+  }
+
+  @override
+  void didUpdateWidget(InsightsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-focus when navigated here again with a different target (the tab's
+    // state is kept alive by the indexed-stack shell).
+    if (widget.focus != null && widget.focus != oldWidget.focus) {
+      _pendingFocus = widget.focus;
+    }
+  }
+
+  GlobalKey<_GroupState>? _keyFor(String? focus) => switch (focus) {
+        'readiness' => _readinessKey,
+        'memory' => _memoryKey,
+        'applied' => _appliedKey,
+        'habits' => _habitsKey,
+        _ => null,
+      };
+
+  /// Expand a group and scroll it into view (after the expansion lays out).
+  void _reveal(GlobalKey<_GroupState> key) {
+    key.currentState?.expand();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = key.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 300),
+            alignment: 0.02,
+            curve: Curves.easeInOut);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Show the global empty state only when every core signal is empty (a
     // brand-new user); otherwise render the groups (each handles its own sparse
     // case, and non-lead groups are collapsed) so the page is never a wall.
@@ -62,6 +121,17 @@ class InsightsScreen extends ConsumerWidget {
     final mockAgg = _mockAgg([mocks, sd, behavioral]);
     final active7 = _active7(consistency);
 
+    // Apply a deep-link focus once the groups are built (only reached when not
+    // bare, i.e. the groups below exist to be revealed).
+    if (_pendingFocus != null) {
+      final key = _keyFor(_pendingFocus);
+      _pendingFocus = null;
+      if (key != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(key));
+      }
+    }
+
+    final cs = _cs(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
       body: ListView(
@@ -72,40 +142,58 @@ class InsightsScreen extends ConsumerWidget {
               _Kpi(
                 value: '${(readiness.overall * 100).round()}%',
                 label: 'Readiness',
-                color: _readinessColor(readiness.overall, _cs(context)),
+                color: _readinessColor(readiness.overall, cs),
+                onTap: () => _reveal(_readinessKey),
               ),
             if (recall != null)
               _Kpi(
                 value: '${(recall * 100).round()}%',
                 label: 'Recall',
-                color: _recallColor(recall, _cs(context)),
+                color: _recallColor(recall, cs),
+                onTap: () => _reveal(_memoryKey),
               ),
             if (mockAgg.count > 0)
               _Kpi(
                 value: '${mockAgg.avg.round()}',
                 label: 'Mock avg',
-                color: _dimColor(mockAgg.avg / 20, _cs(context)),
+                color: _dimColor(mockAgg.avg / 20, cs),
+                onTap: () => _reveal(_appliedKey),
               ),
             if (active7 > 0)
               _Kpi(
                 value: '$active7/7',
                 label: 'This week',
-                color: _cs(context).primary,
+                color: cs.primary,
+                onTap: () => _reveal(_habitsKey),
               ),
           ]),
           const SizedBox(height: 22),
           // Lead group, expanded: the full readiness breakdown (reuses the rich
-          // panel that Home dropped in its ring-hero redesign).
+          // panel that Home dropped in its ring-hero redesign), plus a link out
+          // to the heavier AI narrative report.
           _Group(
+            key: _readinessKey,
             title: 'Readiness',
             icon: Icons.insights_outlined,
             summary: anyStudied
                 ? '${(readiness.overall * 100).round()}% toward target'
                 : 'Not started',
             initiallyExpanded: true,
-            children: const [ReadinessPanel()],
+            children: [
+              const ReadinessPanel(),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.push('/report'),
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                  label: const Text('Full AI readiness report'),
+                ),
+              ),
+            ],
           ),
           _Group(
+            key: _memoryKey,
             title: 'Memory & recall',
             icon: Icons.psychology_outlined,
             summary: recall == null
@@ -119,6 +207,7 @@ class InsightsScreen extends ConsumerWidget {
             ],
           ),
           _Group(
+            key: _appliedKey,
             title: 'Applied performance',
             icon: Icons.speed_outlined,
             summary: mockAgg.count > 0
@@ -136,6 +225,7 @@ class InsightsScreen extends ConsumerWidget {
             ],
           ),
           _Group(
+            key: _habitsKey,
             title: 'Habits',
             icon: Icons.calendar_month_outlined,
             summary:
@@ -193,10 +283,18 @@ Color _readinessColor(double v, ColorScheme cs) =>
 // ── Summary strip ───────────────────────────────────────────────────────────
 
 class _Kpi {
-  const _Kpi({required this.value, required this.label, required this.color});
+  const _Kpi({
+    required this.value,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
   final String value;
   final String label;
   final Color color;
+
+  /// Tap to reveal (expand + scroll to) the group this KPI summarizes.
+  final VoidCallback? onTap;
 }
 
 /// The critical-few KPI strip: at most four glanceable tiles, only for signals
@@ -230,23 +328,43 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(kpi.value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                  color: kpi.color, fontWeight: FontWeight.w700, height: 1.0)),
-          const SizedBox(height: 4),
-          Text(kpi.label,
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        ],
+    final radius = BorderRadius.circular(14);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: kpi.onTap,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(kpi.value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                      color: kpi.color,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(kpi.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ),
+                  if (kpi.onTap != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right,
+                        size: 14, color: theme.colorScheme.onSurfaceVariant),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -259,6 +377,7 @@ class _Tile extends StatelessWidget {
 /// this is the "details" tier revealed on demand.
 class _Group extends StatefulWidget {
   const _Group({
+    super.key,
     required this.title,
     required this.icon,
     required this.children,
@@ -278,6 +397,11 @@ class _Group extends StatefulWidget {
 
 class _GroupState extends State<_Group> {
   late bool _expanded = widget.initiallyExpanded;
+
+  /// Open the group (used by a KPI tap or a Home deep-link). No-op if already open.
+  void expand() {
+    if (!_expanded) setState(() => _expanded = true);
+  }
 
   @override
   Widget build(BuildContext context) {

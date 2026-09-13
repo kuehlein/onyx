@@ -130,8 +130,12 @@ GoRouter createRouter() => GoRouter(
             ]),
             StatefulShellBranch(routes: [
               GoRoute(
-                  path: '/insights',
-                  builder: (_, __) => const InsightsScreen()),
+                path: '/insights',
+                // `?focus=readiness|memory|applied|habits` deep-links a Home
+                // metric to its explanation, revealing that group on open.
+                builder: (_, state) =>
+                    InsightsScreen(focus: state.uri.queryParameters['focus']),
+              ),
             ]),
             StatefulShellBranch(routes: [
               GoRoute(

@@ -22,6 +22,7 @@ Widget _harness({
   List<DomainRetention> retention = const [],
   MockSkills? mocks,
   List<int> consistency = const [],
+  String? focus,
 }) =>
     ProviderScope(
       overrides: [
@@ -37,8 +38,17 @@ Widget _harness({
         dueForecastProvider.overrideWith((ref) async => const <int>[]),
         strugglingCardsProvider.overrideWith((ref) async => const []),
       ],
-      child: const MaterialApp(home: InsightsScreen()),
+      child: MaterialApp(home: InsightsScreen(focus: focus)),
     );
+
+const _sampleRetention = [
+  DomainRetention(
+      domain: 'ds-a',
+      reviews: 20,
+      recall: 0.9,
+      avgStabilityDays: 12,
+      studiedSections: 5),
+];
 
 void main() {
   testWidgets('summary strip + collapsed groups; group expands on tap',
@@ -82,6 +92,25 @@ void main() {
     expect(find.text('Retention by domain'), findsNothing);
     await tester.tap(find.text('Memory & recall'));
     await tester.pumpAndSettle();
+    expect(find.text('Retention by domain'), findsOneWidget);
+  });
+
+  testWidgets('tapping a KPI reveals its group', (tester) async {
+    await tester.pumpWidget(_harness(retention: _sampleRetention));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Retention by domain'), findsNothing);
+    await tester.tap(find.text('Recall')); // the Recall KPI → Memory group
+    await tester.pumpAndSettle();
+    expect(find.text('Retention by domain'), findsOneWidget);
+  });
+
+  testWidgets('focus deep-link opens the requested group on load',
+      (tester) async {
+    await tester
+        .pumpWidget(_harness(retention: _sampleRetention, focus: 'memory'));
+    await tester.pumpAndSettle();
+    // Memory is not the lead group, yet it's expanded because focus=memory.
     expect(find.text('Retention by domain'), findsOneWidget);
   });
 

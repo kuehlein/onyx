@@ -247,16 +247,22 @@ class _TodayHero extends ConsumerWidget {
         child: Center(child: Text('—')),
       ),
       data: (p) {
-        if (p.nothingScheduled) {
-          return const TodayRing(
-              fraction: 0, centerLine: '—', subLine: 'All caught up');
-        }
-        return TodayRing(
-          fraction: p.fraction,
-          done: p.allDone,
-          centerLine: p.allDone ? '' : '${p.percent}%',
-          subLine:
-              p.allDone ? 'Done for today' : '~${p.remainingMinutes} min left',
+        final ring = p.nothingScheduled
+            ? const TodayRing(
+                fraction: 0, centerLine: '—', subLine: 'All caught up')
+            : TodayRing(
+                fraction: p.fraction,
+                done: p.allDone,
+                centerLine: p.allDone ? '' : '${p.percent}%',
+                subLine: p.allDone
+                    ? 'Done for today'
+                    : '~${p.remainingMinutes} min left',
+              );
+        // Tap the ring to see the habit trend behind it (Insights → Habits).
+        return InkResponse(
+          onTap: () => context.go('/insights?focus=habits'),
+          radius: 100,
+          child: ring,
         );
       },
     );
@@ -264,7 +270,8 @@ class _TodayHero extends ConsumerWidget {
 }
 
 /// The interview-readiness readout — a small, glanceable chip in the app bar
-/// (not a dominating gauge). Taps through to the full readiness report.
+/// (not a dominating gauge). Taps through to the Insights readiness breakdown
+/// (which itself links on to the heavier AI report).
 class _ReadinessChip extends ConsumerWidget {
   const _ReadinessChip();
 
@@ -277,7 +284,7 @@ class _ReadinessChip extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ActionChip(
-        onPressed: () => context.push('/report'),
+        onPressed: () => context.go('/insights?focus=readiness'),
         avatar: Icon(Icons.flag_outlined,
             size: 18, color: theme.colorScheme.primary),
         label: Text('Ready $pct%'),
