@@ -14,6 +14,7 @@
 library;
 
 import 'dart:convert';
+import '../subject/active_subject.dart';
 import '../util.dart';
 
 enum SeniorityLevel { newGrad, mid, senior, staff }
@@ -73,9 +74,11 @@ class ReadinessTarget {
   /// A compact human label, e.g. "Senior · FAANG · Backend".
   String get label => '${level.label} · ${company.label} · ${track.label}';
 
-  /// The FSRS stability (days) at which recall counts as fully durable. FAANG
-  /// demands recall that is more locked-in, so the bar is higher.
-  double get stabilityTarget => company == CompanyTier.faang ? 120 : 90;
+  /// The FSRS stability (days) at which recall counts as fully durable — read
+  /// from the active subject's **context** slot (SWE: FAANG 120 else 90). See
+  /// #30 Phase 1 / docs/generalization-plan.md.
+  double get stabilityTarget =>
+      activeSubject.target.stabilityTargetDays(company.name);
 
   ReadinessTarget copyWith({
     SeniorityLevel? level,
@@ -132,9 +135,9 @@ DateTime? _parseDate(Object? v) {
   return d == null ? null : DateTime(d.year, d.month, d.day);
 }
 
-/// Relative weight of a domain in the overall recall roll-up for [target]. Two
-/// canonical domain families are shaped by **track** (illustrative — tune later,
-/// see docs/readiness-dashboard.md §3); everything else weighs 1.0.
+/// Relative weight of a domain in the overall recall roll-up for [target] — the
+/// **track** slot of the active subject config (domain families → per-track
+/// multipliers; unmatched domains weigh 1.0). See #30 Phase 1.
 ///
 /// Deliberately NOT level-dependent: seniority is expressed by [tierRelevance]
 /// (raising the depth bar), not by reshuffling which domains count. The old
@@ -142,54 +145,8 @@ DateTime? _parseDate(Object? v) {
 /// target read as *closer* whenever the learner was strong in the up-weighted
 /// domains — an inversion (verified 2026-09). Track still shapes emphasis
 /// because interview *type* genuinely differs by track.
-double domainWeight(ReadinessTarget target, String domain) {
-  final d = domain.toLowerCase();
-  final isAlgo = d == 'ds-a' ||
-      d == 'dsa' ||
-      d.contains('algorithm') ||
-      d.contains('data-structure');
-  // The "systems / backend-knowledge" family: system design plus the DDIA-heavy
-  // backend domains, weighted together (backend-track-boosted) rather than each
-  // defaulting to 1.0. Placeholder for a per-domain, config-driven weight map
-  // (see docs/vault-structure.md + #30).
-  const systemsBackend = {
-    'system-design',
-    'systems',
-    'databases',
-    'database',
-    'distributed-systems',
-    'distributed',
-    'networking',
-    'concurrency',
-    'security',
-    'backend',
-    'api-design',
-    'reliability',
-  };
-  final isSysDesign = systemsBackend.contains(d) || d.contains('system-design');
-
-  // Level-independent base (seniority is [tierRelevance]'s job); TRACK modulates.
-  if (isAlgo) {
-    final trackMul = switch (target.track) {
-      Track.frontend => 0.7,
-      Track.mobile => 0.85,
-      _ => 1.0,
-    };
-    return trackMul;
-  }
-
-  if (isSysDesign) {
-    final trackMul = switch (target.track) {
-      Track.backend => 1.15,
-      Track.ml => 1.1,
-      Track.frontend => 0.9,
-      _ => 1.0,
-    };
-    return trackMul;
-  }
-
-  return 1.0;
-}
+double domainWeight(ReadinessTarget target, String domain) =>
+    activeSubject.target.domainWeight(target.track.name, domain);
 
 /// Relevance weight (0..1) of knowledge at a given **tier** (knowledge-hierarchy
 /// depth, 1 = foundational → higher = specialist) for a target [level]'s
@@ -209,23 +166,10 @@ double domainWeight(ReadinessTarget target, String domain) {
 /// more as seniority rises. The deepest specialist tier is < 1 for everyone
 /// because breadth-with-selective-depth (not total mastery) is the norm. The
 /// staff differentiator (judgment) is orthogonal to tiers and is captured by the
-/// applied/transfer dimension, not here. Placeholder for a #30 config-driven map.
-const _tierRelevanceByLevel = <SeniorityLevel, List<double>>{
-  // index i → tier (i+1); last entry applies to that tier and deeper.
-  SeniorityLevel.newGrad: [1.0, 0.7, 0.35, 0.15],
-  SeniorityLevel.mid: [1.0, 0.9, 0.55, 0.30],
-  SeniorityLevel.senior: [1.0, 1.0, 0.90, 0.50],
-  SeniorityLevel.staff: [1.0, 1.0, 1.00, 0.65],
-};
-
-double tierRelevance(SeniorityLevel level, int? tier) {
-  final row = _tierRelevanceByLevel[level] ??
-      _tierRelevanceByLevel[SeniorityLevel.senior]!;
-  if (tier == null || tier < 1) {
-    return row.first; // untiered → treat as foundational
-  }
-  return row[(tier - 1).clamp(0, row.length - 1)];
-}
+/// applied/transfer dimension, not here. Now read from the active subject's
+/// **level** slot (tier curves) — see #30 Phase 1.
+double tierRelevance(SeniorityLevel level, int? tier) =>
+    activeSubject.target.tierRelevance(level.name, tier);
 
 /// The tier→weight map for a [target]'s level, covering tiers 1..[maxTier].
 /// Passed to `computeReadiness` so coverage + strength are relevance-weighted.

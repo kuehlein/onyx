@@ -3,113 +3,84 @@ import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/subject/software_interviews.dart';
 
-/// Golden tests for task #30 Phase 0: the SWE reference [softwareInterviewsConfig]
-/// must reproduce the legacy readiness math bit-for-bit. Two guarantees per area:
-///   1. cross-check — config output == the current target.dart/ladder.dart output
-///      across the full input matrix (proves the config mirror is faithful), and
-///   2. anchors — a handful of hardcoded literal expectations (proves the behavior
-///      is what we think, not just "two implementations agree").
-/// These lock SWE behavior BEFORE Phase 1 rewrites the legacy functions to read
-/// the config, so any regression fails here. Pure computation only — no UI — so a
-/// later UI rework (#50) can't disturb them.
+/// Golden tests for task #30: the SWE reference [softwareInterviewsConfig] locks
+/// the readiness math. Phase 1 rewired target.dart to READ from this config, so
+/// these assert against **literal snapshots** (independent of the implementation)
+/// rather than cross-checking the now-delegating functions — a regression in
+/// either the config values or the resolution logic fails here. Pure computation
+/// only, no UI, so a later UI rework (#50) can't disturb them.
+///
+/// The ladder/label/fallback checks still cross-check the not-yet-migrated
+/// enum-based ladder.dart/target.dart (those migrate to config in Phase 2).
 void main() {
   final t = softwareInterviewsConfig.target;
 
-  group('stabilityTarget (context slot)', () {
-    test('mirrors ReadinessTarget.stabilityTarget', () {
-      for (final c in CompanyTier.values) {
-        final legacy = ReadinessTarget(
-          level: SeniorityLevel.mid,
-          company: c,
-          track: Track.general,
-        ).stabilityTarget;
-        expect(t.stabilityTargetDays(c.name), legacy,
-            reason: 'context ${c.name}');
-      }
-    });
-
-    test('anchors', () {
+  group('context slot → stability bar', () {
+    test('literal snapshot', () {
       expect(t.stabilityTargetDays('typical'), 90);
       expect(t.stabilityTargetDays('faang'), 120);
     });
   });
 
-  group('tierRelevance (level slot)', () {
-    const tiers = <int?>[null, 0, 1, 2, 3, 4, 5, 8];
+  group('level slot → tier-relevance curves', () {
+    // index i → tier (i+1); last entry applies to that tier and deeper.
+    const curves = {
+      'newGrad': [1.0, 0.7, 0.35, 0.15],
+      'mid': [1.0, 0.9, 0.55, 0.30],
+      'senior': [1.0, 1.0, 0.90, 0.50],
+      'staff': [1.0, 1.0, 1.00, 0.65],
+    };
 
-    test('mirrors tierRelevance() across every level × tier', () {
-      for (final level in SeniorityLevel.values) {
-        for (final tier in tiers) {
-          expect(
-            t.tierRelevance(level.name, tier),
-            tierRelevance(level, tier),
-            reason: 'level ${level.name}, tier $tier',
-          );
+    test('literal snapshot across every level × tier', () {
+      curves.forEach((level, curve) {
+        for (var tier = 1; tier <= 6; tier++) {
+          final want = curve[(tier - 1).clamp(0, curve.length - 1)];
+          expect(t.tierRelevance(level, tier), want,
+              reason: '$level tier $tier');
         }
-      }
-    });
-
-    test('anchors', () {
-      expect(t.tierRelevance('staff', 1), 1.0);
-      expect(t.tierRelevance('senior', 3), 0.90);
-      expect(t.tierRelevance('newGrad', 4), 0.15);
-      expect(t.tierRelevance('newGrad', 9), 0.15); // deeper than curve → last
-      expect(t.tierRelevance('mid', null), 1.0); // untiered → foundational
+        // untiered / non-positive → foundational (1.0).
+        expect(t.tierRelevance(level, null), 1.0, reason: '$level null');
+        expect(t.tierRelevance(level, 0), 1.0, reason: '$level 0');
+      });
     });
   });
 
-  group('domainWeight (track slot)', () {
-    const domains = [
-      'ds-a',
-      'dsa',
-      'graph-algorithm', // contains 'algorithm'
-      'array-data-structure', // contains 'data-structure'
-      'system-design',
-      'system-design-basics', // contains 'system-design'
-      'databases',
-      'distributed',
-      'networking',
-      'concurrency',
-      'security',
-      'backend',
-      'api-design',
-      'reliability',
-      'frontend', // unmatched → 1.0
-      'behavioral', // unmatched → 1.0
-      'something-else',
-    ];
+  group('track slot → domain weights', () {
+    // [algo multiplier, systems-backend multiplier] per track.
+    const weights = {
+      'general': [1.0, 1.0],
+      'backend': [1.0, 1.15],
+      'frontend': [0.7, 0.9],
+      'fullStack': [1.0, 1.0],
+      'ml': [1.0, 1.1],
+      'mobile': [0.85, 1.0],
+    };
 
-    test('mirrors domainWeight() across every track × domain', () {
-      for (final track in Track.values) {
-        final target = ReadinessTarget(
-          level: SeniorityLevel.senior,
-          company: CompanyTier.faang,
-          track: track,
-        );
-        for (final d in domains) {
-          expect(
-            t.domainWeight(track.name, d),
-            domainWeight(target, d),
-            reason: 'track ${track.name}, domain $d',
-          );
-        }
-      }
+    test('literal snapshot per track (algo vs systems-backend families)', () {
+      weights.forEach((track, w) {
+        expect(t.domainWeight(track, 'ds-a'), w[0], reason: '$track algo');
+        expect(t.domainWeight(track, 'system-design'), w[1],
+            reason: '$track systems');
+        expect(t.domainWeight(track, 'totally-unmatched'), 1.0,
+            reason: '$track unmatched');
+      });
     });
 
-    test('anchors', () {
-      expect(t.domainWeight('backend', 'system-design'), 1.15);
-      expect(t.domainWeight('ml', 'databases'), 1.1);
-      expect(t.domainWeight('frontend', 'system-design'), 0.9);
-      expect(t.domainWeight('frontend', 'ds-a'), 0.7);
-      expect(t.domainWeight('mobile', 'ds-a'), 0.85);
-      expect(t.domainWeight('general', 'ds-a'), 1.0);
-      expect(
-          t.domainWeight('backend', 'ds-a'), 1.0); // algo unaffected by backend
-      expect(t.domainWeight('backend', 'something-else'), 1.0); // unmatched
+    test('family matchers (exact + substring)', () {
+      // algo family: exact {ds-a, dsa} + contains {algorithm, data-structure}
+      expect(t.domainWeight('frontend', 'dsa'), 0.7);
+      expect(t.domainWeight('frontend', 'graph-algorithm'), 0.7);
+      expect(t.domainWeight('frontend', 'array-data-structure'), 0.7);
+      // systems-backend: several exact keys + contains {system-design}
+      expect(t.domainWeight('backend', 'databases'), 1.15);
+      expect(t.domainWeight('backend', 'distributed'), 1.15);
+      expect(t.domainWeight('backend', 'system-design-basics'), 1.15);
+      // algo is checked before systems-backend (declared order).
+      expect(t.domainWeight('backend', 'ds-a'), 1.0);
     });
   });
 
-  group('ladder + fallback', () {
+  group('ladder + labels + fallback (cross-check pre-Phase-2)', () {
     test('config level × context reproduces readinessLadder order + labels',
         () {
       final expected = [
