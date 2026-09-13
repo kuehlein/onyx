@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/coach/coach_update.dart';
 import 'package:onyx/core/readiness/pace.dart';
+import 'package:onyx/core/story/behavioral_readiness.dart';
 
 /// A healthy, well-covered, on-track, mock-tested learner — override per test.
 CoachSignals sig({
@@ -24,6 +25,8 @@ CoachSignals sig({
   bool checkInDue = false,
   LoadFeel? loadFeel,
   bool activeRecently = true,
+  int? daysToInterview,
+  BehavioralStage? behavioralStage,
 }) =>
     CoachSignals(
       anyStudied: anyStudied,
@@ -46,9 +49,50 @@ CoachSignals sig({
       checkInDue: checkInDue,
       loadFeel: loadFeel,
       activeRecently: activeRecently,
+      daysToInterview: daysToInterview,
+      behavioralStage: behavioralStage,
     );
 
 void main() {
+  group('behavioral nudge', () {
+    test('interview near + not sharp → behavioralPrep → /interview-prep', () {
+      final u = buildCoachUpdate(sig(
+        daysToInterview: 10,
+        behavioralStage: BehavioralStage.readyToRehearse,
+      ))!;
+      expect(u.kind, CoachInsightKind.behavioralPrep);
+      expect(u.actionRoute, '/interview-prep');
+      expect(u.tone, CoachTone.caution); // ≤14 days
+    });
+
+    test('does not fire when far out, sharp, or no interview', () {
+      expect(
+          buildCoachUpdate(sig(
+                  daysToInterview: 60,
+                  behavioralStage: BehavioralStage.readyToRehearse))
+              ?.kind,
+          isNot(CoachInsightKind.behavioralPrep));
+      expect(
+          buildCoachUpdate(sig(
+                  daysToInterview: 5, behavioralStage: BehavioralStage.sharp))
+              ?.kind,
+          isNot(CoachInsightKind.behavioralPrep));
+      expect(
+          buildCoachUpdate(sig(behavioralStage: BehavioralStage.notStarted))
+              ?.kind,
+          isNot(CoachInsightKind.behavioralPrep));
+    });
+
+    test('health/overload still outranks the behavioral nudge', () {
+      final u = buildCoachUpdate(sig(
+        daysToInterview: 5,
+        behavioralStage: BehavioralStage.readyToRehearse,
+        dueCount: 999, // big backlog
+      ))!;
+      expect(u.kind, CoachInsightKind.overloaded);
+    });
+  });
+
   group('buildCoachUpdate triage', () {
     test('nothing studied → getting-started, before anything else', () {
       // Even with a would-be overload signal, an untouched deck gets "start".

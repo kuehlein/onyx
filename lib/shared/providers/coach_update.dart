@@ -1,9 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart';
+import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/readiness.dart';
 import 'algo.dart';
 import 'analytics.dart';
+import 'behavioral_readiness.dart';
 import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
@@ -50,6 +52,21 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
       : consistency.sublist(consistency.length - 7);
   final activeRecently = last7.where((c) => c > 0).length >= 3;
 
+  // Days to the nearest upcoming interview (nearest non-ended prep-goal round) —
+  // gates the last-mile behavioral nudge.
+  final goals = await ref.watch(prepGoalsProvider.future);
+  int? daysToInterview;
+  for (final g in goals) {
+    if (g.status.isEnded) continue;
+    final d = g.currentRound?.date;
+    if (d == null) continue;
+    final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    if (days >= 0 && (daysToInterview == null || days < daysToInterview)) {
+      daysToInterview = days;
+    }
+  }
+  final behavioral = await ref.watch(behavioralReadinessProvider.future);
+
   final weakest = readiness.weakestDomain;
   // Overall coverage = studied sections / all in-scope sections.
   final totalSections = readiness.domains.fold(0, (a, d) => a + d.total);
@@ -78,6 +95,8 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     checkInDue: checkInDue,
     loadFeel: loadFeel,
     activeRecently: activeRecently,
+    daysToInterview: daysToInterview,
+    behavioralStage: behavioral.stage,
   );
   return buildCoachUpdate(signals);
 }

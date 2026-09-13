@@ -12,6 +12,7 @@
 library;
 
 import '../readiness/pace.dart';
+import '../story/behavioral_readiness.dart';
 import '../util.dart';
 
 /// Which insight the coach chose to surface. Ordered loosely by urgency.
@@ -19,6 +20,7 @@ enum CoachInsightKind {
   gettingStarted,
   overloaded,
   behindPace,
+  behavioralPrep,
   building,
   algoDue,
   explainDue,
@@ -107,6 +109,8 @@ class CoachSignals {
     this.checkInDue = false,
     this.loadFeel,
     this.activeRecently = true,
+    this.daysToInterview,
+    this.behavioralStage,
   });
 
   /// Any section studied at all (else the deck is untouched).
@@ -139,6 +143,27 @@ class CoachSignals {
   /// They've actually been showing up lately (used to gate ramping up — don't
   /// pile on load for someone who isn't practicing). Defaults true.
   final bool activeRecently;
+
+  /// Days until the nearest upcoming interview, or null if none set. Gates the
+  /// last-mile behavioral nudge (behavioral is a hub track, surfaced on Home only
+  /// when an interview is close).
+  final int? daysToInterview;
+
+  /// Behavioral delivery readiness stage, or null when behavioral isn't relevant
+  /// (no stories/mocks and no interview). Drives the behavioral nudge's copy.
+  final BehavioralStage? behavioralStage;
+
+  /// Within this many days of an interview, behavioral practice becomes worth
+  /// surfacing on Home (it's otherwise last-mile / hub-only).
+  static const behavioralWindowDays = 28;
+
+  /// An interview is close and behavioral delivery isn't sharp yet.
+  bool get behavioralNear =>
+      daysToInterview != null &&
+      daysToInterview! >= 0 &&
+      daysToInterview! <= behavioralWindowDays &&
+      behavioralStage != null &&
+      behavioralStage != BehavioralStage.sharp;
 
   // --- Grounded thresholds (labeled heuristics; see memory) ---
   /// Below this recent review success, cards are running too hard / load too
@@ -292,6 +317,27 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
           'A quick gut-check. Your numbers show retention and backlog, but only '
           'you know if it feels sustainable — tell me and I’ll factor it into '
           'what I suggest next.',
+    );
+  }
+
+  // An interview is close and behavioral delivery isn't sharp — the last-mile
+  // prompt. Behavioral lives in the Interview-prep hub, not the daily queue, so
+  // this is how it surfaces on Home: only when it's genuinely time to work it.
+  if (s.behavioralNear) {
+    final d = s.daysToInterview!;
+    final building = s.behavioralStage == BehavioralStage.notStarted ||
+        s.behavioralStage == BehavioralStage.buildingStories;
+    return CoachUpdate(
+      kind: CoachInsightKind.behavioralPrep,
+      tone: d <= 14 ? CoachTone.caution : CoachTone.info,
+      headline: 'Interview in $d day${d == 1 ? '' : 's'} — '
+          '${building ? 'build your behavioral stories' : 'rehearse your stories'}.',
+      why:
+          'Behavioral rounds are last-mile: ${s.behavioralStage!.hint} A strong '
+          'story per competency, said out loud a few times (not memorized), is '
+          'what carries the round.',
+      actionLabel: 'Open interview prep',
+      actionRoute: '/interview-prep',
     );
   }
 
