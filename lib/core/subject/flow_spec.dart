@@ -43,12 +43,18 @@ class FlowSpec {
     this.label = '',
     this.iconKey = 'card',
     this.colorKey = 'default',
+    this.skill,
   });
 
   /// The card `type:` frontmatter value this flow applies to.
   final String cardType;
   final SchedulingModel scheduling;
   final QuizzabilityPolicy quizzability;
+
+  /// Vault path to this flow's AI skill file (the interviewer/interlocutor/grader
+  /// prompt authored in the vault), or null for an in-code flow (the SWE flows).
+  /// Loaded at runtime and assembled by `assembleFlowPrompt` (flow_prompt.dart).
+  final String? skill;
 
   /// Human label for the type (Browse tiles, filter chips). Falls back to a
   /// prettified [cardType] when empty.

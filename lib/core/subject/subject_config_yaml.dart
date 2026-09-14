@@ -108,6 +108,7 @@ FlowSpec _flow(Object? m) {
     label: (map['label'] as String?) ?? '',
     iconKey: (map['iconKey'] as String?) ?? 'card',
     colorKey: (map['colorKey'] as String?) ?? 'default',
+    skill: map['skill'] as String?,
   );
 }
 
