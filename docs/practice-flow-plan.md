@@ -168,6 +168,59 @@ as installer (see vault-structure.md); no symlinks/live-sync.
 6. **Validation** — extend the demo theme with a gated `conversation` flow proving
    flow-as-files + gating + override + frontier constraint end-to-end.
 
+## Phase 4 tactical plan — `CardType` removal (adversarially reviewed)
+
+`Card.type` (a fixed `CardType` enum) becomes a **String** (the raw hyphenated
+frontmatter value); all behavior derives from the `FlowSpec` for that type via
+`activeSubject.flowForType(type)`. Independent adversarial audit done 2026-09-14;
+findings folded in below.
+
+**Decisions locked:**
+- **Scope: bounded.** String-ify `type` + FlowSpec-drive model/parser/search/
+  browse/providers/analytics now. KEEP the existing SWE routing / screens /
+  daily-plan `TrackId` (a new mock flow reuses the existing generic mock screen);
+  full routing generalization waits until a subject needs a new screen kind.
+- **Display metadata on `FlowSpec`:** add `label` + `iconKey` (a String — core
+  can't hold a Flutter `IconData`) (+ optional color key). Browse/filter map the
+  key → `IconData`; SWE values reproduce today's icons/labels exactly.
+- **Card-ness = the type matches a configured flow** (`flowForType(raw) != null`)
+  — a no-op for SWE (same 5 types) and safe (stray notes with a `type:` still
+  skipped). NOT "any non-empty type" (that would regress the skip-non-cards rule).
+  Make the quizzability fallback consistent (a card that parses always has a flow).
+- **`isPracticeTrack` derives from scheduling:** `flowForType(type)?.scheduling
+  != recall` (recall = concept deck → false; two-clock/mock → true); null flow →
+  false. Guarded by a truth-table characterization test (readiness denominator).
+- **No camelCase literals.** Define named constants for the 5 SWE type values
+  (`'flashcard'`, `'interview-question'`, `'algorithm'`, `'system-design'`,
+  `'behavioral'`) used by both the config and the SWE-specific providers, so
+  `system-design` vs `behavioral` comparisons have ONE source of truth and can't
+  be mistyped as camelCase.
+
+**Adversarial safeguards (from the audit):**
+- **Characterization tests FIRST** (all green vs the current enum code, then must
+  stay green through the flip): (1) parser card-ness matrix — 5 valid types parse,
+  unknown/`_meta`/missing type → null; (2) `isPracticeTrack` truth table for all
+  5; (3) a **readiness-denominator numeric snapshot** over a fixed mixed-type
+  index (so an `isPracticeTrack` drift fails a number, not silently); (4)
+  quizzability-by-type; (5) DB round-trip — `card_cache.cardType` == hyphenated
+  frontmatter string; (6) `type:` search operator (incl. aliases iq/sd/algo).
+- **Watch sites** (every `c.type == CardType.x` → flow/constant check):
+  daily_plan, sd_mock_screen, behavioral_mock_screen, algo_queue, analytics,
+  system_design/behavioral/algo providers, practice.dart. Browse icon/color/label
+  + card_filter label switches need explicit **defaults** (lose enum exhaustiveness).
+- Golden + full suite green at every commit.
+
+**Staged commits (only the flip is large; keeps the tree compiling):**
+1. **Characterization tests** (the 6 above) against the current enum — lock behavior.
+2. **Extend `FlowSpec`** (label/iconKey) + type-value constants + SWE config;
+   config helpers (`isPracticeTrackType`). Enum still present. Green.
+3. **The flip** — `Card.type: String`; delete `CardType`; migrate all ~21
+   consumers (parser card-ness, `isPracticeTrack`, providers via constants,
+   browse via FlowSpec+iconKey map, filter chips from configured flows, search
+   `_parseType` → strings, DB write raw string, tests string-swapped). One commit;
+   characterization + full suite must stay green.
+4. **Verify** — full suite; spot-check the readiness snapshot + browse render.
+
 ## Deferred / out of scope
 - STT for spoken flows (task #61 — needs device).
 - The full multi-theme `_onyx/` directory + theme switcher (still "one active
