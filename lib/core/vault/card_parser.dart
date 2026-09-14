@@ -112,6 +112,7 @@ class CardParser {
       source: frontmatter['source'] as String?,
       domains: _stringList(frontmatter['domains']) ?? const [],
       concepts: _stringList(frontmatter['concepts']) ?? const [],
+      dependsOn: _stringList(frontmatter['depends-on']) ?? const [],
       priority: Priority.fromString(frontmatter['priority'] as String?) ??
           Priority.normal,
       estMinutes: _positiveNum(frontmatter['est_minutes']),

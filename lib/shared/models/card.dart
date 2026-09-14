@@ -129,6 +129,7 @@ class Card {
     this.source,
     this.domains = const [],
     this.concepts = const [],
+    this.dependsOn = const [],
     this.priority = Priority.normal,
     this.estMinutes,
   });
@@ -195,6 +196,11 @@ class Card {
   /// (per practice unit). Null → the plan falls back to its per-track default
   /// (e.g. algorithm difficulty, or the review/learn/system-design constants).
   final double? estMinutes;
+
+  /// Concept ids this card/flow depends on (`depends-on:` frontmatter) — the
+  /// prerequisites gating engine (dependency_gating.dart) resolves against
+  /// competence. Empty = ungated.
+  final List<String> dependsOn;
 
   /// The domain tag (first tag by convention), or null if untagged.
   String? get domain => tags.isNotEmpty ? tags.first : null;
