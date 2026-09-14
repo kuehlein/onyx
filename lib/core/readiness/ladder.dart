@@ -86,8 +86,11 @@ LadderPosition computeLadderPosition({
       if (c.domain != null) c.domain!,
   };
 
+  // Snapshot the (config-generated) ladder once — the getter rebuilds it on every
+  // access, so read it a single time here for consistency + to avoid O(n²) rebuilds.
+  final ladder = readinessLadder;
   final scores = <double>[];
-  for (final rung in readinessLadder) {
+  for (final rung in ladder) {
     final t = target.copyWith(levelId: rung.levelId, contextId: rung.contextId);
     final r = computeReadiness(
       cards: cards,
@@ -103,7 +106,7 @@ LadderPosition computeLadderPosition({
     scores.add(r.overall);
   }
 
-  final n = readinessLadder.length;
+  final n = ladder.length;
   var cleared = 0;
   for (final s in scores) {
     if (s >= threshold) {
@@ -119,7 +122,7 @@ LadderPosition computeLadderPosition({
       cleared < n ? (scores[cleared] / threshold).clamp(0.0, 1.0) : 0.0;
   final youFraction = ((cleared + partial) / n).clamp(0.0, 1.0).toDouble();
 
-  final goalIndex = _rungIndex(target.levelId, target.contextId);
+  final goalIndex = _rungIndex(ladder, target.levelId, target.contextId);
   final goalFraction = ((goalIndex + 1) / n).clamp(0.0, 1.0).toDouble();
 
   return LadderPosition(
@@ -128,15 +131,14 @@ LadderPosition computeLadderPosition({
     youFraction: youFraction,
     goalIndex: goalIndex,
     goalFraction: goalFraction,
-    currentLabel: cleared == 0 ? null : readinessLadder[cleared - 1].label,
+    currentLabel: cleared == 0 ? null : ladder[cleared - 1].label,
     rungsToGo: ((goalIndex + 1) - cleared).clamp(0, n),
   );
 }
 
-int _rungIndex(String levelId, String contextId) {
-  for (var i = 0; i < readinessLadder.length; i++) {
-    if (readinessLadder[i].levelId == levelId &&
-        readinessLadder[i].contextId == contextId) {
+int _rungIndex(List<Rung> ladder, String levelId, String contextId) {
+  for (var i = 0; i < ladder.length; i++) {
+    if (ladder[i].levelId == levelId && ladder[i].contextId == contextId) {
       return i;
     }
   }

@@ -55,10 +55,14 @@ TargetSpec _target(Object? node) {
 
 LevelValue _level(Object? m) {
   final map = _map(m);
+  // An empty or missing curve becomes the default — never [] , which would parse
+  // fine here but crash later in TargetSpec.tierRelevance (curve.first), AFTER the
+  // loader's try/catch has already accepted the config.
+  final curve = _doubles(map['tierCurve']);
   return LevelValue(
     id: _id(map),
     label: _label(map),
-    tierCurve: _doubles(map['tierCurve']) ?? const [1.0],
+    tierCurve: (curve == null || curve.isEmpty) ? const [1.0] : curve,
   );
 }
 
@@ -126,8 +130,16 @@ String _label(Map m) => (m['label'] as String?) ?? _id(m);
 
 double? _double(Object? o) => o is num ? o.toDouble() : null;
 
-List<double>? _doubles(Object? o) =>
-    o is List ? [for (final e in o) (e as num).toDouble()] : null;
+List<double>? _doubles(Object? o) {
+  if (o is! List) return null;
+  return [
+    for (final e in o)
+      if (e is num)
+        e.toDouble()
+      else
+        throw const FormatException('expected a list of numbers'),
+  ];
+}
 
 T _enum<T extends Enum>(List<T> values, Object? name, T fallback) {
   for (final v in values) {

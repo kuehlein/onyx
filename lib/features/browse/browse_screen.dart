@@ -323,33 +323,27 @@ class _CardTile extends StatelessWidget {
 
   final Card card;
 
-  FlowSpec? get _flow => activeSubject.flowForType(card.type);
-
-  /// The type-specific icon + hue, from the flow's display keys (so every card
-  /// kind — concept deck vs each practice track — reads the same everywhere).
-  IconData get _icon => flowIcon(_flow?.iconKey);
-  MaterialColor get _color => flowColor(_flow?.colorKey);
-
   @override
   Widget build(BuildContext context) {
+    // One flow lookup per tile; icon/hue/label come from its display keys so a
+    // card reads the same everywhere (concept deck vs each practice track).
+    final flow = activeSubject.flowForType(card.type);
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // Tint the avatar with the type's hue: a soft fill plus a readable-on-both-
-    // themes icon shade.
-    final color = _color;
+    final color = flowColor(flow?.colorKey);
     final fg = dark ? color.shade200 : color.shade700;
     final sectionCount = card.quizzableSections.length;
 
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: dark ? 0.24 : 0.14),
-        child: Icon(_icon, size: 20, color: fg),
+        child: Icon(flowIcon(flow?.iconKey), size: 20, color: fg),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       // Lead with the type label so same-titled cards are unambiguous even when
       // the line truncates (e.g. "Algorithm · ds-a" vs "Flashcard · ds-a").
       subtitle: Text(
         [
-          _flow?.displayLabel ?? card.type,
+          flow?.displayLabel ?? card.type,
           if (card.domain != null) card.domain!,
           '$sectionCount quizzable',
         ].join(' · '),

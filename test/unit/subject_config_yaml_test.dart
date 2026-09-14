@@ -74,6 +74,19 @@ target:
       expect(c.target.levels.single.label, 'only');
     });
 
+    test('empty/missing tierCurve becomes the default (no later crash)', () {
+      // An empty curve used to parse fine then crash in tierRelevance(curve.first).
+      final c = subjectConfigFromYaml('''
+id: x
+target:
+  levels: [{id: only, tierCurve: []}]
+  contexts: [{id: c}]
+  tracks: [{id: tr}]
+''');
+      expect(c.target.tierRelevance('only', 1), 1.0);
+      expect(c.target.tierRelevance('only', 5), 1.0);
+    });
+
     test('malformed / incomplete config throws (loader then defaults)', () {
       expect(() => subjectConfigFromYaml('not a map'), throwsFormatException);
       expect(() => subjectConfigFromYaml('id: x'), throwsFormatException);

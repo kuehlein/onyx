@@ -45,6 +45,14 @@ void main() {
       expect(r.filter.isEmpty, isTrue);
     });
 
+    test('type: with an unconfigured value falls through to free text', () {
+      // Not an alias and not a flow of the active subject → treated as text,
+      // not a filter that would silently match nothing.
+      final r = parseSearchQuery('type:zzz hello');
+      expect(r.filter.types, isEmpty);
+      expect(r.text, 'type:zzz hello');
+    });
+
     test('empty query yields an empty filter and text', () {
       final r = parseSearchQuery('   ');
       expect(r.filter.isEmpty, isTrue);
