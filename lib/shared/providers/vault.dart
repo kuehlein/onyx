@@ -33,10 +33,10 @@ Future<IndexResult> vaultIndex(Ref ref) async {
   final source = ref.watch(vaultSourceProvider);
   final db = ref.watch(appDatabaseProvider);
   // Ensure the subject registry is loaded (activeSubject set) BEFORE parsing — the
-  // parser reads the flow definitions from the active subject (#30 Phase 5 / #30d).
-  await ref.watch(subjectRegistryProvider.future);
+  // parser reads the flow definitions from each card's subject (#30 Phase 5 / #30d).
+  final registry = await ref.watch(subjectRegistryProvider.future);
   if (source == null) {
     return const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0);
   }
-  return VaultIndexer(source, db).reindex();
+  return VaultIndexer(source, db, registry: registry).reindex();
 }

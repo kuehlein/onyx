@@ -4,6 +4,8 @@ import 'package:drift/drift.dart';
 
 import '../../shared/models/card.dart';
 import '../database/database.dart';
+import '../subject/active_subject.dart';
+import '../subject/subject_registry.dart';
 import 'card_parser.dart';
 import 'vault_source.dart';
 
@@ -42,11 +44,18 @@ class VaultIndexer {
     this._source,
     this._db, {
     CardParser parser = const CardParser(),
-  }) : _parser = parser;
+    SubjectRegistry? registry,
+  })  : _parser = parser,
+        _registry = registry;
 
   final VaultSource _source;
   final AppDatabase _db;
   final CardParser _parser;
+
+  /// The subjects live in this vault; each card is stamped with the subject that
+  /// owns its path (task #30d). Falls back to the process-wide [activeRegistry]
+  /// (a one-entry registry in single-subject vaults).
+  final SubjectRegistry? _registry;
 
   Future<IndexResult> reindex() async {
     final cards = <Card>[];
@@ -54,10 +63,15 @@ class VaultIndexer {
     var malformed = 0;
     var skipped = 0;
 
+    final registry = _registry ?? activeRegistry;
     for (final path in await _source.listCardPaths()) {
       final content = await _source.readCard(path);
       try {
-        final card = _parser.parse(content, filePath: path);
+        final card = _parser.parse(
+          content,
+          filePath: path,
+          subjectId: registry.subjectIdForPath(path),
+        );
         if (card == null) {
           skipped++;
         } else {

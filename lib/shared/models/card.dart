@@ -152,8 +152,9 @@ class Card {
   /// Whether this card belongs to a separate paced practice track (its flow
   /// schedules as two-clock/mock) rather than the spaced concept deck. Excluded
   /// from the review/learn queues and the recall-coverage denominator; feeds
-  /// readiness via applied-transfer. Derived from the active subject config.
-  bool get isPracticeTrack => activeSubject.isPracticeTrackType(type);
+  /// readiness via applied-transfer. Derived from this card's own subject config
+  /// (task #30d); single-subject vaults resolve to the one active subject.
+  bool get isPracticeTrack => subjectFor(subjectId).isPracticeTrackType(type);
 
   /// H1 title text.
   final String title;

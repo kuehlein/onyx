@@ -73,11 +73,17 @@ class CardParser {
       return null; // unparseable frontmatter → skip rather than crash indexing
     }
 
+    // Behavior (card-ness, quizzability, flow) resolves against the card's own
+    // subject (task #30d); single-subject vaults resolve to the one active
+    // subject. The indexer passes the per-path subject id; a null default keeps
+    // direct callers/tests on the active subject.
+    final subject = subjectFor(subjectId ?? activeSubject.id);
+
     final type = (frontmatter['type'] as String?)?.trim();
-    // A file is an Onyx card iff its `type:` matches one of the active subject's
+    // A file is an Onyx card iff its `type:` matches one of the subject's
     // configured flows; everything else (config, `_meta/`, ordinary notes) is
     // skipped. (Was: CardType.fromString != null — a no-op for the SWE subject.)
-    if (type == null || !activeSubject.isCardType(type)) return null;
+    if (type == null || !subject.isCardType(type)) return null;
 
     final id = (frontmatter['id'] as String?)?.trim();
     if (id == null || id.isEmpty) {
@@ -93,7 +99,7 @@ class CardParser {
     final quizOverride = _stringList(frontmatter['quiz']);
     final sections = [
       for (final raw in rawSections)
-        _buildSection(raw.heading, raw.content, type, quizOverride),
+        _buildSection(raw.heading, raw.content, subject, type, quizOverride),
     ];
 
     return Card(
@@ -137,6 +143,7 @@ class CardParser {
   CardSection _buildSection(
     String heading,
     String content,
+    SubjectConfig subject,
     String type,
     List<String>? quizOverride,
   ) {
@@ -147,7 +154,7 @@ class CardParser {
     } else {
       // Which sections are quizzable is the flow's policy (task #30 Phase 3),
       // configured per card type; unknown types fall back to the concept blocklist.
-      final policy = activeSubject.flowForType(type)?.quizzability ??
+      final policy = subject.flowForType(type)?.quizzability ??
           QuizzabilityPolicy.blocklist;
       quizzable = switch (policy) {
         // Every section is a problem = its own practice unit (algorithms).

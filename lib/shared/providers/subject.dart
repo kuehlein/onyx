@@ -28,6 +28,7 @@ Future<SubjectRegistry> subjectRegistry(Ref ref) async {
       ? SubjectRegistry.single(softwareInterviewsConfig)
       : await _discover(source);
   activeSubject = registry.primary;
+  activeRegistry = registry;
   return registry;
 }
 
