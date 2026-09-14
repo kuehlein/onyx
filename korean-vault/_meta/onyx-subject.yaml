@@ -1,0 +1,35 @@
+# A throwaway Korean-language subject for testing the multi-subject generalization
+# (#30). Point the app at this vault with ONYX_VAULT_PATH=korean-vault.
+id: korean
+target:
+  # Ordered proficiency (drives knowledge-depth / tier relevance).
+  levels:
+    - {id: beginner, label: Beginner, tierCurve: [1.0, 0.6, 0.3]}
+    - {id: elementary, label: Elementary, tierCurve: [1.0, 0.9, 0.6]}
+  # "Context" = how locked-in recall must be (durability bar).
+  contexts:
+    - {id: casual, label: Casual, stabilityTargetDays: 60}
+    - {id: topik, label: TOPIK exam, stabilityTargetDays: 120}
+  # "Track" = which domains weigh most.
+  tracks:
+    - {id: speaking, label: Speaking, familyWeights: {grammar-family: 1.2}}
+    - {id: reading, label: Reading}
+  families:
+    - {id: grammar-family, exact: [grammar]}
+  fallback: {level: beginner, context: casual, track: speaking}
+flows:
+  # Concept recall — Hangul, vocabulary, grammar (the FSRS Learn/Review deck).
+  - cardType: flashcard
+    scheduling: recall
+    quizzability: blocklist
+    label: Vocabulary
+    iconKey: flashcard
+    colorKey: indigo
+  # A gated AI conversation practice flow (Duolingo-style), skill authored in the vault.
+  - cardType: conversation
+    scheduling: mock
+    quizzability: noSections
+    label: Conversation
+    iconKey: interview
+    colorKey: teal
+    skill: skills/order-water.md
