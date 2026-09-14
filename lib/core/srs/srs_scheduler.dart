@@ -41,7 +41,11 @@ class ReviewOutcome {
 /// harder — see [Priority]); since FSRS holds desired retention on the Scheduler,
 /// we cache one underlying scheduler per retention value (a handful at most).
 class SrsScheduler {
-  SrsScheduler({fsrs.Scheduler? scheduler, this.enableFuzzing = true}) {
+  SrsScheduler({
+    fsrs.Scheduler? scheduler,
+    this.enableFuzzing = true,
+    this.learningSteps = const [],
+  }) {
     if (scheduler != null) _cache[_defaultRetention] = scheduler;
   }
 
@@ -50,20 +54,28 @@ class SrsScheduler {
   /// deterministic (a ready-date shouldn't jitter run-to-run).
   final bool enableFuzzing;
 
+  /// Same-day learning steps (task #30c study-policy axis 2). Empty = Onyx's
+  /// durable default: a graded-Good new card graduates straight to a spaced
+  /// interval (Learn IS the first-exposure step). A non-empty list (cram profile)
+  /// re-tests just-learned material the same day for a short-term boost.
+  final List<Duration> learningSteps;
+
   static const _defaultRetention = 0.9;
   final _cache = <double, fsrs.Scheduler>{};
 
-  // No same-day learning steps: Onyx's Learn flow IS the first-exposure step, so
-  // a graded-Good new card graduates straight to a spaced (multi-day) interval
-  // rather than FSRS's default 1m/10m steps — which would make a just-learned card
-  // reappear in Review the same day (churn, and the confusing "Learn spawned
-  // Review" the daily plan showed). Relearning steps stay on: a genuine lapse
-  // (Again in Review) should still come back soon to re-cement.
+  // Learning steps default to empty: Onyx's Learn flow IS the first-exposure
+  // step, so a graded-Good new card graduates straight to a spaced (multi-day)
+  // interval rather than FSRS's default 1m/10m steps — which would make a
+  // just-learned card reappear in Review the same day (churn, and the confusing
+  // "Learn spawned Review" the daily plan showed). The cram study-policy profile
+  // overrides this with same-day steps for a deliberate short-term boost.
+  // Relearning steps stay on: a genuine lapse (Again in Review) should still
+  // come back soon to re-cement.
   fsrs.Scheduler _for(double retention) => _cache.putIfAbsent(
       retention,
       () => fsrs.Scheduler(
             desiredRetention: retention,
-            learningSteps: const [],
+            learningSteps: learningSteps,
             enableFuzzing: enableFuzzing,
           ));
 
