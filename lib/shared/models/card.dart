@@ -112,6 +112,7 @@ class Card {
   const Card({
     required this.id,
     required this.type,
+    this.subjectId = '',
     required this.title,
     required this.overview,
     required this.tags,
@@ -140,6 +141,13 @@ class Card {
   /// The raw `type:` frontmatter value (the flow id). Behavior comes from the
   /// active subject's `FlowSpec` for it.
   final String type;
+
+  /// The id of the subject that owns this card — the config for the vault subtree
+  /// it lives in (task #30d). Empty means "unspecified", resolved as the primary
+  /// subject. In a single-subject vault this is that one subject's id, so nothing
+  /// downstream changes. Card behavior (flow, quizzability, readiness) will resolve
+  /// against `registry[subjectId]` rather than a global (M2).
+  final String subjectId;
 
   /// Whether this card belongs to a separate paced practice track (its flow
   /// schedules as two-clock/mock) rather than the spaced concept deck. Excluded

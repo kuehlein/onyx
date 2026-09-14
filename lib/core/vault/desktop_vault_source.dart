@@ -36,6 +36,26 @@ class DesktopVaultSource implements VaultSource {
   }
 
   @override
+  Future<List<String>> listConfigPaths() async {
+    final root = Directory(rootPath);
+    if (!root.existsSync()) return const [];
+
+    final paths = <String>[];
+    await for (final entity in root.list(recursive: true, followLinks: false)) {
+      if (entity is! File) continue;
+      final relative = p.relative(entity.path, from: rootPath);
+      final segments = p.split(relative);
+      // Skip hidden folders (e.g. `.obsidian/`); `_meta/` is NOT excluded here —
+      // that's where the legacy single-subject config lives.
+      if (segments.any((s) => s.startsWith('.'))) continue;
+      if (segments.last != 'onyx-subject.yaml') continue;
+      paths.add(p.posix.joinAll(segments));
+    }
+    paths.sort();
+    return paths;
+  }
+
+  @override
   Future<String> readCard(String relativePath) =>
       File(p.join(rootPath, relativePath)).readAsString();
 

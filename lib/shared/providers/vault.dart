@@ -28,13 +28,15 @@ VaultSource? vaultSource(Ref ref) {
 /// Re-run after edits or a re-sync with `ref.invalidate(vaultIndexProvider)`.
 @riverpod
 Future<IndexResult> vaultIndex(Ref ref) async {
-  // Ensure the active subject config is loaded (activeSubject set) BEFORE parsing
-  // — the parser reads the flow definitions from it (#30 Phase 5).
-  await ref.watch(activeSubjectConfigProvider.future);
+  // Read the sync deps BEFORE the async gap — awaiting a provider future and then
+  // touching `ref` risks a disposed-element error when an upstream re-settles.
   final source = ref.watch(vaultSourceProvider);
+  final db = ref.watch(appDatabaseProvider);
+  // Ensure the subject registry is loaded (activeSubject set) BEFORE parsing — the
+  // parser reads the flow definitions from the active subject (#30 Phase 5 / #30d).
+  await ref.watch(subjectRegistryProvider.future);
   if (source == null) {
     return const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0);
   }
-  final db = ref.watch(appDatabaseProvider);
   return VaultIndexer(source, db).reindex();
 }

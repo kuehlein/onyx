@@ -55,7 +55,12 @@ class CardParser {
     ...implementationHeadings,
   };
 
-  Card? parse(String content, {required String filePath}) {
+  /// Parses [content] into a [Card], or null when the file is not an Onyx card.
+  ///
+  /// [subjectId] tags the card with its owning subject (task #30d); it defaults to
+  /// the active subject's id, so single-subject parsing is unchanged. In a
+  /// multi-subject vault the indexer passes the per-path subject id (M2).
+  Card? parse(String content, {required String filePath, String? subjectId}) {
     final match = _frontmatter.firstMatch(content);
     if (match == null) return null; // no frontmatter → not a card
 
@@ -94,6 +99,7 @@ class CardParser {
     return Card(
       id: id,
       type: type,
+      subjectId: subjectId ?? activeSubject.id,
       title: title,
       overview: overview,
       tags: _stringList(frontmatter['tags']) ?? const [],

@@ -16,6 +16,13 @@ abstract class VaultSource {
   /// Reads the UTF-8 content of the card at [relativePath].
   Future<String> readCard(String relativePath);
 
+  /// Relative POSIX paths of every subject-config file in the vault — files named
+  /// `onyx-subject.yaml`, anywhere (including inside `_meta/` folders, which
+  /// [listCardPaths] excludes). Each declares a subject rooted at its enclosing
+  /// directory (see `subjectRootDir`). A vault with one (or zero) is the
+  /// single-subject case; multiple make it a multi-subject vault (task #30d).
+  Future<List<String>> listConfigPaths();
+
   /// Reads app-managed metadata at `_meta/[name]` (e.g. the SRS backup
   /// snapshot), or null if it doesn't exist. `_meta/` is excluded from indexing.
   Future<String?> readMeta(String name);

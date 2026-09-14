@@ -4,34 +4,54 @@ import '../../core/subject/active_subject.dart';
 import '../../core/subject/software_interviews.dart';
 import '../../core/subject/subject_config.dart';
 import '../../core/subject/subject_config_yaml.dart';
+import '../../core/subject/subject_registry.dart';
 import '../../core/vault/vault_source.dart';
 import 'vault.dart';
 
 part 'subject.g.dart';
 
-/// The vault file holding the active subject config (task #30 Phase 5). Lives in
-/// `_meta/` (excluded from card indexing); the fuller `_onyx/config.md` layout in
+/// The filename that declares a subject. At the vault root's `_meta/` it's the
+/// legacy single-subject config; in any subtree it declares that subtree as a
+/// concurrent subject (task #30d). The fuller `_onyx/config.md` layout in
 /// docs/vault-structure.md is a later refinement.
 const subjectConfigFileName = 'onyx-subject.yaml';
 
-/// Loads the active subject config from the vault, falling back to the built-in
-/// SWE reference when absent or malformed, and sets the process-wide
-/// [activeSubject] that pure core math (target/ladder/parser) reads. `vaultIndex`
-/// awaits this so the config is in place before any card is parsed.
+/// Discovers every subject config in the vault and builds the [SubjectRegistry]
+/// — one entry per per-directory config, or a single built-in SWE reference when
+/// the vault declares none. Also sets the process-wide [activeSubject] (the
+/// registry's primary subject) that pure core still reads pre-M2. `vaultIndex`
+/// awaits this so subjects are resolved before any card is parsed.
 @riverpod
-Future<SubjectConfig> activeSubjectConfig(Ref ref) async {
+Future<SubjectRegistry> subjectRegistry(Ref ref) async {
   final source = ref.watch(vaultSourceProvider);
-  final loaded = source == null ? null : await _load(source);
-  activeSubject = loaded ?? softwareInterviewsConfig;
-  return activeSubject;
+  final registry = source == null
+      ? SubjectRegistry.single(softwareInterviewsConfig)
+      : await _discover(source);
+  activeSubject = registry.primary;
+  return registry;
 }
 
-Future<SubjectConfig?> _load(VaultSource source) async {
-  final raw = await source.readMeta(subjectConfigFileName);
-  if (raw == null || raw.trim().isEmpty) return null;
-  try {
-    return subjectConfigFromYaml(raw);
-  } catch (_) {
-    return null; // malformed config → fall back to the default
+/// The primary subject config — the whole-vault subject, or the built-in SWE
+/// reference as a fallback. Retained for the many call sites that need a single
+/// active subject; multi-subject-aware call sites read [subjectRegistryProvider].
+@riverpod
+Future<SubjectConfig> activeSubjectConfig(Ref ref) async =>
+    (await ref.watch(subjectRegistryProvider.future)).primary;
+
+Future<SubjectRegistry> _discover(VaultSource source) async {
+  final discovered = <(String, SubjectConfig)>[];
+  for (final path in await source.listConfigPaths()) {
+    final raw = await source.readCard(path);
+    if (raw.trim().isEmpty) continue;
+    try {
+      discovered.add((path, subjectConfigFromYaml(raw)));
+    } catch (_) {
+      // Malformed config → skip it (as before, a lone bad config falls back to
+      // the built-in default via SubjectRegistry.fromConfigs).
+    }
   }
+  return SubjectRegistry.fromConfigs(
+    discovered,
+    fallback: softwareInterviewsConfig,
+  );
 }
