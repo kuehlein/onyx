@@ -134,7 +134,7 @@ Future<List<PatternMastery>> patternMastery(Ref ref) async {
   final states = await ref.watch(srsStatesProvider.future);
   return computePatternMastery([
     for (final c in index.cards)
-      if (c.type == CardType.algorithm)
+      if (c.type == kTypeAlgorithm)
         (
           pattern: c.title,
           strengths: [

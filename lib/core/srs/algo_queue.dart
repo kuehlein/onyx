@@ -63,7 +63,7 @@ List<AlgoTask> buildAlgoQueue({
   final upcoming = <({ReviewItem item, DateTime dueAt})>[];
 
   for (final card in cards) {
-    if (card.type != CardType.algorithm) continue;
+    if (card.type != kTypeAlgorithm) continue;
     for (final section in card.quizzableSections) {
       final key = '${card.id}::${section.slug}';
       final item = ReviewItem(card: card, section: section);

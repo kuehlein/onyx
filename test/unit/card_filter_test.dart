@@ -4,7 +4,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _card(
   String id, {
-  CardType type = CardType.flashcard,
+  String type = 'flashcard',
   String domain = 'ds-a',
   int tier = 2,
   List<String> slugs = const ['s1'],
@@ -32,7 +32,7 @@ void main() {
       expect(r.filter.domains, {'ds-a'});
       expect(r.filter.mastery, {MasteryFilter.due});
       expect(r.filter.tiers, {1});
-      expect(r.filter.types, {CardType.interviewQuestion});
+      expect(r.filter.types, {'interview-question'});
     });
 
     test('domain: is an alias for tag:', () {
@@ -54,7 +54,7 @@ void main() {
 
   group('matchesFilter', () {
     final card =
-        _card('A', type: CardType.interviewQuestion, domain: 'ds-a', tier: 2);
+        _card('A', type: 'interview-question', domain: 'ds-a', tier: 2);
 
     test('empty filter matches everything', () {
       expect(matchesFilter(card, const CardFilter(), const {}), isTrue);
@@ -62,12 +62,11 @@ void main() {
 
     test('type / domain / tier facets are AND-ed', () {
       expect(
-          matchesFilter(card,
-              const CardFilter(types: {CardType.interviewQuestion}), const {}),
+          matchesFilter(
+              card, const CardFilter(types: {'interview-question'}), const {}),
           isTrue);
       expect(
-          matchesFilter(
-              card, const CardFilter(types: {CardType.flashcard}), const {}),
+          matchesFilter(card, const CardFilter(types: {'flashcard'}), const {}),
           isFalse);
       expect(matchesFilter(card, const CardFilter(domains: {'ds-a'}), const {}),
           isTrue);

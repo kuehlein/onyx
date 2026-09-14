@@ -109,7 +109,7 @@ void main() {
   group('deckFrequencySignal', () {
     Card q(String id, String? freq, List<String> concepts) => Card(
           id: id,
-          type: CardType.interviewQuestion,
+          type: 'interview-question',
           title: id,
           overview: '',
           tags: ['ds-a'],

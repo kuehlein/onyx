@@ -9,7 +9,7 @@ import 'package:onyx/shared/providers/practice.dart';
 
 Card _interview(String id) => Card(
       id: id,
-      type: CardType.interviewQuestion,
+      type: 'interview-question',
       title: id,
       overview: 'Solve $id.',
       tags: const ['ds-a'],

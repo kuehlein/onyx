@@ -5,7 +5,7 @@ import 'package:onyx/shared/models/card.dart';
 Card _card(
   String id,
   String domain, {
-  required CardType type,
+  required String type,
   int tier = 2,
   List<String> sections = const ['s1'],
 }) =>
@@ -28,10 +28,10 @@ void main() {
   group('buildPracticeSet', () {
     test('filters to the domain, applied-first, foundational tiers first', () {
       final cards = [
-        _card('concept-t1', 'ds-a', type: CardType.flashcard, tier: 1),
-        _card('applied-t3', 'ds-a', type: CardType.interviewQuestion, tier: 3),
-        _card('applied-t1', 'ds-a', type: CardType.interviewQuestion, tier: 1),
-        _card('other', 'system-design', type: CardType.interviewQuestion),
+        _card('concept-t1', 'ds-a', type: 'flashcard', tier: 1),
+        _card('applied-t3', 'ds-a', type: 'interview-question', tier: 3),
+        _card('applied-t1', 'ds-a', type: 'interview-question', tier: 1),
+        _card('other', 'system-design', type: 'interview-question'),
       ];
       final set = buildPracticeSet(cards: cards, domain: 'ds-a');
 
@@ -43,16 +43,14 @@ void main() {
     test('respects the limit', () {
       final cards = [
         for (var i = 0; i < 10; i++)
-          _card('c$i', 'ds-a', type: CardType.interviewQuestion, tier: 1),
+          _card('c$i', 'ds-a', type: 'interview-question', tier: 1),
       ];
       expect(
           buildPracticeSet(cards: cards, domain: 'ds-a', limit: 3).length, 3);
     });
 
     test('empty when the domain has no cards', () {
-      final cards = [
-        _card('x', 'system-design', type: CardType.interviewQuestion)
-      ];
+      final cards = [_card('x', 'system-design', type: 'interview-question')];
       expect(buildPracticeSet(cards: cards, domain: 'ds-a'), isEmpty);
     });
   });
@@ -61,7 +59,7 @@ void main() {
     test('prefers the first quizzable section', () {
       const card = Card(
         id: 'a',
-        type: CardType.flashcard,
+        type: 'flashcard',
         title: 'a',
         overview: '',
         tags: ['ds-a'],

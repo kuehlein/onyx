@@ -8,7 +8,7 @@ Card _card(String id,
         String domain = 'd'}) =>
     Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: id,
       overview: '',
       tags: [domain],

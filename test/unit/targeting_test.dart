@@ -12,7 +12,7 @@ final _base = ReadinessTarget.of(
 
 Card _card(String domain, {List<String> concepts = const []}) => Card(
       id: 'c',
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: 'c',
       overview: '',
       tags: [domain],

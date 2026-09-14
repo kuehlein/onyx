@@ -41,7 +41,7 @@ Future<List<Card>> behavioralCompetencies(Ref ref) async {
   final now = (await ref.watch(clockProvider.future)).now();
   final cards = [
     for (final c in index.cards)
-      if (c.type == CardType.behavioral) c,
+      if (c.type == kTypeBehavioral) c,
   ];
   DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
   // 0 = overdue, 1 = never mocked, 2 = upcoming.

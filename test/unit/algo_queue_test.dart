@@ -4,7 +4,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _pattern(String id, List<String> problems) => Card(
       id: id,
-      type: CardType.algorithm,
+      type: 'algorithm',
       title: id,
       overview: '',
       tags: const ['ds-a'],
@@ -145,7 +145,7 @@ void main() {
   test('ignores non-algorithm cards', () {
     const concept = Card(
       id: 'bfs',
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: 'BFS',
       overview: '',
       tags: ['ds-a'],

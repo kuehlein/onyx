@@ -161,7 +161,7 @@ class _ReviewView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final card = item.card;
-    final isInterview = card.type == CardType.interviewQuestion;
+    final isInterview = card.type == kTypeInterviewQuestion;
 
     return Center(
       child: ConstrainedBox(

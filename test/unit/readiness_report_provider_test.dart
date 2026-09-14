@@ -38,7 +38,7 @@ class _FakePrefs implements PreferencesRepository {
 
 Card _card(String id, String domain, String title) => Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: title,
       overview: '',
       tags: [domain],

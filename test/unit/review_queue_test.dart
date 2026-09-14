@@ -4,7 +4,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, String domain, List<String> sectionSlugs) => Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: id,
       overview: '',
       tags: [domain],
@@ -62,7 +62,7 @@ void main() {
     test('only quizzable sections are scheduled', () {
       const card = Card(
         id: 'A',
-        type: CardType.flashcard,
+        type: 'flashcard',
         title: 'A',
         overview: '',
         tags: ['a'],

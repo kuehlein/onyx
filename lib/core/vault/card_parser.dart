@@ -68,8 +68,11 @@ class CardParser {
       return null; // unparseable frontmatter → skip rather than crash indexing
     }
 
-    final type = CardType.fromString(frontmatter['type'] as String?);
-    if (type == null) return null; // not an Onyx card type
+    final type = (frontmatter['type'] as String?)?.trim();
+    // A file is an Onyx card iff its `type:` matches one of the active subject's
+    // configured flows; everything else (config, `_meta/`, ordinary notes) is
+    // skipped. (Was: CardType.fromString != null — a no-op for the SWE subject.)
+    if (type == null || !activeSubject.isCardType(type)) return null;
 
     final id = (frontmatter['id'] as String?)?.trim();
     if (id == null || id.isEmpty) {
@@ -127,7 +130,7 @@ class CardParser {
   CardSection _buildSection(
     String heading,
     String content,
-    CardType type,
+    String type,
     List<String>? quizOverride,
   ) {
     final slug = slugify(heading);
@@ -137,7 +140,7 @@ class CardParser {
     } else {
       // Which sections are quizzable is the flow's policy (task #30 Phase 3),
       // configured per card type; unknown types fall back to the concept blocklist.
-      final policy = activeSubject.flowForType(type.value)?.quizzability ??
+      final policy = activeSubject.flowForType(type)?.quizzability ??
           QuizzabilityPolicy.blocklist;
       quizzable = switch (policy) {
         // Every section is a problem = its own practice unit (algorithms).

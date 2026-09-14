@@ -78,8 +78,7 @@ class _BehavioralMockScreenState extends ConsumerState<BehavioralMockScreen> {
   Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider).asData?.value;
     final card = index?.cards
-        .where(
-            (c) => c.id == widget.competencyId && c.type == CardType.behavioral)
+        .where((c) => c.id == widget.competencyId && c.type == kTypeBehavioral)
         .firstOrNull;
     if (card == null) {
       return const Scaffold(body: Center(child: Text('Competency not found.')));

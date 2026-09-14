@@ -4,7 +4,7 @@ import 'package:onyx/shared/models/card.dart';
 
 const _card = Card(
   id: 'c1',
-  type: CardType.interviewQuestion,
+  type: 'interview-question',
   title: 'Two Sum',
   overview: 'Find two numbers that add to a target.',
   tags: ['ds-a'],

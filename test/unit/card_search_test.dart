@@ -11,7 +11,7 @@ Card _card(
 }) =>
     Card(
       id: title,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: title,
       overview: overview,
       tags: tags,

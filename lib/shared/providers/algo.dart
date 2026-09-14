@@ -32,7 +32,7 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
   return buildAlgoQueue(
     cards: [
       for (final c in index.cards)
-        if (c.type == CardType.algorithm) c,
+        if (c.type == kTypeAlgorithm) c,
     ],
     dueByKey: {for (final e in states.byKey.entries) e.key: e.value.dueAt},
     explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
@@ -222,7 +222,7 @@ Future<({int due, int maintained})> algoRecognition(Ref ref) async {
   var due = 0;
   var maintained = 0;
   for (final c in index.cards) {
-    if (c.type != CardType.algorithm) continue;
+    if (c.type != kTypeAlgorithm) continue;
     for (final s in c.quizzableSections) {
       final key = '${c.id}::${s.slug}';
       final r = rec[key];
@@ -256,7 +256,7 @@ Future<int> algoDueCount(Ref ref) async {
   final now = clock.now();
   var due = 0;
   for (final c in index.cards) {
-    if (c.type != CardType.algorithm) continue;
+    if (c.type != kTypeAlgorithm) continue;
     for (final s in c.quizzableSections) {
       final d = states['${c.id}::${s.slug}']?.dueAt;
       if (d != null && !d.isAfter(now)) due++;

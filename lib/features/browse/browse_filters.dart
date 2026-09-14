@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/search/card_filter.dart';
-import '../../shared/models/card.dart';
+import '../../core/subject/active_subject.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the filter sheet. Returns the chosen filter, or null if dismissed
@@ -36,7 +36,7 @@ class _FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
-  late Set<CardType> _types = {...widget.current.types};
+  late Set<String> _types = {...widget.current.types};
   late Set<String> _domains = {...widget.current.domains};
   late Set<int> _tiers = {...widget.current.tiers};
   late Set<MasteryFilter> _mastery = {...widget.current.mastery};
@@ -76,11 +76,12 @@ class _FilterSheetState extends State<_FilterSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _group<CardType>(
+                        _group<String>(
                           'Type',
-                          CardType.values,
+                          [for (final f in activeSubject.flows) f.cardType],
                           _types,
-                          (v) => v.label,
+                          (v) =>
+                              activeSubject.flowForType(v)?.displayLabel ?? v,
                         ),
                         if (widget.domains.isNotEmpty)
                           _group<String>(

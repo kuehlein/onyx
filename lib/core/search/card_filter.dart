@@ -1,4 +1,4 @@
-import '../../shared/models/card.dart';
+import '../../shared/models/card.dart'; // re-exports the kType* value constants
 
 /// Study-state buckets a card can fall into, derived from its sections' FSRS
 /// schedule.
@@ -9,16 +9,6 @@ extension MasteryFilterLabel on MasteryFilter {
         MasteryFilter.fresh => 'New',
         MasteryFilter.due => 'Due',
         MasteryFilter.strong => 'Strong',
-      };
-}
-
-extension CardTypeLabel on CardType {
-  String get label => switch (this) {
-        CardType.flashcard => 'Flashcard',
-        CardType.interviewQuestion => 'Interview question',
-        CardType.algorithm => 'Algorithm',
-        CardType.systemDesign => 'System design',
-        CardType.behavioral => 'Behavioral',
       };
 }
 
@@ -34,7 +24,7 @@ class CardFilter {
     this.mastery = const {},
   });
 
-  final Set<CardType> types;
+  final Set<String> types;
   final Set<String> domains;
   final Set<int> tiers;
   final Set<MasteryFilter> mastery;
@@ -50,7 +40,7 @@ class CardFilter {
       (mastery.isEmpty ? 0 : 1);
 
   CardFilter copyWith({
-    Set<CardType>? types,
+    Set<String>? types,
     Set<String>? domains,
     Set<int>? tiers,
     Set<MasteryFilter>? mastery,
@@ -116,7 +106,7 @@ bool matchesFilter(Card card, CardFilter filter, Set<MasteryFilter> mastery) {
 /// Splits a raw query into a filter (from `key:value` operators) and the
 /// remaining free-text terms. Unrecognized operators fall through to free text.
 ({CardFilter filter, String text}) parseSearchQuery(String query) {
-  final types = <CardType>{};
+  final types = <String>{};
   final domains = <String>{};
   final tiers = <int>{};
   final mastery = <MasteryFilter>{};
@@ -170,26 +160,29 @@ bool matchesFilter(Card card, CardFilter filter, Set<MasteryFilter> mastery) {
   );
 }
 
-CardType? _parseType(String v) => switch (v) {
+/// Maps free-text search aliases to a card `type:` value. The aliases are a
+/// convenience layer independent of any subject's flow ids; a value that isn't an
+/// alias but is itself a valid type passes through.
+String? _parseType(String v) => switch (v) {
       'interview' ||
       'interviewquestion' ||
       'iq' ||
       'question' =>
-        CardType.interviewQuestion,
-      'flashcard' || 'concept' || 'card' => CardType.flashcard,
-      'algorithm' || 'algo' || 'problem' => CardType.algorithm,
+        kTypeInterviewQuestion,
+      'flashcard' || 'concept' || 'card' => kTypeFlashcard,
+      'algorithm' || 'algo' || 'problem' => kTypeAlgorithm,
       'system-design' ||
       'systemdesign' ||
       'sd' ||
       'design' =>
-        CardType.systemDesign,
+        kTypeSystemDesign,
       'behavioral' ||
       'behaviour' ||
       'behavior' ||
       'star' ||
       'bq' =>
-        CardType.behavioral,
-      _ => null,
+        kTypeBehavioral,
+      _ => v, // pass through a raw type id (e.g. a subject's own flow)
     };
 
 MasteryFilter? _parseMastery(String v) => switch (v) {

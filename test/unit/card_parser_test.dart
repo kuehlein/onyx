@@ -187,7 +187,7 @@ void main() {
 
     test('parses frontmatter', () {
       expect(card.id, '11111111-1111-4111-8111-111111111111');
-      expect(card.type, CardType.flashcard);
+      expect(card.type, 'flashcard');
       expect(card.title, 'Binary Search');
       expect(card.tags, ['ds-a', 'binary-search', 'searching']);
       expect(card.tiers, {'ds-a': 1, 'system-design': 2});
@@ -230,7 +230,7 @@ void main() {
     setUpAll(() => card = _parser.parse(_interviewCard, filePath: 'q.md')!);
 
     test('parses question-specific frontmatter', () {
-      expect(card.type, CardType.interviewQuestion);
+      expect(card.type, 'interview-question');
       expect(card.category, 'coding');
       expect(card.difficulty, 'easy');
       expect(card.frequency, 'high');
@@ -254,8 +254,8 @@ void main() {
     setUpAll(() => card = _parser.parse(_systemDesignCard, filePath: 'sd.md')!);
 
     test('parses as a system-design card', () {
-      expect(card.type, CardType.systemDesign);
-      expect(card.type.isPracticeTrack, isTrue);
+      expect(card.type, 'system-design');
+      expect(card.isPracticeTrack, isTrue);
       expect(card.title, 'Design a Rate Limiter');
     });
 
@@ -371,8 +371,8 @@ Real stakes, upward influence, commitment.
 ''', filePath: 'b.md')!;
 
     test('parses the behavioral type and is a practice track', () {
-      expect(card.type, CardType.behavioral);
-      expect(card.type.isPracticeTrack, isTrue);
+      expect(card.type, 'behavioral');
+      expect(card.isPracticeTrack, isTrue);
       expect(card.domain, 'behavioral');
     });
 

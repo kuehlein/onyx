@@ -35,8 +35,7 @@ CardSection _section(String heading, {bool quizzable = true}) => CardSection(
       quizzable: quizzable,
     );
 
-Card _card(String id, String title, {CardType type = CardType.flashcard}) =>
-    Card(
+Card _card(String id, String title, {String type = 'flashcard'}) => Card(
       id: id,
       type: type,
       title: title,
@@ -81,7 +80,7 @@ void main() {
     cards: [
       _card('11111111-1111-4111-8111-111111111111', 'Binary Search'),
       _card('22222222-2222-4222-8222-222222222222', 'Two Pointers',
-          type: CardType.interviewQuestion),
+          type: 'interview-question'),
     ],
     idless: 0,
     malformed: 0,

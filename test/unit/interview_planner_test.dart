@@ -42,7 +42,7 @@ const _index = IndexResult(
   cards: [
     Card(
       id: 'a',
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: 'Load balancing',
       overview: '',
       tags: ['system-design'],

@@ -57,7 +57,7 @@ void main() {
 
   test('type value strings are the exact hyphenated frontmatter forms', () {
     for (final t in _validTypes) {
-      expect(_parse(t)!.type.value, t, reason: t);
+      expect(_parse(t)!.type, t, reason: t);
     }
   });
 
@@ -71,15 +71,14 @@ void main() {
     };
     test('each type', () {
       expected.forEach((t, isPractice) {
-        expect(_parse(t)!.type.isPracticeTrack, isPractice, reason: t);
+        expect(_parse(t)!.isPracticeTrack, isPractice, reason: t);
       });
     });
 
     test('recall-coverage population = the two concept types only', () {
       final cards = [for (final t in _validTypes) _parse(t)!];
-      final concept = cards.where((c) => !c.type.isPracticeTrack).toList();
-      expect(concept.map((c) => c.type.value),
-          ['flashcard', 'interview-question']);
+      final concept = cards.where((c) => !c.isPracticeTrack).toList();
+      expect(concept.map((c) => c.type), ['flashcard', 'interview-question']);
     });
   });
 

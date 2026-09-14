@@ -1,55 +1,22 @@
-/// The card types Onyx indexes from the vault. A file whose frontmatter `type`
-/// is none of these is not an Onyx card and is skipped by the indexer (this is
-/// how `_meta/` files and ordinary vault notes are ignored).
-///
-/// [algorithm] cards drive the separate Algorithms practice track: the card is a
-/// pattern (e.g. "Two Pointers"), each H2 section is one problem (name +
-/// `practice_url`). They're scheduled on their own paced queue, not the main
-/// review/learn queues — see docs/algorithm-track-design.md.
-///
-/// [systemDesign] cards drive the System-Design practice track: the card is one
-/// canonical design problem (e.g. "Design a Rate Limiter"), each H2 section is an
-/// interview phase (Requirements, Estimation, API, …) that doubles as the
-/// reference solution and the mock rubric. The whole problem is the practice
-/// unit, so — unlike algorithm cards — its sections are NOT independently
-/// scheduled; it's practiced via mocks on its own queue and feeds readiness
-/// through applied-transfer, not recall coverage. See
-/// docs/system-design-track-design.md.
-///
-/// [behavioral] cards drive the Behavioral practice track: the card is one
-/// competency (e.g. "Conflict & Backbone"), whose H2 sections are the interviewer's
-/// private prompt bank + what-strong-looks-like signals. Like system-design, the
-/// whole card is the practice unit (a mock over that competency); sections are not
-/// independently scheduled and it's not fact-recall. See behavioral-flow-design.
-enum CardType {
-  flashcard('flashcard'),
-  interviewQuestion('interview-question'),
-  algorithm('algorithm'),
-  systemDesign('system-design'),
-  behavioral('behavioral');
+import '../../core/subject/active_subject.dart';
 
-  const CardType(this.value);
+// The SWE card-type value constants, re-exported so type comparisons across the
+// app use one hyphenated source of truth (no camelCase-vs-hyphen mistypes).
+export '../../core/subject/software_interviews.dart'
+    show
+        kTypeFlashcard,
+        kTypeInterviewQuestion,
+        kTypeAlgorithm,
+        kTypeSystemDesign,
+        kTypeBehavioral;
 
-  /// The exact string written in frontmatter.
-  final String value;
-
-  /// Whether this type is a separate paced *practice track* (Algorithms,
-  /// System Design, Behavioral) rather than part of the spaced concept deck.
-  /// Practice-track cards are excluded from the general review/learn queues and
-  /// from the recall-coverage denominator; they feed readiness via
-  /// applied-transfer.
-  bool get isPracticeTrack =>
-      this == CardType.algorithm ||
-      this == CardType.systemDesign ||
-      this == CardType.behavioral;
-
-  static CardType? fromString(String? raw) {
-    for (final type in CardType.values) {
-      if (type.value == raw) return type;
-    }
-    return null;
-  }
-}
+/// A card's `type:` is the raw frontmatter string naming its **flow** — e.g.
+/// `flashcard`, `interview-question`, `algorithm`, `system-design`, `behavioral`,
+/// or a subject's own `conversation`. A file whose `type:` matches no configured
+/// flow is not an Onyx card and is skipped by the indexer (how `_meta/` files and
+/// ordinary notes are ignored). All behavior for a type — scheduling,
+/// quizzability, practice-track, display — comes from the active subject's
+/// `FlowSpec` (see lib/core/subject/), not a hardcoded enum (task #30c Phase 4).
 
 /// Author-assigned trust level, set during card verification. Guides how much to
 /// rely on a card before cross-checking it against its Resources links.
@@ -168,7 +135,16 @@ class Card {
 
   /// UUID v4 from frontmatter — the stable primary key across filename renames.
   final String id;
-  final CardType type;
+
+  /// The raw `type:` frontmatter value (the flow id). Behavior comes from the
+  /// active subject's `FlowSpec` for it.
+  final String type;
+
+  /// Whether this card belongs to a separate paced practice track (its flow
+  /// schedules as two-clock/mock) rather than the spaced concept deck. Excluded
+  /// from the review/learn queues and the recall-coverage denominator; feeds
+  /// readiness via applied-transfer. Derived from the active subject config.
+  bool get isPracticeTrack => activeSubject.isPracticeTrackType(type);
 
   /// H1 title text.
   final String title;

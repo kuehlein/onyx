@@ -6,10 +6,32 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
+import '../../core/subject/active_subject.dart';
+import '../../core/subject/subject_config.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import 'browse_filters.dart';
+
+/// Maps a flow's [FlowSpec.iconKey] to a Browse icon (fallback: a generic card).
+IconData flowIcon(String? key) => switch (key) {
+      'flashcard' => Icons.style_outlined,
+      'interview' => Icons.forum_outlined,
+      'algorithm' => Icons.terminal_outlined,
+      'systemDesign' => Icons.architecture_outlined,
+      'behavioral' => Icons.record_voice_over_outlined,
+      _ => Icons.style_outlined,
+    };
+
+/// Maps a flow's [FlowSpec.colorKey] to a Browse hue (fallback: blue-grey).
+MaterialColor flowColor(String? key) => switch (key) {
+      'indigo' => Colors.indigo,
+      'teal' => Colors.teal,
+      'deepOrange' => Colors.deepOrange,
+      'purple' => Colors.purple,
+      'green' => Colors.green,
+      _ => Colors.blueGrey,
+    };
 
 /// Browse: full-text search + composable filters over the indexed cards.
 /// Search and filters combine; power users can also type operators
@@ -32,7 +54,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     super.dispose();
   }
 
-  void _removeType(CardType t) => setState(() => _chipFilter =
+  void _removeType(String t) => setState(() => _chipFilter =
       _chipFilter.copyWith(types: {..._chipFilter.types}..remove(t)));
   void _removeDomain(String d) => setState(() => _chipFilter =
       _chipFilter.copyWith(domains: {..._chipFilter.domains}..remove(d)));
@@ -230,7 +252,7 @@ class _ActiveFilters extends StatelessWidget {
   });
 
   final CardFilter filter;
-  final void Function(CardType) onRemoveType;
+  final void Function(String) onRemoveType;
   final void Function(String) onRemoveDomain;
   final void Function(int) onRemoveTier;
   final void Function(MasteryFilter) onRemoveMastery;
@@ -245,7 +267,8 @@ class _ActiveFilters extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
           for (final t in filter.types)
-            _chip(context, t.label, () => onRemoveType(t)),
+            _chip(context, activeSubject.flowForType(t)?.displayLabel ?? t,
+                () => onRemoveType(t)),
           for (final d in filter.domains)
             _chip(context, d, () => onRemoveDomain(d)),
           for (final t in filter.tiers)
@@ -300,25 +323,12 @@ class _CardTile extends StatelessWidget {
 
   final Card card;
 
-  /// The type-specific icon. Same vocabulary as the Today flows / coach so a
-  /// card reads the same everywhere: concept decks vs each practice track.
-  IconData get _icon => switch (card.type) {
-        CardType.flashcard => Icons.style_outlined,
-        CardType.interviewQuestion => Icons.forum_outlined,
-        CardType.algorithm => Icons.terminal_outlined,
-        CardType.systemDesign => Icons.architecture_outlined,
-        CardType.behavioral => Icons.record_voice_over_outlined,
-      };
+  FlowSpec? get _flow => activeSubject.flowForType(card.type);
 
-  /// A distinct hue per type so every card kind — including the three practice
-  /// tracks — is visually separable at a glance (not just by icon).
-  MaterialColor get _color => switch (card.type) {
-        CardType.flashcard => Colors.indigo,
-        CardType.interviewQuestion => Colors.teal,
-        CardType.algorithm => Colors.deepOrange,
-        CardType.systemDesign => Colors.purple,
-        CardType.behavioral => Colors.green,
-      };
+  /// The type-specific icon + hue, from the flow's display keys (so every card
+  /// kind — concept deck vs each practice track — reads the same everywhere).
+  IconData get _icon => flowIcon(_flow?.iconKey);
+  MaterialColor get _color => flowColor(_flow?.colorKey);
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +349,7 @@ class _CardTile extends StatelessWidget {
       // the line truncates (e.g. "Algorithm · ds-a" vs "Flashcard · ds-a").
       subtitle: Text(
         [
-          card.type.label,
+          _flow?.displayLabel ?? card.type,
           if (card.domain != null) card.domain!,
           '$sectionCount quizzable',
         ].join(' · '),

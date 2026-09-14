@@ -5,7 +5,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, String domain, List<String> slugs) => Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: id,
       overview: '',
       tags: [domain],

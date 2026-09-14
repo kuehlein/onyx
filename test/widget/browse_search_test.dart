@@ -12,7 +12,7 @@ Card _card(
   String title, {
   List<String> tags = const ['ds-a'],
   String o = '',
-  CardType type = CardType.flashcard,
+  String type = 'flashcard',
 }) =>
     Card(
       id: title,
@@ -41,7 +41,7 @@ void main() {
       _card('Two Pointers'),
       _card('Dijkstra', tags: ['graphs'], o: 'shortest path in a graph'),
       _card('Design a URL shortener',
-          tags: ['system-design'], type: CardType.interviewQuestion),
+          tags: ['system-design'], type: 'interview-question'),
     ],
     idless: 0,
     malformed: 0,

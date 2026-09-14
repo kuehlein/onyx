@@ -16,7 +16,7 @@ CardSection _section(String s) =>
 
 Card _card(String id) => Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: id,
       overview: '',
       tags: const ['ds-a'],

@@ -79,8 +79,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider).asData?.value;
     final card = index?.cards
-        .where(
-            (c) => c.id == widget.problemId && c.type == CardType.systemDesign)
+        .where((c) => c.id == widget.problemId && c.type == kTypeSystemDesign)
         .firstOrNull;
     if (card == null) {
       return const Scaffold(body: Center(child: Text('Problem not found.')));

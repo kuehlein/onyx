@@ -217,8 +217,7 @@ Future<Readiness> readiness(Ref ref) async {
   // readiness through the *transfer* factor (they record applied attempts), not
   // the recall-coverage denominator — so they don't drag knowledge-base coverage
   // down as unlearned "concept" sections.
-  final conceptCards =
-      index.cards.where((c) => !c.type.isPracticeTrack).toList();
+  final conceptCards = index.cards.where((c) => !c.isPracticeTrack).toList();
   final domains = <String>{
     for (final c in conceptCards)
       if (c.domain != null) c.domain!,
@@ -247,7 +246,7 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   return computeLadderPosition(
     // Concept cards only — practice tracks feed readiness via transfer, not
     // coverage.
-    cards: index.cards.where((c) => !c.type.isPracticeTrack).toList(),
+    cards: index.cards.where((c) => !c.isPracticeTrack).toList(),
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,
@@ -296,7 +295,7 @@ Future<ReadinessForecast?> readinessForecastFor(
 
   // Concept cards only — practice tracks feed readiness via transfer, not recall
   // coverage (matches the readiness provider).
-  final cards = index.cards.where((c) => !c.type.isPracticeTrack).toList();
+  final cards = index.cards.where((c) => !c.isPracticeTrack).toList();
   if (cards.isEmpty) return null;
 
   final stateByKey = {

@@ -6,7 +6,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _card() => const Card(
       id: 'design-rate-limiter',
-      type: CardType.systemDesign,
+      type: 'system-design',
       title: 'Design a Rate Limiter',
       overview: 'Cap request rate fairly. SECRET_GROUND_TRUTH_MARKER',
       tags: ['system-design'],

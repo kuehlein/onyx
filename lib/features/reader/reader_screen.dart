@@ -94,7 +94,7 @@ Card _pageCard(Article a) {
       : a.markdown;
   return Card(
     id: a.url,
-    type: CardType.flashcard,
+    type: kTypeFlashcard,
     title: a.title,
     overview: body,
     tags: const [],

@@ -108,7 +108,7 @@ class VaultIndexer {
       CardCacheCompanion.insert(
         cardId: card.id,
         title: card.title,
-        cardType: card.type.value,
+        cardType: card.type,
         tags: jsonEncode(card.tags),
         tiers: jsonEncode(card.tiers),
         category: Value(card.category),

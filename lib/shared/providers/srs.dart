@@ -73,7 +73,7 @@ Future<ReviewQueueData> reviewQueue(Ref ref) async {
     // queues (see algoQueueProvider), not the general review queue.
     cards: [
       for (final c in index.cards)
-        if (!c.type.isPracticeTrack) c,
+        if (!c.isPracticeTrack) c,
     ],
     dueByKey: dueByKey,
     now: clock.now(),

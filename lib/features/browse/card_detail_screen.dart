@@ -86,7 +86,7 @@ class _CardDetail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isInterview = card.type == CardType.interviewQuestion;
+    final isInterview = card.type == kTypeInterviewQuestion;
     final now = DateTime.now();
 
     return Scaffold(

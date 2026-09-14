@@ -41,7 +41,7 @@ Future<List<Card>> systemDesignProblems(Ref ref) async {
   final now = (await ref.watch(clockProvider.future)).now();
   final problems = [
     for (final c in index.cards)
-      if (c.type == CardType.systemDesign) c,
+      if (c.type == kTypeSystemDesign) c,
   ];
   DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
   // 0 = overdue, 1 = never mocked, 2 = upcoming.

@@ -16,7 +16,7 @@ CardSection _section(String h) =>
 
 Card _card(String id, String domain) => Card(
       id: id,
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: id,
       overview: '',
       tags: [domain],

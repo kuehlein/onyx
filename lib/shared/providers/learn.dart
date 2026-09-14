@@ -43,7 +43,7 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
     // own tracks, not learned here.
     cards: [
       for (final c in index.cards)
-        if (!c.type.isPracticeTrack) c,
+        if (!c.isPracticeTrack) c,
     ],
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(index.cards),

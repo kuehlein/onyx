@@ -4,7 +4,7 @@ import 'package:onyx/shared/models/card.dart';
 
 Card _card() => const Card(
       id: 'c1',
-      type: CardType.flashcard,
+      type: 'flashcard',
       title: 'Binary Search',
       overview: 'Halve the search space each step.',
       tags: ['ds-a'],

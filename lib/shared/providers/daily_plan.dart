@@ -76,7 +76,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final conceptLabel = <String, String>{};
   final conceptIdByFile = <String, String>{};
   for (final c in index.cards) {
-    if (c.type != CardType.flashcard) continue;
+    if (c.type != kTypeFlashcard) continue;
     final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
     conceptIdByFile[slug] = c.id;
     final q = c.quizzableSections.toList();
@@ -92,7 +92,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // filename→card id and kept only if we can gauge its comfort).
   final prereqs = <String, List<String>>{...algoGroupPrereqs};
   for (final c in index.cards) {
-    if (c.type != CardType.systemDesign) continue;
+    if (c.type != kTypeSystemDesign) continue;
     prereqs[c.id] = [
       for (final w in c.wikilinks)
         if (conceptIdByFile[w] case final id? when comfort.containsKey(id)) id,

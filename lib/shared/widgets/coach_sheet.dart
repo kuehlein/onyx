@@ -371,7 +371,7 @@ class _PromptContext extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isInterview = card.type == CardType.interviewQuestion;
+    final isInterview = card.type == kTypeInterviewQuestion;
     // Interview cards: the problem statement is the prompt; concept cards: the
     // section you're recalling.
     final problem =
