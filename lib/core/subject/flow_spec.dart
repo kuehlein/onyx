@@ -40,10 +40,30 @@ class FlowSpec {
     required this.cardType,
     required this.scheduling,
     required this.quizzability,
+    this.label = '',
+    this.iconKey = 'card',
+    this.colorKey = 'default',
   });
 
-  /// The card `type:` frontmatter value this flow applies to (== `CardType.value`).
+  /// The card `type:` frontmatter value this flow applies to.
   final String cardType;
   final SchedulingModel scheduling;
   final QuizzabilityPolicy quizzability;
+
+  /// Human label for the type (Browse tiles, filter chips). Falls back to a
+  /// prettified [cardType] when empty.
+  final String label;
+
+  /// Display keys the UI maps to a Flutter `IconData` / `Color` (core can't hold
+  /// Flutter types). Unknown keys fall back to a generic card icon/color.
+  final String iconKey;
+  final String colorKey;
+
+  /// The label, or a prettified [cardType] when none is configured.
+  String get displayLabel => label.isNotEmpty
+      ? label
+      : cardType.isEmpty
+          ? 'Card'
+          : (cardType[0].toUpperCase() + cardType.substring(1))
+              .replaceAll('-', ' ');
 }

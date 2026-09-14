@@ -1,5 +1,14 @@
 import 'subject_config.dart';
 
+/// The SWE card-type values — the single source of truth so `system-design` vs
+/// `behavioral` comparisons in the SWE-specific providers can't be mistyped as
+/// camelCase (the values are hyphenated; the enum NAMES were not).
+const kTypeFlashcard = 'flashcard';
+const kTypeInterviewQuestion = 'interview-question';
+const kTypeAlgorithm = 'algorithm';
+const kTypeSystemDesign = 'system-design';
+const kTypeBehavioral = 'behavioral';
+
 /// The SWE-interview-prep subject as data — the built-in **reference** config for
 /// task #30. Every value here reproduces the behavior currently hardcoded in
 /// `lib/core/readiness/target.dart` and `ladder.dart`, so routing those seams
@@ -76,32 +85,48 @@ const softwareInterviewsConfig = SubjectConfig(
     fallbackContextId: 'faang',
     fallbackTrackId: 'general',
   ),
-  // One flow per card type — mirrors the parser's current per-CardType rules.
+  // One flow per card type — mirrors the parser's per-type rules + the Browse
+  // display (icon/color/label) that used to be a switch over CardType.
   flows: [
     FlowSpec(
-      cardType: 'flashcard',
+      cardType: kTypeFlashcard,
       scheduling: SchedulingModel.recall,
       quizzability: QuizzabilityPolicy.blocklist,
+      label: 'Flashcard',
+      iconKey: 'flashcard',
+      colorKey: 'indigo',
     ),
     FlowSpec(
-      cardType: 'interview-question',
+      cardType: kTypeInterviewQuestion,
       scheduling: SchedulingModel.recall,
       quizzability: QuizzabilityPolicy.approachOnly,
+      label: 'Interview question',
+      iconKey: 'interview',
+      colorKey: 'teal',
     ),
     FlowSpec(
-      cardType: 'algorithm',
+      cardType: kTypeAlgorithm,
       scheduling: SchedulingModel.twoClock,
       quizzability: QuizzabilityPolicy.allSections,
+      label: 'Algorithm',
+      iconKey: 'algorithm',
+      colorKey: 'deepOrange',
     ),
     FlowSpec(
-      cardType: 'system-design',
+      cardType: kTypeSystemDesign,
       scheduling: SchedulingModel.mock,
       quizzability: QuizzabilityPolicy.noSections,
+      label: 'System design',
+      iconKey: 'systemDesign',
+      colorKey: 'purple',
     ),
     FlowSpec(
-      cardType: 'behavioral',
+      cardType: kTypeBehavioral,
       scheduling: SchedulingModel.mock,
       quizzability: QuizzabilityPolicy.noSections,
+      label: 'Behavioral',
+      iconKey: 'behavioral',
+      colorKey: 'green',
     ),
   ],
 );

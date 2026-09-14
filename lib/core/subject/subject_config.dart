@@ -163,4 +163,16 @@ class SubjectConfig {
     }
     return null;
   }
+
+  /// Whether a card type is a separate paced practice track (its flow schedules
+  /// as two-clock/mock) rather than part of the spaced concept deck (recall).
+  /// An unknown/unconfigured type is treated as a concept card (not practice).
+  bool isPracticeTrackType(String cardType) {
+    final f = flowForType(cardType);
+    return f != null && f.scheduling != SchedulingModel.recall;
+  }
+
+  /// Whether [cardType] is a recognized flow for this subject (used to decide a
+  /// markdown file is an Onyx card).
+  bool isCardType(String cardType) => flowForType(cardType) != null;
 }
