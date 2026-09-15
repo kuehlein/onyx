@@ -13,11 +13,13 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/target_service.dart';
 import '../../core/readiness/targeting.dart';
+import '../../core/goal/study_goal.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
 import 'srs.dart';
 import 'study_goals.dart';
+import 'subject.dart';
 import 'vault.dart';
 
 part 'readiness.g.dart';
@@ -201,6 +203,35 @@ Future<Targeting> targeting(Ref ref) async {
   ]);
 }
 
+/// The active study goal's base [ReadinessTarget] (task #30d, G3a). The default
+/// (whole-vault) goal uses the legacy saved target; any other goal carries its own
+/// level/context/track (+ deadline). A single default goal → identical to before.
+@riverpod
+Future<ReadinessTarget> activeTarget(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  if (goal.id == defaultGoalId) {
+    return ref.watch(readinessTargetControllerProvider.future);
+  }
+  final registry = await ref.watch(subjectRegistryProvider.future);
+  return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
+}
+
+/// The active goal's effective [Targeting]. The default goal keeps the full
+/// base-target + active-prep-goals combination; a standalone goal has just its own
+/// target (no interview sub-targets yet). Single default goal → identical to
+/// [targeting].
+@riverpod
+Future<Targeting> activeTargeting(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  if (goal.id == defaultGoalId) {
+    return ref.watch(targetingProvider.future);
+  }
+  return Targeting(
+    base: await ref.watch(activeTargetProvider.future),
+    goals: const [],
+  );
+}
+
 /// Knowledge-base readiness (Phase A), derived from the indexed cards + current
 /// FSRS stability, weighted toward the chosen target. Nothing extra is stored:
 /// it recomputes from `srs_state` (already synced to the vault snapshot) and the
@@ -209,7 +240,7 @@ Future<Targeting> targeting(Ref ref) async {
 Future<Readiness> readiness(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final targeting = await ref.watch(targetingProvider.future);
+  final targeting = await ref.watch(activeTargetingProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
   final goal = await ref.watch(activeStudyGoalProvider.future);
   final stabilityByKey = {
@@ -243,7 +274,7 @@ Future<Readiness> readiness(Ref ref) async {
 Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final target = await ref.watch(activeTargetProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
   final goal = await ref.watch(activeStudyGoalProvider.future);
   final stabilityByKey = {
@@ -275,7 +306,7 @@ typedef ForecastDims = ({
 /// the same engine.
 @riverpod
 Future<ReadinessForecast?> readinessForecast(Ref ref) async {
-  final target = await ref.watch(readinessTargetControllerProvider.future);
+  final target = await ref.watch(activeTargetProvider.future);
   return ref.watch(readinessForecastForProvider((
     level: target.level,
     company: target.company,
@@ -353,7 +384,7 @@ Future<ReadinessForecast?> readinessForecastFor(
 /// new-sections-per-day rate over a 14-day window.
 @riverpod
 Future<PaceEstimate?> readinessPace(Ref ref) async {
-  final date = (await ref.watch(targetingProvider.future)).governingDate;
+  final date = (await ref.watch(activeTargetingProvider.future)).governingDate;
   if (date == null) return null;
 
   final r = await ref.watch(readinessProvider.future);

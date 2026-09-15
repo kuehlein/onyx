@@ -10,6 +10,7 @@
 library;
 
 import '../../shared/models/card.dart';
+import '../readiness/target.dart';
 import '../subject/subject_config.dart';
 import 'membership_query.dart';
 
@@ -68,6 +69,16 @@ class StudyGoal {
   /// The member cards of this goal, drawn from [cards].
   Iterable<Card> select(Iterable<Card> cards) =>
       cards.where(membership.matches);
+
+  /// This goal's [ReadinessTarget] — its own level/context/track selection, with
+  /// null slots resolved to [template]'s fallbacks, and the [deadline] as the
+  /// target's interview date (task #30d, G3a).
+  ReadinessTarget toTarget(SubjectConfig template) => ReadinessTarget(
+        levelId: levelId ?? template.target.fallbackLevelId,
+        contextId: contextId ?? template.target.fallbackContextId,
+        trackId: trackId ?? template.target.fallbackTrackId,
+        interviewDate: deadline,
+      );
 
   StudyGoal copyWith({
     String? name,
