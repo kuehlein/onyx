@@ -16,3 +16,11 @@ Future<List<StudyGoal>> studyGoals(Ref ref) async {
   final registry = await ref.watch(subjectRegistryProvider.future);
   return [defaultGoalFor(registry.primary)];
 }
+
+/// The goal currently in focus — the one readiness, pace, and the daily plan are
+/// computed against (G2). For now the single default goal; once the hub lands
+/// (G5) this becomes the selected lane. Readiness scopes its cards to
+/// `goal.select(...)`, so a single whole-vault goal reproduces pre-#30d numbers.
+@riverpod
+Future<StudyGoal> activeStudyGoal(Ref ref) async =>
+    (await ref.watch(studyGoalsProvider.future)).first;

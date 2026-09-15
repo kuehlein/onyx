@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
@@ -11,6 +12,7 @@ import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/interview.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
+import 'package:onyx/shared/providers/study_goals.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -69,7 +71,8 @@ void main() {
     'B::s1': srs('B', 5), // weak system design
   });
 
-  ProviderContainer make(AppDatabase db) => ProviderContainer(overrides: [
+  ProviderContainer make(AppDatabase db, {StudyGoal? goal}) =>
+      ProviderContainer(overrides: [
         appDatabaseProvider.overrideWithValue(db),
         vaultIndexProvider.overrideWith((ref) async => index),
         srsStatesProvider.overrideWith((ref) async => states),
@@ -77,6 +80,13 @@ void main() {
         // an active goal's domain weights would override the base target's
         // level-weighting this test is asserting on.
         prepGoalsProvider.overrideWith(_NoGoals.new),
+        // Pin the active study goal (whole-vault by default) so readiness doesn't
+        // scan the real dev vault to discover subjects (task #30d, G2).
+        studyGoalsProvider.overrideWith((ref) async => [
+              goal ??
+                  const StudyGoal(
+                      id: 'default', name: 'All', templateId: 'swe'),
+            ]),
       ]);
 
   test('level does not move readiness on a foundational deck; track does',
@@ -107,6 +117,26 @@ void main() {
     // domain → lower overall.
     final backend = await read(SeniorityLevel.senior, Track.backend);
     expect(backend, lessThan(newGrad));
+    await db.close();
+  });
+
+  test('readiness scopes to the active goal\'s membership', () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    // A cross-cutting tag goal that selects only the DS&A card — system design is
+    // a different lens and must drop out of this goal's readiness entirely.
+    final c = make(db,
+        goal: StudyGoal(
+          id: 'dsa',
+          name: 'DSA',
+          templateId: 'swe',
+          membership: TagMembership('ds-a'),
+        ));
+    addTearDown(c.dispose);
+    c.listen(readinessProvider, (_, __) {});
+
+    final r = await c.read(readinessProvider.future);
+    expect(r.domains.map((d) => d.domain), ['ds-a']);
     await db.close();
   });
 

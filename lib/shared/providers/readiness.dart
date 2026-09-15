@@ -17,6 +17,7 @@ import 'clock.dart';
 import 'interview.dart';
 import 'settings.dart';
 import 'srs.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'readiness.g.dart';
@@ -210,14 +211,18 @@ Future<Readiness> readiness(Ref ref) async {
   final states = await ref.watch(srsStatesProvider.future);
   final targeting = await ref.watch(targetingProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
+  final goal = await ref.watch(activeStudyGoalProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
-  // Practice tracks (Algorithms, System Design) are separate: they count toward
-  // readiness through the *transfer* factor (they record applied attempts), not
-  // the recall-coverage denominator — so they don't drag knowledge-base coverage
-  // down as unlearned "concept" sections.
-  final conceptCards = index.cards.where((c) => !c.isPracticeTrack).toList();
+  // Scope to the active goal's member cards (task #30d, G2); the whole-vault
+  // default goal selects everything, so numbers are unchanged. Practice tracks
+  // (Algorithms, System Design) are separate: they count toward readiness through
+  // the *transfer* factor (they record applied attempts), not the recall-coverage
+  // denominator — so they don't drag knowledge-base coverage down as unlearned
+  // "concept" sections.
+  final conceptCards =
+      goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
   final domains = <String>{
     for (final c in conceptCards)
       if (c.domain != null) c.domain!,
@@ -240,13 +245,14 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   final states = await ref.watch(srsStatesProvider.future);
   final target = await ref.watch(readinessTargetControllerProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
+  final goal = await ref.watch(activeStudyGoalProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
   return computeLadderPosition(
-    // Concept cards only — practice tracks feed readiness via transfer, not
-    // coverage.
-    cards: index.cards.where((c) => !c.isPracticeTrack).toList(),
+    // The active goal's concept cards — practice tracks feed readiness via
+    // transfer, not coverage (task #30d, G2).
+    cards: goal.select(index.cards).where((c) => !c.isPracticeTrack).toList(),
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,
@@ -292,10 +298,12 @@ Future<ReadinessForecast?> readinessForecastFor(
   final target = ReadinessTarget.of(
       level: dims.level, company: dims.company, track: dims.track);
   final today = (await ref.watch(clockProvider.future)).today();
+  final goal = await ref.watch(activeStudyGoalProvider.future);
 
-  // Concept cards only — practice tracks feed readiness via transfer, not recall
-  // coverage (matches the readiness provider).
-  final cards = index.cards.where((c) => !c.isPracticeTrack).toList();
+  // The active goal's concept cards — practice tracks feed readiness via transfer,
+  // not recall coverage (matches the readiness provider; task #30d, G2).
+  final cards =
+      goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
   if (cards.isEmpty) return null;
 
   final stateByKey = {
