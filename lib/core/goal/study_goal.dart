@@ -80,6 +80,40 @@ class StudyGoal {
         interviewDate: deadline,
       );
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'templateId': templateId,
+        'membership': membership.toJson(),
+        if (levelId != null) 'levelId': levelId,
+        if (contextId != null) 'contextId': contextId,
+        if (trackId != null) 'trackId': trackId,
+        if (deadline != null) 'deadline': deadline!.toIso8601String(),
+        'budgetWeight': budgetWeight,
+        'state': state.name,
+      };
+
+  static StudyGoal fromJson(Map<String, dynamic> m) => StudyGoal(
+        id: m['id'] as String,
+        name: (m['name'] ?? m['id']) as String,
+        templateId: (m['templateId'] ?? '') as String,
+        membership: m['membership'] is Map
+            ? MembershipQuery.fromJson(
+                (m['membership'] as Map).cast<String, dynamic>())
+            : const AllCards(),
+        levelId: m['levelId'] as String?,
+        contextId: m['contextId'] as String?,
+        trackId: m['trackId'] as String?,
+        deadline: m['deadline'] is String
+            ? DateTime.tryParse(m['deadline'] as String)
+            : null,
+        budgetWeight: (m['budgetWeight'] as num?)?.toDouble() ?? 1.0,
+        state: GoalState.values.firstWhere(
+          (s) => s.name == m['state'],
+          orElse: () => GoalState.active,
+        ),
+      );
+
   StudyGoal copyWith({
     String? name,
     String? templateId,

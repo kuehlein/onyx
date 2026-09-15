@@ -16,6 +16,17 @@ sealed class MembershipQuery {
 
   /// Whether [card] is a member of a goal using this query.
   bool matches(Card card);
+
+  Map<String, dynamic> toJson();
+
+  /// Rebuilds a query from its JSON; unknown/malformed → [AllCards] (safe: a goal
+  /// falls back to the whole vault rather than silently selecting nothing).
+  static MembershipQuery fromJson(Map<String, dynamic> json) =>
+      switch (json['kind']) {
+        'tag' => TagMembership((json['value'] ?? '') as String),
+        'folder' => FolderMembership((json['value'] ?? '') as String),
+        _ => const AllCards(),
+      };
 }
 
 /// Every card in the vault (the single-goal / whole-vault case).
@@ -24,6 +35,9 @@ class AllCards extends MembershipQuery {
 
   @override
   bool matches(Card card) => true;
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'all'};
 }
 
 /// Cards carrying [tag] (case-insensitive, leading `#` ignored) — the
@@ -41,6 +55,9 @@ class TagMembership extends MembershipQuery {
 
   @override
   bool matches(Card card) => card.tags.any((t) => _normalize(t) == tag);
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'tag', 'value': tag};
 }
 
 /// Cards under a vault subtree [path] (POSIX, relative to the root). An empty
@@ -63,4 +80,7 @@ class FolderMembership extends MembershipQuery {
       path.isEmpty ||
       card.filePath == path ||
       card.filePath.startsWith('$path/');
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'folder', 'value': path};
 }
