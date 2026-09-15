@@ -48,6 +48,15 @@ class _NoGoals extends PrepGoals {
   Future<List<PrepGoal>> build() async => const [];
 }
 
+/// A study-goals notifier pinned to a fixed list, so readiness doesn't scan the
+/// real dev vault to discover subjects/goals.
+class _FixedGoals extends StudyGoals {
+  _FixedGoals(this._goals);
+  final List<StudyGoal> _goals;
+  @override
+  Future<List<StudyGoal>> build() async => _goals;
+}
+
 void main() {
   // Strong DS&A, weak system design — the case where re-weighting between levels
   // should visibly move the overall roll-up.
@@ -71,7 +80,7 @@ void main() {
     'B::s1': srs('B', 5), // weak system design
   });
 
-  ProviderContainer make(AppDatabase db, {StudyGoal? goal}) =>
+  ProviderContainer make(AppDatabase db, {List<StudyGoal>? goals}) =>
       ProviderContainer(overrides: [
         appDatabaseProvider.overrideWithValue(db),
         vaultIndexProvider.overrideWith((ref) async => index),
@@ -80,13 +89,14 @@ void main() {
         // an active goal's domain weights would override the base target's
         // level-weighting this test is asserting on.
         prepGoalsProvider.overrideWith(_NoGoals.new),
-        // Pin the active study goal (whole-vault by default) so readiness doesn't
-        // scan the real dev vault to discover subjects (task #30d, G2).
-        studyGoalsProvider.overrideWith((ref) async => [
-              goal ??
-                  const StudyGoal(
-                      id: 'default', name: 'All', templateId: 'swe'),
-            ]),
+        // Pin the study goals (whole-vault default) so readiness doesn't scan the
+        // real dev vault to discover subjects/goals (task #30d).
+        studyGoalsProvider.overrideWith(() => _FixedGoals(
+              goals ??
+                  const [
+                    StudyGoal(id: 'default', name: 'All', templateId: 'swe')
+                  ],
+            )),
       ]);
 
   test('level does not move readiness on a foundational deck; track does',
@@ -125,18 +135,47 @@ void main() {
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     // A cross-cutting tag goal that selects only the DS&A card — system design is
     // a different lens and must drop out of this goal's readiness entirely.
-    final c = make(db,
-        goal: StudyGoal(
-          id: 'dsa',
-          name: 'DSA',
-          templateId: 'swe',
-          membership: TagMembership('ds-a'),
-        ));
+    final c = make(db, goals: [
+      StudyGoal(
+        id: 'dsa',
+        name: 'DSA',
+        templateId: 'swe',
+        membership: TagMembership('ds-a'),
+      )
+    ]);
     addTearDown(c.dispose);
     c.listen(readinessProvider, (_, __) {});
 
     final r = await c.read(readinessProvider.future);
     expect(r.domains.map((d) => d.domain), ['ds-a']);
+    await db.close();
+  });
+
+  test('selecting a goal switches which goal readiness targets', () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    final c = make(db, goals: [
+      const StudyGoal(id: 'default', name: 'All', templateId: 'swe'),
+      StudyGoal(
+        id: 'dsa',
+        name: 'DSA',
+        templateId: 'swe',
+        membership: TagMembership('ds-a'),
+      ),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(readinessProvider, (_, __) {});
+    c.listen(activeStudyGoalProvider, (_, __) {});
+
+    // Default goal selected → the whole vault (both domains).
+    final r1 = await c.read(readinessProvider.future);
+    expect(r1.domains.map((d) => d.domain),
+        containsAll(['ds-a', 'system-design']));
+
+    // Switch focus to the DS&A lens → readiness scopes to just it.
+    c.read(selectedStudyGoalIdProvider.notifier).select('dsa');
+    final r2 = await c.read(readinessProvider.future);
+    expect(r2.domains.map((d) => d.domain), ['ds-a']);
     await db.close();
   });
 
