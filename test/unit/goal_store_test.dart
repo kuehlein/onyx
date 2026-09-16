@@ -123,5 +123,26 @@ void main() {
       // The whole-vault default steps aside once explicit goals exist.
       expect(goals.map((g) => g.id), ['korean']);
     });
+
+    test('all-graduated stored goals fall back to the default', () async {
+      final grad = StudyGoal(
+        id: 'korean',
+        name: 'Korean',
+        templateId: 'korean',
+        membership: FolderMembership('korean'),
+        state: GoalState.graduated,
+      );
+      final src = _FakeSource({
+        GoalStore.fileName: jsonEncode([grad.toJson()])
+      });
+      final c = ProviderContainer(
+          overrides: [vaultSourceProvider.overrideWithValue(src)]);
+      addTearDown(c.dispose);
+
+      // No non-graduated goal → degrade to the whole-vault default, not run off
+      // an archived goal.
+      final goals = await c.read(studyGoalsProvider.future);
+      expect(goals.map((g) => g.id), [defaultGoalId]);
+    });
   });
 }

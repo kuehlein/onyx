@@ -63,12 +63,13 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final targeting = await ref.watch(activeTargetingProvider.future);
   final clock = await ref.watch(clockProvider.future);
   final now = clock.now();
-  // The active goal's slice of the shared budget (whole budget when it's the only
-  // active goal). Falls back to the full budget if the goal isn't in the split.
-  final total = await ref.watch(dailyBudgetMinutesProvider.future);
+  // The active goal's slice of the shared budget. A single active goal owns the
+  // whole budget (goalBudgets → {id: total}); an inactive (paused/graduated)
+  // selected goal isn't in the split, so it gets no plan budget (0), not the
+  // whole day.
   final goal = await ref.watch(activeStudyGoalProvider.future);
   final budgets = await ref.watch(goalBudgetsProvider.future);
-  final double budget = budgets[goal.id] ?? total;
+  final double budget = budgets[goal.id] ?? 0;
 
   // Days until the nearest upcoming interview (for the learn taper).
   final goals = await ref.watch(prepGoalsProvider.future);

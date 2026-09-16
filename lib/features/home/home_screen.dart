@@ -36,6 +36,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _focused = goalId);
   }
 
+  void _backToHub() {
+    // Reset the global selection so Insights/plan don't stay scoped to the lane
+    // we just left while the hub (no single active goal) is shown.
+    ref.read(selectedStudyGoalIdProvider.notifier).select(defaultGoalId);
+    setState(() => _focused = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Kick off the one-time restore-from-vault-if-empty on app start.
@@ -45,7 +52,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       for (final g in goals)
         if (g.state != GoalState.graduated) g,
     ];
-    final showHub = live.length >= 2 && _focused == null;
+    // Ignore a stale focus (the focused goal was paused/removed/graduated), so
+    // the title and body never disagree with what's actually live.
+    final focusedId = (_focused != null && live.any((g) => g.id == _focused))
+        ? _focused
+        : null;
+    final showHub = live.length >= 2 && focusedId == null;
 
     if (showHub) {
       return Scaffold(
@@ -60,11 +72,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Single-goal Home: the only goal, or the lane we entered.
-    final canGoBack = live.length >= 2 && _focused != null;
-    final focused = _focused == null
-        ? null
-        : live.firstWhere((g) => g.id == _focused,
-            orElse: () => live.isEmpty ? goals.first : live.first);
+    final canGoBack = live.length >= 2 && focusedId != null;
+    final focused =
+        focusedId == null ? null : live.firstWhere((g) => g.id == focusedId);
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 tooltip: "Today's mix",
-                onPressed: () => setState(() => _focused = null),
+                onPressed: _backToHub,
               )
             : null,
         title: Text(focused?.name ?? 'Onyx'),

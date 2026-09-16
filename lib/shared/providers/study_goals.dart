@@ -30,7 +30,11 @@ class StudyGoals extends _$StudyGoals {
       for (final g in loaded)
         if (g.id != defaultGoalId) g,
     ];
-    return stored.isEmpty ? [defaultGoalFor(registry.primary)] : stored;
+    // Fall back to the whole-vault default when there are no *non-graduated*
+    // goals — with all goals archived, Home/readiness must not silently run off a
+    // graduated goal (it degrades to the default whole-vault view instead).
+    final anyLive = stored.any((g) => g.state != GoalState.graduated);
+    return anyLive ? stored : [defaultGoalFor(registry.primary)];
   }
 
   /// The persisted goals — everything except the synthesized default.
@@ -82,5 +86,13 @@ class SelectedStudyGoalId extends _$SelectedStudyGoalId {
 Future<StudyGoal> activeStudyGoal(Ref ref) async {
   final goals = await ref.watch(studyGoalsProvider.future);
   final id = ref.watch(selectedStudyGoalIdProvider);
-  return goals.firstWhere((g) => g.id == id, orElse: () => goals.first);
+  return goals.firstWhere(
+    (g) => g.id == id,
+    // No selection match → the first non-graduated goal (never an archived one),
+    // else just the first.
+    orElse: () => goals.firstWhere(
+      (g) => g.state != GoalState.graduated,
+      orElse: () => goals.first,
+    ),
+  );
 }

@@ -140,10 +140,11 @@ class StudySession extends _$StudySession {
       final index = await ref.read(vaultIndexProvider.future);
       final targeting = await ref.read(activeTargetingProvider.future);
       final goal = await ref.read(activeStudyGoalProvider.future);
+      final applied = await ref.read(appliedTransferProvider.future);
       // Mirror readinessProvider exactly so the before/after delta on the
-      // completion screen is honest: scope to the active goal's cards and exclude
-      // practice-track cards (they feed readiness via transfer, not recall
-      // coverage). Recall-only here (no transfer), same as the "after" base.
+      // completion screen is honest: same active-goal card scope, practice-track
+      // exclusion, targeting, AND transfer gating (once mocks exist, the "after"
+      // is transfer-gated — the "before" must be too, or the delta skews).
       final cards =
           goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
       final domains = <String>{
@@ -159,6 +160,7 @@ class StudySession extends _$StudySession {
         domainWeights: {
           for (final d in domains) d: targeting.weightForDomain(d),
         },
+        transferByDomain: applied.interview ? applied.byDomain : null,
       );
     } catch (_) {
       before = null; // summary just omits the delta
