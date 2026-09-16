@@ -213,11 +213,13 @@ StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
 /// goal uses the legacy saved target; any other goal carries its own
 /// level/context/track (+ deadline).
 ///
-/// NOTE (#30d multi-template): this resolves the goal's target *ids* against its
-/// own template, but the downstream scoring (domainWeight/tierRelevance/
-/// stabilityTarget/ladder) still reads the process-global activeSubject. Correct
-/// while one template is active (single subject); when multiple templates are
-/// wired, thread the goal's SubjectConfig into that math. See the plan doc.
+/// NOTE (#30d multi-template): [goalReadiness] now scores each goal against its
+/// OWN template (durability bar + domain weights). The remaining sliver:
+/// readinessLadderPosition/readinessForecast/readinessPace (single-goal-Home
+/// surfaces, via ladder.dart + projection.dart) still read the process-global
+/// activeSubject — correct for the default/active goal on the primary template;
+/// thread the goal's SubjectConfig there too when a focused non-default goal needs
+/// its own ladder/forecast.
 @riverpod
 Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
   // Register every dependency synchronously, before any await, so a mid-flight
@@ -273,11 +275,12 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
   final targetingF = ref.watch(targetingForGoalProvider(goalId).future);
+  final targetF = ref.watch(targetForGoalProvider(goalId).future);
+  final registryF = ref.watch(subjectRegistryProvider.future);
   final appliedF = ref.watch(appliedTransferProvider.future);
   final goal = _pick(await goalsF, goalId);
   final index = await indexF;
   final states = await statesF;
-  final targeting = await targetingF;
   final applied = await appliedF;
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
@@ -293,11 +296,32 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
     for (final c in conceptCards)
       if (c.domain != null) c.domain!,
   };
+
+  // Score against the goal's OWN template (durability bar + domain weights). The
+  // default goal keeps the full targeting (base target + active prep-goal boosts,
+  // primary template); any other goal uses its template's TargetSpec directly, so
+  // a Korean goal isn't scored with SWE's durability/weights (multi-template).
+  final double stabilityTarget;
+  final Map<String, double> domainWeights;
+  if (goal.id == defaultGoalId) {
+    final targeting = await targetingF;
+    stabilityTarget = targeting.stabilityTarget;
+    domainWeights = {for (final d in domains) d: targeting.weightForDomain(d)};
+  } else {
+    final registry = await registryF;
+    final spec = (registry.byId(goal.templateId) ?? registry.primary).target;
+    final t = await targetF;
+    stabilityTarget = spec.stabilityTargetDays(t.contextId);
+    domainWeights = {
+      for (final d in domains) d: spec.domainWeight(t.trackId, d),
+    };
+  }
+
   return computeReadiness(
     cards: conceptCards,
     stabilityByKey: stabilityByKey,
-    stabilityTarget: targeting.stabilityTarget,
-    domainWeights: {for (final d in domains) d: targeting.weightForDomain(d)},
+    stabilityTarget: stabilityTarget,
+    domainWeights: domainWeights,
     transferByDomain: applied.interview ? applied.byDomain : null,
   );
 }
