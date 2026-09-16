@@ -203,11 +203,11 @@ Future<Targeting> targeting(Ref ref) async {
   ]);
 }
 
-/// Resolve a goal by id from the current list, falling back to the default/first.
-Future<StudyGoal> _goalById(Ref ref, String goalId) async {
-  final goals = await ref.watch(studyGoalsProvider.future);
-  return goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
-}
+/// Resolve a goal by id from an already-loaded list, falling back to the
+/// default/first. (Pure — the caller watches [studyGoalsProvider] up front so
+/// there's no ref use after an await; see the note on [goalReadiness].)
+StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
+    goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
 
 /// A given goal's base [ReadinessTarget] (task #30d). The default (whole-vault)
 /// goal uses the legacy saved target; any other goal carries its own
@@ -220,11 +220,15 @@ Future<StudyGoal> _goalById(Ref ref, String goalId) async {
 /// wired, thread the goal's SubjectConfig into that math. See the plan doc.
 @riverpod
 Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
-  final goal = await _goalById(ref, goalId);
-  if (goal.id == defaultGoalId) {
-    return ref.watch(readinessTargetControllerProvider.future);
-  }
-  final registry = await ref.watch(subjectRegistryProvider.future);
+  // Register every dependency synchronously, before any await, so a mid-flight
+  // invalidation (e.g. a goal edit/pause rebuilding studyGoals) can't leave us
+  // using a disposed ref after the async gap.
+  final goalsF = ref.watch(studyGoalsProvider.future);
+  final controllerF = ref.watch(readinessTargetControllerProvider.future);
+  final registryF = ref.watch(subjectRegistryProvider.future);
+  final goal = _pick(await goalsF, goalId);
+  if (goal.id == defaultGoalId) return controllerF;
+  final registry = await registryF;
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 }
 
@@ -233,14 +237,12 @@ Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
 /// target (no interview sub-targets yet).
 @riverpod
 Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
-  final goal = await _goalById(ref, goalId);
-  if (goal.id == defaultGoalId) {
-    return ref.watch(targetingProvider.future);
-  }
-  return Targeting(
-    base: await ref.watch(targetForGoalProvider(goalId).future),
-    goals: const [],
-  );
+  final goalsF = ref.watch(studyGoalsProvider.future);
+  final baseTargetingF = ref.watch(targetingProvider.future);
+  final targetF = ref.watch(targetForGoalProvider(goalId).future);
+  final goal = _pick(await goalsF, goalId);
+  if (goal.id == defaultGoalId) return baseTargetingF;
+  return Targeting(base: await targetF, goals: const []);
 }
 
 /// The ACTIVE goal's base target — see [targetForGoal]. Single default goal →
@@ -264,11 +266,19 @@ Future<Targeting> activeTargeting(Ref ref) async {
 /// this per lane; nothing is stored (recomputed, so it persists across devices).
 @riverpod
 Future<Readiness> goalReadiness(Ref ref, String goalId) async {
-  final goal = await _goalById(ref, goalId);
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
-  final targeting = await ref.watch(targetingForGoalProvider(goalId).future);
-  final applied = await ref.watch(appliedTransferProvider.future);
+  // Watch every dependency synchronously (before the first await): a goal
+  // edit/pause rebuilds studyGoals and invalidates this instance, and any
+  // ref.watch after an await would then throw "used after disposed".
+  final goalsF = ref.watch(studyGoalsProvider.future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final targetingF = ref.watch(targetingForGoalProvider(goalId).future);
+  final appliedF = ref.watch(appliedTransferProvider.future);
+  final goal = _pick(await goalsF, goalId);
+  final index = await indexF;
+  final states = await statesF;
+  final targeting = await targetingF;
+  final applied = await appliedF;
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
