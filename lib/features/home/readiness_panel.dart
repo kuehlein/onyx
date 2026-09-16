@@ -532,7 +532,7 @@ class _MilestoneChips extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final goalLevel = pos.goalIndex ~/ 2; // 2 rungs (Typical, FAANG) per level
-    final goalLabel = readinessLadder[pos.goalIndex].label;
+    final goalLabel = pos.goalLabel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -44,6 +44,7 @@ void main() {
     youFraction: 0.6,
     goalIndex: 5, // Senior · FAANG
     goalFraction: 0.75,
+    goalLabel: 'Senior · FAANG',
     currentLabel: 'Mid · FAANG',
     rungsToGo: 2,
   );

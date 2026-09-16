@@ -15,6 +15,7 @@ library;
 
 import 'dart:convert';
 import '../subject/active_subject.dart';
+import '../subject/subject_config.dart';
 import '../util.dart';
 
 enum SeniorityLevel { newGrad, mid, senior, staff }
@@ -61,6 +62,7 @@ class ReadinessTarget {
     required this.contextId,
     required this.trackId,
     this.interviewDate,
+    this.templateTarget,
   });
 
   /// Ergonomic construction from the SWE enums (maps to slot ids). Transitional.
@@ -69,12 +71,14 @@ class ReadinessTarget {
     required CompanyTier company,
     required Track track,
     DateTime? interviewDate,
+    TargetSpec? templateTarget,
   }) =>
       ReadinessTarget(
         levelId: level.name,
         contextId: company.name,
         trackId: track.name,
         interviewDate: interviewDate,
+        templateTarget: templateTarget,
       );
 
   final String levelId;
@@ -83,6 +87,17 @@ class ReadinessTarget {
 
   /// Date-only (local midnight) of the interview, or null if not set.
   final DateTime? interviewDate;
+
+  /// The owning goal's template dimensions (durability bars, domain weights, tier
+  /// curves, ladder slots), carried transiently so per-goal scoring uses the
+  /// goal's OWN template rather than the process-global primary (#30d
+  /// multi-template). Null → default to the active subject. NOT serialized and NOT
+  /// part of equality (it's derived config, not stored state).
+  final TargetSpec? templateTarget;
+
+  /// The [TargetSpec] to score against — the goal's template, or the active
+  /// subject's when unset.
+  TargetSpec get spec => templateTarget ?? activeSubject.target;
 
   static const fallback = ReadinessTarget(
     levelId: 'mid',
@@ -102,15 +117,14 @@ class ReadinessTarget {
   /// A compact human label, e.g. "Senior · FAANG · Backend" — from the active
   /// subject's slot labels.
   String get label {
-    final t = activeSubject.target;
+    final t = spec;
     return '${t.levelById(levelId).label} · ${t.contextById(contextId).label} · '
         '${t.trackById(trackId).label}';
   }
 
   /// The FSRS stability (days) at which recall counts as fully durable — the
-  /// active subject's **context** slot (SWE: FAANG 120 else 90). See #30.
-  double get stabilityTarget =>
-      activeSubject.target.stabilityTargetDays(contextId);
+  /// goal template's **context** slot (SWE: FAANG 120 else 90). See #30.
+  double get stabilityTarget => spec.stabilityTargetDays(contextId);
 
   ReadinessTarget copyWith({
     SeniorityLevel? level,
@@ -128,6 +142,8 @@ class ReadinessTarget {
         interviewDate: interviewDate == _unset
             ? this.interviewDate
             : interviewDate as DateTime?,
+        // Preserve the template across copies (e.g. per-rung ladder scoring).
+        templateTarget: templateTarget,
       );
 
   // JSON keys stay level/company/track (values are slot ids == legacy enum
@@ -182,7 +198,7 @@ DateTime? _parseDate(Object? v) {
 /// domains — an inversion (verified 2026-09). Track still shapes emphasis
 /// because interview *type* genuinely differs by track.
 double domainWeight(ReadinessTarget target, String domain) =>
-    activeSubject.target.domainWeight(target.trackId, domain);
+    target.spec.domainWeight(target.trackId, domain);
 
 /// Relevance weight (0..1) of knowledge at a given **tier** (knowledge-hierarchy
 /// depth, 1 = foundational → higher = specialist) for a target [level]'s
@@ -209,5 +225,7 @@ double tierRelevance(SeniorityLevel level, int? tier) =>
 
 /// The tier→weight map for a [target]'s level, covering tiers 1..[maxTier].
 /// Passed to `computeReadiness` so coverage + strength are relevance-weighted.
-Map<int, double> tierWeightsFor(ReadinessTarget target, {int maxTier = 8}) =>
-    {for (var t = 1; t <= maxTier; t++) t: tierRelevance(target.level, t)};
+Map<int, double> tierWeightsFor(ReadinessTarget target, {int maxTier = 8}) => {
+      for (var t = 1; t <= maxTier; t++)
+        t: target.spec.tierRelevance(target.levelId, t),
+    };

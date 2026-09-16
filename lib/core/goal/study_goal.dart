@@ -83,6 +83,9 @@ class StudyGoal {
       contextId: slot(contextId, template.target.fallbackContextId),
       trackId: slot(trackId, template.target.fallbackTrackId),
       interviewDate: d == null ? null : DateTime(d.year, d.month, d.day),
+      // Carry the template so per-goal scoring (readiness, ladder, forecast) uses
+      // this goal's own dimensions, not the process-global primary (#30d).
+      templateTarget: template.target,
     );
   }
 

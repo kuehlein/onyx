@@ -253,7 +253,7 @@ ReadinessProjection projectReadiness({
   for (final card in cards) {
     if (card.domain == null) continue;
     final rel = (domainWeights[card.domain] ?? 1.0) *
-        tierRelevance(target.level, card.tiers[card.domain]);
+        target.spec.tierRelevance(target.levelId, card.tiers[card.domain]);
     for (final section in card.quizzableSections) {
       final key = '${card.id}::${section.slug}';
       final st = stateByKey[key];

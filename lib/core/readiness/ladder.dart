@@ -9,6 +9,7 @@ library;
 
 import '../../shared/models/card.dart';
 import '../subject/active_subject.dart';
+import '../subject/subject_config.dart';
 import '../interview/transfer.dart';
 import 'readiness.dart';
 import 'target.dart';
@@ -27,9 +28,13 @@ class Rung {
 /// second (SWE: Typical before FAANG), generated from the active subject config.
 /// A getter (not a memoized final) so it always reflects the current
 /// [activeSubject] — which the vault loader may set after startup (#30 Phase 5).
-List<Rung> get readinessLadder => [
-      for (final level in activeSubject.target.levels)
-        for (final context in activeSubject.target.contexts)
+List<Rung> get readinessLadder => ladderFor(activeSubject.target);
+
+/// The rungs for a specific template's [spec] (#30d multi-template) — so each
+/// goal's ladder uses its own level/context slots, not the process-global primary.
+List<Rung> ladderFor(TargetSpec spec) => [
+      for (final level in spec.levels)
+        for (final context in spec.contexts)
           Rung(level.id, context.id, '${level.label} · ${context.label}'),
     ];
 
@@ -43,6 +48,7 @@ class LadderPosition {
     required this.youFraction,
     required this.goalIndex,
     required this.goalFraction,
+    required this.goalLabel,
     required this.currentLabel,
     required this.rungsToGo,
   });
@@ -60,6 +66,9 @@ class LadderPosition {
 
   /// The goal pin, 0..1 across the ladder (the goal rung's upper boundary).
   final double goalFraction;
+
+  /// Label of the goal rung (from the goal's own template).
+  final String goalLabel;
 
   /// The highest cleared rung's label, or null when nothing is cleared yet.
   final String? currentLabel;
@@ -86,9 +95,8 @@ LadderPosition computeLadderPosition({
       if (c.domain != null) c.domain!,
   };
 
-  // Snapshot the (config-generated) ladder once — the getter rebuilds it on every
-  // access, so read it a single time here for consistency + to avoid O(n²) rebuilds.
-  final ladder = readinessLadder;
+  // The ladder for the goal's OWN template (#30d multi-template), snapshotted once.
+  final ladder = ladderFor(target.spec);
   final scores = <double>[];
   for (final rung in ladder) {
     final t = target.copyWith(levelId: rung.levelId, contextId: rung.contextId);
@@ -131,6 +139,7 @@ LadderPosition computeLadderPosition({
     youFraction: youFraction,
     goalIndex: goalIndex,
     goalFraction: goalFraction,
+    goalLabel: ladder[goalIndex].label,
     currentLabel: cleared == 0 ? null : ladder[cleared - 1].label,
     rungsToGo: ((goalIndex + 1) - cleared).clamp(0, n),
   );

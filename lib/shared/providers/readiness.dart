@@ -390,12 +390,21 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
 @riverpod
 Future<ReadinessForecast?> readinessForecastFor(
     Ref ref, ForecastDims dims) async {
+  final registryF = ref.watch(subjectRegistryProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final target = ReadinessTarget.of(
-      level: dims.level, company: dims.company, track: dims.track);
   final today = (await ref.watch(clockProvider.future)).today();
   final goal = await ref.watch(activeStudyGoalProvider.future);
+  // Forecast against the active goal's OWN template (#30d multi-template); the
+  // dims record stays role-only so the per-role memoisation + external callers are
+  // unchanged.
+  final registry = await registryF;
+  final target = ReadinessTarget.of(
+    level: dims.level,
+    company: dims.company,
+    track: dims.track,
+    templateTarget: registry.byId(goal.templateId)?.target,
+  );
 
   // The active goal's concept cards — practice tracks feed readiness via transfer,
   // not recall coverage (matches the readiness provider; task #30d, G2).

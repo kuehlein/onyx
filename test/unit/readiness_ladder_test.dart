@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/subject/subject_config.dart';
 import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, String domain, int tier, List<String> slugs) => Card(
@@ -20,6 +21,31 @@ Card _card(String id, String domain, int tier, List<String> slugs) => Card(
 
 void main() {
   group('computeLadderPosition', () {
+    test('the ladder uses the goal template rungs (multi-template)', () {
+      const spec = TargetSpec(
+        levels: [
+          LevelValue(id: 'a', label: 'A', tierCurve: [1.0]),
+          LevelValue(id: 'b', label: 'B', tierCurve: [1.0]),
+        ],
+        contexts: [ContextValue(id: 'c', label: 'C', stabilityTargetDays: 30)],
+        tracks: [TrackValue(id: 't', label: 'T')],
+        families: [],
+        fallbackLevelId: 'a',
+        fallbackContextId: 'c',
+        fallbackTrackId: 't',
+      );
+      final pos = computeLadderPosition(
+        cards: const [],
+        stabilityByKey: const {},
+        // A target carrying this template → the ladder is that template's slots
+        // (2 levels × 1 context = 2 rungs), not SWE's 8.
+        target: const ReadinessTarget(
+            levelId: 'b', contextId: 'c', trackId: 't', templateTarget: spec),
+      );
+      expect(pos.rungScores.length, 2);
+      expect(pos.goalLabel, 'B · C');
+    });
+
     test('nothing studied → clears no rung; pin at the floor', () {
       final pos = computeLadderPosition(
         cards: [
