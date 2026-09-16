@@ -5,9 +5,12 @@ three adversarial passes. Interpretation layer (M1/M2) + the study-goal grouping
 layer (G1–G7) shipped: goals persist, are created/edited/graduated in-app, drive
 per-goal readiness + a shared cross-goal budget, and surface as the lanes hub —
 with single-goal vaults byte-identical to before (the "one goal → today's Home"
-degradation). Remaining/next: multi-*template* correctness (per-goal scoring math
-still reads the global activeSubject — inert until >1 template is active), a live
-conversation/practice screen (deferred from #30c), and #50 second-brain.
+degradation). Post-#30d follow-ups also done: the in-lane study queues
+(review/learn/algo/SD) scope to the active goal, and per-goal **readiness** scores
+against each goal's own template (multi-template). Remaining slivers: the
+ladder/forecast/pace single-goal-Home surfaces still use the primary template
+(fine for the default/active goal); a live conversation/practice screen (deferred
+from #30c); then #50 second-brain.
 
 ## North star
 
