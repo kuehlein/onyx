@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/goal/budget.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
@@ -11,6 +12,7 @@ import 'practice_plan.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'daily_plan.g.dart';
@@ -39,18 +41,34 @@ Future<double> dailyBudgetMinutes(Ref ref) async {
   );
 }
 
+/// The shared daily budget split across the active goals by weight, honoring
+/// pause (task #30d, G4): `goalId → minutes`. A single active goal gets the whole
+/// budget, so single-goal behavior is unchanged.
+@riverpod
+Future<Map<String, double>> goalBudgets(Ref ref) async {
+  final goals = await ref.watch(studyGoalsProvider.future);
+  final total = await ref.watch(dailyBudgetMinutesProvider.future);
+  return allocateBudget(goals: goals, totalMinutes: total);
+}
+
 /// The assembled daily plan: raw availability (phase 1) + prerequisite gating +
 /// level/recency/cadence context, run through the pure meta-scheduler (phase 2).
-/// This is what Home renders and the coach reasons about.
+/// This is what Home renders and the coach reasons about. Computed for the active
+/// goal, budgeted to its slice of the shared daily time (G4).
 @riverpod
 Future<DailyPlan> dailyPlan(Ref ref) async {
   final availRaw = await ref.watch(practiceAvailabilityProvider.future);
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final targeting = await ref.watch(targetingProvider.future);
+  final targeting = await ref.watch(activeTargetingProvider.future);
   final clock = await ref.watch(clockProvider.future);
   final now = clock.now();
-  final budget = await ref.watch(dailyBudgetMinutesProvider.future);
+  // The active goal's slice of the shared budget (whole budget when it's the only
+  // active goal). Falls back to the full budget if the goal isn't in the split.
+  final total = await ref.watch(dailyBudgetMinutesProvider.future);
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  final budgets = await ref.watch(goalBudgetsProvider.future);
+  final double budget = budgets[goal.id] ?? total;
 
   // Days until the nearest upcoming interview (for the learn taper).
   final goals = await ref.watch(prepGoalsProvider.future);
