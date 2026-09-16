@@ -64,16 +64,19 @@ class ReviewQueueData {
 /// Assembles the current review queue from the indexed cards + scheduling state.
 @riverpod
 Future<ReviewQueueData> reviewQueue(Ref ref) async {
+  final goalF = ref.watch(activeStudyGoalProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
   final clock = await ref.watch(clockProvider.future);
+  final goal = await goalF;
   final states = await repo.loadStates();
   final dueByKey = {for (final e in states.entries) e.key: e.value.dueAt};
   final queue = buildReviewQueue(
-    // Practice-track cards (Algorithms, System Design) live on their own paced
-    // queues (see algoQueueProvider), not the general review queue.
+    // Scope to the active goal's cards (task #30d, G5+): entering a lane reviews
+    // that goal's material. Practice-track cards (Algorithms, System Design) live
+    // on their own paced queues, not the general review queue.
     cards: [
-      for (final c in index.cards)
+      for (final c in goal.select(index.cards))
         if (!c.isPracticeTrack) c,
     ],
     dueByKey: dueByKey,
