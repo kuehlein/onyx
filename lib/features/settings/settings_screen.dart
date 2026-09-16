@@ -22,6 +22,7 @@ import '../../shared/providers/readiness.dart';
 import '../../shared/providers/stats.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/status_colors.dart';
+import '../home/goal_editor_sheet.dart';
 import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -64,6 +65,14 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const _SectionHeader('Learning'),
+          ListTile(
+            leading: const Icon(Icons.flag_outlined),
+            title: const Text('Study goals'),
+            subtitle: const Text(
+                'Define subjects/focuses to study concurrently — they share '
+                'your daily time.'),
+            onTap: () => showGoalsManager(context),
+          ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('How much should I study?'),

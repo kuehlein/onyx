@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/features/home/goal_editor_sheet.dart';
+import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/subject.dart';
+
+class _CapturingGoals extends StudyGoals {
+  StudyGoal? upserted;
+  @override
+  Future<List<StudyGoal>> build() async => const [];
+  @override
+  Future<void> upsert(StudyGoal goal) async => upserted = goal;
+}
+
+void main() {
+  testWidgets('creating a goal from the editor upserts it', (tester) async {
+    final cap = _CapturingGoals();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          studyGoalsProvider.overrideWith(() => cap),
+          subjectRegistryProvider.overrideWith(
+              (ref) async => SubjectRegistry.single(softwareInterviewsConfig)),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => showGoalEditor(ctx),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Create is disabled until the goal has a name.
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'Korean');
+    await tester.pump();
+
+    // Scope to a tag lens.
+    await tester.tap(find.text('Tag'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).last, 'korean');
+    await tester.pump();
+
+    await tester.tap(find.text('Create goal'));
+    await tester.pumpAndSettle();
+
+    expect(cap.upserted, isNotNull);
+    expect(cap.upserted!.name, 'Korean');
+    expect(cap.upserted!.id, 'korean');
+    expect(cap.upserted!.membership, isA<TagMembership>());
+  });
+}

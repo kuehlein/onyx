@@ -6,6 +6,7 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
+import 'goal_editor_sheet.dart';
 
 /// The "Today's mix" lanes hub (task #30d, G5): one lane per concurrent study
 /// goal, showing its share of today's shared budget, readiness, and deadline.
@@ -57,6 +58,12 @@ class LanesHub extends ConsumerWidget {
               _PausedRow(goal: g),
               const SizedBox(height: 8),
             ],
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('New goal'),
+              onPressed: () => showGoalEditor(context),
+            ),
           ],
         );
       },
@@ -89,6 +96,7 @@ class _GoalLane extends ConsumerWidget {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => onEnter(goal.id),
+        onLongPress: () => showGoalEditor(context, goal: goal),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
