@@ -203,59 +203,79 @@ Future<Targeting> targeting(Ref ref) async {
   ]);
 }
 
-/// The active study goal's base [ReadinessTarget] (task #30d, G3a). The default
-/// (whole-vault) goal uses the legacy saved target; any other goal carries its own
-/// level/context/track (+ deadline). A single default goal → identical to before.
+/// Resolve a goal by id from the current list, falling back to the default/first.
+Future<StudyGoal> _goalById(Ref ref, String goalId) async {
+  final goals = await ref.watch(studyGoalsProvider.future);
+  return goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
+}
+
+/// A given goal's base [ReadinessTarget] (task #30d). The default (whole-vault)
+/// goal uses the legacy saved target; any other goal carries its own
+/// level/context/track (+ deadline).
+///
+/// NOTE (#30d multi-template): this resolves the goal's target *ids* against its
+/// own template, but the downstream scoring (domainWeight/tierRelevance/
+/// stabilityTarget/ladder) still reads the process-global activeSubject. Correct
+/// while one template is active (single subject); when multiple templates are
+/// wired, thread the goal's SubjectConfig into that math. See the plan doc.
 @riverpod
-Future<ReadinessTarget> activeTarget(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
+Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
+  final goal = await _goalById(ref, goalId);
   if (goal.id == defaultGoalId) {
     return ref.watch(readinessTargetControllerProvider.future);
   }
   final registry = await ref.watch(subjectRegistryProvider.future);
-  // NOTE (#30d multi-template): this resolves the goal's target *ids* against its
-  // own template, but the downstream scoring (domainWeight/tierRelevance/
-  // stabilityTarget/ladder) still reads the process-global activeSubject. Correct
-  // while one template is active (single subject); when multiple templates are
-  // wired, thread the goal's SubjectConfig into that math. See the plan doc.
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 }
 
-/// The active goal's effective [Targeting]. The default goal keeps the full
+/// A given goal's effective [Targeting]. The default goal keeps the full
 /// base-target + active-prep-goals combination; a standalone goal has just its own
-/// target (no interview sub-targets yet). Single default goal → identical to
-/// [targeting].
+/// target (no interview sub-targets yet).
 @riverpod
-Future<Targeting> activeTargeting(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
+Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
+  final goal = await _goalById(ref, goalId);
   if (goal.id == defaultGoalId) {
     return ref.watch(targetingProvider.future);
   }
   return Targeting(
-    base: await ref.watch(activeTargetProvider.future),
+    base: await ref.watch(targetForGoalProvider(goalId).future),
     goals: const [],
   );
 }
 
-/// Knowledge-base readiness (Phase A), derived from the indexed cards + current
-/// FSRS stability, weighted toward the chosen target. Nothing extra is stored:
-/// it recomputes from `srs_state` (already synced to the vault snapshot) and the
-/// synced target — so readiness persists across devices for free.
+/// The ACTIVE goal's base target — see [targetForGoal]. Single default goal →
+/// identical to the legacy saved target.
 @riverpod
-Future<Readiness> readiness(Ref ref) async {
+Future<ReadinessTarget> activeTarget(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(targetForGoalProvider(goal.id).future);
+}
+
+/// The ACTIVE goal's targeting — see [targetingForGoal]. Single default goal →
+/// identical to [targeting].
+@riverpod
+Future<Targeting> activeTargeting(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(targetingForGoalProvider(goal.id).future);
+}
+
+/// Knowledge-base readiness (Phase A) for a SPECIFIC goal — its member cards
+/// scored against its target, from `srs_state` + FSRS stability. The hub reads
+/// this per lane; nothing is stored (recomputed, so it persists across devices).
+@riverpod
+Future<Readiness> goalReadiness(Ref ref, String goalId) async {
+  final goal = await _goalById(ref, goalId);
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
-  final targeting = await ref.watch(activeTargetingProvider.future);
+  final targeting = await ref.watch(targetingForGoalProvider(goalId).future);
   final applied = await ref.watch(appliedTransferProvider.future);
-  final goal = await ref.watch(activeStudyGoalProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
-  // Scope to the active goal's member cards (task #30d, G2); the whole-vault
-  // default goal selects everything, so numbers are unchanged. Practice tracks
-  // (Algorithms, System Design) are separate: they count toward readiness through
-  // the *transfer* factor (they record applied attempts), not the recall-coverage
-  // denominator — so they don't drag knowledge-base coverage down as unlearned
+  // Scope to the goal's member cards (task #30d, G2); the whole-vault default goal
+  // selects everything, so numbers are unchanged. Practice tracks (Algorithms,
+  // System Design) count toward readiness via the *transfer* factor, not the
+  // recall-coverage denominator — so they don't drag coverage down as unlearned
   // "concept" sections.
   final conceptCards =
       goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
@@ -270,6 +290,13 @@ Future<Readiness> readiness(Ref ref) async {
     domainWeights: {for (final d in domains) d: targeting.weightForDomain(d)},
     transferByDomain: applied.interview ? applied.byDomain : null,
   );
+}
+
+/// Knowledge-base readiness for the ACTIVE goal — see [goalReadiness].
+@riverpod
+Future<Readiness> readiness(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalReadinessProvider(goal.id).future);
 }
 
 /// Where the current knowledge base sits on the level×company ladder relative
