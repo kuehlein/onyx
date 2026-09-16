@@ -11,6 +11,7 @@ import 'clock.dart';
 import 'coach.dart';
 import 'database.dart';
 import 'readiness.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'srs.g.dart';
@@ -137,16 +138,20 @@ class StudySession extends _$StudySession {
     Readiness? before;
     try {
       final index = await ref.read(vaultIndexProvider.future);
-      final targeting = await ref.read(targetingProvider.future);
+      final targeting = await ref.read(activeTargetingProvider.future);
+      final goal = await ref.read(activeStudyGoalProvider.future);
+      // Mirror readinessProvider exactly so the before/after delta on the
+      // completion screen is honest: scope to the active goal's cards and exclude
+      // practice-track cards (they feed readiness via transfer, not recall
+      // coverage). Recall-only here (no transfer), same as the "after" base.
+      final cards =
+          goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
       final domains = <String>{
-        for (final c in index.cards)
+        for (final c in cards)
           if (c.domain != null) c.domain!,
       };
-      // Match readinessProvider's weighting (targeting layer) so the before/
-      // after delta on the completion screen stays consistent once prep goals
-      // are active. Recall-only here (no transfer), same as the "after" base.
       before = computeReadiness(
-        cards: index.cards,
+        cards: cards,
         stabilityByKey: {
           for (final e in data.statesByKey.entries) e.key: e.value.stability,
         },
