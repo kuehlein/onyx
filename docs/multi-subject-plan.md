@@ -6,11 +6,11 @@ layer (G1–G7) shipped: goals persist, are created/edited/graduated in-app, dri
 per-goal readiness + a shared cross-goal budget, and surface as the lanes hub —
 with single-goal vaults byte-identical to before (the "one goal → today's Home"
 degradation). Post-#30d follow-ups also done: the in-lane study queues
-(review/learn/algo/SD) scope to the active goal, and per-goal **readiness** scores
-against each goal's own template (multi-template). Remaining slivers: the
-ladder/forecast/pace single-goal-Home surfaces still use the primary template
-(fine for the default/active goal); a live conversation/practice screen (deferred
-from #30c); then #50 second-brain.
+(review/learn/algo/SD) scope to the active goal, and **all** per-goal scoring —
+readiness, ladder, and forecast — grades against each goal's own template
+(multi-template; `ReadinessTarget` carries a transient `TargetSpec`, pace was
+already goal-correct). The multi-template story is now complete. Remaining: a live
+conversation/practice screen (deferred from #30c); then #50 second-brain.
 
 ## North star
 
