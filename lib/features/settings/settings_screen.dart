@@ -768,8 +768,12 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
     }
 
     final perDay = _perDay ?? f.currentPerDay;
-    // Slider spans a light floor up to the fastest pace we simulated.
-    final maxPace = f.maxSampledPerDay.clamp(perDay + 1, NewCardLimit.max);
+    // Slider spans a light floor up to the fastest pace we simulated. Cap the
+    // lower clamp bound at NewCardLimit.max: dragging to the far end makes perDay
+    // reach the max, and clamp(perDay + 1, max) would throw (lower > upper).
+    final headroom =
+        (perDay + 1) > NewCardLimit.max ? NewCardLimit.max : perDay + 1;
+    final maxPace = f.maxSampledPerDay.clamp(headroom, NewCardLimit.max);
     const minPace = NewCardLimit.min;
     final value = perDay.clamp(minPace, maxPace);
 
