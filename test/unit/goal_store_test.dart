@@ -90,7 +90,17 @@ void main() {
       activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
     });
 
-    test('leads with the default goal, then stored goals', () async {
+    test('no stored goals → just the synthesized default', () async {
+      final c = ProviderContainer(overrides: [
+        vaultSourceProvider.overrideWithValue(_FakeSource()),
+      ]);
+      addTearDown(c.dispose);
+      final goals = await c.read(studyGoalsProvider.future);
+      expect(goals.map((g) => g.id), [defaultGoalId]);
+    });
+
+    test('stored goals replace the default (which is only a fallback)',
+        () async {
       final stored = StudyGoal(
         id: 'korean',
         name: 'Korean',
@@ -110,8 +120,8 @@ void main() {
       addTearDown(c.dispose);
 
       final goals = await c.read(studyGoalsProvider.future);
-      expect(goals.first.id, defaultGoalId);
-      expect(goals.map((g) => g.id), ['default', 'korean']);
+      // The whole-vault default steps aside once explicit goals exist.
+      expect(goals.map((g) => g.id), ['korean']);
     });
   });
 }

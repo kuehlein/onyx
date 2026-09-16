@@ -3,108 +3,167 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
+import '../../core/goal/study_goal.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
+import 'lanes_hub.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
 
-/// Home: today's small wins first (the motivating metric), a glanceable readiness
-/// chip for context, then the day's flows in priority order — the detailed charts
-/// live on Insights. Kept deliberately calm and uncluttered.
-class HomeScreen extends ConsumerWidget {
+/// Home: with a single study goal it shows today's Home directly (the degradation
+/// rule). With two or more concurrent goals it shows the "Today's mix" lanes hub;
+/// tapping a lane enters that goal's Home, with a back arrow to the hub (#30d G5).
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// The goal whose Home we've entered from the hub; null = show the hub.
+  String? _focused;
+
+  void _enter(String goalId) {
+    ref.read(selectedStudyGoalIdProvider.notifier).select(goalId);
+    setState(() => _focused = goalId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Kick off the one-time restore-from-vault-if-empty on app start.
     ref.watch(startupRestoreProvider);
+    final goals = ref.watch(studyGoalsProvider).asData?.value ?? const [];
+    final live = [
+      for (final g in goals)
+        if (g.state != GoalState.graduated) g,
+    ];
+    final showHub = live.length >= 2 && _focused == null;
+
+    if (showHub) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Onyx')),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: LanesHub(onEnter: _enter),
+          ),
+        ),
+      );
+    }
+
+    // Single-goal Home: the only goal, or the lane we entered.
+    final canGoBack = live.length >= 2 && _focused != null;
+    final focused = _focused == null
+        ? null
+        : live.firstWhere((g) => g.id == _focused,
+            orElse: () => live.isEmpty ? goals.first : live.first);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: canGoBack
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: "Today's mix",
+                onPressed: () => setState(() => _focused = null),
+              )
+            : null,
+        title: Text(focused?.name ?? 'Onyx'),
+        actions: const [_ReadinessChip(), SizedBox(width: 8)],
+      ),
+      body: const _GoalHomeBody(),
+    );
+  }
+}
+
+/// The single-goal Home body: today's small wins first (the motivating metric),
+/// then the day's flows in priority order — detailed charts live on Insights.
+class _GoalHomeBody extends ConsumerWidget {
+  const _GoalHomeBody();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(vaultIndexProvider);
     final noVault = index.asData?.value.cardCount == 0;
     final apiKey = ref.watch(apiKeyProvider);
     final needsKey =
         apiKey.hasValue && (apiKey.value == null || apiKey.value!.isEmpty);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Onyx'),
-        actions: const [_ReadinessChip(), SizedBox(width: 8)],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          // Distribute the (short) content down the viewport so it breathes
-          // instead of clustering at the top, while still scrolling on small
-          // screens (minHeight = viewport; see the column note below).
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  // mainAxisSize.min → the column sizes to its real content
-                  // (clamped up to the viewport by the ConstrainedBox), so
-                  // spaceBetween spreads the slack when there's room and it
-                  // simply scrolls when there isn't — no IntrinsicHeight
-                  // (which mis-measures ListTile/markdown and overflows).
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Top: the date + the interview target card (glanceable,
-                      // taps to edit — resurfaces the "Your target" sheet).
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _DateHeader(
-                              clock: ref.watch(clockProvider).asData?.value),
-                          const SizedBox(height: 12),
-                          const _TargetCard(),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        // Distribute the (short) content down the viewport so it breathes
+        // instead of clustering at the top, while still scrolling on small
+        // screens (minHeight = viewport; see the column note below).
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                // mainAxisSize.min → the column sizes to its real content
+                // (clamped up to the viewport by the ConstrainedBox), so
+                // spaceBetween spreads the slack when there's room and it
+                // simply scrolls when there isn't — no IntrinsicHeight
+                // (which mis-measures ListTile/markdown and overflows).
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Top: the date + the interview target card (glanceable,
+                    // taps to edit — resurfaces the "Your target" sheet).
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _DateHeader(
+                            clock: ref.watch(clockProvider).asData?.value),
+                        const SizedBox(height: 12),
+                        const _TargetCard(),
+                      ],
+                    ),
+                    // Middle: today's ring hero + the priority flow stack.
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Center(child: _TodayHero()),
+                        const SizedBox(height: 28),
+                        if (noVault)
+                          _Prompt(
+                            icon: Icons.folder_open_outlined,
+                            title: 'No vault configured yet',
+                            subtitle:
+                                'Point Onyx at your Obsidian vault in Settings.',
+                            onTap: () => context.go('/settings'),
+                          )
+                        else
+                          const TodayFlows(),
+                      ],
+                    ),
+                    // Bottom: the coach nudge (+ the key prompt when needed).
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const CoachBadge(),
+                        if (needsKey) ...[
+                          const SizedBox(height: 16),
+                          _Prompt(
+                            icon: Icons.auto_awesome_outlined,
+                            title: 'Enable AI features',
+                            subtitle: 'Add your Anthropic API key in Settings.',
+                            onTap: () => context.go('/settings'),
+                          ),
                         ],
-                      ),
-                      // Middle: today's ring hero + the priority flow stack.
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Center(child: _TodayHero()),
-                          const SizedBox(height: 28),
-                          if (noVault)
-                            _Prompt(
-                              icon: Icons.folder_open_outlined,
-                              title: 'No vault configured yet',
-                              subtitle:
-                                  'Point Onyx at your Obsidian vault in Settings.',
-                              onTap: () => context.go('/settings'),
-                            )
-                          else
-                            const TodayFlows(),
-                        ],
-                      ),
-                      // Bottom: the coach nudge (+ the key prompt when needed).
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const CoachBadge(),
-                          if (needsKey) ...[
-                            const SizedBox(height: 16),
-                            _Prompt(
-                              icon: Icons.auto_awesome_outlined,
-                              title: 'Enable AI features',
-                              subtitle:
-                                  'Add your Anthropic API key in Settings.',
-                              onTap: () => context.go('/settings'),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),

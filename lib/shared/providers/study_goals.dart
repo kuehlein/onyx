@@ -9,10 +9,11 @@ part 'study_goals.g.dart';
 
 /// The study goals live in the vault (task #30d, docs/multi-subject-plan.md).
 ///
-/// Always leads with the implicit default goal (the whole vault, targeted by the
-/// primary template), followed by any user-defined goals persisted in `_meta/`
-/// (G3b). An empty store → just the default goal, identical to pre-#30d. A stored
-/// goal that collides with the default id is ignored (the default is synthesized).
+/// The user's study goals: the ones persisted in `_meta/` (G3b) if any exist,
+/// otherwise a single synthesized default goal (the whole vault, targeted by the
+/// primary template). The default is purely the *no-goals* fallback — once the
+/// user defines explicit goals, the whole-vault goal steps aside (it would overlap
+/// every lane). An empty store → just the default goal, identical to pre-#30d.
 ///
 /// keepAlive (like [SelectedStudyGoalId] and the readiness-target/prep-goal
 /// notifiers): it's user state, and `_persist` relies on `invalidateSelf()` +
@@ -23,13 +24,13 @@ class StudyGoals extends _$StudyGoals {
   Future<List<StudyGoal>> build() async {
     final registry = await ref.watch(subjectRegistryProvider.future);
     final source = ref.watch(vaultSourceProvider);
-    final stored =
+    final loaded =
         source == null ? const <StudyGoal>[] : await GoalStore(source).load();
-    return [
-      defaultGoalFor(registry.primary),
-      for (final g in stored)
+    final stored = [
+      for (final g in loaded)
         if (g.id != defaultGoalId) g,
     ];
+    return stored.isEmpty ? [defaultGoalFor(registry.primary)] : stored;
   }
 
   /// The persisted goals — everything except the synthesized default.
