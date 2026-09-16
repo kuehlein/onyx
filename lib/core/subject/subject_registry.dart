@@ -67,10 +67,17 @@ class SubjectRegistry {
     required SubjectConfig fallback,
   }) {
     if (discovered.isEmpty) return SubjectRegistry.single(fallback);
-    final entries = [
-      for (final (path, config) in discovered)
-        SubjectEntry(rootDir: subjectRootDir(path), config: config),
-    ];
+    // Ids must be unique: a card stores only its subject *id*, and behavior later
+    // re-resolves by id (byId). Two configs sharing an id (a copy-paste authoring
+    // slip) would let path-resolution and id-resolution disagree, silently
+    // misrouting a card's flows/quizzability. Keep the first per id (discovery is
+    // path-sorted, so this is deterministic).
+    final entries = <SubjectEntry>[];
+    final seenIds = <String>{};
+    for (final (path, config) in discovered) {
+      if (!seenIds.add(config.id)) continue;
+      entries.add(SubjectEntry(rootDir: subjectRootDir(path), config: config));
+    }
     final root = entries.where((e) => e.rootDir.isEmpty);
     return SubjectRegistry(
       entries: entries,

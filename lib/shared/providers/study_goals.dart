@@ -13,7 +13,11 @@ part 'study_goals.g.dart';
 /// primary template), followed by any user-defined goals persisted in `_meta/`
 /// (G3b). An empty store → just the default goal, identical to pre-#30d. A stored
 /// goal that collides with the default id is ignored (the default is synthesized).
-@riverpod
+///
+/// keepAlive (like [SelectedStudyGoalId] and the readiness-target/prep-goal
+/// notifiers): it's user state, and `_persist` relies on `invalidateSelf()` +
+/// `await future` resolving against a live element rather than a disposed one.
+@Riverpod(keepAlive: true)
 class StudyGoals extends _$StudyGoals {
   @override
   Future<List<StudyGoal>> build() async {

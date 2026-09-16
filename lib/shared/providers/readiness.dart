@@ -213,6 +213,11 @@ Future<ReadinessTarget> activeTarget(Ref ref) async {
     return ref.watch(readinessTargetControllerProvider.future);
   }
   final registry = await ref.watch(subjectRegistryProvider.future);
+  // NOTE (#30d multi-template): this resolves the goal's target *ids* against its
+  // own template, but the downstream scoring (domainWeight/tierRelevance/
+  // stabilityTarget/ladder) still reads the process-global activeSubject. Correct
+  // while one template is active (single subject); when multiple templates are
+  // wired, thread the goal's SubjectConfig into that math. See the plan doc.
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 }
 

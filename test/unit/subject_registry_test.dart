@@ -76,6 +76,22 @@ void main() {
       expect(r.byId('nope'), isNull);
     });
 
+    test('duplicate ids are deduped (first by path wins)', () {
+      final r = SubjectRegistry.fromConfigs(
+        [
+          ('cs/onyx-subject.yaml', _cfg('dup')),
+          ('korean/onyx-subject.yaml', _cfg('dup')),
+        ],
+        fallback: _cfg('swe'),
+      );
+      // Only one entry survives, so path- and id-resolution can't disagree.
+      expect(r.entries.length, 1);
+      expect(r.subjects.map((s) => s.id), ['dup']);
+      expect(r.byId('dup')?.id, 'dup');
+      // The second (deduped) subtree no longer resolves to a distinct config.
+      expect(r.subjectForPath('cs/x.md').id, 'dup');
+    });
+
     test('deeper subtree wins over a shallower one', () {
       final r = SubjectRegistry.fromConfigs(
         [

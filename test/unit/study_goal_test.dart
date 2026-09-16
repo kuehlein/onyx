@@ -84,12 +84,19 @@ void main() {
 
     test('toTarget resolves null slots to the template fallbacks + deadline',
         () {
-      final deadline = DateTime(2026, 3, 1);
+      // A deadline with a time-of-day is coerced to date-only midnight.
+      final deadline = DateTime(2026, 3, 1, 20, 30);
       // Null slots → template fallbacks.
       final bare = defaultGoalFor(_template).copyWith(deadline: deadline);
       final t1 = bare.toTarget(_template);
       expect([t1.levelId, t1.contextId, t1.trackId], ['l', 'c', 't']);
-      expect(t1.interviewDate, deadline);
+      expect(t1.interviewDate, DateTime(2026, 3, 1));
+
+      // Empty-string slots also fall back to the template (not kept as '').
+      final empty = defaultGoalFor(_template)
+          .copyWith(levelId: '', contextId: '', trackId: '');
+      final te = empty.toTarget(_template);
+      expect([te.levelId, te.contextId, te.trackId], ['l', 'c', 't']);
 
       // Explicit slots win.
       const chosen = StudyGoal(
@@ -111,6 +118,15 @@ void main() {
       expect(g.state, GoalState.paused);
       expect(g.budgetWeight, 0.3);
       expect(g.isActive, isFalse);
+    });
+
+    test('copyWith can clear a nullable field back to null', () {
+      final dated =
+          defaultGoalFor(_template).copyWith(deadline: DateTime(2026));
+      expect(dated.deadline, isNotNull);
+      // Omitting deadline keeps it; passing null clears it.
+      expect(dated.copyWith(budgetWeight: 0.5).deadline, isNotNull);
+      expect(dated.copyWith(deadline: null).deadline, isNull);
     });
   });
 }

@@ -71,14 +71,20 @@ class StudyGoal {
       cards.where(membership.matches);
 
   /// This goal's [ReadinessTarget] — its own level/context/track selection, with
-  /// null slots resolved to [template]'s fallbacks, and the [deadline] as the
-  /// target's interview date (task #30d, G3a).
-  ReadinessTarget toTarget(SubjectConfig template) => ReadinessTarget(
-        levelId: levelId ?? template.target.fallbackLevelId,
-        contextId: contextId ?? template.target.fallbackContextId,
-        trackId: trackId ?? template.target.fallbackTrackId,
-        interviewDate: deadline,
-      );
+  /// null or empty slots resolved to [template]'s fallbacks, and the [deadline]
+  /// (coerced to date-only, as `interviewDate` is contractually local-midnight) as
+  /// the target's interview date (task #30d, G3a).
+  ReadinessTarget toTarget(SubjectConfig template) {
+    String slot(String? id, String fallback) =>
+        (id == null || id.isEmpty) ? fallback : id;
+    final d = deadline;
+    return ReadinessTarget(
+      levelId: slot(levelId, template.target.fallbackLevelId),
+      contextId: slot(contextId, template.target.fallbackContextId),
+      trackId: slot(trackId, template.target.fallbackTrackId),
+      interviewDate: d == null ? null : DateTime(d.year, d.month, d.day),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -114,14 +120,17 @@ class StudyGoal {
         ),
       );
 
+  // Nullable slots use an _unset sentinel so a caller can clear them back to null
+  // (e.g. convert a dated goal to open-ended) — a plain `x ?? this.x` can't
+  // distinguish "omit" from "set to null".
   StudyGoal copyWith({
     String? name,
     String? templateId,
     MembershipQuery? membership,
-    String? levelId,
-    String? contextId,
-    String? trackId,
-    DateTime? deadline,
+    Object? levelId = _unset,
+    Object? contextId = _unset,
+    Object? trackId = _unset,
+    Object? deadline = _unset,
     double? budgetWeight,
     GoalState? state,
   }) =>
@@ -130,14 +139,16 @@ class StudyGoal {
         name: name ?? this.name,
         templateId: templateId ?? this.templateId,
         membership: membership ?? this.membership,
-        levelId: levelId ?? this.levelId,
-        contextId: contextId ?? this.contextId,
-        trackId: trackId ?? this.trackId,
-        deadline: deadline ?? this.deadline,
+        levelId: levelId == _unset ? this.levelId : levelId as String?,
+        contextId: contextId == _unset ? this.contextId : contextId as String?,
+        trackId: trackId == _unset ? this.trackId : trackId as String?,
+        deadline: deadline == _unset ? this.deadline : deadline as DateTime?,
         budgetWeight: budgetWeight ?? this.budgetWeight,
         state: state ?? this.state,
       );
 }
+
+const _unset = Object();
 
 /// The id of the implicit whole-vault goal that a single-subject vault runs as —
 /// the degradation case that keeps behavior identical to pre-#30d.
