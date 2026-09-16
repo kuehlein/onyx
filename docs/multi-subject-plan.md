@@ -1,9 +1,13 @@
 # Study Goals — a query-lens overlay on the vault (#30d + #50 fused)
 
-**Status:** model locked 2026-09-14. Interpretation layer built (M1/M2); the
-grouping layer is reshaped around **study goals** and rebuilt as phases G1–G7.
-Single-subject behavior stays byte-identical at every step (which also delivers
-the "one goal → today's Home" degradation for free).
+**Status:** DONE 2026-09-16. Model locked 2026-09-14; built M1–M2 + G1–G7 with
+three adversarial passes. Interpretation layer (M1/M2) + the study-goal grouping
+layer (G1–G7) shipped: goals persist, are created/edited/graduated in-app, drive
+per-goal readiness + a shared cross-goal budget, and surface as the lanes hub —
+with single-goal vaults byte-identical to before (the "one goal → today's Home"
+degradation). Remaining/next: multi-*template* correctness (per-goal scoring math
+still reads the global activeSubject — inert until >1 template is active), a live
+conversation/practice screen (deferred from #30c), and #50 second-brain.
 
 ## North star
 
