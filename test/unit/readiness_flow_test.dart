@@ -173,7 +173,7 @@ void main() {
         containsAll(['ds-a', 'system-design']));
 
     // Switch focus to the DS&A lens → readiness scopes to just it.
-    c.read(selectedStudyGoalIdProvider.notifier).select('dsa');
+    c.read(focusedGoalProvider.notifier).focus('dsa');
     final r2 = await c.read(readinessProvider.future);
     expect(r2.domains.map((d) => d.domain), ['ds-a']);
     await db.close();
