@@ -60,6 +60,29 @@ enum Priority {
   }
 }
 
+/// A card's lifecycle. New cards from an inflow — AI-generation, an imported deck,
+/// or an upstream deck update — enter as [draft]: excluded from FSRS scheduling AND
+/// from every readiness denominator until the user promotes them through the review
+/// gate (self-test-then-promote). Cards you authored, or indexed from your own
+/// folder, are [active]. Absent or unknown `status:` frontmatter defaults to
+/// [active], so every existing card is unaffected. See docs/content-creation.md §3
+/// and ADR-0003.
+enum CardStatus {
+  active('active'),
+  draft('draft');
+
+  const CardStatus(this.value);
+
+  final String value;
+
+  static CardStatus fromString(String? raw) {
+    for (final status in CardStatus.values) {
+      if (status.value == raw) return status;
+    }
+    return CardStatus.active;
+  }
+}
+
 /// Section headings that hold study REFERENCE code rather than a recall target.
 /// Kept in the card but never quizzed (reconstruct code from the approach, don't
 /// memorize it verbatim — see docs/learning-science.md), and expanded by default
@@ -133,6 +156,8 @@ class Card {
     this.dependsOn = const [],
     this.priority = Priority.normal,
     this.estMinutes,
+    this.status = CardStatus.active,
+    this.deckId = '',
   });
 
   /// UUID v4 from frontmatter — the stable primary key across filename renames.
@@ -155,6 +180,21 @@ class Card {
   /// readiness via applied-transfer. Derived from this card's own subject config
   /// (task #30d); single-subject vaults resolve to the one active subject.
   bool get isPracticeTrack => subjectFor(subjectId).isPracticeTrackType(type);
+
+  /// This card's lifecycle status. [CardStatus.draft] cards are excluded from all
+  /// scheduling and every readiness denominator until promoted through the review
+  /// gate (see [isDraft], [CardStatus]); absent `status:` defaults to active.
+  final CardStatus status;
+
+  /// The deck this card belongs to — reserved for the permissioned deck registry
+  /// so a pulled deck's cards can't collide with local FSRS state. Empty = the
+  /// local/default deck. The SRS join-key migration to `(deckId, cardId,
+  /// sectionSlug)` is deferred to the registry unit; today this is a
+  /// carried-but-unused seam (ADR-0003; docs/registry-and-sync.md §3).
+  final String deckId;
+
+  /// Whether this is an unpromoted draft (excluded from scheduling + readiness).
+  bool get isDraft => status == CardStatus.draft;
 
   /// H1 title text.
   final String title;

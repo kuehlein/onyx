@@ -45,7 +45,7 @@ Future<List<Card>> systemDesignProblems(Ref ref) async {
   // Scope to the active goal's cards (task #30d, G5+); the whole-vault default
   // goal selects everything (unchanged).
   final problems = [
-    for (final c in goal.select(index.cards))
+    for (final c in goal.select(index.studyCards))
       if (c.type == kTypeSystemDesign) c,
   ];
   DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;

@@ -36,7 +36,7 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
     // Scope to the active goal's cards (task #30d, G5+) so a non-algorithms lane
     // doesn't surface algos; the whole-vault default goal is unchanged.
     cards: [
-      for (final c in goal.select(index.cards))
+      for (final c in goal.select(index.studyCards))
         if (c.type == kTypeAlgorithm) c,
     ],
     dueByKey: {for (final e in states.byKey.entries) e.key: e.value.dueAt},
@@ -226,7 +226,7 @@ Future<({int due, int maintained})> algoRecognition(Ref ref) async {
   final now = (await ref.watch(clockProvider.future)).now();
   var due = 0;
   var maintained = 0;
-  for (final c in index.cards) {
+  for (final c in index.studyCards) {
     if (c.type != kTypeAlgorithm) continue;
     for (final s in c.quizzableSections) {
       final key = '${c.id}::${s.slug}';
@@ -260,7 +260,7 @@ Future<int> algoDueCount(Ref ref) async {
   final states = await repo.loadStates();
   final now = clock.now();
   var due = 0;
-  for (final c in index.cards) {
+  for (final c in index.studyCards) {
     if (c.type != kTypeAlgorithm) continue;
     for (final s in c.quizzableSections) {
       final d = states['${c.id}::${s.slug}']?.dueAt;

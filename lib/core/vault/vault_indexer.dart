@@ -32,6 +32,13 @@ class IndexResult {
   final int skipped;
 
   int get cardCount => cards.length;
+
+  /// Cards eligible for scheduling + readiness — everything except unpromoted
+  /// [CardStatus.draft] cards (ADR-0003). Schedulers and readiness/coverage read
+  /// THIS; Browse reads [cards] (it shows drafts, marked "not counted"). Adding a
+  /// new scheduler? Read [studyCards] and draft exclusion is automatic.
+  List<Card> get studyCards =>
+      cards.where((c) => !c.isDraft).toList(growable: false);
 }
 
 /// Walks a [VaultSource], parses every file, and rebuilds the derived SQLite

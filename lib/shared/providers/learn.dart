@@ -43,7 +43,7 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   final goal = await goalF;
   // Scope to the active goal's cards (task #30d, G5+) so a lane learns its own
   // material; the whole-vault default goal selects everything (unchanged).
-  final scoped = goal.select(index.cards).toList();
+  final scoped = goal.select(index.studyCards).toList();
   return buildLearnQueue(
     // Practice-track cards (Algorithms, System Design) are practiced on their
     // own tracks, not learned here.
