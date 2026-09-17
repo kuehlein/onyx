@@ -10,7 +10,6 @@ import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
-import 'stats.dart';
 
 part 'coach_update.g.dart';
 
@@ -24,7 +23,6 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 
   final pace = await ref.watch(readinessPaceProvider.future);
-  final streak = await ref.watch(studyStreakProvider.future);
   final newLimit = await ref.watch(newCardLimitProvider.future);
   final review = await ref.watch(reviewQueueProvider.future);
   final clock = await ref.watch(clockProvider.future);
@@ -81,7 +79,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
 
   final signals = CoachSignals(
     anyStudied: readiness.domains.any((d) => d.studied > 0),
-    studiedToday: streak.studiedToday,
+    studiedToday: consistency.isNotEmpty && consistency.last > 0,
     overall: readiness.overall,
     coverage: coverage,
     interviewTested: readiness.interview,

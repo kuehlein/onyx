@@ -10,7 +10,6 @@ import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/today_progress.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/backup.dart';
@@ -18,7 +17,7 @@ import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
-import 'package:onyx/shared/providers/stats.dart';
+import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 /// Serves a fixed target so the readiness panel renders without reaching the
@@ -67,7 +66,7 @@ void main() {
           glossaryProvider.overrideWith((ref) async => const {}),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
-          studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+          studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
           appliedTransferProvider.overrideWith((ref) async =>
               (byDomain: <String, TransferEstimate>{}, interview: false)),
           appliedSummaryProvider.overrideWith(

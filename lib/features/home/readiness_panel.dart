@@ -6,9 +6,8 @@ import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
-import '../../core/stats/streak.dart';
+import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/stats.dart';
 import 'target_sheet.dart';
 
 /// Home dashboard panel: a compact readiness summary — a headline % toward the
@@ -32,12 +31,18 @@ class ReadinessPanel extends ConsumerWidget {
     final target = ref.watch(readinessTargetControllerProvider).asData?.value;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
     final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
-    final streak = ref.watch(studyStreakProvider).asData?.value;
+    final consistency = ref.watch(studyConsistencyProvider).asData?.value;
     final appliedSummary =
         ref.watch(appliedSummaryProvider).asData?.value ?? const {};
     final anyStudied = r.domains.any((d) => d.studied > 0);
-    final showStreak =
-        streak != null && (streak.current > 0 || streak.studiedToday);
+    // A no-loss "last 7 days" activity indicator (never a streak/guilt cue —
+    // design-system §4.10, readiness-dashboard §6). Shown once there's activity.
+    final last7 = consistency == null
+        ? const <int>[]
+        : (consistency.length <= 7
+            ? consistency
+            : consistency.sublist(consistency.length - 7));
+    final showConsistency = last7.any((c) => c > 0);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -69,9 +74,9 @@ class ReadinessPanel extends ConsumerWidget {
                 child: _Headline(
                     target: target, readiness: r, anyStudied: anyStudied),
               ),
-              if (showStreak) ...[
+              if (showConsistency) ...[
                 const SizedBox(width: 8),
-                _StreakChip(streak),
+                _ConsistencyChip(last7),
               ],
             ],
           ),
@@ -325,31 +330,40 @@ class _LoadingPanel extends StatelessWidget {
   }
 }
 
-/// A compact streak chip (flame + current day count) for the header row.
-class _StreakChip extends StatelessWidget {
-  const _StreakChip(this.streak);
+/// A compact, **no-loss** "last 7 days" activity indicator for the header row —
+/// seven day-cells (filled = studied that day), neutral, secondary to readiness.
+/// Deliberately NOT a streak: no consecutive-day count, no at-risk/guilt state,
+/// no flame, nothing that can "break" (design-system §4.10; readiness-dashboard §6;
+/// [[gamification-stance]]). Replaces the deleted loss-aversion `_StreakChip`.
+class _ConsistencyChip extends StatelessWidget {
+  const _ConsistencyChip(this.last7);
 
-  final StreakInfo streak;
+  /// Study-action counts for the last (up to) seven days, oldest → newest.
+  final List<int> last7;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const flame = Color(0xFFF2792B);
-    const amber = statusWarn;
-    final atRisk = !streak.studiedToday;
+    final studied = last7.where((c) => c > 0).length;
     return Tooltip(
-      message: atRisk
-          ? 'Study today to keep your ${streak.current}-day streak'
-          : '${streak.todayCount} studied today · ${streak.current}-day streak',
+      message: '$studied of the last 7 days studied',
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.local_fire_department,
-              size: 18, color: atRisk ? amber : flame),
-          const SizedBox(width: 2),
-          Text('${streak.current}',
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          for (final count in last7)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1),
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: count > 0
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outlineVariant,
+                ),
+              ),
+            ),
         ],
       ),
     );

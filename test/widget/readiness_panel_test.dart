@@ -4,10 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/stats/streak.dart';
 import 'package:onyx/features/home/readiness_panel.dart';
+import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/readiness.dart';
-import 'package:onyx/shared/providers/stats.dart';
 
 /// Serves a fixed target without reaching the DB / vault.
 class _FakeTargetController extends ReadinessTargetController {
@@ -60,12 +59,8 @@ void main() {
           readinessPaceProvider.overrideWith((ref) async => null),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
-          studyStreakProvider.overrideWith((ref) async => const StreakInfo(
-                current: 5,
-                best: 9,
-                studiedToday: true,
-                todayCount: 12,
-              )),
+          studyConsistencyProvider
+              .overrideWith((ref) async => const [1, 0, 1, 1, 0, 1, 1]),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -89,8 +84,8 @@ void main() {
     // Recall-only never claims interview-readiness — status describes recall.
     expect(find.text('Building recall'), findsOneWidget);
     expect(find.textContaining('Interview-ready'), findsNothing);
-    // Compact streak chip shows the current run.
-    expect(find.text('5'), findsWidgets);
+    // Compact no-loss consistency chip: 5 studied of the last 7 days.
+    expect(find.byTooltip('5 of the last 7 days studied'), findsOneWidget);
     // Ladder standing is shown as discrete milestone chips, one per level.
     expect(find.text('Ladder standing'), findsOneWidget);
     for (final l in ['New-grad', 'Mid', 'Senior', 'Staff']) {
@@ -134,7 +129,7 @@ void main() {
           readinessPaceProvider.overrideWith((ref) async => null),
           readinessTargetControllerProvider
               .overrideWith(_FakeTargetController.new),
-          studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+          studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
           appliedSummaryProvider.overrideWith(
               (ref) async => {'system-design': (attempts: 4, contested: 1)}),
         ],
@@ -175,7 +170,7 @@ void main() {
             readinessPaceProvider.overrideWith((ref) async => null),
             readinessTargetControllerProvider
                 .overrideWith(_FakeTargetController.new),
-            studyStreakProvider.overrideWith((ref) async => StreakInfo.empty),
+            studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
             appliedSummaryProvider.overrideWith((ref) async => const {}),
           ],
           child: const MaterialApp(

@@ -19,7 +19,6 @@ import '../../shared/providers/interview.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/stats.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/status_colors.dart';
 import '../home/goal_editor_sheet.dart';
@@ -422,7 +421,6 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(readinessProvider);
     ref.invalidate(readinessPaceProvider);
     ref.invalidate(readinessLadderPositionProvider);
-    ref.invalidate(studyStreakProvider);
     ref.invalidate(coachUpdateProvider);
     ref.invalidate(dueForecastProvider);
     ref.invalidate(retentionByDomainProvider);
@@ -591,7 +589,6 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(readinessProvider);
     ref.invalidate(readinessLadderPositionProvider);
     ref.invalidate(readinessPaceProvider); // now fed by the seeded learn events
-    ref.invalidate(studyStreakProvider);
     ref.invalidate(coachUpdateProvider);
     // Refresh the Insights sections (new review rows, states, and mocks).
     ref.invalidate(retentionByDomainProvider);
