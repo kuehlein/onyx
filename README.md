@@ -1,13 +1,14 @@
 # Onyx
 
-A local-first flashcard app for SWE technical-interview prep. Cards live as
-Markdown in an Obsidian vault (the source of truth); Onyx parses and indexes
-them, schedules review with [FSRS](https://github.com/open-spaced-repetition),
-and — eventually — uses Claude to help author and grade. iOS is the real target;
+A local-first, general study app. Cards live as Markdown in a plain folder — an
+Obsidian vault works as-is, but Obsidian is not required. Onyx parses and indexes
+them, schedules review with [FSRS](https://github.com/open-spaced-repetition), and
+uses Claude to help author and grade. It's education-first and subject-agnostic
+(SWE-interview prep is one configuration among many). iOS is the real target;
 there is **no** hosted server, API, or database — everything runs on-device.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full design, and
-[`docs/roadmap.md`](docs/roadmap.md) for where it's headed.
+[`docs/ux-vision.md`](docs/ux-vision.md) for the north-star layout + phased roadmap.
 
 ## Status
 

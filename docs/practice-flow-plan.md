@@ -3,7 +3,7 @@
 **Status:** approved design, not yet built. The deferred "practice-flow half" of
 #30, un-deferred once we grounded it in a real abstraction (system design *is*
 the template for the language conversation flow). Companion to
-`docs/generalization-plan.md` and `docs/vault-structure.md`. Execute
+`docs/multi-subject-plan.md` and `docs/vault-structure.md`. Execute
 phase-by-phase; every phase keeps the app green (analyze + full suite) and is
 independently committable. SWE behavior stays identical throughout (golden tests).
 

@@ -1,5 +1,5 @@
 /// The configurable definition of a study *subject* — the spine of the
-/// multi-subject generalization (task #30, see docs/generalization-plan.md).
+/// multi-subject generalization (task #30, see docs/multi-subject-plan.md).
 ///
 /// Everything currently hardcoded for SWE-interview prep (the target dimensions,
 /// domain weights, tier-relevance curves, durability bar — and, in later phases,
@@ -79,7 +79,7 @@ class DomainFamily {
       exact.contains(lowerDomain) || contains.any(lowerDomain.contains);
 }
 
-/// The 3-slot target model (decision #2 in docs/generalization-plan.md). The
+/// The 3-slot target model (decision #2 in docs/multi-subject-plan.md). The
 /// slot *roles* are fixed — level → knowledge depth, context → durability bar,
 /// track → domain weights — while the *values* are configured per subject.
 class TargetSpec {

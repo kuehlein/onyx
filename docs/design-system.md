@@ -300,9 +300,9 @@ Dependency order for building: **`StatusPill` → data-viz primitives → compos
 **States.** default · dimmed (uses `_ink55`, not `0.38` — F2) · dense (11px).
 **Tokens.** fill `color@fill(0.16)`, border `color@hairline(0.40)`, radius `radiusChip`, pad `space2`/`space1`, `labelMedium`.
 ```
-┌───────────────────┐   ┌──────────────────────┐
-│ ✓  High · 0.82     │   │ ○  Not scheduled today│  ← dimmed = _ink55 + glyph
-└───────────────────┘   └──────────────────────┘
+┌───────────────────┐   ┌───────────────────────┐
+│ ✓  High · 0.82    │   │ ○  Not scheduled today│  ← dimmed = _ink55 + glyph
+└───────────────────┘   └───────────────────────┘
  filled, onyx.good        text, no fill
 ```
 Semantics required and never null: `"Confidence high, 0.82. Tap for why."` `ConfidenceBadge` becomes a thin wrapper (dropping its inline `TextStyle`/`alpha 0.15,0.5`/`radius 6`) and **must pass the numeric confidence score into `value`** (critique E3; confidence-display memory) — icon+label+**number**, not just a hue+word.
