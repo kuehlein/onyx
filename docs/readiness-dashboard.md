@@ -139,8 +139,9 @@ Everything else derives from data we already collect.
   endowed-progress — real, not fabricated).
 - **Retention/mastery trend** ("what you'll still remember in 30 days"), not
   activity vanity counts.
-- **Forgiving habit widget:** "5 of last 7 days" ring with auto-freeze/grace,
-  **secondary** to readiness, neutral copy, never guilt.
+- **No-loss consistency indicator:** "N of last 7 days" as a **non-radial**
+  indicator (7 day-cells / bars, **no ring, no streak, no loss-state** — never
+  auto-freeze/grace), **secondary** to readiness, neutral copy, never guilt.
 
 **Avoid (dark patterns / overjustification):** XP/points currency, badge walls,
 competitive or absolute leaderboards, guilt notifications, fake/decorative bars,
@@ -253,7 +254,10 @@ incrementally, but architect for the full model from day one.
    mock/novel-problem table)? This is a drift migration.
 5. **Diagnostic** — is an initial "earned baseline" diagnostic in scope for v1,
    or later?
-6. **Streak** — include the forgiving "N of 7" habit ring in v1, or defer?
+6. **Streak** — **resolved** (product-direction §9; Stage-1 §139): **no
+   consecutive-day streak, no ring, no loss-state** — ship a no-loss "N of last 7
+   days" consistency indicator (non-radial, secondary to readiness), replacing the
+   deleted streak.
 
 ---
 

@@ -1,5 +1,12 @@
 # Vault-Directory-Driven App Structure (target architecture for #30)
 
+> **Scope stamp:** this describes the **power-path (Obsidian/markdown) only**. As
+> the *universal* content model it is superseded by the folder-substrate + three
+> co-equal on-ramps (import / AI-generate / point-at-folder) framing in
+> `docs/product-direction.md` and `docs/content-creation.md`; markdown-in-a-vault
+> is one on-ramp, not the required shape. User-facing the "vault" is a **study
+> folder** (code keeps `VaultSource`).
+
 **Status:** design note / north star. NOT built yet — see "Sequencing" for why we
 approach it incrementally. Idea originated with the user (2026-09-08); refined here.
 

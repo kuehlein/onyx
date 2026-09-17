@@ -158,6 +158,16 @@ Calm register = short + one standard easing, nothing springy ([72technologies](h
 
 > **No `deliberate` (450 ms), no `emphasized` curve** (critique A3/D3). A slow-on-purpose ring settle "so progress reads as earned" is reward choreography — exactly what constraint 4 forbids. The completion ring settles at `motionBase`/`easeStandard` or snaps. No animation is longer than an ordinary state change.
 
+### 2.6.1 `progressPolicy` — the one rule for "work is happening"
+
+**Never a spinning `CircularProgressIndicator`, anywhere** — a looping ring violates the §8 "no auto-playing/looping animation, the ring only ever *fills*, never spins" rule and the §4.9 "no spinner-on-empty" rule. Progress is shown by *kind of work*:
+
+- **Bounded / determinate work** (a session's cards, a known-length import, promotion stack) → a determinate `LinearProgressIndicator` (the `SessionScaffold` bar: `primary` on `surfaceContainerHigh`, height 4). It shows real fractional progress, never an indefinite sweep.
+- **Indeterminate work** (network, sync reconcile, **AI streaming** — e.g. `chat_view.dart`'s `_Thinking`) → a **static status line** (`glyph + text` + `Semantics(liveRegion: true)`, e.g. `◆ Thinking…` / `◆ Syncing…`) **or** a `SkeletonBlock` (§4.9) for content-shaped placeholders. No spinner: the honest signal is a labelled, screen-reader-announced status, not a rotating ring.
+- **Reduce-Motion.** Both collapse gracefully: the `LinearProgressIndicator` still steps determinate frames (no marquee sweep), the status line is already static, and any `SkeletonBlock` shimmer freezes to a flat fill under `MediaQuery.disableAnimations` (per §8).
+
+> **Migration.** `CircularProgressIndicator` is a banned literal like a raw hex/radius. Add it to the §7 migration greps: `grep -rn 'CircularProgressIndicator' lib/`.
+
 ---
 
 ## 3. Theming — mapping to M3
@@ -307,8 +317,10 @@ Dependency order for building: **`StatusPill` → data-viz primitives → compos
 ```
 Semantics required and never null: `"Confidence high, 0.82. Tap for why."` `ConfidenceBadge` becomes a thin wrapper (dropping its inline `TextStyle`/`alpha 0.15,0.5`/`radius 6`) and **must pass the numeric confidence score into `value`** (critique E3; confidence-display memory) — icon+label+**number**, not just a hue+word.
 
+> **The cloud-layer statuses route through here too (never color-only).** Every new status the Stage-2 cloud layer introduces renders as a `StatusPill`, so color+shape+label+Semantics travel together by construction: **sync** (`Off` / `On · last synced {t}` / `Sync error`; **"Offline" and "conflict merged" are `muted`, never `bad`** — they are not failures in a local-first app), **AI-tier** (`byoKey` / managed `"coming soon"` disabled row / `off`), **deck-access** (`local` / `restricted` / class-code-bound), **import** (a pulled/updated-upstream marker), and the **draft "not counted"** marker — `StatusPill(muted, "Draft · not counted")`, a normal honest state, never a red "error" tone (`content-creation §3.3`; `registry-and-sync §1.1/§2.2/§5.1`). AI **usage/quota** is the one metering surface and it is a **`CoverageBar` (§4.3/§5), never a ring or a countdown** — a depleting quota must never become a loss-aversion timer (`product-direction §6`; `registry-and-sync §5.2`). The deck **registry carries NO engagement/vanity metrics** — no download counts, ratings, "trending," or "N studying"; card-count is a permitted size fact (`product-direction §8`; `registry-and-sync §4.6`).
+
 ### 4.2 Home altitude 0 — `GoalLaneRow`
-Trimmed critical-few row (tap = primary act, so a row not a button). `name · status-verb · deadline-or-none · minutes · ›`. **No due-count token, no per-lane pause chrome.** Verb variants: `ready 78%` (interview) / `62% covered` (open-ended) / `can't judge yet` (thin evidence, `muted` italic) — weight-only, no hue. Paused: whole row `_ink55` + `⏸ … · paused`. Deadline uses `warn` only inside ~3d. Semantics folds the whole row into one node.
+Trimmed critical-few row (tap = primary act, so a row not a button). `name · status-verb · deadline-or-none · minutes · ›`. **No due-count token, no per-lane pause chrome.** Verb variants: `ready 78%` (dated-target/milestone) / `62% covered` (open-ended) / `can't judge yet` (thin evidence, `muted` italic) — weight-only, no hue. Paused: whole row `_ink55` + `⏸ … · paused`. Deadline uses `warn` only inside ~3d. Semantics folds the whole row into one node.
 
 ### 4.3 `SharedBudgetBar` (single implementation, hub-only)
 ONE stacked horizontal bar, single accent hue at **graded opacity** (never a rainbow — constraint 2). Segments = `primary` at stepped opacity by legend order; per-goal legend row is the real key. Height 10, `radiusChip`, 1px `surface` gaps.
@@ -325,6 +337,7 @@ ONE stacked horizontal bar, single accent hue at **graded opacity** (never a rai
 - **The single Filled** `Continue/Start` — label a pure function of `dailyPlan`, **absent when caught-up.**
 - **`TodayFlowRow`** — `● active / ○ dimmed`, name · count · minutes · ›. Non-declared tracks render **dimmed (`_ink55`) "not scheduled today," never hidden** (segment-always honesty, constraint 13; F2 keeps it legible). Semantics speaks the honest state.
 - **`CoachBadge`** — ≤1/day nudge: goal + signal + one action (`Apply`/`Not now`/`Undo`). **Silent when on-track** (`SizedBox.shrink`). Nothing mutates silently. `primary` 2px left accent, tier-1, `radiusCard`.
+- **`Nof7Indicator`** — the **positive replacement for the deleted `_StreakChip`** (§4.10), the no-loss consistency cue product-direction §9 promises. **7 discrete day-cells, NOT a ring** (the one ring in the app is `CompletionRing`'s completion % — constraint 6): a `Row` of 7 small `radiusChip` cells, oldest→today, each filled `good` if that day was studied else `muted` (unstudied is a calm absence, never `bad`). Caption `"N of last 7 days"` (`labelSmall`). **NO loss-state, NO streak-freeze, NO at-risk/amber, no "keep your streak" copy, no count-up-only number that can only rise** — non-consecutive by construction, so a missed day never destroys anything (this is the whole point of replacing the streak — constraint 4; motivation stance). Color **plus** the discrete count **plus** cell shape carry the reading (never color-only — constraint 7). Renders on **Home, secondary to readiness** (small-area motivation, never a hero — constraints 8/9); absent (not `bad`) before 7 days of history exist. `MergeSemantics` → one node: `"Studied 4 of the last 7 days."`
 
 ### 4.5 Study / session
 - **`SessionScaffold`** — `✕` · `[🎤][Coach]` · **linear bounded progress bar** (never a ring), counter `4/18`, domain label. Bar `primary` on `surfaceContainerHigh`, height 4, **capped by ramp/taper budget** — a backlog never renders as an avalanche (constraint 14).
@@ -336,7 +349,7 @@ ONE stacked horizontal bar, single accent hue at **graded opacity** (never a rai
 - **Shared `chat_view.dart` composer** — promoted mic, shared by coach + mocks (one STT composer app-wide).
 
 ### 4.6 Goal management (all SheetHeader-topped)
-- **`GoalEditorSheet`** field kit: Name (`TextField`) · Which cards (`SegmentedButton` Whole vault/Tag/Folder) · Aiming-at target chips (`FilterChip`) · Deadline row (null default) · **▸ Interviews** `CollapsibleSection` shown **only if template declares interview context** (constraint 6) with dated sub-targets + `[+ Plan]` · Share-of-time `MixSlider` · **one** Filled `[Create goal]` (edit: `✓ Graduate` + `🗑 Delete` `DestructiveRow`).
+- **`GoalEditorSheet`** field kit: Name (`TextField`) · Which cards (`SegmentedButton` Whole vault/Tag/Folder) · Aiming-at target chips (`FilterChip`) · Deadline row (null default) · **▸ Milestones** `CollapsibleSection` shown **only if template declares a dated-target context** (constraint 6) with dated sub-targets + `[+ Plan]` · Share-of-time `MixSlider` · **one** Filled `[Create goal]` (edit: `✓ Graduate` + `🗑 Delete` `DestructiveRow`). (User-facing "milestone / dated target," never "interview"; the code entity stays `Interview` — `ux-vision §3.4/§5`.)
 - **`AdjustMixSheet`** — the SOLE budget editor. `MixSlider`s, **persist on drag-end, no Save button** ("a dial, not a form").
 - **`MixSlider`** — `■ label` · M3 `Slider` · live minutes `22m`. Never a text input. Semantics: `"22 minutes, 30 percent of daily time."`
 
@@ -357,9 +370,15 @@ ONE stacked horizontal bar, single accent hue at **graded opacity** (never a rai
 - **`ThinEvidence`** — the honest-null helper: `"can't judge yet"` (lanes/readiness), `"not enough data yet"` (tiles/bars). Never a fabricated 0% or a number that can't fall (constraint 3). `muted`, italic.
 - **`DestructiveRow`** — `error` color + **outlined shape** + **text** ("Restore"/"Delete") + **confirm dialog**. Never color-only (constraint 7). Distinct shape from neutral buttons around it.
 - **`showApiKeySheet` / `showOnyxSheet<T>`** — one wrapper over `showModalBottomSheet` (drag handle, `radiusSheet`, safe area, `barrierColor black@0.45`), SheetHeader-topped, `"Not now"`-able, Keychain-backed. Kills ~15 copy-pasted call sites. Nested detail = in-place `AnimatedSize` sub-section, never a sheet-in-a-sheet.
+- **`Toast`** (transient confirm) — a **rare, under-notify** M3 `SnackBar` for the momentary "it happened" of a background action (deck imported / published / sync resolved), where a sheet would over-interrupt. **Text-first, single line, no action-farming, no color-only status** (a status glyph if any); auto-dismisses at `motionSlow`, honors Reduce-Motion (no slide, fades/appears). **Not** for errors (those are honest states — `AiUnavailableState`, `StatusPill(bad)`), **not** for anything the honest states already speak. When in doubt, do **not** toast — under-notify (constraint 8/9).
 
 ### 4.10 The streak chip is DELETED, not recolored (constraint 4)
 `lib/features/home/readiness_panel.dart:328-357` `_StreakChip` renders `Icons.local_fire_department` + a day count + a loss-aversion tooltip ("Study today to keep your N-day streak") — a textbook streak-with-loss-aversion, a live violation of ux-vision L16/L31/L217 and the gamification-stance. **Delete the `_StreakChip` widget, its `StreakInfo` plumbing, and the `flame #F2792B` color entirely.** Recoloring the flame `good`/green would keep a green flame counting consecutive days — still gamified. A color spec cannot launder a gamification violation by swapping its hue. (This corrects PART 1, which wanted to recolor, and PART 5, which re-added `flame` as a primitive.)
+
+### 4.11 Tablet / large-screen rule (minimal)
+Wide screens actively **break the locked ~66ch reading measure** (a teacher's primary device is often a tablet), so this system covers them with **two rules only** — no separate tablet layout, no new tokens:
+- **Cap the reading column at ~66ch.** On any width past the measure, `ReadingMeasure` (§4.5, ~600px derived from body size — *not* a new magic constant) stays centered with **inert margins**; text never runs edge-to-edge. This is the interim guard and applies even where two-pane is not built.
+- **Optional list+detail two-pane on expanded width.** At the M3 **expanded** breakpoint, Browse / registry / the draft-review list *may* render list+detail side by side; below it, they stay single-column push-navigation. This is additive and optional — the ~66ch cap is the non-negotiable part.
 
 ---
 
@@ -417,6 +436,7 @@ Each step compiles and ships alone. No big-bang.
   grep -rn 'BorderRadius.circular([0-9]' lib/
   grep -rn 'withValues(alpha: 0\.' lib/
   grep -rn 'TextStyle(' lib/shared/widgets/
+  grep -rn 'CircularProgressIndicator' lib/   # §2.6.1 — must be zero (spinner ban)
   ```
 - **Step 6 — New primitives, then composites.** `Sparkline`/`CoverageBar`/`CompletionRing`/`ForecastBand` → `GoalLaneRow`/`SharedBudgetBar`/`TodayFlowRow`/`InsightTile`/`MixSlider`/`ReadinessBand` → `EmptyState`/`SkeletonBlock`/`ThinEvidence`/`DestructiveRow` → `showOnyxSheet` wrapper across the ~15 sheet sites.
 - **Step 7 — Cleanup.** When `grep 'statusGood\|statusWarn'` returns only the shim, delete `status_colors.dart` and the `@Deprecated` shim.
@@ -434,6 +454,7 @@ Each step compiles and ships alone. No big-bang.
 - [ ] **48×48 touch targets** on all buttons/rows/chips (component themes + row hit-area padding).
 - [ ] **Text scaling honored, uncapped on chrome.** Lane/flow rows reflow to two lines at large scale; study passages never clamped (no `withClampedTextScaling` — WCAG 1.4.4).
 - [ ] **Reduce-Motion honored.** Every custom transition collapses to instant/cross-fade under `MediaQuery.disableAnimations`; verify `showModalBottomSheet` doesn't slide (don't assume a specific visual). No auto-playing/looping animation; the ring only ever *fills*, never spins.
+- [ ] **No spinning progress (`progressPolicy`, §2.6.1).** Zero `CircularProgressIndicator` in `lib/`: bounded work → determinate `LinearProgressIndicator`; indeterminate (network/sync/AI-streaming) → a static `glyph+text` `Semantics(liveRegion)` line or a `SkeletonBlock`. Announced to screen readers, never a mute rotating ring.
 - [ ] **Semantics grouping.** `MergeSemantics` on composite rows (lane row, budget legend item) so a screen reader hears one coherent node; `ExcludeSemantics` on decorative paint; honest states ("not scheduled") are spoken.
 - [ ] **No `#FFF` on `#000`.** Off-white `#E7E9EC` max, base `#121417` min — no halation.
 

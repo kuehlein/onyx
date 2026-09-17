@@ -28,7 +28,7 @@ Status: north-star flow/layout spec. Opinionated and decisive. Where a choice is
 9. **Per-goal truth.** Every metric is computed per-goal through that goal's query + template. No single global number across subjects; no re-coupling to `Card.subjectId`. `[locked A3/A4]`
 10. **No privileged subject; the engine is genuinely general.** Dimensions/tracks/rubrics/terminology route through the template; render only what the active goal declares. There is **no shipped default subject** — SWE-interview config is authored content like any other (the built-in `softwareInterviewsConfig` is a de-privileged fallback/example, not a baked-in identity). The generalization is the product thesis, targeted at all learning use cases, not a retrofit. `[locked A6; de-SWE correction 2026-09-17]`
 
-**Explicitly rejected (do not "helpfully" re-add):** accounts/login, light/system theme, XP/badges/levels/leaderboards, streak-freeze/loss-aversion, social/competitive mechanics, a full-vault graph on any daily surface, in-body tap-navigating wikilinks.
+**Explicitly rejected (do not "helpfully" re-add):** **required** accounts/login (accounts are now optional-but-real, capability-gated — rendered only when a backend capability is reachable; see §3.7, §9, and `registry-and-sync.md`), light/system theme, XP/badges/levels/leaderboards, streak-freeze/loss-aversion, **comparative/competitive** mechanics (leaderboards, cross-student ranking, any per-student comparison) — but note **aggregate/belonging cues are allowed via the class config** (relatedness is not gamification; `product-direction §9`), a full-vault graph on any daily surface, in-body tap-navigating wikilinks.
 
 ---
 
@@ -65,7 +65,7 @@ Movement:
   finish ──► goal Home ("done for today")
 ```
 
-**No 5th "Goals/Aim" tab.** Enshrining the aim in the IA would enshrine the three-aim confusion. Goal management is a SheetHeader sheet reachable from the hub and Settings; interviews live inside the goal editor (§5).
+**No 5th "Goals/Aim" tab.** Enshrining the aim in the IA would enshrine the three-aim confusion. Goal management is a SheetHeader sheet reachable from the hub and Settings; milestones (dated targets) live inside the goal editor (§5).
 
 ---
 
@@ -97,7 +97,7 @@ Calm lane list. Per Critique 2 §7, the lane is **trimmed** to the critical few:
 └───────────────────────────────────────────────────────────┘
 ```
 
-- Status verb is **template-derived**: interview goal → readiness %; open-ended → coverage %; thin evidence → "can't judge yet." `[A6; honesty]`
+- Status verb is **template-derived**: dated-target (milestone) goal → readiness %; open-ended → coverage %; thin evidence → "can't judge yet." `[A6; honesty]`
 - Budget = one read-only `SharedBudgetBar` (stacked, single hue at graded opacity, per-segment Semantics label). Bars not rings. `[Cleveland–McGill; B8]`
 - No Filled button on the hub — choosing a lane *is* the primary act. `[M3 emphasis B7]`
 - Empty (0 goals): one centered card → goal editor. Loading: 2 skeleton lane rows.
@@ -153,6 +153,7 @@ Two archetypes only: the **card-turn loop** (cue → reveal → grade) and the *
 - Move `isInterview`/`card.type` branching behind `FlowSpec.cuePolicy` (approach-led vs section-led cue). Reveal leads with principle; recognition section expanded. `[rule-based; conditional-knowledge]`
 - `ConfidenceBadge` on every meta row; auto-surface Resources link on low-confidence. `[per-card confidence]`
 - `vs. X` contrast row on near-adjacent confusable siblings. `[interference]`
+- **Required companion fix — de-privilege the coach hot-path (Stage-1 P1-3, "no privileged subject").** `buildCoachSystem` (`coach.dart:40-131`) today opens *every* recall conversation as "a spaced-repetition app for software-engineering interview prep… an interviewer from a strong engineering org," with SWE topic routing, and the grade persona label is "Interviewer" (`coach_sheet.dart`). For a 7th-grader on WW1 causes this is a de-privilege violation mid-recall. Take the persona + domain vocabulary from the active goal's `SubjectConfig` (the seam `flow_prompt.dart` already uses); SWE wording moves into `software_interviews.dart`. This is a hard dependency of principle #10, tracked with the §6 engine-generalization workstream. `[Stage-1 P1-3; principle 10]`
 
 **Conversation loop (mocks):** keep `SdMockScreen`/`mock_session.dart` as-is for v1. Do only the **bug-shaped** fixes: replace the `"I'm ready"` string-prefix kickoff hack with an explicit `isKickoff` flag; reuse the already-parameterized `MockGradeSummary` (rubric **bars**, template dims). **Defer** the unified `FlowRunnerScreen` + calibration-axes model until a real non-SWE flow is authored — building it now is abstraction-before-second-caller. `[Critique 2 §4; generalization is task #30, not this pass]`
 
@@ -160,7 +161,7 @@ Two archetypes only: the **card-turn loop** (cue → reveal → grade) and the *
 
 ### 3.4 Goal management + the unified "aim" model
 
-**One primitive: `StudyGoal` owns what-I-study AND what-I-aim-at. Interviews are a goal's optional dated sub-targets.**
+**One primitive: `StudyGoal` owns what-I-study AND what-I-aim-at. Milestones (dated targets) are a goal's optional dated sub-targets.** (User-facing term is **"milestone" / "dated target,"** never "interview"; the underlying entity — code type `Interview`, re-parented from `PrepGoal` — is unchanged, and the mechanics are already generalized via `effectiveDeadline`.)
 
 ```
 StudyGoal  (the ONE aim)
@@ -168,14 +169,14 @@ StudyGoal  (the ONE aim)
 ├── target: level/context/track             what bar (template dims)
 ├── deadline?                               distal date (null = open-ended)
 ├── budgetWeight, state
-└── interviews: List<Interview>             optional dated sub-targets
+└── interviews: List<Interview>             optional dated sub-targets (milestones)
                 (today's PrepGoal, re-parented under the goal)
 
-effectiveDeadline = earliest(active interview round) ?? deadline
+effectiveDeadline = earliest(active milestone round) ?? deadline
    → the ONE date every surface reads (lane, target card, plan taper)
 ```
 
-**Goal editor** = one SheetHeader sheet, progressive disclosure so open-ended goals never see interview chrome:
+**Goal editor** = one SheetHeader sheet, progressive disclosure so open-ended goals never see milestone chrome:
 
 ```
 ╭─ ⚑ New study goal ─────────────────────── ✕ ╮
@@ -184,8 +185,8 @@ effectiveDeadline = earliest(active interview round) ?? deadline
 │ ── Aiming at ──                               │
 │  Target   Level/Context/Track  (template chips)│  render only what template
 │  Deadline [ 📅 No deadline           Set ]    │  declares; else collapse block
-│  ▸ Interviews (0)              [+ Plan]        │  shown ONLY if template
-│  Share of daily time   1.0×  ●───○────        │  declares interview context
+│  ▸ Milestones (0)             [+ Plan]        │  shown ONLY if template
+│  Share of daily time   1.0×  ●───○────        │  declares a dated-target context
 │  [ Create goal ]   (edit: ✓Graduate  🗑Delete)│  one Filled button
 ╰───────────────────────────────────────────────╯
 ```
@@ -239,25 +240,32 @@ ABOUT           Version, licenses, privacy, restore-defaults ›
 - **STUDY LOAD stays here** — its levers are config-once; merging them into `AdjustMixSheet` would collide with §4.6 (sole budget editor) and §7 (no duplicate editors). `[settings-ux §2]`
 - **Move the Pace planner out** to Insights (it's a forecast dashboard, not a setting). `[Pace-Models; B3]`
 - **Demote Algorithms/Gym mode** from top-level into per-goal template drill-downs, rendered only when the goal's template declares the track. Interim honest state: render under the default goal labeled "Algorithms track," not fake per-goal independence. `[A6; B4]`
-- **No theme row** (dark-locked, principled). **No Account group** (local-first; an empty account section is itself a dark pattern). **No Advanced group** (one stub doesn't earn a header). **No notifications toggle** v1 (no reminder engine; streak-adjacent). `[IA/accounts research; settings-ux §6]`
+- **No theme row** (dark-locked, principled). **No Advanced group** (one stub doesn't earn a header). **Account UI is capability-gated, not blanket-rejected:** the ACCOUNT group renders **only when a backend capability is actually reachable** (a server endpoint configured + health-reachable, or a class code has bound this device) — with no reachable backend it is **absent, not disabled** (an empty account section is the dark pattern we reject; the same reachable-capability guard as the AI-tier "coming soon" row and SYNC). **Notifications:** not a blanket cut — **one opt-in, off-by-default, due/plan-tied, non-guilt reminder** (backlog is the dominant SRS failure; a due-reminder is retention infrastructure, never a streak/guilt crutch; ~1–2/day cap). `[registry-and-sync.md §1.1; product-direction §7/§9; settings-ux §6]`
 - Goal target editing routes to §5's goal editor — never the legacy global `showTargetSheet`. `[Seam C]`
 - Restore + Reset-progress are real `DestructiveRow`s (error color + outlined shape + text label + confirm — all four, never color-only). `[B8; design-system §4.9]`
 
 ### 3.8 Onboarding
 
-First-run is a **redirect gate**, not a wizard tab. Hard-gate the study folder (content); soft-gate the key (AI only). `[time-to-first-review; autonomy]`
+First-run is a **redirect gate**, not a wizard tab — an **intent-gate ("What do you want to do?"), not a folder-first gate.** `[time-to-first-review; autonomy; product-direction §5]`
 
 ```
-launch → needsVault? → /welcome (choose or create a folder)  ← only hard gate, only full page
+launch → needsSetup? → /welcome  ← the intent-gate: "What do you want to do?"
+      three CO-EQUAL tonal choices (ordered by audience size, none the hero):
+        1 Make cards from my material  → paste/topic → AI-generate (→ Draft gate)
+        2 I have a class code          → pull a restricted, teacher-pushed deck
+        3 Point me at my folder        → the only path that names "folder" (power path);
+                                          Onyx can also CREATE a folder + seed a
+                                          subject-neutral sample deck for a user with no notes
+      → the folder is a SILENT CONSEQUENCE of paths 1–2, never a gate in front of them
       → index (plain "Indexing…", then land)
       → auto-create default all-cards goal (single-goal degradation)
       → land on single-goal Home with due cards
       → dismissible "add key" banner; key requested inline at first AI flow
 ```
 
-- `/welcome`: renders the shared `showFolderSourceSheet` body as the pre-shell page — one Filled **"Choose a folder"** (existing folder or Obsidian vault, read as-is) + one Tonal **"Create a study folder"** (app scaffolds a dir + a tiny sample deck for users with no notes); local-first contract line ("nothing leaves it"); **"What can I point it at?"** is an on-request in-place expander (replaces the old "What's a vault?" gate). No account row, no carousel, no tutorial. `[NN/g no-tutorial; UXPin progressive disclosure; settings-ux §3]`
+- `/welcome`: the **intent-gate** — a pre-shell page presenting the three co-equal on-ramps (**Make cards from my material** · **I have a class code** · **Point me at my folder** + light manual create/edit) as tonal, equal-weight choices; **AI-generate is NOT the hero.** Only path 3 names "folder" out loud: it renders the shared `showFolderSourceSheet` body — **"Choose a folder"** (existing folder or Obsidian vault, read as-is) + **"Create a study folder"** (app scaffolds a dir + a subject-neutral sample deck for users with no notes) — with the local-first contract line ("nothing leaves it") and an on-request **"What can I point it at?"** in-place expander (replaces the old "What's a vault?" gate). No account row, no carousel, no tutorial. `[product-direction §5; content-creation §2/§5; NN/g no-tutorial; UXPin progressive disclosure; settings-ux §3]`
 - Key sheet is shared (`showApiKeySheet`, extracted from Settings), "Not now"-able; review works fully key-less. Store in Keychain with **`ThisDeviceOnly`** accessibility (one-line security fix, do it regardless). `[HackerOne BYOK]`
-- First goal defaults to `AllMembership` ("deck = query"); explicit scoping is deferred/progressive. Vault-but-no-cards → calm empty state, one action, no scold.
+- First goal defaults to `AllMembership` ("deck = query"); explicit scoping is deferred/progressive. Folder-but-no-cards → calm empty state, one action, no scold.
 
 ---
 
@@ -296,7 +304,7 @@ Finish → back to goal Home → "done for today" signaled by ABSENCE of Filled 
 - **Step 1 (ship first, cheap): the visible-bug micro-fix.** Add `effectiveDeadline`; make `_TargetCard` read `activeTargetProvider` + `activeStudyGoalProvider` with a template-driven label; route its tap to the goal editor sheet (not `/interview-prep`). This kills the visible "three dates disagree" and "chip-vs-card describe different aims" bugs (Seam C) at low blast radius. Single-goal degradation stays byte-identical (the default goal resolves identically to the legacy target).
 - **Step 2 (own task): the storage unification.** Re-parent interviews, rename `PrepGoal`→`Interview`, kill the short-circuit, migrate `onyx-target.json`, delete `/interview-prep`, retire `target_sheet`, parameterize `ReadinessPanel` by goal, fold each goal's interviews into `targetingForGoal` (fixing the non-default-goal biasing drop). Do **not** delete the route + retire the sheet + add a new sheet in one PR (max blast radius).
 
-Interviews live in **one** home: the goal editor's Interviews section (consistent with "StudyGoal owns the aim"), not a sheet-in-Insights.
+Milestones (dated targets) live in **one** home: the goal editor's Milestones section (consistent with "StudyGoal owns the aim"), not a sheet-in-Insights. (User-facing "milestone / dated target"; the code type stays `Interview`.)
 
 ---
 
@@ -366,7 +374,7 @@ What still holds: **do not ship a UI that *lies* about being general** — six s
 - `TrackId`/`weightForDomain`/taper/mock-cadence → template-driven; `softwareInterviewsConfig` de-privileged to a fallback/example (no shipped default subject); unified cuePolicy/rubric-dimension vocabulary; 1:1 functional parity with today's SWE behavior. This is the product thesis, not a deferred nice-to-have — sequence it as its own planning pass, not "when a second subject pulls it." *(changes: practice_plan, daily_plan, flow_spec, subject)*
 
 **Deferred / future tasks (explicitly not v1):**
-- **Accounts/login/sync** — revisit only when server-mediated cross-device state the vault can't carry is needed (login ≠ upload consent; design conflict UX up front).
+- **Accounts/login/sync** — **optional, capability-gated, seams reserved now** (not "rejected," not "revisit only when forced"): `sync ≠ server ≠ accounts` — merge-correct folder-sync ships v1 (fixes a live LWW bug), account UI renders only when a backend capability is reachable, account-sync carries progress + goals only (never content), and the deck registry is restricted-first. The account/registry *server* build is deferred; the model + reachable-guard + join-key seams land now. **See `registry-and-sync.md`.**
 - **STT-first conversation UX** + TTS interviewer replies.
 - **`FlowRunnerScreen` + calibration-axes generalization** — wait for a real authored non-SWE flow.
 - **Second-brain #50:** Related-concepts neighborhood, source-note pane, unlinked mentions, Gaps/Vault-health view, vault write-path (edit-card-updates-note). Requires indexing non-card notes + persisting unresolved links.

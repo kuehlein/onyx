@@ -1,6 +1,6 @@
 # Onyx — Settings & Configuration UX
 
-*Companion to `docs/ux-vision.md` (refines §3.7; touches §3.8, §16) and consistent with `docs/design-system.md` (§4.9). This spec is decisive: where the four design drafts disagreed, the choice is made here and the losing option is named so it doesn't get "helpfully" re-added.*
+*Companion to `docs/ux-vision.md` (refines §3.7; touches §3.8, §1) and consistent with `docs/design-system.md` (§4.9). Serves the canonical `docs/product-direction.md` (§6 AI, §7 accounts/sync) and defers the optional-cloud-layer mechanics to `docs/registry-and-sync.md` (accounts/sync/registry/managed-AI) and `docs/content-creation.md` (the AI tier chooser). This spec is decisive: where the four design drafts disagreed, the choice is made here and the losing option is named so it doesn't get "helpfully" re-added.*
 
 ---
 
@@ -10,11 +10,11 @@
 
 The generic settings-UX research ("never burn a bottom-tab on Settings") is correct *for its assumed app shape* — a mostly-casual app whose settings are a handful of appearance/notification toggles. It does not apply to Onyx, for four codebase-grounded reasons:
 
-1. **Settings is the local-first app's config + data-stewardship home, not a toggle drawer.** Source (the content contract), the Claude key (the AI contract), backup/restore (the data-safety contract), and goal management (the config that defines every deck) are all app-wide, rarely-changed, and genuinely destination-worthy. Android's own rule (15+ settings → subscreens) and Toptal's "4–5 categories" put Onyx squarely at destination scale.
+1. **Settings is the local-first app's config + data-stewardship home, not a toggle drawer.** Source (the content contract), the AI provider/key (the AI contract), backup/restore (the data-safety contract), and goal management (the config that defines every deck) are all app-wide, rarely-changed, and genuinely destination-worthy. Android's own rule (15+ settings → subscreens) and Toptal's "4–5 categories" put Onyx squarely at destination scale.
 2. **Every alternative breaks a harder locked constraint.**
    - *App-bar gear:* Settings is **altitude-agnostic** (§2) — it renders identically whether `focusedGoal` is null or a goal id. A gear on one screen's AppBar re-couples it to an altitude and re-introduces the "which screen owns global config" ambiguity the `focusedGoalProvider` single-spine was built to kill.
    - *Drawer:* NN/G's own finding is that hidden menus cut engagement ("out of sight is out of mind"). A drawer is strictly worse than a visible co-equal tab, and there's no drawer anywhere else in the app to hang it on.
-   - *Profile screen:* requires an identity anchor. Onyx has **no account by principle** — "an empty account section is itself a dark pattern." A profile entry with no profile is the dark pattern the docs forbid.
+   - *Profile screen:* requires a standing identity anchor. In the solo core there is **no account by principle**, and even when the optional cloud layer supplies one, account/sign-in is a **capability-gated ACCOUNT group inside Settings** (§2), never a top-level profile destination — and rendered *only when a backend capability is reachable* (a persistent "Sign in" surface for a server that doesn't exist is the dark pattern the docs forbid; `registry-and-sync.md` §1.1).
 3. **The tab test passes.** §2 already frames the four tabs as "co-equal, cross-cutting, revisited across sessions." A local-first user revisits Settings *more* than a cloud user: checking indexing status after editing notes, managing goals, verifying backups.
 4. **No claimant for the freed slot.** §2 explicitly rejects a Goals/Aim 5th tab — the only candidate. Freeing the slot buys nothing; demoting Settings is architectural churn against a locked decision for zero benefit.
 
@@ -47,9 +47,17 @@ The research heuristic guards against *clutter and displacement*. Onyx displaces
 │   ⤴  Back up now         Last backup 2h ago              ›
 │   ⟲  Restore from backup                                 ›   (DestructiveRow)
 │
-│ CLAUDE (AI)
-│   🔑 API key             Saved on this device            ›
-│   📡 Test connection                                     ›
+│ AI                                               ← was "CLAUDE (AI)"
+│   🤖 AI provider          Off                             ›   ← 3-state tier chooser
+│
+│ SYNC                                             (optional; off by default)
+│   ☁  Sync                Off                              ›
+│
+│ SHARING                                          (only if sharing is reachable)
+│   ↗  Shared decks         Manage my shared decks          ›
+│
+│ ACCOUNT                                          (only if a backend is reachable)
+│   👤 Account             Not signed in                    ›
 │
 │ ABOUT
 │   ℹ  About Onyx          Version 1.4.0                   ›
@@ -58,12 +66,14 @@ The research heuristic guards against *clutter and displacement*. Onyx displaces
 └──────────────────────────────────────────────────────────
 ```
 
-**Group order** (by importance/frequency, per Android): SOURCE → STUDY LOAD → STUDY GOALS → DATA & BACKUP → CLAUDE (AI) → ABOUT → ▸ Developer. Source first (the app is nothing without content); Developer last and collapsed. **3–5 above the fold** (§8) is satisfied: SOURCE(3) + top of STUDY LOAD fills the first screen; everything heavier is a drill-down.
+**Group order** (by importance/frequency, per Android): SOURCE → STUDY LOAD → STUDY GOALS → DATA & BACKUP → AI → SYNC → SHARING → ACCOUNT → ABOUT → ▸ Developer. Source first (the app is nothing without content); Developer last and collapsed. **SYNC / SHARING / ACCOUNT are the optional cloud-layer groups** — capability-gated, rendered **only when a backend capability is reachable** (absent, *not* a disabled row); `sync ≠ server ≠ accounts` (owned in `registry-and-sync.md` §§0–2, §4). In the account-free / offline solo core (the common case) only AI is present of the cloud groups, so **3–5 above the fold** (§8) is unchanged: SOURCE(3) + top of STUDY LOAD fills the first screen; everything heavier is a drill-down.
 
 **Decisions made against the drafts:**
 - **No "Advanced" group.** PART 1 proposed an always-present Advanced group nesting Developer; PART 3 correctly rebutted it as dead UI (a header over one stub) that violates §8 calm-restraint. One stub does not earn a group. Onyx satisfies the research's "advanced-one-layer-down" principle **via a sheet, not a group** — record this in §3.7 so a future reader doesn't re-add it.
 - **STUDY LOAD stays in Settings** (reject PART 1's "delete it, inline the levers" overrule). PART 1 misread the governing rule: the doc author wrote *"tune today → where you study; configured once → here"* and then deliberately kept these two levers here as the config-once-ish ones. Worse, PART 1 wanted to cram Daily-time / New-per-day into Home's `[Adjust mix]` — but §4.6 line 193 makes `AdjustMixSheet` **"the sole budget editor,"** and it edits per-goal *share-of-time* MixSliders, not absolute minutes or new/day. Merging them collides with §4.6 and violates §7's "no duplicate editors."
 - **Two group renames** (VAULT→SOURCE, DATA & PROGRESS→DATA & BACKUP), written into §3.7 as one decision (the drafts each renamed differently — SOURCE from PART 4 wins as the tightest topic-noun; "Progress" collides with Insights, which owns progress *display*).
+- **CLAUDE (AI) → AI, as a 3-state tier chooser.** The group is renamed **AI** (never "Claude" — a vendor name re-privileges AI the way "vault" leaked Obsidian) and collapses from an "API key + Test connection" pair to **one AI-provider row** driving the `AiProvider { off, managed, byoKey }` chooser (`Off` · `Onyx AI (coming soon)` · `My key`), JIT at first AI use. `Onyx AI` is disabled "coming soon" until the managed server is reachable. `[content-creation.md §2.2; registry-and-sync.md §5]`
+- **Three optional cloud-layer groups added — SYNC, SHARING, ACCOUNT — all capability-gated.** They render **only when a backend capability is reachable** (absent, *not* a disabled row — a disabled row for a nonexistent capability is the very dark pattern §1 rejects). `sync ≠ server ≠ accounts`: SYNC is optional/off-by-default and decoupled from SOURCE; SHARING is the config-once home for a producer's shared decks (per-deck publish lives on the deck); ACCOUNT is one account with three capability flags. In the solo core all three are simply absent, so the account-free/offline experience is unchanged. `[registry-and-sync.md §§1–2, §4; content-creation.md §5]`
 
 **Governing rule, sharpened (keep in §3.7):** *"Anything you tune to change today lives where you study; anything configured once lives here. Config that changes what becomes a card lives here (rare, app-wide, dangerous-if-wrong); config that changes what you study today lives where you study."*
 
@@ -105,18 +115,48 @@ Pref key `new_section_limit` stays internal; the **visible** word is "cards," no
 - **Back up now** — `Last backup {relativeTime}` (or `Not backed up yet`); disabled with `Connect a folder first` when `source == null`. Success: transient snackbar `Backed up.` (drop "vault snapshot" jargon).
 - **Restore from backup** — a real `DestructiveRow` (§4.9: error color + outlined shape + text label + confirm dialog — all four; today it's only an error-tinted icon on a plain `ListTile`, which is color-only and non-compliant). Subtitle `Replaces current progress with your last backup.` Confirm body: `This replaces your current progress with your last backup. Reviews recorded since then will be lost.` Results: `No backup found.` / `Restored {n} cards from your backup.`
 
-**CLAUDE (AI)** — mechanism nouns demoted off the primary line.
+**AI** — one row, a **3-state tier chooser** (not a bare "API key" row). The user-facing name is always **"AI," never "Claude"** (a vendor name re-privileges AI the way "vault" leaked Obsidian; `registry-and-sync.md` §5, `product-direction.md` §6). Mechanism nouns (Anthropic / Keychain / `ANTHROPIC_API_KEY`) demote off the primary line.
 
-| State | Primary subtitle |
+The single **AI provider** row's subtitle is the live `AiProvider { off, managed, byoKey }` state:
+
+| `AiProvider` | Primary subtitle |
 |---|---|
-| Saved | `Saved on this device` (secondary/sheet: "Kept in the Keychain, this device only") |
-| From env (desktop dev) | `Using ANTHROPIC_API_KEY` (row non-editable — only shows when the var is set) |
-| Not set (iOS) | `Not set — tap to add` |
-| Not set (Linux) | `Set ANTHROPIC_API_KEY to use AI` |
+| `off` | `Off` |
+| `byoKey` (saved) | `My key · saved on this device` (secondary/sheet: "Kept in the Keychain, this device only") |
+| `byoKey` (from env, desktop dev) | `My key · using ANTHROPIC_API_KEY` (env-only, non-editable) |
+| `managed` | `Onyx AI` (only reachable once the managed server exists) |
 | Checking / error | `Checking…` / `Couldn't read stored key` |
 
-- **API key** → the shared **`showApiKeySheet`** (extracted from Settings, shared with onboarding's first-AI-flow per §3.8; today it's a local `_editApiKey` dialog and must be extracted). Store `ThisDeviceOnly`. Trailing delete (`_ink55`) only when a user-saved (non-env) key exists.
-- **Test connection** — `Send a tiny request to check the key.` Enabled only when a key is set; sends `Reply with exactly: pong`. Results: `Connected.` / `Couldn't connect.` — keep the *reason* (auth vs network) reachable behind a tap; a bare "Couldn't connect" on a bad key is unhelpfully calm.
+- **AI provider** → the shared **`showApiKeySheet`** (the tier chooser; extracted from Settings, shared with onboarding's first-AI-flow per §3.8; today it's a local `_editApiKey` dialog and must be extracted). It presents the same **just-in-time 3-way choice** that fires at *first AI use* (`content-creation.md` §2.2) — three options, one Filled:
+  - **`Off`** — no AI; the key-less core is byte-identical.
+  - **`Onyx AI (coming soon)`** — the managed/hosted tier, rendered as an **honest disabled "coming soon"** row **until the proxy server is reachable** (the same capability-reachable guard as ACCOUNT §below and SYNC — never show "Onyx AI" as *available* until the backend is actually reachable; `registry-and-sync.md` §5.1/§1.1).
+  - **`My key`** — BYO-Anthropic-key (v1); store `ThisDeviceOnly`. Trailing delete (`_ink55`) only when a user-saved (non-env) key exists. Includes the honest connection check (`Send a tiny request to check the key.` → sends `Reply with exactly: pong`; `Connected.` / `Couldn't connect.`, keeping the auth-vs-network *reason* behind a tap).
+- **Usage-as-`CoverageBar` (when managed lands).** Once the `managed` tier is reachable, per-account quota surfaces here as a **`CoverageBar`** (`design-system §4.3/§5`) — **never a ring, never a countdown, never a loss-aversion timer**; quiet below exhaustion (a `▲ near limit` micro-label near the top), with the upgrade/BYO-key prompt **only at true exhaustion** (`registry-and-sync.md` §5.2). Not built now — the row is the `AiProvider` state until then.
+
+**SYNC** (optional cloud group — rendered only when reachable) — sync is **optional, off by default, and decoupled from SOURCE** ("a synced folder is just a folder"; §3, `registry-and-sync.md` §2). `sync ≠ server ≠ accounts`: folder-sync ships with *zero server* over a folder the user already syncs, and account-sync (if ever built) carries **progress + goals only, never content**.
+
+| `SyncState` | Primary subtitle |
+|---|---|
+| `Off` | `Off` (default) |
+| `On` | `On · last synced {relativeTime}` |
+| Conflict merged | `On · resolved a sync conflict` (details behind a tap) |
+| Offline | `Offline` — a **`muted` `StatusPill`**, *not* an error tone (offline and "a conflict was merged" are not failures in a local-first app) |
+| Error | `Sync error` (only a true irreconcilable case) |
+
+- **Sync** → `showSyncSheet`. Status via `StatusPill`; "Offline" is `muted`, never `bad`. The default is **silent correct merge** (per-`(deckId,cardId,sectionSlug)` last-review-wins + append-union review events + goals-in-payload, `registry-and-sync.md` §2.2) — no modal, no interrupt, no data-loss without a tombstone.
+
+**SHARING** (optional cloud group — rendered only when `sharing` is reachable) — the **config-once home** for a producer's shared decks. Per-deck publish lives on the deck (the `PublishSheet` reached from a deck's detail, owned by `registry-and-sync.md` §4 / `content-creation.md` §5); this group is where you *manage* what you've already published, not where you publish.
+
+- **Shared decks** — `Manage my shared decks` → a SheetHeader sheet listing your maintained decks with **who has access** per deck (the group/class binding is the permission unit — never per-student ACLs; `registry-and-sync.md` §4.1). No vanity metrics (no downloads/ratings/"N studying"); **card-count only** as a size fact (§4.6 of that doc).
+
+**ACCOUNT** (optional cloud group — rendered only when a backend capability is reachable) — one account concept with three capability flags (`sync` / `managedAi` / `sharing`); the group shows exactly the capabilities this account actually has. **With no reachable backend the ACCOUNT group is absent, NOT a disabled row** — a disabled "Sign in" row for a server that doesn't exist is the original dark pattern (`registry-and-sync.md` §1.1; `product-direction.md` §7). Never a 5th tab, never a profile screen (no identity anchor exists in the solo core).
+
+| Account state | Primary subtitle |
+|---|---|
+| Not signed in (but a backend is reachable) | `Not signed in` |
+| Signed in | `{email} · signed in` |
+
+- **Account** → the sign-in / account sheet (SheetHeader). Sign-out drops the *account binding*, not your data — progress remains in the folder snapshot and local DB (the DB is a derived cache; the folder is the source of truth), so sign-out is cheap and reversible (`registry-and-sync.md` §1.3).
 
 **ABOUT** (new group)
 
@@ -251,10 +291,10 @@ The **Card parsing** row (SOURCE, §2) opens:
 2. `lib/shared/providers/vault.dart:18-25` — replace env-only resolution with **env → persisted `VaultRef` → null** (env still wins for dev). Persist path (desktop) / bookmark (iOS) in `preferences`; add a setter used by both the picker and Create. *This is net-new wiring, larger than Phase-3's "changes: settings_screen" note — flag as its own build item.*
 3. `lib/features/onboarding/folder_source_sheet.dart` — shared body + `showFolderSourceSheet(context, ref)` over `showOnyxSheet` (mirrors how `showApiKeySheet` is shared).
 4. `lib/features/onboarding/welcome_screen.dart` — renders the shared body as the pre-shell page; router redirect on `vaultSourceProvider == null`.
-5. `lib/features/settings/settings_screen.dart` — SOURCE row gains chevron + `onTap` (`:47-51`, ~2 lines); rename group labels VAULT→SOURCE, DATA&PROGRESS→DATA&BACKUP; add ABOUT group; add the **Card parsing** row + `how_cards_are_read.dart` explainer (mirror `study_load_help.dart`); wrap Developer in a collapsed `ExpansionTile`.
+5. `lib/features/settings/settings_screen.dart` — SOURCE row gains chevron + `onTap` (`:47-51`, ~2 lines); rename group labels VAULT→SOURCE, DATA&PROGRESS→DATA&BACKUP, **CLAUDE (AI)→AI**; add ABOUT group; add the **Card parsing** row + `how_cards_are_read.dart` explainer (mirror `study_load_help.dart`); wrap Developer in a collapsed `ExpansionTile`. **Render the capability-gated cloud groups (SYNC / SHARING / ACCOUNT) behind the reachable-backend guard — absent, not disabled, in the solo core** (schema + guard owned by `registry-and-sync.md` §§1–2, §4).
 6. **Make Restore a real `DestructiveRow`** (`:206-217`) and Reset-local-progress likewise (`:280-288`) — §4.9 compliance (currently error-tinted icons only).
-7. **Extract `showApiKeySheet`** from the local `_editApiKey` dialog (§3.8 / Phase-0), shared with onboarding.
-8. Copy sweep (§6): "sections"→"cards" in visible strings; drop "vault snapshot"; strip raw `$e`; demote Keychain/ANTHROPIC_API_KEY off primary subtitles.
+7. **Extract `showApiKeySheet` as the 3-state AI-tier chooser** from the local `_editApiKey` dialog (§3.8 / Phase-0), shared with onboarding — drives `AiProvider { off, managed, byoKey }` (`Off` · `Onyx AI (coming soon)` · `My key`), with the `managed` option disabled until the proxy is reachable.
+8. Copy sweep (§6): "sections"→"cards" in visible strings; drop "vault snapshot"; strip raw `$e`; demote Keychain/ANTHROPIC_API_KEY off primary subtitles; **"Claude"→"AI" in visible strings** (route the ~9 hardcoded "Add your Anthropic API key" strings through the one tier chooser; `registry-and-sync.md` §5.1).
 9. Create-folder scaffolder + bundled sample-deck asset (2–3 `.md`).
 
 **Deferred (stub-only now):** the configurable parser itself — no changes to `card_parser.dart`, `desktop_vault_source.dart` exclusions (`:50,91-93`), or config discovery (`subject.dart:17`). The hardcodings (`onyx-subject.yaml`, `_meta/`, `.`-prefix) stay as **defaults**; a config-less folder already falls back to the built-in subject (`subject.dart:27-28`), so Choose/Create of a bare folder Just Works today. The `HowCardsAreReadSheet` LATER rows reserve the seam.
@@ -267,15 +307,16 @@ The **Card parsing** row (SOURCE, §2) opens:
 
 - **ABOUT group — ADD** (version, privacy-in-plain-terms, licenses, restore-defaults). Currently entirely absent; research flags privacy + restore-defaults as expected.
 - **Card parsing row — ADD** as the read-only stub (§4).
-- **Notifications / reminders — CUT for v1.** No reminder engine exists (a dead toggle violates no-stub-in-casual-path), and streak-style nudges flirt with the rejected gamification surface. When an engine ships, add a single opt-in **STUDY LOAD · Daily reminder** (time picker), framed as a plan reminder, never a streak defense.
-- **Theme / Account — stay CUT** (dark-locked; local-first; empty-account = dark pattern). Do not re-add.
+- **Notifications / reminders — NOT a blanket cut: one opt-in, off-by-default, due/plan reminder.** The settled stance is a single opt-in **STUDY LOAD · Daily reminder** (time picker), **off by default**, tied to due/plan and never to a streak (backlog is the dominant SRS failure, so a due-reminder is retention infrastructure, not a streak crutch; `product-direction.md` §9). Never streak/guilt/nag; ~1–2/day cap. No reminder *engine* exists yet, so the row lands when the engine ships — until then the recommendation is reserved, not a dead toggle.
+- **Theme — stay CUT** (dark-locked). Do not re-add.
+- **ACCOUNT group — render only when a backend capability is reachable** (not "stay CUT"). Accounts are optional-but-real (§2 ACCOUNT); the earlier "empty-account = dark pattern" objection was **conditional on there being nothing to sign into** — it is honored by the capability-reachable guard (group **absent, not disabled**, until a backend is reachable), *not* by a blanket cut. `[registry-and-sync.md §1.1; product-direction.md §7]`
 
 ---
 
 ## Doc edits required (so nothing gets "helpfully" re-added)
 
-- **§3.7** — rename VAULT→SOURCE and DATA & PROGRESS→DATA & BACKUP; add ABOUT group; add the **Card parsing** row (explainer, *not* a control); note that Onyx satisfies "advanced one-layer-down" via a sheet, **not** an Advanced group (reject PART 1's group); confirm STUDY LOAD stays here (levers are config-once, and merging into `AdjustMixSheet` collides with §4.6/§7).
+- **§3.7** — rename VAULT→SOURCE, DATA & PROGRESS→DATA & BACKUP, and **CLAUDE (AI)→AI** (now a 3-state `AiProvider` tier chooser, not an "API key" row); add ABOUT group; add the **Card parsing** row (explainer, *not* a control); **add the three capability-gated cloud groups SYNC / SHARING / ACCOUNT, rendered only when a backend capability is reachable (absent, not disabled) — so the binding group set is the base groups plus these optional ones**; note that Onyx satisfies "advanced one-layer-down" via a sheet, **not** an Advanced group (reject PART 1's group); confirm STUDY LOAD stays here (levers are config-once, and merging into `AdjustMixSheet` collides with §4.6/§7).
 - **§3.8** — welcome gets Filled **"Choose a folder"** + Tonal **"Create a study folder"** + local-first line + "What can I point it at?" on-request expander (replaces "What's a vault?").
-- **§16** — mission line "a calm, local-first study client over a plain Obsidian vault" → "…over a plain markdown folder" (Obsidian-compatible, not required).
+- **§1** — mission line "a calm, local-first study client over a plain Obsidian vault" → "…over a plain markdown folder" (Obsidian-compatible, not required). *(Applied.)*
 
-**Authoritative anchors:** `docs/ux-vision.md` §2 (4-tab IndexedStack frame), §3.7 (the binding 6-group set), §3.8 (onboarding + shared key sheet), §4.6 (`AdjustMixSheet` = sole budget editor — the collision that keeps STUDY LOAD in Settings), §7 (no duplicate editors), §8 (SheetHeader-everywhere / one-Filled / 3–5 above fold / calm restraint); `docs/design-system.md` §4.9 (`DestructiveRow` / `showApiKeySheet` / `showOnyxSheet`), §339/§4.6 (`GoalEditorSheet`). Code: `lib/features/settings/settings_screen.dart:46-346`, `lib/shared/providers/settings.dart:24-268`, `lib/shared/providers/vault.dart:18-25`, `lib/core/vault/desktop_vault_source.dart`, `lib/core/vault/card_parser.dart`, `lib/core/backup/snapshot.dart:29`, `lib/shared/providers/subject.dart:17,27-28`.
+**Authoritative anchors:** `docs/product-direction.md` §6 (AI stance — "AI" never "Claude"), §7 (optional accounts + sync, capability-gated); `docs/registry-and-sync.md` §1 (accounts — one object, three flags, reachable-guard), §2 (sync — optional/off/decoupled, `StatusPill`), §4 (the SHARING registry), §5 (managed AI — proxy seam, tier chooser, CoverageBar usage); `docs/content-creation.md` §2.2 (the AI tier chooser + JIT-at-first-use), §5 (SHARING boundary); `docs/ux-vision.md` §2 (4-tab IndexedStack frame), §3.7 (the binding group set — base groups + the capability-gated cloud groups), §3.8 (onboarding + shared key sheet), §4.6 (`AdjustMixSheet` = sole budget editor — the collision that keeps STUDY LOAD in Settings), §7 (no duplicate editors), §8 (SheetHeader-everywhere / one-Filled / 3–5 above fold / calm restraint); `docs/design-system.md` §4.9 (`DestructiveRow` / `showApiKeySheet` / `showOnyxSheet`), §4.3/§5 (`CoverageBar` / `StatusPill`), §339/§4.6 (`GoalEditorSheet`). Code: `lib/features/settings/settings_screen.dart:46-346`, `lib/shared/providers/settings.dart:24-268`, `lib/shared/providers/vault.dart:18-25`, `lib/core/vault/desktop_vault_source.dart`, `lib/core/vault/card_parser.dart`, `lib/core/backup/snapshot.dart:29`, `lib/shared/providers/subject.dart:17,27-28`.

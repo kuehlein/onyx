@@ -1,5 +1,12 @@
 # Onyx — Architecture
 
+> **Scope stamp:** this doc describes the **v1 offline core only**. The optional
+> server/cloud layer — managed AI, sync, and the deck registry — is reserved and
+> layers on without ever being required; see `docs/product-direction.md` and
+> `docs/registry-and-sync.md` for its shape. So: **v1 has no server; an optional
+> cloud layer is reserved** (not "no server ever"). User-facing, the AI is named
+> "AI" and the folder is a "study folder" (code keeps `VaultSource`).
+
 ## Overview
 
 Onyx is a local-first iOS flashcard app backed by an Obsidian vault. Cards are
@@ -258,7 +265,8 @@ settings toggle in MVP. See `docs/learning-science.md` for the evidence.
 
 ## Claude API Integration
 
-The app calls the Claude API directly from Flutter. No intermediary server.
+The app calls the AI directly from Flutter (BYO key). v1 has no server; an
+optional cloud layer (managed AI) is reserved — see `docs/registry-and-sync.md`.
 
 - API key: stored in iOS Keychain via `flutter_secure_storage`; user enters it
   in Settings on first launch

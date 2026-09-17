@@ -22,7 +22,9 @@ The design of this schema is grounded in learning science research. See
 
 ```yaml
 ---
-id: 550e8400-e29b-41d4-a716-446655440000  # UUID v4 — stable primary key, never change
+id: binary-search-tree                     # slug within this deck — the stable within-deck id (see id/deckId notes)
+deckId: ds-a-core                          # deck namespace; join key is (deckId, id, sectionSlug)
+status: active                             # lifecycle: draft | active (see Card Status below) — default active for hand-authored/indexed cards
 type: flashcard                            # required for Onyx to index this file
 tags:
   - ds-a                                  # domain tag — always required
@@ -39,9 +41,34 @@ quiz: []                                   # optional: explicit list of section 
 ```
 
 **Field notes:**
-- `id` — UUID v4. Generated at card creation time. This is the foreign key in
-  SQLite for SRS state and review history. Never rename it.
+- `id` — a **slug, unique within its `deckId`** (kebab-case; typically the
+  filename without `.md`). Combined with `deckId` and `sectionSlug` it forms the
+  join key `(deckId, id, sectionSlug)` for SRS state and review history. Prefer a
+  stable slug; renaming it orphans that card's schedule/history under its deck.
+  A UUID v4 remains a **legal within-deck id** for back-compat (older cards carry
+  one), but device-scoped UUID generation is **retired**: a UUID generated per
+  device makes cross-device deck identity impossible (the same authored card would
+  get a different id on each device). The `deckId` namespace + within-deck slug is
+  the stable cross-device identity. *(See `docs/registry-and-sync.md` §3.2/§3.3 —
+  this is the owning spec.)*
+- `deckId` — the **deck namespace** this card belongs to. It makes the join key
+  `(deckId, id, sectionSlug)`, so a pulled card can never collide with a local one
+  (a raw `id` need only be unique *within* its deck). Local-authored content gets a
+  stable local `deckId` too, so "my folder" is just the deck with the local
+  namespace — one code path for local and pulled. `deckId` is also the unit of
+  pull / update / attribution / license / access. *(Owned by
+  `docs/registry-and-sync.md` §3.2.)*
+- `status` — lifecycle: `draft` | `active`. **`active`** = counts (scheduled by
+  FSRS and included in every readiness denominator); the default for a card you
+  **authored by hand** or that was **indexed from your own folder**. **`draft`** =
+  entered via an **inflow** (AI-generate / import / upstream-update), **excluded
+  from FSRS AND from every readiness denominator** until *you* promote it through
+  the Draft/Review gate. A draft is never scheduled, never accrues review state,
+  and can never move any honest number. Orthogonal to `confidence` (a draft can be
+  `high`-confidence and still not count). *(See Card Status below and
+  `docs/content-creation.md` §3.1 — the owning spec.)*
 - `type` — must be `flashcard` exactly. Files without this field are ignored.
+  *(The `type` enum is itself SWE-shaped — see the note under Card Status.)*
 - `tags` — kebab-case strings. Always include a domain tag (`ds-a`,
   `system-design`, `blockchain`, `behavioral`). See `_meta/tags.md` in the
   vault for the full index and conflict-resolution rules.
@@ -60,6 +87,93 @@ quiz: []                                   # optional: explicit list of section 
   - `low` — major issues were auto-corrected by an AI verifier; read the Resources link before relying on this card
 - `quiz` — optional override. List section slugs to restrict which sections are
   quizzed. When empty or absent, automatic discovery applies.
+
+---
+
+## Card Status — the Draft/Review lifecycle
+
+`status` is a card's **lifecycle** field, distinct from `confidence` (which grades
+content trust at creation). It is the schema half of the shared **Draft/Review
+gate** — the one primitive that makes every content inflow obey honest-readiness by
+construction. **The owning spec is `docs/content-creation.md` §3; this table
+mirrors §3.1.**
+
+| `status` | Meaning | FSRS? | In readiness denominator? | Visible where |
+|---|---|---|---|---|
+| **`draft`** *(a.k.a. unreviewed)* | Entered via an inflow, not yet promoted by *you* | **NO** | **NO** | Browse, marked "not counted" |
+| **`active`** | Promoted through the gate (or authored/indexed by you) | **YES** | **YES** | everywhere, normally |
+
+- **`draft` is produced by the three inflows** — (1) AI-generated cards, (2)
+  imported/pulled decks, and (3) upstream deck-updates that re-enter as `draft`.
+  A draft is **excluded from FSRS** (`buildLearnQueue` / `buildReviewQueue` filter
+  `status == active`) **and from every readiness denominator** (readiness,
+  coverage, weakest-link, the completion ring all compute over `active` only), so a
+  pile of drafts can never move any honest number.
+- **`active` is the default for content that is already yours** — a card you
+  **authored by hand** (hand-authoring *is* the generative act; nothing to
+  self-test-promote from) or one **indexed from your own folder** (re-indexing your
+  own vault is not an untrusted inflow). Promotion of a draft is
+  **self-test-then-promote**: one pass through the recall→reveal gate, per-card
+  keep/edit/discard, no bulk "Accept all."
+- **Orthogonal to `confidence`.** `confidence` says *how much to trust this card's
+  content*; `status` says *does this card count yet*. Both can be shown on a draft.
+
+> **On the `type` enum and "no privileged subject."** The `type` values documented
+> below (`flashcard` / `interview-question` and the `algorithm` / `system-design` /
+> `behavioral` shapes referenced across the app) are **SWE-shaped** — three of four
+> are interview flows — which sits uneasily with the locked *no-privileged-subject*
+> direction (`product-direction.md` §1/§2, principle 10). The intended end state is
+> that card *type* / section shape becomes **template-declared** (routed through the
+> active goal's template), so these enum values read as **de-privileged example
+> configs**, not a baked-in identity. This is a **reserved** direction (Stage-1
+> P2-3/P2-6): do **not** rip the enum out — the built software-interviews config
+> keeps using it — but treat it as an example config, and add new subjects via
+> templates rather than by extending a SWE-centric enum.
+
+### Reserved provenance / distribution seams
+
+These fields are **reserved now, minimal-or-no UI in v1**, so the schema is ready
+for the optional cloud layer (import, upstream-updates, the permissioned registry)
+without a later migration. **The owning spec is `docs/registry-and-sync.md`
+§3/§4.** Absent on a purely local, hand-authored card.
+
+**Card-level (provenance / linkback):**
+
+- `source` — where this card came from (its inflow origin): e.g. the paste/topic
+  it was AI-generated from, the shared deck it was imported from, or a hand-author
+  marker. Lets a promoted card point back at its origin. `[content-creation §2.2
+  source-linkback]`
+- `sharedDeckId` — if this card was pulled from a shared/upstream deck, the id of
+  that upstream deck (distinct from the local `deckId` namespace it now lives in) —
+  the anchor for update-propagation and attribution.
+
+**Deck-level (reserved on the deck, namespaced by `deckId`):**
+
+- `visibility` — `local` | `restricted` | `public` (default `local`; `restricted`
+  is the first networked tier, `public` is defer-hard behind moderation).
+- `author` — attribution for the deck maintainer; renders as a quiet line on the
+  deck detail sheet. License *enforcement* is deferred; the seam is reserved now.
+- `license` — redistribution terms; surfaced as a short honest statement at pull
+  time.
+- `accessControl` — the group/class binding that gates a `restricted` deck (the
+  permission unit is the group, not per-deck-per-user ACLs).
+
+These provenance seams are **orthogonal** to goal membership and the focus spine —
+never overload one to carry another. `[registry-and-sync §4.5]`
+
+> **Scheduling never travels with a deck.** A pulled deck carries *content only* —
+> there is **no `srs_state` / `reviews` field** in the schema for a schedule to
+> travel in, and pulled cards enter as `draft`. Your readiness for an imported
+> "90%-mastered" deck is *fresh*. `[registry-and-sync §3.4]`
+
+### Interference seam (reserved)
+
+- `confusable-with:` — an optional list of card ids (within-deck slugs, or
+  `deckId/id` for cross-deck) that are **easily confused with this one** (proactive
+  interference: siblings a learner mixes up). **Reserved now, no v1 behavior**;
+  intended later to drive contrastive/discrimination prompts and near-miss review
+  ordering. Distinct from `## Related` (topical cross-links) and from `[[wikilinks]]`
+  — this specifically marks *interference* pairs. `[Stage-1 §8]`
 
 ---
 
@@ -331,7 +445,9 @@ under interview conditions.
 
 ```yaml
 ---
-id: 550e8400-e29b-41d4-a716-446655440000
+id: two-sum                     # slug within this deck (a UUID stays legal for back-compat)
+deckId: ds-a-questions          # deck namespace; join key is (deckId, id, sectionSlug)
+status: active                  # draft | active (see Card Status) — an imported question enters as draft
 type: interview-question
 category: coding                # coding | system-design | conceptual | language
 difficulty: medium              # easy | medium | hard
@@ -463,7 +579,8 @@ lean heavily on autocomplete.
 
 ```yaml
 ---
-id: <uuid>
+id: <within-deck-slug>          # e.g. sql-window-functions (a UUID stays legal for back-compat)
+deckId: <deck-namespace>        # join key is (deckId, id, sectionSlug)
 type: flashcard
 tags:
   - lang-frameworks             # domain tag — always required
@@ -582,7 +699,10 @@ markdown card file.
 
 ## Format requirements
 
-- Generate a UUID v4 for the `id` field
+- Set `id` to a **within-deck slug** (kebab-case, typically the filename without
+  `.md`) — the stable within-deck id. Do **not** generate a device-local UUID (a
+  UUID is legal only for back-compat; it makes cross-device deck identity
+  impossible). A generated card is an inflow → it enters as `status: draft`.
 - `type` must be exactly `flashcard`
 - Tags must be kebab-case
 - Prefer tables, bullet lists, and pseudocode over prose paragraphs
@@ -630,7 +750,9 @@ Output ONLY the markdown file content. Start with the YAML frontmatter block.
 No preamble, no explanation, no trailing commentary.
 
 ---
-id: <uuid-v4>
+id: <within-deck-slug>
+deckId: <deck-namespace>
+status: draft
 type: flashcard
 tags:
   - <tag>

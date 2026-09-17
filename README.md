@@ -3,18 +3,20 @@
 A local-first, general study app. Cards live as Markdown in a plain folder — an
 Obsidian vault works as-is, but Obsidian is not required. Onyx parses and indexes
 them, schedules review with [FSRS](https://github.com/open-spaced-repetition), and
-uses Claude to help author and grade. It's education-first and subject-agnostic
-(SWE-interview prep is one configuration among many). iOS is the real target;
-there is **no** hosted server, API, or database — everything runs on-device.
+uses AI to help draft and grade. It's education-first and subject-agnostic
+(SWE-interview prep is one configuration among many). iOS is the real target; v1 is
+offline/local-first, and an optional cloud layer (managed AI, sync, shared decks) is
+reserved — see [`docs/product-direction.md`](docs/product-direction.md).
 
-See [`docs/architecture.md`](docs/architecture.md) for the full design, and
-[`docs/ux-vision.md`](docs/ux-vision.md) for the north-star layout + phased roadmap.
+See [`docs/product-direction.md`](docs/product-direction.md) for the top-of-stack
+design ("what Onyx is now"), and [`docs/INDEX.md`](docs/INDEX.md) for the full doc
+set + reading order.
 
 ## Status
 
 Working today: the vault parser, the drift (SQLite) schema, the vault indexer
 (`card_cache` + wikilink graph), the Riverpod data layer, and a Material 3 app
-shell (Home · Browse · Study · Settings). Browse lists every indexed card. The
+shell (Home · Browse · Insights · Settings). Browse lists every indexed card. The
 FSRS study loop is next.
 
 ## Dev environment
