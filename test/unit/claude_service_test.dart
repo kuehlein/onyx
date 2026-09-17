@@ -96,5 +96,33 @@ void main() {
             (e) => e.message, 'message', contains('invalid x-api-key'))),
       );
     });
+
+    test(
+        'managed posts to the proxy with a bearer token, no x-api-key (ADR-0004)',
+        () async {
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'pong'},
+            ],
+          }),
+          200,
+        );
+      });
+
+      final reply = await ClaudeService.managed(
+        baseUrl: Uri.parse('https://ai.onyx.example/v1/messages'),
+        token: 'onyx-token',
+        client: client,
+      ).complete(prompt: 'ping');
+
+      expect(reply, 'pong');
+      expect(captured.url.toString(), 'https://ai.onyx.example/v1/messages');
+      expect(captured.headers['authorization'], 'Bearer onyx-token');
+      expect(captured.headers.containsKey('x-api-key'), isFalse);
+    });
   });
 }

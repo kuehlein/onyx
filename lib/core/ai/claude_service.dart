@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// A failure talking to the Anthropic API — carries a user-presentable message
-/// and, for HTTP failures, the status code (401 = key rejected/expired).
+/// A failure talking to the AI backend — carries a user-presentable message and,
+/// for HTTP failures, the status code (401 = key/token rejected or expired).
 class ClaudeException implements Exception {
   ClaudeException(this.message, {this.statusCode});
   final String message;
@@ -12,21 +12,44 @@ class ClaudeException implements Exception {
   String toString() => 'ClaudeException: $message';
 }
 
-/// Minimal client for the Anthropic Messages API. Local-first: the request goes
-/// straight from the device to Anthropic with the user's own key (stored in the
-/// Keychain) — there is no Onyx server in the middle.
+/// Minimal client for the Anthropic Messages API shape.
+///
+/// Two transports behind one interface (ADR-0004):
+///
+///  * The default constructor is **BYO-key** — the request goes straight from the
+///    device to Anthropic with the user's own key (local-first, no Onyx server in
+///    the middle). This is the v1 path.
+///  * [ClaudeService.managed] routes through the hosted "Onyx AI" proxy with a
+///    bearer token. **Reserved** — no server exists yet, so the resolver never
+///    selects it in v1; the proxy is expected to speak the same Messages API shape.
 class ClaudeService {
-  ClaudeService({required this.apiKey, http.Client? client})
-      : _client = client ?? http.Client();
+  /// BYO-key: device → Anthropic directly with the user's own key.
+  ClaudeService({required String apiKey, http.Client? client})
+      : _endpoint = _anthropicEndpoint,
+        _authHeaders = {'x-api-key': apiKey, 'anthropic-version': _version},
+        _client = client ?? http.Client();
 
-  final String apiKey;
+  /// Managed "Onyx AI" tier: device → Onyx proxy with a bearer token. Reserved
+  /// (ADR-0004) — the proxy fronts the model provider so a non-technical user
+  /// needs no key of their own.
+  ClaudeService.managed({
+    required Uri baseUrl,
+    required String token,
+    http.Client? client,
+  })  : _endpoint = baseUrl,
+        _authHeaders = {'authorization': 'Bearer $token'},
+        _client = client ?? http.Client();
+
+  final Uri _endpoint;
+  final Map<String, String> _authHeaders;
   final http.Client _client;
 
   /// Fast, low-cost default for the app's high-frequency AI helpers (coaching,
   /// glossary). Callers can override per request.
   static const defaultModel = 'claude-haiku-4-5-20251001';
 
-  static final _endpoint = Uri.parse('https://api.anthropic.com/v1/messages');
+  static final _anthropicEndpoint =
+      Uri.parse('https://api.anthropic.com/v1/messages');
   static const _version = '2023-06-01';
 
   /// Sends a single-turn prompt and returns the concatenated text reply.
@@ -57,8 +80,7 @@ class ClaudeService {
       response = await _client.post(
         _endpoint,
         headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': _version,
+          ..._authHeaders,
           'content-type': 'application/json',
         },
         body: jsonEncode({
