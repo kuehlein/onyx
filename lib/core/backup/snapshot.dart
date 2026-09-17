@@ -11,6 +11,11 @@ import '../vault/vault_source.dart';
 /// survives app reinstalls), so this is what lets you pick up where you left off
 /// if the local database is lost.
 ///
+/// Cross-device reconciliation is a **convergent merge** — last-review-wins on
+/// keyed state, union on the event logs — so two devices that share the folder
+/// never clobber each other's progress. See [mergeSnapshots] and ADR-0001
+/// (`docs/adr/0001-progress-sync-merge.md`).
+///
 /// Snapshots `srs_state` (your schedule — the essential thing), `reviews` (your
 /// history — for future stats / FSRS tuning), `applied_attempts` (the Phase B
 /// mock-interview evidence behind interview readiness), and `recognition_state`
@@ -37,38 +42,65 @@ class SnapshotService {
   Future<bool> hasSnapshot() async =>
       (await _source.readMeta(fileName)) != null;
 
-  /// Write the current progress to the vault snapshot (atomically).
-  Future<void> export() async {
+  /// The current DB progress as a snapshot payload — the same shape written to
+  /// disk. The "local" side of the merge in both [export] and [restore].
+  Future<Map<String, dynamic>> _localPayload() async {
     final states = await _db.select(_db.srsStates).get();
     final reviews = await _db.select(_db.reviews).get();
     final applied = await _db.select(_db.appliedAttempts).get();
     final recognition = await _db.select(_db.recognitionStates).get();
-    final json = jsonEncode({
+    return {
       'version': _version,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       'srsStates': [for (final s in states) _srsToJson(s)],
       'reviews': [for (final r in reviews) _reviewToJson(r)],
       'appliedAttempts': [for (final a in applied) _appliedToJson(a)],
       'recognitionStates': [for (final r in recognition) _recognitionToJson(r)],
-    });
-    await _source.writeMeta(fileName, json);
+    };
   }
 
-  /// Replace local progress with the vault snapshot. Returns the number of
-  /// restored sections, or 0 if there is no snapshot. Destructive: clears the
-  /// existing `srs_state` / `reviews` first.
-  Future<int> restore() async {
+  /// The on-disk snapshot, decoded, or null if none exists.
+  Future<Map<String, dynamic>?> _readSnapshot() async {
     final raw = await _source.readMeta(fileName);
-    if (raw == null) return 0;
-    final data = jsonDecode(raw) as Map<String, dynamic>;
-    final states =
-        (data['srsStates'] as List? ?? const []).cast<Map<String, dynamic>>();
-    final reviews =
-        (data['reviews'] as List? ?? const []).cast<Map<String, dynamic>>();
-    final applied = (data['appliedAttempts'] as List? ?? const [])
-        .cast<Map<String, dynamic>>();
-    final recognition = (data['recognitionStates'] as List? ?? const [])
-        .cast<Map<String, dynamic>>();
+    if (raw == null) return null;
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  /// Write current progress to the vault snapshot, **merged with whatever is
+  /// already on disk** (read-merge-write). Merging on export preserves a snapshot
+  /// that arrived from another device via folder-sync but has not been imported
+  /// locally yet, instead of clobbering it. See [mergeSnapshots] + ADR-0001.
+  Future<void> export() async {
+    final local = await _localPayload();
+    final existing = await _readSnapshot();
+    final merged = existing == null ? local : mergeSnapshots(existing, local);
+    await _source.writeMeta(fileName, jsonEncode(merged));
+  }
+
+  /// Merge the vault snapshot into local progress. Returns the number of sections
+  /// after the merge, or 0 if there is no snapshot. **Non-destructive:** the DB is
+  /// rewritten to the *union* of local + snapshot, so no review or attempt is lost
+  /// and per-section state resolves to the most recently reviewed side. (The
+  /// `DELETE`+insert is safe here because the merged set is a superset of local —
+  /// the property the old destructive restore lacked.) See [mergeSnapshots] + ADR-0001.
+  Future<int> restore() async {
+    final incoming = await _readSnapshot();
+    if (incoming == null) return 0;
+    final local = await _localPayload();
+    final merged = mergeSnapshots(local, incoming);
+    await _applyPayload(merged);
+    return (merged['srsStates'] as List).length;
+  }
+
+  /// Replace the DB tables with [data] (the merged union). Private: callers must
+  /// pass a payload that already folds in the local rows (see [restore]).
+  Future<void> _applyPayload(Map<String, dynamic> data) async {
+    List<Map<String, dynamic>> rows(String key) =>
+        (data[key] as List? ?? const []).cast<Map<String, dynamic>>();
+    final states = rows('srsStates');
+    final reviews = rows('reviews');
+    final applied = rows('appliedAttempts');
+    final recognition = rows('recognitionStates');
 
     await _db.transaction(() async {
       await _db.delete(_db.srsStates).go();
@@ -84,7 +116,6 @@ class SnapshotService {
             [for (final r in recognition) _recognitionFromJson(r)]);
       });
     });
-    return states.length;
   }
 
   Map<String, dynamic> _srsToJson(SrsState s) => {
@@ -185,3 +216,92 @@ class SnapshotService {
         verified: Value(m['verified'] as bool?),
       );
 }
+
+// ---------------------------------------------------------------------------
+// Convergent snapshot merge (ADR-0001: docs/adr/0001-progress-sync-merge.md)
+// ---------------------------------------------------------------------------
+
+/// Merge two decoded snapshot payloads into their union — **commutative,
+/// idempotent, and convergent** (a CRDT-style merge), so any two devices that
+/// exchange snapshots (in any order, any number of times) reach the same result
+/// with no data loss:
+///
+///  * **Keyed state** (`srsStates`, `recognitionStates`) resolves per section
+///    `(cardId, sectionSlug)` to the most recently reviewed side (last-review-wins
+///    on `lastReview` / `lastExplainedAt`, tie-broken by the higher `reviewCount`).
+///  * **Event logs** (`reviews`, `appliedAttempts`) are unioned by a natural event
+///    key, so history is never dropped and re-merging is a no-op.
+///
+/// Output row lists are sorted by key so the serialized file is deterministic
+/// (stable across re-exports → less folder-sync churn). Replaces the old
+/// last-write-wins-on-the-whole-blob behaviour that let the last device to export
+/// clobber the other's progress.
+Map<String, dynamic> mergeSnapshots(
+    Map<String, dynamic> a, Map<String, dynamic> b) {
+  int version(Map<String, dynamic> m) => (m['version'] as int?) ?? 0;
+  String exportedAt(Map<String, dynamic> m) =>
+      (m['exportedAt'] as String?) ?? '';
+  final at = exportedAt(a).compareTo(exportedAt(b)) >= 0
+      ? exportedAt(a)
+      : exportedAt(b);
+  return {
+    'version': version(a) >= version(b) ? version(a) : version(b),
+    if (at.isNotEmpty) 'exportedAt': at,
+    'srsStates': _mergeKeyedState(
+        _rows(a, 'srsStates'), _rows(b, 'srsStates'), 'lastReview'),
+    'recognitionStates': _mergeKeyedState(_rows(a, 'recognitionStates'),
+        _rows(b, 'recognitionStates'), 'lastExplainedAt'),
+    'reviews':
+        _mergeEvents(_rows(a, 'reviews'), _rows(b, 'reviews'), _reviewKey),
+    'appliedAttempts': _mergeEvents(
+        _rows(a, 'appliedAttempts'), _rows(b, 'appliedAttempts'), _appliedKey),
+  };
+}
+
+List<Map<String, dynamic>> _rows(Map<String, dynamic> m, String key) =>
+    (m[key] as List? ?? const []).cast<Map<String, dynamic>>();
+
+String _sectionKey(Map<String, dynamic> r) =>
+    '${r['cardId']} ${r['sectionSlug']}';
+
+/// Last-review-wins per `(cardId, sectionSlug)`, tie-broken by `reviewCount`.
+/// [recencyField] is the ISO-8601 recency stamp for the table (`lastReview` /
+/// `lastExplainedAt`); ISO-8601 UTC strings compare lexicographically as they
+/// order chronologically, and a null/absent stamp (`''`) loses to any real one.
+List<Map<String, dynamic>> _mergeKeyedState(List<Map<String, dynamic>> a,
+    List<Map<String, dynamic>> b, String recencyField) {
+  final byKey = <String, Map<String, dynamic>>{};
+  for (final r in [...a, ...b]) {
+    final k = _sectionKey(r);
+    final cur = byKey[k];
+    if (cur == null || _stateNewer(r, cur, recencyField)) byKey[k] = r;
+  }
+  return byKey.values.toList()
+    ..sort((x, y) => _sectionKey(x).compareTo(_sectionKey(y)));
+}
+
+bool _stateNewer(
+    Map<String, dynamic> cand, Map<String, dynamic> cur, String recencyField) {
+  final cr = (cand[recencyField] as String?) ?? '';
+  final ur = (cur[recencyField] as String?) ?? '';
+  final cmp = cr.compareTo(ur);
+  if (cmp != 0) return cmp > 0;
+  return ((cand['reviewCount'] as int?) ?? 0) >
+      ((cur['reviewCount'] as int?) ?? 0);
+}
+
+/// Union of event rows, deduped by [keyOf], sorted by key for determinism.
+List<Map<String, dynamic>> _mergeEvents(List<Map<String, dynamic>> a,
+    List<Map<String, dynamic>> b, String Function(Map<String, dynamic>) keyOf) {
+  final byKey = <String, Map<String, dynamic>>{};
+  for (final r in [...a, ...b]) {
+    byKey.putIfAbsent(keyOf(r), () => r);
+  }
+  return byKey.values.toList()..sort((x, y) => keyOf(x).compareTo(keyOf(y)));
+}
+
+String _reviewKey(Map<String, dynamic> r) =>
+    '${r['cardId']} ${r['sectionSlug']} ${r['reviewedAt']}';
+
+String _appliedKey(Map<String, dynamic> r) =>
+    '${r['cardId']} ${r['sectionSlug']} ${r['occurredAt']} ${r['source']}';
