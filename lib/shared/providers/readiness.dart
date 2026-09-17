@@ -40,7 +40,7 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
       await repo.attempts(since: now.subtract(const Duration(days: 365)));
 
   final domains = <String>{
-    for (final c in index.cards)
+    for (final c in index.studyCards)
       if (c.domain != null) c.domain!,
   };
   final samples = <String, List<AppliedSample>>{};
@@ -75,7 +75,7 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
       .watch(appliedRepositoryProvider)
       .attempts(since: now.subtract(const Duration(days: 365)));
   final domains = <String>{
-    for (final c in index.cards)
+    for (final c in index.studyCards)
       if (c.domain != null) c.domain!,
   };
   final out = <String, ({int attempts, int contested})>{};
@@ -291,7 +291,7 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   // recall-coverage denominator — so they don't drag coverage down as unlearned
   // "concept" sections.
   final conceptCards =
-      goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
+      goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList();
   final domains = <String>{
     for (final c in conceptCards)
       if (c.domain != null) c.domain!,
@@ -349,7 +349,8 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   return computeLadderPosition(
     // The active goal's concept cards — practice tracks feed readiness via
     // transfer, not coverage (task #30d, G2).
-    cards: goal.select(index.cards).where((c) => !c.isPracticeTrack).toList(),
+    cards:
+        goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList(),
     stabilityByKey: stabilityByKey,
     target: target,
     transferByDomain: applied.interview ? applied.byDomain : null,
@@ -409,7 +410,7 @@ Future<ReadinessForecast?> readinessForecastFor(
   // The active goal's concept cards — practice tracks feed readiness via transfer,
   // not recall coverage (matches the readiness provider; task #30d, G2).
   final cards =
-      goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
+      goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList();
   if (cards.isEmpty) return null;
 
   final stateByKey = {

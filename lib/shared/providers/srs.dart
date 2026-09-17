@@ -76,7 +76,7 @@ Future<ReviewQueueData> reviewQueue(Ref ref) async {
     // that goal's material. Practice-track cards (Algorithms, System Design) live
     // on their own paced queues, not the general review queue.
     cards: [
-      for (final c in goal.select(index.cards))
+      for (final c in goal.select(index.studyCards))
         if (!c.isPracticeTrack) c,
     ],
     dueByKey: dueByKey,
@@ -148,8 +148,10 @@ class StudySession extends _$StudySession {
       // completion screen is honest: same active-goal card scope, practice-track
       // exclusion, targeting, AND transfer gating (once mocks exist, the "after"
       // is transfer-gated — the "before" must be too, or the delta skews).
-      final cards =
-          goal.select(index.cards).where((c) => !c.isPracticeTrack).toList();
+      final cards = goal
+          .select(index.studyCards)
+          .where((c) => !c.isPracticeTrack)
+          .toList();
       final domains = <String>{
         for (final c in cards)
           if (c.domain != null) c.domain!,

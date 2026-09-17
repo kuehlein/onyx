@@ -128,6 +128,8 @@ class CardParser {
       priority: Priority.fromString(frontmatter['priority'] as String?) ??
           Priority.normal,
       estMinutes: _positiveNum(frontmatter['est_minutes']),
+      status: CardStatus.fromString(frontmatter['status'] as String?),
+      deckId: (frontmatter['deck'] as String?) ?? '',
     );
   }
 
