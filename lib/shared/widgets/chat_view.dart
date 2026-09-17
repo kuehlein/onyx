@@ -214,21 +214,22 @@ class _Thinking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          'Thinking…',
-          style:
-              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-        ),
-      ],
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    // Indeterminate AI work → a static status line, NOT a spinning ring
+    // (design-system §2.6/§8 progressPolicy: no auto-playing/looping animation;
+    // it would also ignore Reduce-Motion). `liveRegion` so a screen reader
+    // announces it. The broader CircularProgressIndicator sweep is the
+    // design-system pass; this fixes the shared composer (Stage-1 P1-4).
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.more_horiz, size: 16, color: muted),
+          const SizedBox(width: 8),
+          Text('Thinking…', style: TextStyle(color: muted)),
+        ],
+      ),
     );
   }
 }
