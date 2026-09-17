@@ -61,9 +61,14 @@ class Backup extends _$Backup {
 /// ever dropping local progress. Refreshes the queues afterward so counts reflect it.
 @Riverpod(keepAlive: true)
 Future<void> startupRestore(Ref ref) async {
-  final source = ref.watch(vaultSourceProvider);
+  // Resolve any persisted on-device folder ref first (ADR-0002), so the source
+  // exists before we merge the snapshot (ADR-0001). Registered before the await;
+  // read (not watch) the deps afterward to avoid a disposed-element on re-settle.
+  final loaded = ref.watch(loadVaultRefProvider.future);
+  await loaded;
+  final source = ref.read(vaultSourceProvider);
   if (source == null) return;
-  final service = SnapshotService(ref.watch(appDatabaseProvider), source);
+  final service = SnapshotService(ref.read(appDatabaseProvider), source);
   if (await service.hasSnapshot()) {
     await service.restore();
     ref.invalidate(srsStatesProvider);

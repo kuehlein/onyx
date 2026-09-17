@@ -3,26 +3,66 @@ import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/vault/desktop_vault_source.dart';
+import '../../core/vault/folder_picker.dart';
 import '../../core/vault/vault_indexer.dart';
+import '../../core/vault/vault_ref.dart';
+import '../../core/vault/vault_ref_store.dart';
 import '../../core/vault/vault_source.dart';
 import 'database.dart';
+import 'settings.dart';
 import 'subject.dart';
 
 part 'vault.g.dart';
 
+/// Holds the current on-device content-source [VaultRef] in memory. Seeded from
+/// persistence at startup by [loadVaultRef], and updated when the user picks or
+/// creates a folder. Kept separate from [vaultSource] so that provider stays a
+/// sync function (env → this ref → null) — preserving its many sync consumers and
+/// the `overrideWithValue` test seams. See ADR-0002.
+@Riverpod(keepAlive: true)
+class VaultRefController extends _$VaultRefController {
+  @override
+  VaultRef? build() => null;
+
+  /// Set (or clear) the active ref. Callers that want it to persist should also
+  /// write it via [VaultRefStore] and invalidate [vaultIndexProvider].
+  void set(VaultRef? ref) => state = ref;
+}
+
 /// The current vault source, or null if none is configured yet.
 ///
-/// Dev/desktop: set `ONYX_VAULT_PATH` (e.g. to `staging/flashcards`) and the app
-/// reads that folder directly. On device the path/bookmark comes from the
-/// Settings screen (persisted in `preferences`) — wired up alongside that screen.
+/// Resolution order (ADR-0002): `ONYX_VAULT_PATH` (dev/desktop wins) → the
+/// persisted on-device ref via [VaultRefController] → null.
 @riverpod
 VaultSource? vaultSource(Ref ref) {
   final envPath = Platform.environment['ONYX_VAULT_PATH'];
   if (envPath != null && envPath.isNotEmpty) {
     return DesktopVaultSource(envPath);
   }
-  return null;
+  final vaultRef = ref.watch(vaultRefControllerProvider);
+  return vaultRef == null ? null : resolveVaultSource(vaultRef);
 }
+
+/// Loads the persisted content-source ref into [VaultRefController] at startup
+/// (no-op if none is saved, or if `ONYX_VAULT_PATH` overrides). Awaited by
+/// `startupRestore` so the source resolves before the snapshot merge runs.
+@Riverpod(keepAlive: true)
+Future<void> loadVaultRef(Ref ref) async {
+  final envPath = Platform.environment['ONYX_VAULT_PATH'];
+  if (envPath != null && envPath.isNotEmpty) {
+    return; // env wins; nothing to load
+  }
+  final store = VaultRefStore(ref.watch(preferencesRepositoryProvider));
+  final saved = await store.load();
+  if (saved != null) {
+    ref.read(vaultRefControllerProvider.notifier).set(saved);
+  }
+}
+
+/// The folder picker used by onboarding + Settings to choose/create a content
+/// source. Overridable in tests/UI. See ADR-0002.
+@riverpod
+FolderPicker folderPicker(Ref ref) => const PlatformFolderPicker();
 
 /// Indexes the vault and exposes the parsed cards plus diagnostic counts.
 /// Re-run after edits or a re-sync with `ref.invalidate(vaultIndexProvider)`.
