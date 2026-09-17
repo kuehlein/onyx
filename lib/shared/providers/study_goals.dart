@@ -68,15 +68,29 @@ class StudyGoals extends _$StudyGoals {
   }
 }
 
-/// The id of the goal currently in focus — what readiness/pace/the daily plan
-/// compute against, and (from G5) the selected hub lane. Defaults to the whole-
-/// vault default goal, so single-goal behavior is unchanged. Device-local UI state.
+/// The one spine of "which goal am I looking at" (ADR-0005). **Nullable: null =
+/// the all-goals hub altitude** (only reached with ≥2 active goals, before a lane
+/// is entered); a goal id = that goal is focused. Replaces both the old local
+/// `_focused` setState in Home *and* the `SelectedStudyGoalId` side-effect
+/// provider — Home, Browse, Insights, readiness, pace and the daily plan all read
+/// this one value, so a route/deep-link can set it and every surface agrees.
+/// Device-local UI state; keepAlive so it can be set before Home builds.
 @Riverpod(keepAlive: true)
-class SelectedStudyGoalId extends _$SelectedStudyGoalId {
+class FocusedGoal extends _$FocusedGoal {
   @override
-  String build() => defaultGoalId;
+  String? build() => null;
 
-  void select(String id) => state = id;
+  /// Focus a goal by id, or clear focus (null = the hub).
+  void focus(String? id) => state = id;
+}
+
+/// The number of **active** goals (paused and graduated excluded) — the single
+/// helper every degradation check reads, so "1 active + N paused" behaves like a
+/// single-goal app everywhere (ADR-0005).
+@riverpod
+Future<int> activeGoalCount(Ref ref) async {
+  final goals = await ref.watch(studyGoalsProvider.future);
+  return goals.where((g) => g.isActive).length;
 }
 
 /// The goal currently in focus — the selected goal, falling back to the default
@@ -85,7 +99,9 @@ class SelectedStudyGoalId extends _$SelectedStudyGoalId {
 @riverpod
 Future<StudyGoal> activeStudyGoal(Ref ref) async {
   final goals = await ref.watch(studyGoalsProvider.future);
-  final id = ref.watch(selectedStudyGoalIdProvider);
+  // null focus (the hub) resolves to the default id, which the orElse below maps
+  // to the first live goal — preserving the pre-spine single-goal behavior.
+  final id = ref.watch(focusedGoalProvider) ?? defaultGoalId;
   return goals.firstWhere(
     (g) => g.id == id,
     // No selection match → the first non-graduated goal (never an archived one),

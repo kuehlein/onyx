@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
-import '../../core/goal/study_goal.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
@@ -28,36 +27,30 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// The goal whose Home we've entered from the hub; null = show the hub.
-  String? _focused;
+  void _enter(String goalId) =>
+      ref.read(focusedGoalProvider.notifier).focus(goalId);
 
-  void _enter(String goalId) {
-    ref.read(selectedStudyGoalIdProvider.notifier).select(goalId);
-    setState(() => _focused = goalId);
-  }
-
-  void _backToHub() {
-    // Reset the global selection so Insights/plan don't stay scoped to the lane
-    // we just left while the hub (no single active goal) is shown.
-    ref.read(selectedStudyGoalIdProvider.notifier).select(defaultGoalId);
-    setState(() => _focused = null);
-  }
+  void _backToHub() => ref.read(focusedGoalProvider.notifier).focus(null);
 
   @override
   Widget build(BuildContext context) {
     // Kick off the one-time restore-from-vault-if-empty on app start.
     ref.watch(startupRestoreProvider);
     final goals = ref.watch(studyGoalsProvider).asData?.value ?? const [];
-    final live = [
+    // Degradation is driven by ACTIVE goals only (paused/graduated excluded), so
+    // "1 active + N paused" behaves like a single-goal app (ADR-0005).
+    final activeGoals = [
       for (final g in goals)
-        if (g.state != GoalState.graduated) g,
+        if (g.isActive) g,
     ];
-    // Ignore a stale focus (the focused goal was paused/removed/graduated), so
-    // the title and body never disagree with what's actually live.
-    final focusedId = (_focused != null && live.any((g) => g.id == _focused))
-        ? _focused
-        : null;
-    final showHub = live.length >= 2 && focusedId == null;
+    final focusedRaw = ref.watch(focusedGoalProvider);
+    // Ignore a stale focus (the focused goal was paused/removed/graduated), so the
+    // title and body never disagree with what's actually active.
+    final focusedId =
+        (focusedRaw != null && activeGoals.any((g) => g.id == focusedRaw))
+            ? focusedRaw
+            : null;
+    final showHub = activeGoals.length >= 2 && focusedId == null;
 
     if (showHub) {
       return Scaffold(
@@ -72,9 +65,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Single-goal Home: the only goal, or the lane we entered.
-    final canGoBack = live.length >= 2 && focusedId != null;
-    final focused =
-        focusedId == null ? null : live.firstWhere((g) => g.id == focusedId);
+    final canGoBack = activeGoals.length >= 2 && focusedId != null;
+    final focused = focusedId == null
+        ? null
+        : activeGoals.firstWhere((g) => g.id == focusedId);
 
     return Scaffold(
       appBar: AppBar(
