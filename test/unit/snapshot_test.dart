@@ -135,6 +135,42 @@ void main() {
       expect(await service.isDbEmpty(), isFalse);
       await db.close();
     });
+
+    test("two devices converge without losing either's progress", () async {
+      final at1 = DateTime.utc(2026, 3, 1, 9);
+      final at2 = DateTime.utc(2026, 3, 2, 9);
+      final source = DesktopVaultSource(root.path); // one shared folder
+
+      // Device 1 studies card X and exports.
+      final d1 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(d1).recordReview(
+          cardId: 'X', sectionSlug: 's1', grade: 3, outcome: _outcome(at1, 8));
+      await SnapshotService(d1, source).export();
+
+      // Device 2 studies card Y (its DB is non-empty), then merges the folder.
+      final d2 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(d2).recordReview(
+          cardId: 'Y', sectionSlug: 's2', grade: 4, outcome: _outcome(at2, 20));
+      await SnapshotService(d2, source).restore(); // merge, non-destructive
+
+      // Device 2 now has BOTH X and Y (old blob-LWW would have dropped one).
+      expect((await d2.select(d2.srsStates).get()).map((s) => s.cardId).toSet(),
+          {'X', 'Y'});
+
+      // Device 2 exports; the file must still contain X (read-merge-write).
+      await SnapshotService(d2, source).export();
+
+      // Device 1 merges and also converges to X + Y.
+      await SnapshotService(d1, source).restore();
+      expect((await d1.select(d1.srsStates).get()).map((s) => s.cardId).toSet(),
+          {'X', 'Y'});
+      // Both review events survived on both devices.
+      expect((await d1.select(d1.reviews).get()).length, 2);
+      expect((await d2.select(d2.reviews).get()).length, 2);
+
+      await d1.close();
+      await d2.close();
+    });
   },
       skip: _sqliteAvailable
           ? false

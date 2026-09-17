@@ -42,8 +42,8 @@ class Backup extends _$Backup {
     await _service()?.export();
   }
 
-  /// Replace local progress with the vault snapshot; refresh dependents.
-  /// Returns the number of restored sections.
+  /// Merge the vault snapshot into local progress; refresh dependents. Returns
+  /// the number of sections after the merge. Non-destructive (ADR-0001).
   Future<int> restore() async {
     final restored = await _service()?.restore() ?? 0;
     ref.invalidate(srsStatesProvider);
@@ -53,15 +53,18 @@ class Backup extends _$Backup {
   }
 }
 
-/// Runs once on startup: if the local DB has no progress but the vault holds a
-/// snapshot (fresh install / lost database), restore it — never overwriting an
-/// existing local DB. Refreshes the queues afterward so counts reflect it.
+/// Runs once on startup: if the vault holds a snapshot, **merge** it into local
+/// progress. The merge is convergent and non-destructive (last-review-wins on
+/// keyed state, union on the event logs — ADR-0001), so it is safe to run on
+/// every launch against a non-empty DB: it reconciles progress from other devices
+/// synced into the folder (fresh install, lost DB, or a second device) without
+/// ever dropping local progress. Refreshes the queues afterward so counts reflect it.
 @Riverpod(keepAlive: true)
 Future<void> startupRestore(Ref ref) async {
   final source = ref.watch(vaultSourceProvider);
   if (source == null) return;
   final service = SnapshotService(ref.watch(appDatabaseProvider), source);
-  if (await service.isDbEmpty() && await service.hasSnapshot()) {
+  if (await service.hasSnapshot()) {
     await service.restore();
     ref.invalidate(srsStatesProvider);
     ref.invalidate(reviewQueueProvider);
