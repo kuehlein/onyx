@@ -1,0 +1,8 @@
+/// Onyx design system — the public barrel. Import this, never the individual
+/// files. `_palette.dart` (raw primitives) is deliberately NOT exported: only the
+/// semantic layer here may touch raw values (design-system §2/§6).
+library;
+
+export 'context_x.dart';
+export 'onyx_colors.dart';
+export 'onyx_tokens.dart';

@@ -21,7 +21,9 @@ The buildable visual-language + widget-library companion to `docs/ux-vision.md`.
 
 ## 2. Token system
 
-Two tiers. **Primitive** raw values live in one private file and are consumed *only* by the semantic layer. **Semantic** = M3 `ColorScheme` roles + two `ThemeExtension`s (`OnyxColors`, `OnyxTokens`). No component-token tier (over-engineering for a single-brand, single-dev, dark-locked app — [uxpin](https://www.uxpin.com/studio/blog/what-are-design-tokens/)). No DTCG JSON / codegen pipeline (pays off only with Figma handoff or multi-brand/multi-theme — none apply here).
+Two tiers. **Primitive** raw values live in one private file and are consumed *only* by the semantic layer. **Semantic** = M3 `ColorScheme` roles + two `ThemeExtension`s (`OnyxColors`, `OnyxTokens`). No component-token tier (over-engineering for a single-brand, single-dev, dark-locked app — [uxpin](https://www.uxpin.com/studio/blog/what-are-design-tokens/)).
+
+> **Token pipeline — none now, but keep the door open (revised 2026-09-17, post-research).** A DTCG-JSON / Style-Dictionary codegen pipeline pays off only with Figma handoff, multi-brand, or **sharing one brand across a non-Flutter platform** — and the last is a *when-not-if* for Onyx (the eventual marketing site + interactive deck repository should **not** be Flutter Web: canvas rendering ⇒ no SEO, no link-preview share cards, no SSR → plan Next.js/Astro). So **don't build a pipeline now** (Style Dictionary's Flutter output is flat consts, not `ThemeData`, so it couldn't own the semantic layer anyway) — but pay ~30 min of insurance so a later migration is mechanical: keep `_palette.dart` a **flat, alias-free, pure-data table grouped to mirror the DTCG token types** (`color` / `dimension` / `number` / `duration`), the *sole* home of raw values, with `OnyxTokens.standard` **sourcing its numbers from it** (not re-literalling them). DTCG hit a stable v1 (v2025.10, Oct 2025), so the target format is settled; a later generator (`tokensync` / `design_tokens_builder` / a small `build_runner`) would emit the Dart primitives + `tokens.css`/`.ts` for the web while the hand-written semantic Dart (`onyxDarkScheme()`, the two extensions) stays put. `[research 2026-09-17]` **Built as Step 0** (`lib/shared/design/`).
 
 ### 2.1 Color — primitive ramps
 
@@ -426,7 +428,7 @@ Screens consume via `context.tokens.*` / `context.onyx.*` / `context.colors.*` /
 
 Each step compiles and ships alone. No big-bang.
 
-- **Step 0 — Scaffold (½ day).** Add `design/` files + barrel; register `OnyxColors.dark` + `OnyxTokens.standard` in `theme.dart`. App is byte-identical; nothing consumes them yet. Create *this file* as the referenced `docs/design-system.md` (critique E2 — it did not exist).
+- **Step 0 — Scaffold ✅ (done 2026-09-17).** `lib/shared/design/`: `_palette.dart` (flat, alias-free, DTCG-grouped primitives — the door-open seam, §2), `onyx_colors.dart` + `onyx_tokens.dart` (the two extensions, **sourcing every raw value from `_palette`** so numbers live in one place), `context_x.dart` (`context.onyx`/`tokens`/`colors`/`text`), `onyx_design.dart` (barrel; `_palette` deliberately NOT exported). Registered `OnyxColors.dark` + `OnyxTokens.standard` in `theme.dart`; app byte-identical (nothing consumes them yet). Pinned by `test/unit/design_tokens_test.dart` (registration + `grade()` + token values + lerp identity).
 - **Step 1 — Color keystone (highest leverage).** Make `status_colors.dart` a `@Deprecated` shim. Repoint `study_grades.gradeColor` → `OnyxColors.grade`. Fold `callout.dart`'s private `_violet/_cyan/_info/_tip` and `log_solve_sheet.dart _grade4` into `OnyxColors`. **Delete `_StreakChip` + `StreakInfo` + `flame`** from `lib/features/home/readiness_panel.dart` (§4.10). Now there is one color truth and the gamification violation is gone.
 - **Step 2 — `StatusPill`.** Build it; refactor `ConfidenceBadge` (pass the numeric score into `value`) and `grade_buttons` to delegate. Every status surface inherits color+shape+number+Semantics.
 - **Step 3 — Component + text themes.** Add `textTheme` + all component themes + `surfaceTint: transparent` to `theme.dart`. Retroactively fixes radius/padding/targets on stock M3 widgets app-wide — a large sweep for one file's work.
@@ -438,10 +440,10 @@ Each step compiles and ships alone. No big-bang.
   grep -rn 'TextStyle(' lib/shared/widgets/
   grep -rn 'CircularProgressIndicator' lib/   # §2.6.1 — must be zero (spinner ban)
   ```
-- **Step 6 — New primitives, then composites.** `Sparkline`/`CoverageBar`/`CompletionRing`/`ForecastBand` → `GoalLaneRow`/`SharedBudgetBar`/`TodayFlowRow`/`InsightTile`/`MixSlider`/`ReadinessBand` → `EmptyState`/`SkeletonBlock`/`ThinEvidence`/`DestructiveRow` → `showOnyxSheet` wrapper across the ~15 sheet sites.
+- **Step 6 — New primitives, then composites.** `Sparkline`/`CoverageBar`/`CompletionRing`/`ForecastBand` → `GoalLaneRow`/`SharedBudgetBar`/`TodayFlowRow`/`InsightTile`/`MixSlider`/`ReadinessBand` → `EmptyState`/`SkeletonBlock`/`ThinEvidence`/`DestructiveRow` → `showOnyxSheet` wrapper across the ~15 sheet sites. **Add golden tests** (dark-mode `matchesGoldenFile`, or `alchemist`/`golden_toolkit`) for the catalog widgets — the real regression net for a token-driven restyle: edit a token, and the goldens show exactly what moved. `[research 2026-09-17]`
 - **Step 7 — Cleanup.** When `grep 'statusGood\|statusWarn'` returns only the shim, delete `status_colors.dart` and the `@Deprecated` shim.
 
-**Do NOT:** convert all widgets in one PR · build a Storybook/gallery package (worth it at 50+ widgets, not 12) · add DTCG JSON/codegen · add a component-token tier · resurrect the light theme · build an `AppButton` wrapper.
+**Do NOT:** convert all widgets in one PR · build a Storybook/Widgetbook gallery (worth it at ~40–50 widgets, or once the web app shares components — not ~15) · **stand up a DTCG / Style-Dictionary pipeline *now*** (keep `_palette` DTCG-shaped for a later *mechanical* migration instead — §2) · add a component-token tier · resurrect the light theme · build an `AppButton` wrapper.
 
 ---
 
