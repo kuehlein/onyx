@@ -13,7 +13,7 @@ Status: north-star flow/layout spec. Opinionated and decisive. Where a choice is
 
 ## 1. Product vision & committed UX principles
 
-**Vision.** Onyx is a calm, local-first study client over a plain Obsidian vault. Cards are a *query-lens* over your notes, not a parallel store. Many subjects live at once in one vault, sharing one daily budget; the common case (one SWE-interview goal) must feel like a single-purpose study app. Motivation comes from **honest information about your own progress toward your own goal** — never points, badges, streaks-as-score, or guilt.
+**Vision.** Onyx is a calm, local-first study client over a plain markdown folder (an Obsidian vault works as-is, but Obsidian is never required). Cards are a *query-lens* over your notes, not a parallel store. **The product is general and education-first** — its audience is learners and teachers across every subject (K→grad, self-learners); SWE-interview prep is one configuration among many, not a privileged default. Many subjects live at once in one folder, sharing one daily budget; the common case (a single active goal) must feel like a single-purpose study app. Motivation comes from **honest information about your own progress toward your own goal** — never points, badges, streaks-as-score, or guilt.
 
 **The ten principles Onyx commits to (and enforces in code review):**
 
@@ -26,7 +26,7 @@ Status: north-star flow/layout spec. Opinionated and decisive. Where a choice is
 7. **Autonomy, not control.** Nudges are informational + a choice (Apply / Not-now / Undo); nothing mutates silently; flows are user-chosen, not force-sequenced. `[SDT]`
 8. **Calm visual restraint.** Off-white on dark-gray (no halation), one accent hue, hierarchy from weight/opacity, bars for comparison, ring only for a single completion %. `[Cleveland–McGill; Tufte/Few; 6-color overload finding]`
 9. **Per-goal truth.** Every metric is computed per-goal through that goal's query + template. No single global number across subjects; no re-coupling to `Card.subjectId`. `[locked A3/A4]`
-10. **SWE is the default config, not a hardcode.** Dimensions/tracks/rubrics/terminology route through the template; render only what the active goal declares. `[locked A6]`
+10. **No privileged subject; the engine is genuinely general.** Dimensions/tracks/rubrics/terminology route through the template; render only what the active goal declares. There is **no shipped default subject** — SWE-interview config is authored content like any other (the built-in `softwareInterviewsConfig` is a de-privileged fallback/example, not a baked-in identity). The generalization is the product thesis, targeted at all learning use cases, not a retrofit. `[locked A6; de-SWE correction 2026-09-17]`
 
 **Explicitly rejected (do not "helpfully" re-add):** accounts/login, light/system theme, XP/badges/levels/leaderboards, streak-freeze/loss-aversion, social/competitive mechanics, a full-vault graph on any daily surface, in-body tap-navigating wikilinks.
 
@@ -221,38 +221,41 @@ small-multiples grid (identical scale)      [41%][62%][55][4/7]  summary strip
 
 ### 3.7 Settings — 6 calm groups
 
-Anything you tune to change *today* lives where you study; anything configured once lives here.
+Anything you tune to change *today* lives where you study; anything configured once lives here. Config that changes *what becomes a card* lives here (rare, app-wide, dangerous-if-wrong); config that changes *what you study today* lives where you study. **Full spec: `docs/settings-ux.md`** (placement, per-row copy, and the directory-agnostic source flow).
 
 ```
-VAULT           Source ›   Indexed cards (N) ↻
+SOURCE          Folder ›   Cards (N) ↻   Card parsing (Headings H2 · .md) ›
 STUDY LOAD      Daily study time [−+]   New per day [−+]
                 Weekly check-in [ ● ]   ⓘ How much should I study? ›
 STUDY GOALS     Manage goals (3 active) ›   → per-goal template levers
-DATA & PROGRESS Back up now (2h ago) ›   Restore ›
-CLAUDE (AI)     API key (Saved · Keychain) ›   Test connection ›
-ABOUT           Version, licenses, privacy ›
-▸ Developer     (dev builds only, collapsed)
+DATA & BACKUP   Back up now (2h ago) ›   Restore ›
+CLAUDE (AI)     API key (Saved on this device) ›   Test connection ›
+ABOUT           Version, licenses, privacy, restore-defaults ›
+▸ Developer     (dev builds only, collapsed — the sole collapsed group)
 ```
 
+- **Settings stays the 4th bottom-tab** (reject gear/drawer/profile — each breaks a locked constraint: altitude-agnostic spine, no-account principle, hidden-menu engagement loss). `[settings-ux §1]`
+- **SOURCE** (renamed from VAULT): user-facing noun is **"folder" / "study folder," never "vault"** (Obsidian-compatible, never required). The **Card parsing** row is a *read-only* explainer (`HowCardsAreReadSheet`) reserving the future configurable-parser seam — **not** a live control, **not** an "Advanced" group (advanced lives one-layer-down via a sheet). `[settings-ux §2/§4]`
+- **STUDY LOAD stays here** — its levers are config-once; merging them into `AdjustMixSheet` would collide with §4.6 (sole budget editor) and §7 (no duplicate editors). `[settings-ux §2]`
 - **Move the Pace planner out** to Insights (it's a forecast dashboard, not a setting). `[Pace-Models; B3]`
 - **Demote Algorithms/Gym mode** from top-level into per-goal template drill-downs, rendered only when the goal's template declares the track. Interim honest state: render under the default goal labeled "Algorithms track," not fake per-goal independence. `[A6; B4]`
-- **No theme row** (dark-locked, principled). **No Account group** (local-first; an empty account section is itself a dark pattern). `[IA/accounts research]`
+- **No theme row** (dark-locked, principled). **No Account group** (local-first; an empty account section is itself a dark pattern). **No Advanced group** (one stub doesn't earn a header). **No notifications toggle** v1 (no reminder engine; streak-adjacent). `[IA/accounts research; settings-ux §6]`
 - Goal target editing routes to §5's goal editor — never the legacy global `showTargetSheet`. `[Seam C]`
-- Restore stays red + confirm dialog (color + shape + text, never color-only). `[B8]`
+- Restore + Reset-progress are real `DestructiveRow`s (error color + outlined shape + text label + confirm — all four, never color-only). `[B8; design-system §4.9]`
 
 ### 3.8 Onboarding
 
-First-run is a **redirect gate**, not a wizard tab. Hard-gate the vault (content); soft-gate the key (AI only). `[time-to-first-review; autonomy]`
+First-run is a **redirect gate**, not a wizard tab. Hard-gate the study folder (content); soft-gate the key (AI only). `[time-to-first-review; autonomy]`
 
 ```
-launch → needsVault? → /welcome (pick vault folder)  ← only hard gate, only full page
+launch → needsVault? → /welcome (choose or create a folder)  ← only hard gate, only full page
       → index (plain "Indexing…", then land)
       → auto-create default all-cards goal (single-goal degradation)
       → land on single-goal Home with due cards
       → dismissible "add key" banner; key requested inline at first AI flow
 ```
 
-- `/welcome`: one Filled "Choose your vault folder"; local-first contract line ("nothing leaves it"); "What's a vault?" is an on-request sheet, not a gate. No account row, no carousel, no tutorial. `[NN/g no-tutorial; UXPin progressive disclosure]`
+- `/welcome`: renders the shared `showFolderSourceSheet` body as the pre-shell page — one Filled **"Choose a folder"** (existing folder or Obsidian vault, read as-is) + one Tonal **"Create a study folder"** (app scaffolds a dir + a tiny sample deck for users with no notes); local-first contract line ("nothing leaves it"); **"What can I point it at?"** is an on-request in-place expander (replaces the old "What's a vault?" gate). No account row, no carousel, no tutorial. `[NN/g no-tutorial; UXPin progressive disclosure; settings-ux §3]`
 - Key sheet is shared (`showApiKeySheet`, extracted from Settings), "Not now"-able; review works fully key-less. Store in Keychain with **`ThisDeviceOnly`** accessibility (one-line security fix, do it regardless). `[HackerOne BYOK]`
 - First goal defaults to `AllMembership` ("deck = query"); explicit scoping is deferred/progressive. Vault-but-no-cards → calm empty state, one action, no scold.
 
@@ -297,14 +300,18 @@ Interviews live in **one** home: the goal editor's Interviews section (consisten
 
 ---
 
-## 6. The SWE-track generalization (resolved — the corpus's most dangerous incoherence)
+## 6. Engine generalization — the product thesis, first-class (reframed 2026-09-17)
 
-Every surface design correctly hides SWE UI over a still-SWE engine and disclaims owning `TrackId`/`weightForDomain`/taper/mock-cadence. **Six surfaces hiding SWE rows over a scheduler that still weights `ds-a`, tapers on `prepGoalsProvider`, and reserves system-design mock cadence produces a UI that *lies* about being general — worse than the honest-but-ugly current state.** `[Critique 1 §C]`
+**Corrected stance (supersedes the earlier "keep SWE-default, generalize only when pulled" framing):** genuine generalization is *the product* — Onyx is general and education-first, and SWE-interview prep is one authored configuration, not a privileged default. The earlier YAGNI deferral was wrong on its own terms: the second caller **already exists** (a Korean vault today; theology/college/stats intended), so the abstraction is pulled, not built-on-spec. The engine-generalization workstream is therefore **near-term and first-class, not deferred behind a hypothetical second subject.**
 
-**Resolution:**
-1. **Create an explicit daily-plan/template generalization workstream** (unrepresented in the 8 designs, the real owner): `TrackId` → template-declared track set; `weightForDomain` keys from template; taper keyed off `effectiveDeadline` not `prepGoalsProvider`; mock cadence config-driven. `[Seam B]`
-2. **Until it lands, do NOT silently hide SWE rows.** Ship SWE-default reality *honestly per-goal*; gate creation of non-SWE goals (or show them plainly running a SWE-shaped schedule) rather than manufacturing a lying UI. Let the abstraction be *pulled* by a real second subject, not built on spec.
+What still holds: **do not ship a UI that *lies* about being general** — six surfaces hiding SWE rows over a scheduler that still weights `ds-a`, tapers on `prepGoalsProvider`, and reserves system-design mock cadence is worse than honest-but-ugly. `[Critique 1 §C]` The resolution to that incoherence is to **do the generalization**, not to defer it and hide rows.
+
+**Direction (concrete sequencing lives in a dedicated re-plan — see note below):**
+1. **The daily-plan/template generalization is the real owner** (unrepresented in the 8 original designs): `TrackId` → template-declared track set; `weightForDomain` keys from template; taper keyed off `effectiveDeadline` not `prepGoalsProvider`; mock cadence config-driven; `softwareInterviewsConfig` de-privileged to a fallback/example, not baked-in identity. `[Seam B]`
+2. **No shipped default subject.** A folder with no config still needs *some* working behavior, but the built-in should read as a neutral example, and non-SWE goals must run a correct (not SWE-shaped) schedule — not a lying UI, and not a gated second-class path.
 3. **One shared vocabulary** for `FlowSpec.cuePolicy` + rubric/calibration dimensions, consumed by both the plan generalization and Insights' Applied group. D4's "calibration axes," D7's "applied dimensions," D8's "template levers" are the same thing — unify the name.
+
+> **Re-plan pending.** The full engine-generalization plan (phasing, what "no default subject" means for a config-less folder, how the current SWE-tied schedulers become template-driven with 1:1 parity) is to be worked out in a dedicated planning pass against the general/education-first target. This section records the corrected *stance*; it is not yet the implementation plan.
 
 ---
 
@@ -355,8 +362,8 @@ Every surface design correctly hides SWE UI over a still-SWE engine and disclaim
 **Phase 4 — Aim storage unification (dedicated task)**
 - `PrepGoal`→`Interview` re-parented under `StudyGoal`; kill default-goal short-circuit; migrate `onyx-target.json`; delete `/interview-prep`; retire `target_sheet`; fold interviews into `targetingForGoal`. *(changes: prep_goal, readiness, study_goal, interview_prep_screen, target_sheet, daily_plan)*
 
-**Phase 5 — Engine generalization (dedicated workstream)**
-- `TrackId`/`weightForDomain`/taper/mock-cadence → template-driven; unified cuePolicy/rubric-dimension vocabulary. Until this lands, keep SWE-default honest — do not ship a lying general UI. *(changes: practice_plan, daily_plan, flow_spec)*
+**Phase 5 — Engine generalization (first-class workstream; own re-plan — see §6)**
+- `TrackId`/`weightForDomain`/taper/mock-cadence → template-driven; `softwareInterviewsConfig` de-privileged to a fallback/example (no shipped default subject); unified cuePolicy/rubric-dimension vocabulary; 1:1 functional parity with today's SWE behavior. This is the product thesis, not a deferred nice-to-have — sequence it as its own planning pass, not "when a second subject pulls it." *(changes: practice_plan, daily_plan, flow_spec, subject)*
 
 **Deferred / future tasks (explicitly not v1):**
 - **Accounts/login/sync** — revisit only when server-mediated cross-device state the vault can't carry is needed (login ≠ upload consent; design conflict UX up front).
@@ -365,4 +372,4 @@ Every surface design correctly hides SWE UI over a still-SWE engine and disclaim
 - **Second-brain #50:** Related-concepts neighborhood, source-note pane, unlinked mentions, Gaps/Vault-health view, vault write-path (edit-card-updates-note). Requires indexing non-card notes + persisting unresolved links.
 - **Light/system theme** — not in v1 (dark-locked by principle).
 
-**Net principle for the whole roadmap:** ship the **SWE-default reality, honestly per-goal**, now; let the generalization and second-brain abstractions be *pulled* by a real second subject and the #50 write-path — never built on spec ahead of a second caller.
+**Net principle for the whole roadmap:** never ship a UI that *lies* about being general (no hiding SWE rows over a SWE-only engine). Engine generalization is the product thesis and a **first-class near-term workstream** — its second caller already exists, so it is pulled, not built-on-spec. The **second-brain #50** write-path abstractions remain genuinely deferred (no write-path caller yet).
