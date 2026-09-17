@@ -9,7 +9,8 @@
 /// To keep that true:
 ///   • only literal scalars — no expressions, no arithmetic, no cross-references;
 ///   • nothing imports this file except the semantic layer (onyx_colors /
-///     onyx_tokens / theme); it imports nothing but `dart:ui`.
+///     onyx_tokens / theme) — plus `status_colors.dart`, the temporary migration
+///     shim being deleted at design-system §7 Step 7; it imports nothing but `dart:ui`.
 /// All *meaning* lives one layer up, in the two `ThemeExtension`s.
 library;
 

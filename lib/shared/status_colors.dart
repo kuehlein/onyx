@@ -1,11 +1,14 @@
-import 'package:flutter/painting.dart';
+import 'design/_palette.dart';
 
-/// Semantic status colors shared across dashboards, grade buttons, confidence
-/// badges, and callouts — one source of truth instead of ~30 copy-pasted hex
-/// literals. Deliberately subject-agnostic (good / developing / weak), so a
-/// future per-subject theme can restyle them in a single place.
-const statusGood = Color(0xFF4CC38A); // green — strong / holding / pass
-const statusWarn = Color(0xFFE3B341); // amber — developing / shaky
-const statusBad = Color(0xFFF07178); // red — weak / lapsing / low confidence
-const statusInfo = Color(0xFF5AA7E6); // blue — neutral progress (FSRS "Easy")
-const statusMuted = Color(0xFF8A8F98); // neutral gray — no data / untouched
+/// Semantic status colors — a thin migration **shim** that forwards to the
+/// design-system primitive palette, so raw hex lives in exactly one place
+/// (`design/_palette.dart`). These `const` values remain for the many
+/// non-`BuildContext` call sites (const contexts, static maps); prefer
+/// **`context.onyx.*`** where a context is available. Migrated boy-scout, then
+/// this file is deleted once unused (design-system §7). This is the one
+/// sanctioned non-`design/` importer of the primitives, as a temporary bridge.
+const statusGood = PaletteColor.good;
+const statusWarn = PaletteColor.warn;
+const statusBad = PaletteColor.bad;
+const statusInfo = PaletteColor.info;
+const statusMuted = PaletteColor.muted;

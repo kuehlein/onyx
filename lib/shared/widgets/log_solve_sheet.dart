@@ -18,8 +18,9 @@ import 'sheet_header.dart';
 typedef _Outcome = ({String label, int score, int hint, Color color});
 
 // Four distinct colors matching the FSRS grade scale (Easy→Again) so the
-// outcomes read as a gradient, not two amber twins.
-const _grade4 = Color(0xFF5AA7E6); // blue — cleanest, like "Easy"
+// outcomes read as a gradient, not two amber twins. `_grade4` = the "Easy" hue
+// from the design-system status ramp (§7 Step 1).
+const _grade4 = statusInfo; // blue — cleanest, like "Easy"
 
 const _outcomes = <_Outcome>[
   (label: 'Solved it cleanly', score: 90, hint: 0, color: _grade4),

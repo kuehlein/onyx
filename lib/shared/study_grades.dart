@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'design/onyx_colors.dart';
 import 'status_colors.dart';
 
 /// The four FSRS self-grades, with their labels and accent colors. Shared so
@@ -26,13 +28,11 @@ const learnGrades = <({int value, String label, Color color})>[
 String gradeLabel(int value) =>
     studyGrades.where((g) => g.value == value).map((g) => g.label).firstOr('');
 
-/// The accent color for a grade value (1–4), falling back to muted gray. Lets
-/// other graded flows (e.g. the algorithm solve outcomes, which map onto FSRS
-/// grades) reuse the same 4-color scale as the study action bar.
-Color gradeColor(int value) => studyGrades
-    .where((g) => g.value == value)
-    .map((g) => g.color)
-    .firstOr(statusMuted);
+/// The accent color for a grade value (1–4), falling back to muted. Lets other
+/// graded flows (e.g. the algorithm solve outcomes, which map onto FSRS grades)
+/// reuse the same 4-color scale. The one place grade coloring lives is
+/// [OnyxColors.grade]; this delegates to it (design-system §7 Step 1).
+Color gradeColor(int value) => OnyxColors.dark.grade(value);
 
 extension _FirstOr<T> on Iterable<T> {
   T firstOr(T fallback) => isEmpty ? fallback : first;

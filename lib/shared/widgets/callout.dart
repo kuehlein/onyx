@@ -13,8 +13,11 @@ class CalloutSpec {
 }
 
 // Muted, dark-surface-friendly accents. A small vocabulary: color maps to
-// meaning (info/positive/attention/danger), aliases share a color + icon.
-const _info = Color(0xFF5AA7E6);
+// meaning (info/positive/attention/danger), aliases share a color + icon. The
+// status-typed ones source from the design-system status ramp (§7 Step 1); the
+// admonition-only `_violet`/`_cyan` stay local (reconciling them with the
+// one-accent-hue rule is a later design call).
+const _info = statusInfo;
 const _tip = statusGood;
 const _amber = statusWarn;
 const _red = statusBad;
