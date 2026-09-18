@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
-import 'package:flutter_highlight/themes/tomorrow-night.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 // highlight's language registry — used to check a fence's language is known
 // before highlighting (an unknown/null language makes parse() throw).
@@ -11,10 +10,7 @@ import 'package:highlight/languages/all.dart' show allLanguages;
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 
-/// Tomorrow Night: a calm, neutral dark theme whose muted-purple keywords echo
-/// the app's violet accent. Its comments (#969896 on #1d1f21 ≈ 5.7:1) already
-/// clear WCAG 4.5:1, so — unlike Dracula — no contrast lift is needed.
-const Map<String, TextStyle> _codeTheme = tomorrowNightTheme;
+import '../design/onyx_code_theme.dart';
 
 /// Renders fenced code blocks with syntax highlighting on a distinct panel
 /// background that separates code from prose. Inline code falls through to the
@@ -81,9 +77,8 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     // making highlight.parse() throw.
     final language = _resolveLanguage(rawLang);
     final code = content.replaceFirst(RegExp(r'\n$'), '');
-    final background =
-        _codeTheme['root']?.backgroundColor ?? const Color(0xFF1D1F21);
-    final foreground = _codeTheme['root']?.color ?? const Color(0xFFC5C8C6);
+    const background = onyxCodePanel;
+    const foreground = onyxCodeInk;
     const padding = EdgeInsets.symmetric(horizontal: 14, vertical: 12);
 
     // Soft-wrap rather than scroll horizontally: on a phone, panning long lines
@@ -93,7 +88,7 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
         ? HighlightView(
             code,
             language: language,
-            theme: _codeTheme,
+            theme: onyxCodeTheme,
             padding: padding,
             textStyle: _monospace,
           )

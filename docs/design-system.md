@@ -420,7 +420,7 @@ lib/shared/
 lib/app/theme.dart        # assembles scheme + textTheme + component themes + registers extensions
 ```
 
-**Syntax-highlighting palette** (`onyx_code_theme.dart`): panel = tier-1 `surfaceContainerLow #1C1F25` (**recessed**, F7), plain fg `_ink90`, one violet keyword (echoes the accent), strings/numbers/types from the meaning-palette. **Comment `#9AA1AB` (≈4.7:1 on `#1C1F25`)** — the earlier `#8E959F` on the over-light `#323841` panel measured **3.91:1 and FAILED** the ≥4.5:1 constraint (critique F1); the darker recessed panel + lighter comment both fix it. Recompute deletion/addition on the new panel.
+**Syntax-highlighting palette** (`onyx_code_theme.dart`, built): panel = tier-1 `surfaceContainerLow #1C1F25` (**recessed**, F7), plain fg `ink90`, one violet keyword (echoes the accent), string/number/type from the meaning ramp (`good`/`warn`/`info`), diff addition/deletion = `good`/`bad`. **Comment = the dim-ink primitive `ink55 #8A9099` (≈4.8:1 on `#1C1F25`)** — reused rather than minting a bespoke `#9AA1AB`; the earlier `#8E959F` on the over-light `#323841` panel measured **3.91:1 and FAILED** ≥4.5:1 (critique F1), which the darker recessed panel fixes.
 
 Screens consume via `context.tokens.*` / `context.onyx.*` / `context.colors.*` / `context.text.*` — never `Theme.of(context).extension<...>()!` noise, never a literal.
 
@@ -434,7 +434,7 @@ Each step compiles and ships alone. No big-bang.
 - **Step 1 — Color keystone ✅ (done 2026-09-17).** `study_grades.gradeColor` → `OnyxColors.grade`. `_StreakChip` + `StreakInfo` + `flame` **deleted** (§4.10). The status ramp is now the `StatusColor` const surface (see Step 7); `callout.dart`'s `_info`/`_tip` read `StatusColor.info`/`.good` while its admonition-only `_violet`/`_cyan` stay local (doc-syntax hues, not status — reconciling those with the one-accent rule is a later design call).
 - **Step 2 — `StatusPill` ✅ (done 2026-09-17).** Built; `ConfidenceBadge` delegates (numeric score in `value`). Color+shape+number+Semantics in one place. Golden infra stood up alongside (`test/golden/`, built-in `matchesGoldenFile`, zero-dep — no `alchemist` without internet).
 - **Step 3 — Component + text themes ✅ (done 2026-09-17).** `onyxTextTheme` + all component themes + `surfaceTint: transparent` in `theme.dart`. Retroactively fixed radius/padding/targets on stock M3 widgets app-wide. (Custom `pageTransitionsTheme` dropped — the Flutter 3.47 builders needed weren't const/available; M3 defaults stand.)
-- **Step 4 — `code_block.dart` surface + palette ⏸ (deferred to the aesthetic pass).** The remaining work is *authoring* an `onyx_code_theme` (a ~15-token syntax map) — that's a human-eye color-judgment task, and `tomorrowNightTheme` already clears WCAG, so it's best done live during the review rather than picked blind.
+- **Step 4 — `code_block.dart` surface + palette ✅ (done 2026-09-17).** `onyx_code_theme.dart` (in `design/`, barrel-exported) is a **calm** `flutter_highlight` map sourced entirely from the palette: recessed `surfaceContainerLow` panel + `ink90` ink, keyword→violet accent, string→`good` / number→`warn` / type→`info`, comment→`ink55`, diff add/del→`good`/`bad`; everything else inherits plain ink. `code_block.dart` reads `onyxCodePanel`/`onyxCodeInk` (the hardcoded `#1D1F21`/`#C5C8C6` fallbacks + the `tomorrow-night` import are gone). Colors follow the doc spec; eyeball the syntax hues in the review pass.
 - **Progress policy — spinner ban ✅ (done 2026-09-17, §2.6.1/§8).** `LoadingView` (calm, theme-agnostic status line) replaced all 16 indeterminate `CircularProgressIndicator`s across 15 screens/widgets; `coach_sheet`/`chat_view` `_Thinking` are static status lines. The one surviving ring (`mock_grade_summary`) is a **determinate** score gauge, not a spinner (its bar-redesign is a Step-6 item).
 - **Step 5 — Opportunistic token migration (boy-scout rule, ongoing).** Whenever you touch a widget, swap *spacing/radius* literals for `context.tokens.*`. (The color half is done — the `status_colors` shim is retired, Step 7.) Migration dashboard = these shrinking greps:
   ```
@@ -452,7 +452,7 @@ Each step compiles and ships alone. No big-bang.
 
 ## 8. Accessibility checklist
 
-- [ ] **Body/status/state text ≥ 4.5:1.** Verified: all primary/secondary/status text on `_n10`; comment `#9AA1AB` on `#1C1F25` (≈4.7). Honest state ("not scheduled," "paused," "No data") uses `_ink55` (5.7:1), never the `0.38` alpha.
+- [ ] **Body/status/state text ≥ 4.5:1.** Verified: all primary/secondary/status text on `_n10`; comment `ink55 #8A9099` on `#1C1F25` (≈4.8). Honest state ("not scheduled," "paused," "No data") uses `_ink55` (5.7:1), never the `0.38` alpha.
 - [ ] **Large text + non-text UI ≥ 3:1.** `SharedBudgetBar` segments ≥ 3:1 vs track (opacity floor 0.55, not 0.28); tonal-button fill vs card ≥ 3:1 (faint-violet `secondaryContainer`); focus rings ≥ 3:1.
 - [ ] **Never color-only.** Every `StatusPill`/grade/confidence/readiness/tinted-bar pairs color + shape/glyph + number/label + `Semantics`. Grade color never a bare dot. `DestructiveRow` = color + shape + text + confirm.
 - [ ] **Confidence shown as a number**, not just a hue+word (`ConfidenceBadge.value` wired to the score — confidence-display memory).
@@ -470,7 +470,7 @@ Each step compiles and ships alone. No big-bang.
 - **Motion cut to `fast/base/slow` + one `easeStandard`** — no `deliberate`/`emphasized` reward-fill (A3/C5/D3).
 - **Two extensions** (`OnyxColors` + `OnyxTokens`), one name+value set per token family (C1–C5/D1/D2/F9).
 - **Reading body = 16px**, `OnyxType` collapsed to `readTerm`+`readBody`, measure derived not pasted (B1/B2).
-- **Code panel recessed to tier-1; comment `#9AA1AB`** — fixes the 3.91:1 AA failure (F1/F7).
+- **Code panel recessed to tier-1; comment `ink55`** — fixes the 3.91:1 AA failure (F1/F7).
 - **Dim state text = `_ink55` (5.7:1)**, not `0.38` (F2/F3); **budget-bar floor 0.55**, false 3:1-at-0.28 claim retired (F4).
 - **Tinted status bars get shape+label**; grade color never a bare dot (F5/F6).
 - **No chrome text-scale cap**; reflow instead (F11). **No `AppButton`** (D4). `secondaryContainer` kept a faint violet tonal so tonal buttons stay visible (B4).
