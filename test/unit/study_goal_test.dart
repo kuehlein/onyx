@@ -155,22 +155,22 @@ void main() {
         name: 'Acme',
         templateId: 'demo',
         deadline: DateTime(2026, 5, 1),
-        interview: aim,
+        interviews: [aim],
       );
 
       final back = StudyGoal.fromJson(goal.toJson());
-      expect(back.interview, isNotNull);
-      expect(back.interview!.companyName, 'Acme');
-      expect(back.interview!.rounds.length, 2);
-      expect(back.interview!.domainWeights['arrays'], 1.5);
+      expect(back.interviews.length, 1);
+      final iv = back.interviews.single;
+      expect(iv.companyName, 'Acme');
+      expect(iv.rounds.length, 2);
+      expect(iv.domainWeights['arrays'], 1.5);
 
       // The upcoming round is the first pending one; the passed one is history.
-      expect(back.interview!.currentRound(goalId, back.deadline)?.id, 'r2');
-      expect(back.interview!.pastRounds(goalId, back.deadline).map((r) => r.id),
-          ['r1']);
+      expect(iv.currentRound(goalId, back.deadline)?.id, 'r2');
+      expect(iv.pastRounds(goalId, back.deadline).map((r) => r.id), ['r1']);
 
-      // A plain study goal has no interview facet.
-      expect(defaultGoalFor(_template).interview, isNull);
+      // A plain study goal has no interviews.
+      expect(defaultGoalFor(_template).interviews, isEmpty);
     });
   });
 }

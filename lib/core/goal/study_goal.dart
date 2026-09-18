@@ -36,7 +36,7 @@ class StudyGoal {
     this.deadline,
     this.budgetWeight = 1.0,
     this.state = GoalState.active,
-    this.interview,
+    this.interviews = const [],
   });
 
   /// Stable id — the key under which this goal's state persists (`_meta/`).
@@ -67,10 +67,11 @@ class StudyGoal {
 
   final GoalState state;
 
-  /// The interview facet, when this goal IS an interview (Phase B aim
-  /// unification): its rounds/status/outcome/company/AI-plan weights. Null → a
-  /// plain study goal (open-ended, or a dated exam without the interview loop).
-  final InterviewAim? interview;
+  /// The interviews this goal is prepping for (Phase B aim unification) — a
+  /// subject can hold several at once (Google + Amazon), which the targeting
+  /// layer blends. Empty → a plain study goal (open-ended, or a dated exam
+  /// without an interview loop). All share the goal's level/context/track slots.
+  final List<InterviewAim> interviews;
 
   bool get isActive => state == GoalState.active;
 
@@ -108,7 +109,8 @@ class StudyGoal {
         if (deadline != null) 'deadline': deadline!.toIso8601String(),
         'budgetWeight': budgetWeight,
         'state': state.name,
-        if (interview != null) 'interview': interview!.toJson(),
+        if (interviews.isNotEmpty)
+          'interviews': [for (final i in interviews) i.toJson()],
       };
 
   static StudyGoal fromJson(Map<String, dynamic> m) => StudyGoal(
@@ -130,10 +132,13 @@ class StudyGoal {
           (s) => s.name == m['state'],
           orElse: () => GoalState.active,
         ),
-        interview: m['interview'] is Map
-            ? InterviewAim.fromJson(
-                (m['interview'] as Map).cast<String, dynamic>())
-            : null,
+        interviews: m['interviews'] is List
+            ? [
+                for (final e in m['interviews'] as List)
+                  if (e is Map)
+                    InterviewAim.fromJson(e.cast<String, dynamic>()),
+              ]
+            : const [],
       );
 
   // Nullable slots use an _unset sentinel so a caller can clear them back to null
@@ -149,7 +154,7 @@ class StudyGoal {
     Object? deadline = _unset,
     double? budgetWeight,
     GoalState? state,
-    Object? interview = _unset,
+    List<InterviewAim>? interviews,
   }) =>
       StudyGoal(
         id: id,
@@ -162,8 +167,7 @@ class StudyGoal {
         deadline: deadline == _unset ? this.deadline : deadline as DateTime?,
         budgetWeight: budgetWeight ?? this.budgetWeight,
         state: state ?? this.state,
-        interview:
-            interview == _unset ? this.interview : interview as InterviewAim?,
+        interviews: interviews ?? this.interviews,
       );
 }
 

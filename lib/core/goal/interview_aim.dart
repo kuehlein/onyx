@@ -119,7 +119,8 @@ class InterviewRound {
   }
 }
 
-/// The interview facet attached to a [StudyGoal] via `StudyGoal.interview`.
+/// One interview attached to a [StudyGoal] via `StudyGoal.interviews` (a goal can
+/// hold several, which the targeting layer blends).
 class InterviewAim {
   const InterviewAim({
     this.companyName = '',
