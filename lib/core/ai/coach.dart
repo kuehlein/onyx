@@ -105,9 +105,9 @@ CoachBrief? coachBriefFromMarkdown(String md) {
 /// coach can reason about the exact material without another round-trip.
 ///
 /// Two levers change its behavior:
-/// - [grading]: selects the persona. true → the mock-interview *interviewer*
-///   (Review): probes, and may append an advisory grade tag. false → the
-///   *tutor* (Learn/Browse): explains to build understanding, no grade tag.
+/// - [grading]: selects the persona. true → the grading *examiner* (Review):
+///   probes, and may append an advisory grade tag. false → the *tutor*
+///   (Learn/Browse): explains to build understanding, no grade tag.
 /// - [revealed]: before reveal the coach must *hint* without spoiling; after
 ///   reveal it may discuss the answer fully.
 ///
@@ -125,7 +125,7 @@ String buildCoachSystem({
 }) {
   final b = StringBuffer();
   if (grading) {
-    // Interviewer persona (Review / mock interview) — voice from [brief].
+    // Grading persona (Review) — voice from [brief].
     b.writeln(brief.reviewIntro);
     if (interviewContext != null && interviewContext.trim().isNotEmpty) {
       b.writeln('This mock is prep for a specific interview: '
@@ -135,8 +135,7 @@ String buildCoachSystem({
     }
     b
       ..writeln()
-      ..writeln(
-          '- Make the candidate do the thinking. Ask ONE focused question '
+      ..writeln('- Make the learner do the thinking. Ask ONE focused question '
           'at a time; never lecture or answer your own question.')
       ..writeln(
           '- Give the SMALLEST useful help, only after a genuine attempt, '
@@ -148,7 +147,7 @@ String buildCoachSystem({
     if (brief.topicFit != null) b.writeln('- ${brief.topicFit}');
     b
       ..writeln('- Firm through hard questions, never hostile; keep it '
-          'low-stakes so they reason freely. The candidate owns their grade — '
+          'low-stakes so they reason freely. The learner owns their grade — '
           'never grade for them or tell them which button to press.')
       ..writeln('- Be concise: 2–4 sentences, plain Markdown, no headings.')
       ..writeln();
@@ -173,10 +172,10 @@ String buildCoachSystem({
             '(correct approach with at most one small nudge, and explained the '
             'signal→pattern link); 4=Easy (correct and unaided, and handled a '
             'constraint change or edge case you posed). Advice only — the '
-            'candidate still decides. Omit the tag if you cannot judge yet.')
+            'learner still decides. Omit the tag if you cannot judge yet.')
         ..writeln('On that same grading turn only, also append — on its own '
             'final line, after the grade — a hidden structured assessment the '
-            'candidate never sees (it feeds their applied-readiness stats): '
+            'learner never sees (it feeds their applied-readiness stats): '
             '<assessment>{"appliedScore":0-100,"rubric":{"communication":1-5,'
             '"approach":1-5,"correctness":1-5,"complexity":1-5,"edgeCases":1-5,'
             '"independence":1-5},"novel":true|false,"hintLevel":0-5}'
@@ -191,7 +190,7 @@ String buildCoachSystem({
         ..writeln('The reference answer is HIDDEN — it appears below for YOUR '
             'judgment ONLY. Never quote or paraphrase it, reveal its key result '
             '(final value, formula, complexity, name, or code), or tell the '
-            'candidate whether their specific answer is right — even if they ask '
+            'learner whether their specific answer is right — even if they ask '
             'directly or say "just tell me". Instead climb the hint ladder, and '
             'do not confirm or deny a value they propose ("so it is O(n log '
             'n)?"); push them to justify it. Never emit a <suggest-grade> tag '
