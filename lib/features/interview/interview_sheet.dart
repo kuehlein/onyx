@@ -19,10 +19,8 @@ import 'round_editing.dart';
 /// or ends the loop). Secondary/destructive actions live in the header overflow
 /// to keep the body uncluttered. Watches the goal live.
 Future<void> showInterviewSheet(BuildContext context, String goalId) =>
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
+    showOnyxSheet<void>(
+      context,
       builder: (_) => _InterviewSheet(goalId: goalId),
     );
 

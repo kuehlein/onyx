@@ -18,10 +18,8 @@ import '../interview/interview_planner_sheet.dart';
 /// readiness roll-up and drive the pace readout.
 Future<void> showTargetSheet(BuildContext context) {
   final size = MediaQuery.of(context).size;
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     // Open tall (up to 92% of the screen) so the calendar + forecast aren't
     // clipped below the fold; the body scrolls within if it's still taller.
     // Inset from the edges so it reads as a layered card (like the shorter

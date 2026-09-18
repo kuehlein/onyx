@@ -31,10 +31,8 @@ const _outcomes = <_Outcome>[
 
 /// Opens the "log a solve" sheet for an interview-question [card].
 Future<void> showLogSolveSheet(BuildContext context, {required Card card}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _LogSolveSheet(card: card),
   );

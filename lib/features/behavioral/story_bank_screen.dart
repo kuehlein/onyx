@@ -152,10 +152,8 @@ class _StoryTile extends StatelessWidget {
   }
 
   void _show(BuildContext context, Story s) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    showOnyxSheet<void>(
+      context,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       builder: (_) => _StorySheet(story: s),
     );

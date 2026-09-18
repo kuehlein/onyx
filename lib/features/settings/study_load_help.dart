@@ -7,10 +7,8 @@ import '../../shared/widgets/sheet_header.dart';
 /// sustainable. Opened from Settings (near the load controls), not shown on
 /// Home; the coach carries the dynamic, personal version.
 Future<void> showStudyLoadHelp(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _StudyLoadHelp(),
   );

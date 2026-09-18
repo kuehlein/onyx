@@ -7,10 +7,8 @@ import '../../shared/widgets/sheet_header.dart';
 /// Opens the full list of evidence-based study tips as a bottom sheet. Available
 /// from the Learn app bar (studying / first exposure), not while testing.
 Future<void> showStudyTipsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _StudyTipsSheet(),
   );

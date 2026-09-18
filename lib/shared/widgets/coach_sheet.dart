@@ -14,6 +14,7 @@ import '../providers/coach.dart';
 import '../study_grades.dart';
 import 'card_markdown.dart';
 import 'fading_scroll_edges.dart';
+import 'sheet_header.dart';
 
 /// Open the coach as a modal bottom sheet for [card]. In a study session pass
 /// the [section] under review, the current [revealed] state, and `grading:
@@ -27,9 +28,8 @@ Future<void> showCoachSheet(
   required bool grading,
   String? interviewContext,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
+  return showOnyxSheet<void>(
+    context,
     // A slim custom handle (see CoachSheet) sits tight to the top instead of
     // the framework handle, which reserves ~36px and leaves the header floating.
     showDragHandle: false,

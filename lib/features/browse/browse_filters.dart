@@ -12,10 +12,8 @@ Future<CardFilter?> showFilterSheet(
   required List<String> domains,
   required List<int> tiers,
 }) =>
-    showModalBottomSheet<CardFilter>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    showOnyxSheet<CardFilter>(
+      context,
       builder: (_) =>
           _FilterSheet(current: current, domains: domains, tiers: tiers),
     );
@@ -171,10 +169,8 @@ class _FilterSheetState extends State<_FilterSheet> {
 /// Opens the search & filter help sheet — documents free-text search, the query
 /// operators, and the filter facets. Tucked behind the app-bar "?" so it never
 /// obstructs Browse, but roomy enough to actually explain everything.
-Future<void> showSearchHelp(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+Future<void> showSearchHelp(BuildContext context) => showOnyxSheet<void>(
+      context,
       builder: (_) => const _SearchHelpSheet(),
     );
 

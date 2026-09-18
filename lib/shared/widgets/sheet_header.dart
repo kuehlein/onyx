@@ -2,6 +2,43 @@ import 'package:flutter/material.dart';
 
 import 'fading_scroll_edges.dart';
 
+/// The one launcher for Onyx's slide-up modals (design-system §4.9): a thin
+/// wrapper over `showModalBottomSheet` so every sheet inherits the same chrome
+/// from one place — the themed sheet radius + drag handle (from
+/// `bottomSheetTheme`), `isScrollControlled`/`showDragHandle` defaulted to the
+/// common case, and typed `T?` returns. Compose the [builder]'s content with a
+/// [SheetHeader] on top and a [SheetScrollBody] for scrolling bodies.
+///
+/// [backgroundColor] defaults to the theme's sheet surface
+/// (`surfaceContainerHighest`, §2.5 tier 3); the handful of content sheets that
+/// pass `surfaceContainerLow` do so their `FadingScrollEdges` blend into the same
+/// color. The remaining knobs cover the few variants (e.g. the coach sheet's
+/// custom handle → `showDragHandle: false`) without another copy-pasted call.
+///
+/// One choke point also means the §4.9 polish still owed — a `barrierColor`
+/// (black @ 0.45) and `useSafeArea` — can later be switched on here in one edit.
+Future<T?> showOnyxSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool isScrollControlled = true,
+  bool showDragHandle = true,
+  Color? backgroundColor,
+  bool isDismissible = true,
+  bool enableDrag = true,
+  BoxConstraints? constraints,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    showDragHandle: showDragHandle,
+    backgroundColor: backgroundColor,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
+    constraints: constraints,
+    builder: builder,
+  );
+}
+
 /// The scrollable body of a slide-up sheet, with a soft fade at whichever edge
 /// has more content — so overflow (you-can-scroll-for-more) is always obvious.
 /// The fade lives in the body, not the [SheetHeader], because the header never

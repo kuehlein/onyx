@@ -124,9 +124,9 @@ class CoachBadge extends ConsumerWidget {
 
   void _showDetail(BuildContext context, WidgetRef ref, CoachUpdate u,
       Color color, _ChatSeed seed, _Load load, String? todayPlan) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
+    showOnyxSheet<void>(
+      context,
+      isScrollControlled: false,
       builder: (ctx) {
         final theme = Theme.of(ctx);
         return SafeArea(

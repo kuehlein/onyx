@@ -6,14 +6,15 @@ import '../../core/coach/coach_update.dart';
 import '../../shared/coach_settings.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/settings.dart';
+import '../../shared/widgets/sheet_header.dart';
 
 /// The opt-in weekly load check-in. Step 1: how's it feeling? Step 2 (optional):
 /// a matching one-tap load adjustment. Recording the answer also feeds the
 /// coach's future suggestions (a "too much" suppresses increase nudges).
 Future<void> showLoadCheckInSheet(BuildContext context, WidgetRef ref) {
-  return showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
+    isScrollControlled: false,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _LoadCheckInSheet(),
   );

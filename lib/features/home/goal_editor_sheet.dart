@@ -10,21 +10,16 @@ import '../../shared/widgets/sheet_header.dart';
 /// query, deadline, and budget weight, plus graduate/delete for an existing goal.
 /// This is the in-app path to defining the concurrent goals the lanes hub shows.
 Future<void> showGoalEditor(BuildContext context, {StudyGoal? goal}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    showOnyxSheet<void>(
+      context,
       builder: (_) => GoalEditorSheet(goal: goal),
     );
 
 /// A compact manager for all study goals — tap one to edit, or add a new one.
 /// The reachable-from-anywhere entry (Settings) so a single-goal user can define
 /// a second goal (which surfaces the lanes hub).
-Future<void> showGoalsManager(BuildContext context) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+Future<void> showGoalsManager(BuildContext context) => showOnyxSheet<void>(
+      context,
       builder: (_) => const _GoalsManagerSheet(),
     );
 

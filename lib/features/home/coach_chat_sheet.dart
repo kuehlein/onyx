@@ -40,10 +40,8 @@ Future<void> showCoachChatSheet(
     algoMax: algoMax,
     todayPlan: todayPlan,
   );
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _CoachChatSheet(system: system, seed: update.headline),
   );

@@ -20,10 +20,8 @@ const _amber = StatusColor.warn;
 /// questions, review the proposed plan, and save it as an active interview.
 /// Returns the saved [PrepGoal], or null if dismissed without saving.
 Future<PrepGoal?> showInterviewPlannerSheet(BuildContext context) =>
-    showModalBottomSheet<PrepGoal>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    showOnyxSheet<PrepGoal>(
+      context,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       builder: (_) => const _InterviewPlannerSheet(),
     );

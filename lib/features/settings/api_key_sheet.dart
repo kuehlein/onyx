@@ -10,10 +10,8 @@ import '../../shared/widgets/sheet_header.dart';
 /// get one" copy the dialog had no space for. Keychain-backed via [apiKeyProvider]
 /// and "Not now"-able (the close X or the text button both just dismiss).
 Future<void> showApiKeySheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true, // so it lifts above the keyboard
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _ApiKeySheet(),
   );

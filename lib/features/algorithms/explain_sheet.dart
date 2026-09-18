@@ -22,10 +22,8 @@ Future<void> showExplainSheet(
   required Card card,
   required CardSection section,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showOnyxSheet<void>(
+    context,
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _ExplainSheet(card: card, section: section),
   );
