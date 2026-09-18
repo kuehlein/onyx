@@ -10,7 +10,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/behavioral.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/vault.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/mock_grade_summary.dart';
 import '../../shared/widgets/session_timer.dart';
@@ -332,7 +332,8 @@ class _SettingsPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final coaching = support == SupportMode.coaching;
-    final color = coaching ? statusInfo : theme.colorScheme.onSurfaceVariant;
+    final color =
+        coaching ? StatusColor.info : theme.colorScheme.onSurfaceVariant;
     return Tooltip(
       message: coaching
           ? 'Coaching — the interviewer helps if you get stuck.\n'

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -279,7 +279,7 @@ int _active7(List<int>? consistency) {
 }
 
 Color _readinessColor(double v, ColorScheme cs) =>
-    v >= 0.75 ? statusGood : (v >= 0.45 ? statusWarn : cs.error);
+    v >= 0.75 ? StatusColor.good : (v >= 0.45 ? StatusColor.warn : cs.error);
 
 // ── Summary strip ───────────────────────────────────────────────────────────
 
@@ -635,10 +635,10 @@ class _StripAxis extends StatelessWidget {
 }
 
 Color _recallColor(double r, ColorScheme cs) =>
-    r >= 0.85 ? statusGood : (r >= 0.65 ? statusWarn : cs.error);
+    r >= 0.85 ? StatusColor.good : (r >= 0.65 ? StatusColor.warn : cs.error);
 
 Color _dimColor(double v /* 1..5 */, ColorScheme cs) =>
-    v >= 4 ? statusGood : (v >= 3 ? statusWarn : cs.error);
+    v >= 4 ? StatusColor.good : (v >= 3 ? StatusColor.warn : cs.error);
 
 // ── 1. Mock-interview skills ────────────────────────────────────────────────
 
@@ -891,7 +891,7 @@ class _PatternsSection extends ConsumerWidget {
 
   Widget _patternBar(BuildContext context, PatternMastery p) {
     final cs = Theme.of(context).colorScheme;
-    final color = p.mastered ? statusGood : _recallColor(p.score, cs);
+    final color = p.mastered ? StatusColor.good : _recallColor(p.score, cs);
     return _StatBar(
       label: p.pattern,
       fraction: p.score,

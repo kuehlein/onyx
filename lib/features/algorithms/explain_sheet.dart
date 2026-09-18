@@ -9,7 +9,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/explain_chat.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -32,9 +32,9 @@ Future<void> showExplainSheet(
 }
 
 const _grades = <({ExplainOutcome outcome, String label, Color color})>[
-  (outcome: ExplainOutcome.solid, label: 'Solid', color: statusGood),
-  (outcome: ExplainOutcome.shaky, label: 'Shaky', color: statusWarn),
-  (outcome: ExplainOutcome.lost, label: 'Lost it', color: statusBad),
+  (outcome: ExplainOutcome.solid, label: 'Solid', color: StatusColor.good),
+  (outcome: ExplainOutcome.shaky, label: 'Shaky', color: StatusColor.warn),
+  (outcome: ExplainOutcome.lost, label: 'Lost it', color: StatusColor.bad),
 ];
 
 class _ExplainSheet extends ConsumerWidget {

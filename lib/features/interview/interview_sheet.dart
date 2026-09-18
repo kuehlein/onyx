@@ -6,7 +6,7 @@ import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -268,17 +268,17 @@ class _OutcomeRow extends StatelessWidget {
       buttons: [
         GradeButton(
             label: 'Passed',
-            color: statusInfo,
+            color: StatusColor.info,
             icon: Icons.arrow_forward,
             onTap: onPassed),
         GradeButton(
             label: 'Offer',
-            color: statusGood,
+            color: StatusColor.good,
             icon: Icons.celebration_outlined,
             onTap: onOffer),
         GradeButton(
             label: "Didn't pass",
-            color: statusBad,
+            color: StatusColor.bad,
             icon: Icons.do_not_disturb_alt,
             onTap: onRejected),
       ],
@@ -320,8 +320,8 @@ class _EndedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final (Color color, IconData icon) = switch (status) {
-      InterviewStatus.offer => (statusGood, Icons.celebration),
-      InterviewStatus.rejected => (statusBad, Icons.do_not_disturb_on),
+      InterviewStatus.offer => (StatusColor.good, Icons.celebration),
+      InterviewStatus.rejected => (StatusColor.bad, Icons.do_not_disturb_on),
       _ => (theme.colorScheme.outline, Icons.inventory_2),
     };
     return Container(
@@ -378,8 +378,8 @@ class _Timeline extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final (IconData icon, Color color) = switch (r.outcome) {
-      GoalOutcome.passed => (Icons.check_circle, statusGood),
-      GoalOutcome.failed => (Icons.cancel, statusBad),
+      GoalOutcome.passed => (Icons.check_circle, StatusColor.good),
+      GoalOutcome.failed => (Icons.cancel, StatusColor.bad),
       GoalOutcome.pending => (
           Icons.radio_button_checked,
           theme.colorScheme.primary

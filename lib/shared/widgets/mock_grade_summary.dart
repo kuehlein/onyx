@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/interview/assessment.dart' show rubricLabel;
 import '../../core/practice/mock_grader.dart';
-import '../status_colors.dart';
+import '../design/status_color.dart';
 
 /// A clean banner of a reconciled mock [MockGrade]: a prominent score disc, a
 /// calibrated verdict label, per-dimension rubric bars, and the grader's note.
@@ -23,10 +23,10 @@ class MockGradeSummary extends StatelessWidget {
 
   ({String label, Color color}) get _verdict {
     final s = grade.appliedScore;
-    if (s >= 80) return (label: 'Strong', color: statusGood);
-    if (s >= 65) return (label: 'Solid', color: statusGood);
-    if (s >= 50) return (label: 'Developing', color: statusWarn);
-    return (label: 'Needs work', color: statusBad);
+    if (s >= 80) return (label: 'Strong', color: StatusColor.good);
+    if (s >= 65) return (label: 'Solid', color: StatusColor.good);
+    if (s >= 50) return (label: 'Developing', color: StatusColor.warn);
+    return (label: 'Needs work', color: StatusColor.bad);
   }
 
   @override

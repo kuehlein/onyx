@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,8 +31,8 @@ typedef _ChatSeed = ({
 /// change) either flow.
 typedef _Load = ({int newPerDay, int backlog, int algoMin, int algoMax});
 
-const _green = statusGood;
-const _amber = statusWarn;
+const _green = StatusColor.good;
+const _amber = StatusColor.warn;
 
 /// The ambient coach update on Home: one prioritized, task-level line. Tap to
 /// expand the "why now" and take the single suggested action. Renders nothing

@@ -8,7 +8,7 @@ import '../../core/subject/active_subject.dart';
 import '../../core/subject/subject_config.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
 import '../interview/interview_planner_sheet.dart';
@@ -374,8 +374,8 @@ class _ForecastBlock extends ConsumerWidget {
 
     if (f.alreadyReady) {
       rows.add(Text('You’re already at your target for this aim.',
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: statusGood, fontWeight: FontWeight.w600)));
+          style: theme.textTheme.bodyMedium?.copyWith(
+              color: StatusColor.good, fontWeight: FontWeight.w600)));
     } else {
       final curDate = f.currentReadyDate;
       if (curDate == null) {
@@ -421,20 +421,20 @@ class _ForecastBlock extends ConsumerWidget {
               'Even at ~${f.maxSampledPerDay}/day you can’t be ready by '
               '${_fmtDate(chosenDate!)} — earliest is '
               '${earliest == null ? "over a year out" : _fmtDate(earliest)}.',
-              statusBad,
+              StatusColor.bad,
               theme));
         } else if (req <= f.currentPerDay) {
           rows.add(_note(
               Icons.check_circle_outline,
               'On track — your pace reaches ${_fmtDate(chosenDate!)}.',
-              statusGood,
+              StatusColor.good,
               theme));
         } else {
           rows.add(_note(
               Icons.bolt,
               'To be ready by ${_fmtDate(chosenDate!)}, study ~$req/day '
               '(up from ~${f.currentPerDay}).',
-              statusWarn,
+              StatusColor.warn,
               theme));
         }
       }
@@ -531,10 +531,10 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     if (off < 0) return null;
     final earliest = f.earliestReadyDay;
     final current = f.currentReadyDay;
-    if (current != null && off >= current) return statusGood;
-    if (earliest != null && off >= earliest) return statusWarn;
+    if (current != null && off >= current) return StatusColor.good;
+    if (earliest != null && off >= earliest) return StatusColor.warn;
     if (earliest == null && current == null) return null;
-    return statusBad;
+    return StatusColor.bad;
   }
 
   @override
@@ -751,9 +751,9 @@ class _CalendarLegend extends StatelessWidget {
       spacing: 12,
       runSpacing: 4,
       children: [
-        item(statusGood, 'Ready at your pace'),
-        item(statusWarn, 'Needs a faster pace'),
-        item(statusBad, 'Too soon to be ready'),
+        item(StatusColor.good, 'Ready at your pace'),
+        item(StatusColor.warn, 'Needs a faster pace'),
+        item(StatusColor.bad, 'Too soon to be ready'),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [

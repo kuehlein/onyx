@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../status_colors.dart';
+import '../design/status_color.dart';
 
 /// Which way a [SessionTimer] runs.
 enum TimerMode {
@@ -149,7 +149,7 @@ class _SessionTimerState extends State<SessionTimer> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const green = statusGood;
+    const green = StatusColor.good;
     final scheme = theme.colorScheme;
 
     final bool showElapsed = _isCountUp ? _started : _running;

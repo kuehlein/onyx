@@ -5,7 +5,7 @@ import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import 'interview_actions.dart';
 import 'interview_sheet.dart';
 
@@ -60,8 +60,8 @@ class InterviewCard extends ConsumerWidget {
   Widget _leadingIcon(ThemeData theme, bool ended) {
     final (IconData icon, Color color) = switch (goal.status) {
       InterviewStatus.active => (Icons.flag, theme.colorScheme.primary),
-      InterviewStatus.offer => (Icons.celebration, statusGood),
-      InterviewStatus.rejected => (Icons.do_not_disturb_on, statusBad),
+      InterviewStatus.offer => (Icons.celebration, StatusColor.good),
+      InterviewStatus.rejected => (Icons.do_not_disturb_on, StatusColor.bad),
       InterviewStatus.withdrawn => (Icons.logout, theme.colorScheme.outline),
       InterviewStatus.archived => (
           Icons.inventory_2,
@@ -127,11 +127,14 @@ class InterviewCard extends ConsumerWidget {
     if (f == null) return const SizedBox.shrink();
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     final (String text, Color color) = f.alreadyReady
-        ? ('ready', statusGood)
+        ? ('ready', StatusColor.good)
         : switch (f.requiredPerDayFor(days)) {
-            null => ('too soon', statusBad),
-            final req when req <= f.currentPerDay => ('on track', statusGood),
-            final req => ('~$req/day', statusWarn),
+            null => ('too soon', StatusColor.bad),
+            final req when req <= f.currentPerDay => (
+                'on track',
+                StatusColor.good
+              ),
+            final req => ('~$req/day', StatusColor.warn),
           };
     final role =
         '${goal.level.label} · ${goal.tier.label} · ${goal.track.label}';

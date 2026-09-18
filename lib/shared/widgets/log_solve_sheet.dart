@@ -8,7 +8,7 @@ import '../providers/analytics.dart';
 import '../providers/clock.dart';
 import '../providers/interview.dart';
 import '../providers/readiness.dart';
-import '../status_colors.dart';
+import '../design/status_color.dart';
 import 'sheet_header.dart';
 
 /// The self-report you log after solving an interview question on your own
@@ -20,13 +20,13 @@ typedef _Outcome = ({String label, int score, int hint, Color color});
 // Four distinct colors matching the FSRS grade scale (Easy→Again) so the
 // outcomes read as a gradient, not two amber twins. `_grade4` = the "Easy" hue
 // from the design-system status ramp (§7 Step 1).
-const _grade4 = statusInfo; // blue — cleanest, like "Easy"
+const _grade4 = StatusColor.info; // blue — cleanest, like "Easy"
 
 const _outcomes = <_Outcome>[
   (label: 'Solved it cleanly', score: 90, hint: 0, color: _grade4),
-  (label: 'Solved, needed a hint', score: 65, hint: 2, color: statusGood),
-  (label: 'Struggled through it', score: 45, hint: 3, color: statusWarn),
-  (label: 'Couldn’t solve it', score: 20, hint: 5, color: statusBad),
+  (label: 'Solved, needed a hint', score: 65, hint: 2, color: StatusColor.good),
+  (label: 'Struggled through it', score: 45, hint: 3, color: StatusColor.warn),
+  (label: 'Couldn’t solve it', score: 20, hint: 5, color: StatusColor.bad),
 ];
 
 /// Opens the "log a solve" sheet for an interview-question [card].

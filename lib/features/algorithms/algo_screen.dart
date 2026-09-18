@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/srs/algo_queue.dart';
 import '../../shared/providers/algo.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/study_grades.dart' show gradeColor;
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -348,7 +348,8 @@ class _ReasonChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = mode == AlgoMode.explain ? statusWarn : statusGood;
+    final color =
+        mode == AlgoMode.explain ? StatusColor.warn : StatusColor.good;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

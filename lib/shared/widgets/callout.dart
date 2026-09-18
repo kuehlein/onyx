@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../status_colors.dart';
+import '../design/status_color.dart';
 
 /// Visual spec for a callout type: an accent color, an icon, and a default
 /// title. Colors are muted so they read as semantic signals on the dark
@@ -17,10 +17,10 @@ class CalloutSpec {
 // status-typed ones source from the design-system status ramp (§7 Step 1); the
 // admonition-only `_violet`/`_cyan` stay local (reconciling them with the
 // one-accent-hue rule is a later design call).
-const _info = statusInfo;
-const _tip = statusGood;
-const _amber = statusWarn;
-const _red = statusBad;
+const _info = StatusColor.info;
+const _tip = StatusColor.good;
+const _amber = StatusColor.warn;
+const _red = StatusColor.bad;
 const _violet = Color(0xFFB39DFF);
 const _cyan = Color(0xFF56C7D4);
 

@@ -8,3 +8,4 @@ export 'onyx_colors.dart';
 export 'onyx_scheme.dart';
 export 'onyx_text_theme.dart';
 export 'onyx_tokens.dart';
+export 'status_color.dart';

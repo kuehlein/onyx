@@ -8,12 +8,12 @@ import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/sheet_header.dart';
 
-const _amber = statusWarn;
+const _amber = StatusColor.warn;
 
 /// The "plan an interview" chat — a slide-up sheet (consistent with the coach
 /// and explain chats): describe an upcoming interview, answer any clarifying

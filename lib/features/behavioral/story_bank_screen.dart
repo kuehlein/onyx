@@ -6,7 +6,7 @@ import '../../core/story/competency.dart';
 import '../../core/story/coverage.dart';
 import '../../core/story/story.dart';
 import '../../shared/providers/story.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// The story bank: a competency-coverage matrix (do you have a strong story for
@@ -104,7 +104,9 @@ class _CoverageRow extends StatelessWidget {
         children: [
           Icon(covered ? Icons.check_circle : Icons.circle_outlined,
               size: 18,
-              color: covered ? statusGood : theme.colorScheme.onSurfaceVariant),
+              color: covered
+                  ? StatusColor.good
+                  : theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           Text(
@@ -112,8 +114,9 @@ class _CoverageRow extends StatelessWidget {
                 ? (count > 1 ? '$count stories' : 'covered')
                 : (count > 0 ? '$count · needs detail' : 'needed'),
             style: theme.textTheme.labelSmall?.copyWith(
-                color:
-                    covered ? statusGood : theme.colorScheme.onSurfaceVariant),
+                color: covered
+                    ? StatusColor.good
+                    : theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),

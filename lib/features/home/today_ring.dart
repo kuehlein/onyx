@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 
 /// The Home hero: a single radial ring for today's progress. One glanceable,
 /// motivating "close the ring" metric (the day's small wins), with the details
@@ -35,7 +35,7 @@ class TodayRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final ringColor = done ? statusGood : cs.primary;
+    final ringColor = done ? StatusColor.good : cs.primary;
 
     return Semantics(
       label: 'Today’s progress: $centerLine, $subLine',

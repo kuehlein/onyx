@@ -20,7 +20,7 @@ import '../../shared/providers/learn.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
-import '../../shared/status_colors.dart';
+import '../../shared/design/status_color.dart';
 import '../../shared/widgets/destructive_row.dart';
 import '../home/goal_editor_sheet.dart';
 import 'api_key_sheet.dart';
@@ -713,7 +713,8 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
         leading: const Icon(Icons.timeline_outlined),
         title: const Text('Pace planner'),
         subtitle: Text('You’re already at your target for this aim.',
-            style: theme.textTheme.bodySmall?.copyWith(color: statusGood)),
+            style:
+                theme.textTheme.bodySmall?.copyWith(color: StatusColor.good)),
       );
     }
 
@@ -770,7 +771,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
                     _PaceLine(
                         label: 'Interview-ready',
                         value: readyText,
-                        color: statusGood),
+                        color: StatusColor.good),
                     const SizedBox(height: 4),
                     Text(
                       total == 0

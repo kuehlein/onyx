@@ -407,15 +407,15 @@ Keep the existing flat `widgets/` folder; add a small `design/` sibling. **No** 
 lib/shared/
   design/
     onyx_design.dart      # barrel export
-    _palette.dart         # PRIMITIVES — private raw hex, imported only by the two extensions + theme
+    _palette.dart         # PRIMITIVES — private raw hex, imported only by the extensions + theme + status_color
     onyx_colors.dart      # ThemeExtension<OnyxColors>
     onyx_tokens.dart      # ThemeExtension<OnyxTokens> (spacing/radius/opacity/motion/2 reading styles)
     onyx_text_theme.dart  # chrome TextTheme
     onyx_code_theme.dart  # syntax highlight map (recessed panel, single-accent keywords)
     context_x.dart        # BuildContext.onyx / .tokens / .colors / .text
-  widgets/                # unchanged location; StatusPill added, others migrated in place
+    status_color.dart     # const status ramp (StatusColor.good/…) for const call sites
+  widgets/                # StatusPill/EmptyState/LoadingView/DestructiveRow added, others migrated in place
     status_pill.dart  sheet_header.dart  confidence_badge.dart  grade_buttons.dart  ...
-  status_colors.dart      # @Deprecated shim during migration; deleted at the end
   study_grades.dart       # gradeColor → OnyxColors.grade; label logic stays
 lib/app/theme.dart        # assembles scheme + textTheme + component themes + registers extensions
 ```
@@ -431,12 +431,12 @@ Screens consume via `context.tokens.*` / `context.onyx.*` / `context.colors.*` /
 Each step compiles and ships alone. No big-bang.
 
 - **Step 0 — Scaffold ✅ (done 2026-09-17).** `lib/shared/design/`: `_palette.dart` (flat, alias-free, DTCG-grouped primitives — the door-open seam, §2), `onyx_colors.dart` + `onyx_tokens.dart` (the two extensions, **sourcing every raw value from `_palette`** so numbers live in one place), `context_x.dart` (`context.onyx`/`tokens`/`colors`/`text`), `onyx_design.dart` (barrel; `_palette` deliberately NOT exported). Registered `OnyxColors.dark` + `OnyxTokens.standard` in `theme.dart`; app byte-identical (nothing consumes them yet). Pinned by `test/unit/design_tokens_test.dart` (registration + `grade()` + token values + lerp identity).
-- **Step 1 — Color keystone ✅ (done 2026-09-17).** `status_colors.dart` is now a forwarding shim (→ `PaletteColor` static consts, so a restyle still propagates through one place — instance-field access like `OnyxColors.dark.good` isn't const-evaluable, hence the palette forward). `study_grades.gradeColor` → `OnyxColors.grade`. `_StreakChip` + `StreakInfo` + `flame` **deleted** (§4.10). *Deviation:* `callout.dart`'s admonition-only `_violet`/`_cyan` stay local (doc-syntax hues, not status) and its `_info`/`_tip` forward through the shim — reconciling those with `OnyxColors` rides along with the Step-5 migration, not a blocker.
+- **Step 1 — Color keystone ✅ (done 2026-09-17).** `study_grades.gradeColor` → `OnyxColors.grade`. `_StreakChip` + `StreakInfo` + `flame` **deleted** (§4.10). The status ramp is now the `StatusColor` const surface (see Step 7); `callout.dart`'s `_info`/`_tip` read `StatusColor.info`/`.good` while its admonition-only `_violet`/`_cyan` stay local (doc-syntax hues, not status — reconciling those with the one-accent rule is a later design call).
 - **Step 2 — `StatusPill` ✅ (done 2026-09-17).** Built; `ConfidenceBadge` delegates (numeric score in `value`). Color+shape+number+Semantics in one place. Golden infra stood up alongside (`test/golden/`, built-in `matchesGoldenFile`, zero-dep — no `alchemist` without internet).
 - **Step 3 — Component + text themes ✅ (done 2026-09-17).** `onyxTextTheme` + all component themes + `surfaceTint: transparent` in `theme.dart`. Retroactively fixed radius/padding/targets on stock M3 widgets app-wide. (Custom `pageTransitionsTheme` dropped — the Flutter 3.47 builders needed weren't const/available; M3 defaults stand.)
 - **Step 4 — `code_block.dart` surface + palette ⏸ (deferred to the aesthetic pass).** The remaining work is *authoring* an `onyx_code_theme` (a ~15-token syntax map) — that's a human-eye color-judgment task, and `tomorrowNightTheme` already clears WCAG, so it's best done live during the review rather than picked blind.
 - **Progress policy — spinner ban ✅ (done 2026-09-17, §2.6.1/§8).** `LoadingView` (calm, theme-agnostic status line) replaced all 16 indeterminate `CircularProgressIndicator`s across 15 screens/widgets; `coach_sheet`/`chat_view` `_Thinking` are static status lines. The one surviving ring (`mock_grade_summary`) is a **determinate** score gauge, not a spinner (its bar-redesign is a Step-6 item).
-- **Step 5 — Opportunistic token migration (boy-scout rule, ongoing).** Whenever you touch a widget, swap literals for `context.tokens.*`. Still ~20 files import the `status_colors` shim (Step 7 gate). Migration dashboard = these shrinking greps:
+- **Step 5 — Opportunistic token migration (boy-scout rule, ongoing).** Whenever you touch a widget, swap *spacing/radius* literals for `context.tokens.*`. (The color half is done — the `status_colors` shim is retired, Step 7.) Migration dashboard = these shrinking greps:
   ```
   grep -rn 'BorderRadius.circular([0-9]' lib/
   grep -rn 'withValues(alpha: 0\.' lib/
@@ -444,7 +444,7 @@ Each step compiles and ships alone. No big-bang.
   grep -rn 'CircularProgressIndicator' lib/   # §2.6.1 — spinner ban DONE; only the determinate mock_grade_summary gauge remains
   ```
 - **Step 6 — Catalog, built *when a screen consumes it* (not preemptively).** Partly done: **`EmptyState` ✅** (one scannable state — glyph→title→message→action — replacing the ad-hoc `Center>Column` blocks across browse/insights/learn/behavioral/system-design; golden + structural test) and **`LoadingView` ✅** (see the progress-policy row). The rest — `Sparkline`/`CoverageBar`/`CompletionRing`/`ForecastBand`/`GoalLaneRow`/`SharedBudgetBar`/`TodayFlowRow`/`InsightTile`/`MixSlider`/`ReadinessBand`/`SkeletonBlock`/`ThinEvidence`/`DestructiveRow`/`showOnyxSheet` — have **no consumer yet** (the only bespoke painter today is `today_ring.dart`). Building them now is speculative; instead build each as its owning screen is (re)built — `DestructiveRow` with settings-#67, the dataviz primitives with the Analytics/Home redo, `showOnyxSheet` when a sheet site is next touched — and **add a golden** for each at that point (the real restyle regression net). `[reframed 2026-09-17]`
-- **Step 7 — Cleanup (blocked on Step 5).** ~20 files still import `statusGood`/`statusWarn`; when that grep returns only the shim, delete `status_colors.dart`.
+- **Step 7 — Retire the status shim ✅ (done 2026-09-17).** `shared/status_colors.dart` deleted; its 74 call sites across 20 files migrated to `StatusColor.good/warn/bad/info/muted` — a compile-time-const surface in `design/` (sourced from `_palette`), so the ~half of sites that are `const` data-tables (grade scale, callout specs, outcome lists) keep working without threading a `BuildContext`. Colors are byte-identical (both resolved to the same `PaletteColor` entry), so it's a zero-pixel change. Runtime widgets that prefer the lerp-able form can still use `context.onyx.*` (the `OnyxColors` extension, which StatusPill + `grade()` already do).
 
 **Do NOT:** convert all widgets in one PR · build a Storybook/Widgetbook gallery (worth it at ~40–50 widgets, or once the web app shares components — not ~15) · **stand up a DTCG / Style-Dictionary pipeline *now*** (keep `_palette` DTCG-shaped for a later *mechanical* migration instead — §2) · add a component-token tier · resurrect the light theme · build an `AppButton` wrapper.
 
