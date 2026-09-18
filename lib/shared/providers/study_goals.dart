@@ -1,9 +1,10 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/goal/aim_migration.dart';
 import '../../core/goal/goal_store.dart';
 import '../../core/goal/study_goal.dart';
-import '../../core/readiness/goals_service.dart';
 import '../../core/readiness/target_service.dart';
 import 'subject.dart';
 import 'vault.dart';
@@ -20,8 +21,7 @@ part 'study_goals.g.dart';
 /// legacy-aim migration. An empty store → the synthesized default, identical to
 /// pre-#30d.
 ///
-/// keepAlive (like [SelectedStudyGoalId] and the readiness-target/prep-goal
-/// notifiers): it's user state, and `_persist` relies on `invalidateSelf()` +
+/// keepAlive: it's user state, and `_persist` relies on `invalidateSelf()` +
 /// `await future` resolving against a live element rather than a disposed one.
 @Riverpod(keepAlive: true)
 class StudyGoals extends _$StudyGoals {
@@ -46,15 +46,21 @@ class StudyGoals extends _$StudyGoals {
       if (g.id == defaultGoalId) return [g];
     }
     if (source == null) return [defaultGoalFor(registry.primary)];
-    // First run on a pre-#30d vault: fold the legacy base target + interview
-    // PrepGoals into the default goal. Read-only until the first edit persists it
-    // (see [upsertInterview]); the legacy files stay the source until then.
+    // First run on a pre-#30d vault: fold the legacy base target + interviews
+    // (the old onyx-goals.json) into the default goal, then persist it (B5) so the
+    // legacy files are no longer consulted.
     final baseTarget = await TargetService(source).load();
-    final prepGoals = await GoalsService(source).load();
-    return [
-      migratedDefaultGoal(registry.primary,
-          baseTarget: baseTarget, prepGoals: prepGoals),
-    ];
+    final interviews = await legacyInterviews(source);
+    final migrated = migratedDefaultGoal(registry.primary,
+        baseTarget: baseTarget, interviews: interviews);
+    // Write-through: durably persist the folded default so the legacy files are no
+    // longer needed (only when there IS legacy data — never persist a bare default).
+    // Preserve any graduated explicit goals alongside it (they're hidden here but
+    // not deleted — a plain [migrated] save would erase them).
+    if (baseTarget != null || interviews.isNotEmpty) {
+      unawaited(GoalStore(source).save([...explicit, migrated]));
+    }
+    return [migrated];
   }
 
   /// The goals currently on disk — the source of truth for a mutation, since the

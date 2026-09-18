@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/goal/study_goal.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/subject/subject_config.dart';
 import 'package:onyx/core/subject/subject_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -48,11 +47,6 @@ class _FixedGoals extends StudyGoals {
   final List<StudyGoal> _goals;
   @override
   Future<List<StudyGoal>> build() async => _goals;
-}
-
-class _NoPrep extends PrepGoals {
-  @override
-  Future<List<PrepGoal>> build() async => const [];
 }
 
 void main() {
@@ -106,7 +100,6 @@ void main() {
       vaultIndexProvider.overrideWith((ref) async => index),
       srsStatesProvider.overrideWith((ref) async => states),
       subjectRegistryProvider.overrideWith((ref) async => registry),
-      prepGoalsProvider.overrideWith(_NoPrep.new),
       studyGoalsProvider.overrideWith(() => _FixedGoals(const [
             StudyGoal(id: 'g-short', name: 'S', templateId: 'short'),
             StudyGoal(id: 'g-long', name: 'L', templateId: 'long'),

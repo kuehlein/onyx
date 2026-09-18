@@ -523,7 +523,7 @@ class _CompleteState extends ConsumerWidget {
 
     final before = session.readinessBefore;
     final after = ref.watch(readinessProvider).asData?.value;
-    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final target = ref.watch(activeTargetProvider).asData?.value;
     final delta =
         (before != null && after != null) ? diffReadiness(before, after) : null;
 

@@ -20,13 +20,6 @@ import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
-/// Serves a fixed target so the readiness panel renders without reaching the
-/// preferences DB / vault in widget tests.
-class _FakeTargetController extends ReadinessTargetController {
-  @override
-  Future<ReadinessTarget> build() async => ReadinessTarget.fallback;
-}
-
 CardSection _section(String heading, {bool quizzable = true}) => CardSection(
       heading: heading,
       slug: heading.toLowerCase().replaceAll(' ', '-'),
@@ -64,8 +57,10 @@ void main() {
               const TodayProgress(doneMinutes: 0, remainingMinutes: 0)),
           startupRestoreProvider.overrideWith((ref) async {}),
           glossaryProvider.overrideWith((ref) async => const {}),
-          readinessTargetControllerProvider
-              .overrideWith(_FakeTargetController.new),
+          // Serve a fixed active target so the readiness panel renders without
+          // reaching the preferences DB / vault in widget tests.
+          activeTargetProvider
+              .overrideWith((ref) async => ReadinessTarget.fallback),
           studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
           appliedTransferProvider.overrideWith((ref) async =>
               (byDomain: <String, TransferEstimate>{}, interview: false)),

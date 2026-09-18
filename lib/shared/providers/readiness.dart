@@ -1,22 +1,16 @@
-import 'dart:async';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/interview/critic.dart';
 import '../../core/interview/transfer.dart';
-import '../../core/readiness/goals_service.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
-import '../../core/readiness/prep_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
-import '../../core/readiness/target_service.dart';
 import '../../core/readiness/targeting.dart';
 import '../../core/goal/study_goal.dart';
 import 'clock.dart';
 import 'interview.dart';
-import 'settings.dart';
 import 'srs.dart';
 import 'study_goals.dart';
 import 'subject.dart';
@@ -111,110 +105,6 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
   return ref.watch(goalAppliedSummaryProvider(goal.id).future);
 }
 
-/// The interview being prepared for (level × company × track + optional date).
-/// Loaded from the synced vault meta file when present (so it follows the user
-/// across devices), falling back to a device-local preferences mirror, then to
-/// a sensible default.
-@Riverpod(keepAlive: true)
-class ReadinessTargetController extends _$ReadinessTargetController {
-  static const _prefKey = 'readiness_target';
-
-  @override
-  Future<ReadinessTarget> build() async {
-    final source = ref.watch(vaultSourceProvider);
-    if (source != null) {
-      final fromVault = await TargetService(source).load();
-      if (fromVault != null) return fromVault;
-    }
-    final raw = await ref.read(preferencesRepositoryProvider).get(_prefKey);
-    return ReadinessTarget.tryDecode(raw) ?? ReadinessTarget.fallback;
-  }
-
-  /// Persist a new target: to the vault (for cross-device sync) and to the local
-  /// preferences mirror, then update state so the dashboard reflects it at once.
-  Future<void> save(ReadinessTarget target) async {
-    await ref
-        .read(preferencesRepositoryProvider)
-        .set(_prefKey, target.encode());
-    final source = ref.read(vaultSourceProvider);
-    if (source != null) await TargetService(source).save(target);
-    state = AsyncData(target);
-    // The whole-vault default goal folds this target in ([migratedDefaultGoal]);
-    // refresh it so targeting reflects the edit at once (Phase B).
-    ref.invalidate(studyGoalsProvider);
-  }
-}
-
-/// The learner's interview-prep goals — specific upcoming interviews that LAYER
-/// on top of the base [ReadinessTargetController] aim (company + date + AI-plan
-/// weight boosts, each toggleable). Persisted to the vault (cross-device) with a
-/// device-local preferences mirror. Starts empty; the targeting layer combines
-/// the ACTIVE ones with the base target. Not yet consumed — this is the Phase 0
-/// substrate the interview-targeting feature writes to.
-@Riverpod(keepAlive: true)
-class PrepGoals extends _$PrepGoals {
-  static const _prefKey = 'prep_goals';
-
-  @override
-  Future<List<PrepGoal>> build() async {
-    final loaded = await _load();
-    // Heal stale data (e.g. a future round left "passed" by an older build).
-    final today = (await ref.watch(clockProvider.future)).today();
-    final healed = [for (final g in loaded) g.normalized(today)];
-    final changed = healed.length != loaded.length ||
-        [for (var i = 0; i < loaded.length; i++) loaded[i] == healed[i]]
-            .contains(false);
-    if (changed) {
-      // Persist the fix once, after this build settles.
-      unawaited(Future(() => _persist(healed)));
-    }
-    return healed;
-  }
-
-  Future<List<PrepGoal>> _load() async {
-    final source = ref.watch(vaultSourceProvider);
-    if (source != null) {
-      final fromVault = await GoalsService(source).load();
-      if (fromVault.isNotEmpty) return fromVault;
-    }
-    final raw = await ref.read(preferencesRepositoryProvider).get(_prefKey);
-    return PrepGoal.decodeList(raw);
-  }
-
-  List<PrepGoal> get _current => state.asData?.value ?? const [];
-
-  Future<void> _persist(List<PrepGoal> goals) async {
-    await ref
-        .read(preferencesRepositoryProvider)
-        .set(_prefKey, PrepGoal.encodeList(goals));
-    final source = ref.read(vaultSourceProvider);
-    if (source != null) await GoalsService(source).save(goals);
-    state = AsyncData(goals);
-    // The default goal folds these interviews in ([migratedDefaultGoal]); refresh
-    // it so targeting reflects the change at once (Phase B).
-    ref.invalidate(studyGoalsProvider);
-  }
-
-  /// Add a new goal or replace an existing one (matched by id).
-  Future<void> upsert(PrepGoal goal) async {
-    final goals = [..._current];
-    final i = goals.indexWhere((g) => g.id == goal.id);
-    if (i >= 0) {
-      goals[i] = goal;
-    } else {
-      goals.add(goal);
-    }
-    await _persist(goals);
-  }
-
-  Future<void> remove(String id) async =>
-      _persist([..._current]..removeWhere((g) => g.id == id));
-
-  Future<void> setActive(String id, bool active) async => _persist([
-        for (final g in _current) g.id == id ? g.copyWith(active: active) : g,
-      ]);
-}
-
 /// Resolve a goal by id from an already-loaded list, falling back to the
 /// default/first. (Pure — the caller watches [studyGoalsProvider] up front so
 /// there's no ref use after an await; see the note on [goalReadiness].)
@@ -223,8 +113,8 @@ StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
 
 /// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
 /// whole-vault default — carries its own level/context/track (+ deadline); the
-/// default's are the folded-in legacy saved target (Phase B, [migratedDefaultGoal]),
-/// kept live by the invalidation in [ReadinessTargetController.save].
+/// default's were seeded from the legacy saved target on first run
+/// ([migratedDefaultGoal]) and are edited through [StudyGoals] like any goal's.
 ///
 /// NOTE (#30d multi-template): [goalReadiness] now scores each goal against its
 /// OWN template (durability bar + domain weights). The remaining sliver:
@@ -317,7 +207,7 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   };
 
   // Score against the goal's OWN template (durability bar + domain weights). The
-  // default goal keeps the full targeting (base target + active prep-goal boosts,
+  // default goal keeps the full targeting (base target + active interview boosts,
   // primary template); any other goal uses its template's TargetSpec directly, so
   // a Korean goal isn't scored with SWE's durability/weights (multi-template).
   final double stabilityTarget;
@@ -474,9 +364,9 @@ Future<ReadinessForecast?> readinessForecastFor(
   );
 }
 
-/// Coverage pace toward the soonest interview date (base target or an active
-/// prep goal), or null when nothing is scheduled. Projects from the recent
-/// new-sections-per-day rate over a 14-day window.
+/// Coverage pace toward the soonest interview date (the goal's deadline or an
+/// active interview round), or null when nothing is scheduled. Projects from the
+/// recent new-sections-per-day rate over a 14-day window.
 @riverpod
 Future<PaceEstimate?> readinessPace(Ref ref) async {
   final date = (await ref.watch(activeTargetingProvider.future)).governingDate;

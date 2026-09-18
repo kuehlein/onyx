@@ -18,14 +18,13 @@ import 'package:onyx/shared/providers/readiness_report.dart';
 import 'package:onyx/shared/providers/settings.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
-class _FakeTarget extends ReadinessTargetController {
-  @override
-  Future<ReadinessTarget> build() async => ReadinessTarget.of(
-        level: SeniorityLevel.senior,
-        company: CompanyTier.faang,
-        track: Track.general,
-      );
-}
+/// The fixed active target the report is generated against (label "Senior ·
+/// FAANG · General", which the prompt assertion checks for).
+final _fakeTarget = ReadinessTarget.of(
+  level: SeniorityLevel.senior,
+  company: CompanyTier.faang,
+  track: Track.general,
+);
 
 /// An in-memory prefs store so the report cache round-trips without a database.
 class _FakePrefs implements PreferencesRepository {
@@ -87,7 +86,7 @@ ProviderContainer _container(ClaudeService? claude,
       overrides: [
         claudeServiceProvider.overrideWithValue(claude),
         readinessProvider.overrideWith((ref) async => _readiness),
-        readinessTargetControllerProvider.overrideWith(_FakeTarget.new),
+        activeTargetProvider.overrideWith((ref) async => _fakeTarget),
         appliedSummaryProvider.overrideWith(
             (ref) async => {'system-design': (attempts: 2, contested: 1)}),
         vaultIndexProvider.overrideWith((ref) async => _index),
@@ -250,7 +249,7 @@ void main() {
             high: 0.9,
             interview: true,
           )),
-      readinessTargetControllerProvider.overrideWith(_FakeTarget.new),
+      activeTargetProvider.overrideWith((ref) async => _fakeTarget),
       appliedSummaryProvider.overrideWith(
           (ref) async => {'system-design': (attempts: 5, contested: 0)}),
       vaultIndexProvider.overrideWith((ref) async => _index),

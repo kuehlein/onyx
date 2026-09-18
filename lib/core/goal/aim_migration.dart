@@ -1,23 +1,27 @@
-/// Transitional bridge (task #30d Phase B — aim unification, B2): fold the legacy
-/// aim stores — the base [ReadinessTarget] (`onyx-target.json`) + the interview
-/// [PrepGoal]s (`onyx-goals.json`) — into the whole-vault **default** [StudyGoal].
-/// The base target supplies the goal's slots + deadline; each prep goal becomes an
-/// [InterviewAim]. Pure + read-only (the old files stay authoritative until B5);
-/// nothing loses its interview rounds/outcomes in the cut-over.
+/// One-time bridge (task #30d Phase B — aim unification, B5): fold the legacy aim
+/// stores — the base [ReadinessTarget] (`onyx-target.json`) + the interview list
+/// (`onyx-goals.json`, the old `PrepGoal` file) — into the whole-vault **default**
+/// [StudyGoal]. The base target supplies the goal's slots + deadline; each legacy
+/// entry becomes an [InterviewAim]. Read-only parse; the caller ([StudyGoals])
+/// write-through-persists the folded default so the legacy files fall out of use.
 library;
 
-import '../readiness/prep_goal.dart';
+import 'dart:convert';
+
+import '../dev.dart';
+import '../util.dart';
 import '../readiness/target.dart';
 import '../subject/subject_config.dart';
+import '../vault/vault_source.dart';
 import 'study_goal.dart';
 
 /// The whole-vault default goal, enriched from the legacy aim data. Slots/deadline
 /// from [baseTarget] (null → the template fallbacks stand); the interviews from
-/// [prepGoals]. With no legacy data this equals `defaultGoalFor(template)`.
+/// [interviews]. With no legacy data this equals `defaultGoalFor(template)`.
 StudyGoal migratedDefaultGoal(
   SubjectConfig template, {
   ReadinessTarget? baseTarget,
-  List<PrepGoal> prepGoals = const [],
+  List<InterviewAim> interviews = const [],
 }) =>
     StudyGoal(
       id: defaultGoalId,
@@ -27,22 +31,93 @@ StudyGoal migratedDefaultGoal(
       contextId: baseTarget?.contextId,
       trackId: baseTarget?.trackId,
       deadline: baseTarget?.interviewDate,
-      interviews: [for (final g in prepGoals) aimFromPrepGoal(g)],
+      interviews: interviews,
     );
 
-/// A legacy interview [PrepGoal] → an [InterviewAim]. The goal's level/context/
-/// track come from the base target (all interviews share them), so only the
-/// interview-specific facets carry over. `effectiveRounds` materializes a
-/// single-date goal's synthetic round 1 so its date isn't lost.
-InterviewAim aimFromPrepGoal(PrepGoal g) => InterviewAim(
-      id: g.id,
-      companyName: g.companyName,
-      rounds: g.effectiveRounds,
-      active: g.active,
-      status: g.status,
-      outcome: g.outcome,
-      outcomeNotes: g.outcomeNotes,
-      domainWeights: g.domainWeights,
-      conceptWeights: g.conceptWeights,
-      planNotes: g.notes,
-    );
+/// The dev-gated legacy interview file (mirrors the deleted `GoalsService`'s
+/// isolation — desktop testing can't pollute the real synced interviews).
+String get _legacyGoalsFile =>
+    isDevDataMode ? 'onyx-goals.dev.json' : 'onyx-goals.json';
+
+/// Read + parse the legacy `onyx-goals.json` interviews from the vault. Empty on
+/// an absent/malformed file. Used once by the [StudyGoals] migration branch.
+Future<List<InterviewAim>> legacyInterviews(VaultSource source) async =>
+    legacyInterviewsFromRaw(await source.readMeta(_legacyGoalsFile));
+
+/// Parse a legacy `onyx-goals.json` string (the old `PrepGoal.toJson` array) into
+/// [InterviewAim]s. Pure: on any parse error / non-List → `const []`; entries
+/// without a usable id are dropped. The legacy target facets (tier/level/track)
+/// are intentionally NOT carried — all interviews share the goal's slots now.
+List<InterviewAim> legacyInterviewsFromRaw(String? rawJson) {
+  if (rawJson == null || rawJson.isEmpty) return const [];
+  try {
+    final data = jsonDecode(rawJson);
+    if (data is! List) return const [];
+    final out = <InterviewAim>[];
+    for (final e in data) {
+      if (e is! Map) continue;
+      final aim = _aimFromLegacy(e.cast<String, dynamic>());
+      if (aim != null) out.add(aim);
+    }
+    return out;
+  } catch (_) {
+    return const [];
+  }
+}
+
+/// One legacy interview entry → an [InterviewAim] (null if it has no id). Rounds
+/// come from the stored `rounds`; if none and a single `date` parses, a synthetic
+/// round 1 preserves that date. The legacy `notes` field maps to `planNotes`.
+InterviewAim? _aimFromLegacy(Map<String, dynamic> m) {
+  final id = m['id'];
+  if (id is! String || id.isEmpty) return null;
+
+  final rounds = <InterviewRound>[];
+  final rawRounds = m['rounds'];
+  if (rawRounds is List) {
+    for (final r in rawRounds) {
+      if (r is Map) {
+        final round = InterviewRound.fromJson(r.cast<String, dynamic>());
+        if (round != null) rounds.add(round);
+      }
+    }
+  }
+  final date = _parseDate(m['date']);
+  final effectiveRounds = rounds.isNotEmpty
+      ? rounds
+      : (date != null
+          ? [InterviewRound(id: '$id-r1', number: 1, date: date)]
+          : const <InterviewRound>[]);
+
+  final active = m['active'] is bool ? m['active'] as bool : true;
+  return InterviewAim(
+    id: id,
+    companyName: m['companyName'] is String ? m['companyName'] as String : '',
+    rounds: effectiveRounds,
+    active: active,
+    status: enumByName(InterviewStatus.values, m['status']) ??
+        (active ? InterviewStatus.active : InterviewStatus.archived),
+    outcome:
+        enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+    outcomeNotes:
+        m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
+    domainWeights: _weightMap(m['domainWeights']),
+    conceptWeights: _weightMap(m['conceptWeights']),
+    planNotes: m['notes'] is String ? m['notes'] as String : null,
+  );
+}
+
+DateTime? _parseDate(Object? v) {
+  if (v is! String || v.isEmpty) return null;
+  return DateTime.tryParse(v);
+}
+
+Map<String, double> _weightMap(Object? v) {
+  if (v is! Map) return const {};
+  final out = <String, double>{};
+  for (final e in v.entries) {
+    final val = e.value;
+    if (val is num) out[e.key.toString()] = val.toDouble();
+  }
+  return out;
+}

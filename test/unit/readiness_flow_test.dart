@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/core/interview/assessment.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -40,13 +39,6 @@ Card _card(String id, String domain) => Card(
       wikilinks: const [],
       filePath: '$id.md',
     );
-
-/// A prep-goals notifier with no goals, so readiness reflects only the base
-/// target — decoupled from whatever is saved in the real dev vault.
-class _NoGoals extends PrepGoals {
-  @override
-  Future<List<PrepGoal>> build() async => const [];
-}
 
 /// A study-goals notifier pinned to a fixed list, so readiness doesn't scan the
 /// real dev vault to discover subjects/goals.
@@ -85,10 +77,6 @@ void main() {
         appDatabaseProvider.overrideWithValue(db),
         vaultIndexProvider.overrideWith((ref) async => index),
         srsStatesProvider.overrideWith((ref) async => states),
-        // Isolate from any real on-disk prep goals in the dev vault — otherwise
-        // an active goal's domain weights would override the base target's
-        // level-weighting this test is asserting on.
-        prepGoalsProvider.overrideWith(_NoGoals.new),
         // Pin the study goals (whole-vault default) so readiness doesn't scan the
         // real dev vault to discover subjects/goals (task #30d).
         studyGoalsProvider.overrideWith(() => _FixedGoals(

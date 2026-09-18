@@ -81,7 +81,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
     if (card == null) {
       return const Scaffold(body: Center(child: Text('Problem not found.')));
     }
-    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final target = ref.watch(activeTargetProvider).asData?.value;
     final autoSupport = ref.watch(sdAutoSupportModeProvider).asData?.value ??
         SdSupportMode.coaching;
     final level = _level(target?.level);

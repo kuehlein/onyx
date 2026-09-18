@@ -80,7 +80,7 @@ class _BehavioralMockScreenState extends ConsumerState<BehavioralMockScreen> {
     if (card == null) {
       return const Scaffold(body: Center(child: Text('Competency not found.')));
     }
-    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final target = ref.watch(activeTargetProvider).asData?.value;
     final autoSupport =
         ref.watch(behavioralAutoSupportModeProvider).asData?.value ??
             SupportMode.coaching;

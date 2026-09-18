@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_plan.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
+import 'package:onyx/core/goal/interview_aim.dart';
 import 'package:onyx/core/readiness/target.dart';
 
 final _base = ReadinessTarget.of(
@@ -88,8 +88,8 @@ void main() {
     });
   });
 
-  group('InterviewPlan.toGoal', () {
-    test('maps into a persistable active PrepGoal', () {
+  group('InterviewPlan.toInterview', () {
+    test('maps into a persistable active InterviewAim', () {
       final plan = InterviewPlan(
         company: 'Google',
         role: 'Senior Backend',
@@ -102,17 +102,20 @@ void main() {
         conceptWeights: const {'consistent-hashing': 2.0},
         summary: 'plan',
       );
-      final g = plan.toGoal('goal-1');
-      expect(g.id, 'goal-1');
-      expect(g.companyName, 'Google');
-      expect(g.tier, CompanyTier.faang);
-      expect(g.level, SeniorityLevel.senior);
-      expect(g.track, Track.backend);
-      expect(g.date, DateTime(2026, 9, 20));
-      expect(g.domainWeights['system-design'], 1.6);
-      expect(g.conceptWeights['consistent-hashing'], 2.0);
-      expect(g.active, isTrue);
-      expect(g.notes, 'plan');
+      final iv = plan.toInterview('goal-1');
+      expect(iv.id, 'goal-1');
+      expect(iv.companyName, 'Google');
+      expect(iv.domainWeights['system-design'], 1.6);
+      expect(iv.conceptWeights['consistent-hashing'], 2.0);
+      expect(iv.active, isTrue);
+      expect(iv.planNotes, 'plan');
+      // The target (level/tier/track/date) lives on the parent goal now; the aim
+      // seeds round 1 with the inferred type + date.
+      expect(iv.rounds.length, 1);
+      expect(iv.rounds.first.id, 'goal-1-r1');
+      expect(iv.rounds.first.number, 1);
+      expect(iv.rounds.first.type, InterviewRoundType.systemDesign);
+      expect(iv.rounds.first.date, DateTime(2026, 9, 20));
     });
 
     test('drops a past date (wrong-year slip) via notBefore', () {
@@ -124,9 +127,8 @@ void main() {
         track: Track.backend,
         date: DateTime(2024, 9, 20), // wrong year → in the past
       );
-      final g = plan.toGoal('goal-1', notBefore: DateTime(2026, 9, 9));
-      expect(g.date, isNull);
-      expect(g.rounds.single.date, isNull);
+      final iv = plan.toInterview('goal-1', notBefore: DateTime(2026, 9, 9));
+      expect(iv.rounds.single.date, isNull);
     });
 
     test('keeps a future date under notBefore', () {
@@ -138,26 +140,8 @@ void main() {
         track: Track.backend,
         date: DateTime(2026, 10, 20),
       );
-      final g = plan.toGoal('goal-1', notBefore: DateTime(2026, 9, 9));
-      expect(g.date, DateTime(2026, 10, 20));
-    });
-
-    test('seeds round 1 with the inferred type + date', () {
-      final plan = InterviewPlan(
-        company: 'Google',
-        role: 'Senior Backend',
-        level: SeniorityLevel.senior,
-        tier: CompanyTier.faang,
-        track: Track.backend,
-        date: DateTime(2026, 9, 20),
-        roundType: InterviewRoundType.systemDesign,
-      );
-      final g = plan.toGoal('goal-1');
-      expect(g.rounds.length, 1);
-      expect(g.rounds.first.id, 'goal-1-r1');
-      expect(g.rounds.first.number, 1);
-      expect(g.rounds.first.type, InterviewRoundType.systemDesign);
-      expect(g.rounds.first.date, DateTime(2026, 9, 20));
+      final iv = plan.toInterview('goal-1', notBefore: DateTime(2026, 9, 9));
+      expect(iv.rounds.single.date, DateTime(2026, 10, 20));
     });
   });
 }

@@ -38,8 +38,7 @@ class StoryCaptureScreen extends ConsumerWidget {
       for (final k in kCompetencyKeys)
         if (!covered.contains(k)) k
     ];
-    final level =
-        ref.watch(readinessTargetControllerProvider).asData?.value.level.label;
+    final level = ref.watch(activeTargetProvider).asData?.value.level.label;
     final system = buildStoryCoachSystem(have: have, gaps: gaps, level: level);
 
     return Scaffold(

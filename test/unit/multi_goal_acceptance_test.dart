@@ -40,6 +40,20 @@ tags: [$domain]
 Body.
 ''';
 
+/// Await a fire-and-forget side effect: poll [file] until it exists (bounded), so
+/// a test can observe the B5 migration write-through (an `unawaited` save) without
+/// racing it or teardown. Returns once present; throws on timeout.
+Future<void> _awaitFile(File file,
+    {Duration timeout = const Duration(seconds: 5)}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!file.existsSync()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('timed out waiting for ${file.path}');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
+
 /// End-to-end (#30d G7): two query-defined goals over one vault, exercised through
 /// the real providers — discovery, per-goal readiness scoping, the shared-budget
 /// split, pause→redistribute, and degradation back to a single goal.
@@ -183,8 +197,8 @@ void main() {
     const goalsJson = '[{"id":"g1","companyName":"Google","tier":"faang",'
         '"level":"senior","track":"backend","date":"2026-05-15","active":true,'
         '"domainWeights":{"system-design":1.3},"status":"active"}]';
-    // GoalsService reads the dev-isolated file under test (isDevDataMode); write
-    // both so the fold is exercised regardless of the build's data mode.
+    // legacyInterviews reads the dev-isolated file under test (isDevDataMode);
+    // write both so the fold is exercised regardless of the build's data mode.
     File(p.join(legacy.path, '_meta', 'onyx-goals.json'))
         .writeAsStringSync(goalsJson);
     File(p.join(legacy.path, '_meta', 'onyx-goals.dev.json'))
@@ -208,6 +222,10 @@ void main() {
     expect(g.deadline, DateTime(2026, 6, 1));
     expect(g.interviews.single.companyName, 'Google');
     expect(g.interviews.single.domainWeights['system-design'], 1.3);
+
+    // B5 write-through: the migration durably persists the folded default so the
+    // legacy files are no longer needed. Wait for the fire-and-forget save.
+    await _awaitFile(File(p.join(legacy.path, '_meta', 'study-goals.json')));
   });
 
   test('editing the default goal\'s interviews persists it (B4a cutover)',
@@ -239,15 +257,15 @@ void main() {
     final storeFile = File(p.join(legacy.path, '_meta', 'study-goals.json'));
 
     // First load: the migrated default with the one legacy interview (id kept).
-    // The fold is still read-only — study-goals.json doesn't exist.
+    // B5 write-through persists it durably; wait for that fire-and-forget save.
     final c = container();
     addTearDown(c.dispose);
     c.listen(studyGoalsProvider, (_, __) {});
     final migrated = (await c.read(studyGoalsProvider.future)).single;
     expect(migrated.interviews.single.id, 'g1');
-    expect(storeFile.existsSync(), isFalse);
+    await _awaitFile(storeFile);
 
-    // Add a second interview → the default goal is persisted for the first time.
+    // Add a second interview → the persisted default is updated.
     await c.read(studyGoalsProvider.notifier).upsertInterview(
         defaultGoalId, const InterviewAim(id: 'amzn', companyName: 'Amazon'));
     expect(storeFile.existsSync(), isTrue);
@@ -262,5 +280,49 @@ void main() {
     // Slots survived the cutover too.
     expect([stored.levelId, stored.contextId, stored.trackId],
         ['senior', 'faang', 'backend']);
+  });
+
+  test('migration write-through preserves a graduated explicit goal (B5)',
+      () async {
+    if (!_sqliteAvailable) return;
+    // A vault with legacy aims AND a stored-but-graduated explicit goal: the app
+    // degrades to the whole-vault default, and the write-through must NOT erase the
+    // graduated goal (a plain [migrated] save would).
+    final legacy = Directory.systemTemp.createTempSync('onyx_b5_');
+    addTearDown(() => legacy.deleteSync(recursive: true));
+    File(p.join(legacy.path, 'x1.md')).writeAsStringSync(_card('x1', 'ds-a'));
+    File(p.join(legacy.path, '_meta', 'onyx-target.json'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+          '{"level":"senior","company":"faang","track":"backend"}');
+    final storeFile = File(p.join(legacy.path, '_meta', 'study-goals.json'))
+      ..writeAsStringSync('[{"id":"old","name":"Old","templateId":"swe",'
+          '"state":"graduated"}]');
+
+    final c = ProviderContainer(overrides: [
+      vaultSourceProvider.overrideWithValue(DesktopVaultSource(legacy.path)),
+      appDatabaseProvider.overrideWith((ref) {
+        final db = AppDatabase.withExecutor(NativeDatabase.memory());
+        ref.onDispose(db.close);
+        return db;
+      }),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(studyGoalsProvider, (_, __) {});
+
+    // All explicit goals graduated → single-goal mode on the migrated default.
+    final goals = await c.read(studyGoalsProvider.future);
+    expect(goals.single.id, defaultGoalId);
+
+    // The write-through rewrites the pre-existing file, so wait for the default to
+    // appear (not mere existence), then assert the graduated goal wasn't dropped.
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while (!storeFile.readAsStringSync().contains('"$defaultGoalId"')) {
+      if (DateTime.now().isAfter(deadline))
+        fail('write-through never persisted');
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(storeFile.readAsStringSync().contains('"old"'), isTrue,
+        reason: 'graduated goal preserved');
   });
 }

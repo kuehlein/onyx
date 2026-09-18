@@ -1,6 +1,6 @@
 /// The AI "interview planner" (task #24/#25 family, Phase 1): a chat that turns a
 /// described interview ("Google, senior backend, Maps, in 2 weeks") into a
-/// STRUCTURED prep plan the app can apply as a [PrepGoal]. The model asks
+/// STRUCTURED prep plan the app can apply as an [InterviewAim]. The model asks
 /// clarifying questions until it has enough, then emits a human summary plus a
 /// hidden `<plan>{…}</plan>` block (same tagged-JSON trick as the coach's
 /// assessment) that we parse here. It biases EXISTING deck material (learning
@@ -11,10 +11,10 @@ import 'dart:convert';
 import '../util.dart';
 
 import '../goal/interview_aim.dart';
-import '../readiness/prep_goal.dart';
 import '../readiness/target.dart';
 
-/// A structured prep plan proposed by the planner, ready to become a [PrepGoal].
+/// A structured prep plan proposed by the planner, ready to become an
+/// [InterviewAim].
 class InterviewPlan {
   const InterviewPlan({
     required this.company,
@@ -59,39 +59,12 @@ class InterviewPlan {
   /// The human-readable plan / rationale (Markdown).
   final String summary;
 
-  /// Convert to a persistable [PrepGoal] (active). [id] is caller-supplied.
-  /// [notBefore] is a safety net against a model that emits a past date (usually
-  /// a wrong year): such a date is dropped so the interview is simply unscheduled
-  /// rather than silently filed in the past.
-  PrepGoal toGoal(String id, {DateTime? notBefore}) {
-    final safeDate =
-        (date != null && notBefore != null && date!.isBefore(notBefore))
-            ? null
-            : date;
-    return PrepGoal(
-      id: id,
-      companyName: company,
-      tier: tier,
-      level: level,
-      track: track,
-      date: safeDate,
-      domainWeights: domainWeights,
-      conceptWeights: conceptWeights,
-      notes: summary.isEmpty ? null : summary,
-      // Creation seeds round 1 with the inferred type; more rounds are added
-      // as the loop unfolds. The denormalized [date] mirrors round 1.
-      rounds: [
-        InterviewRound(
-            id: '$id-r1', number: 1, type: roundType, date: safeDate),
-      ],
-    );
-  }
-
   /// Convert to a persistable [InterviewAim] (active) — the Phase B unified
-  /// facet attached to a [StudyGoal]. Mirrors [toGoal], minus the target
-  /// (level/context/track/deadline live on the parent goal now). [id] is
-  /// caller-supplied. [notBefore] drops a past date (usually a wrong-year slip)
-  /// so the interview is simply unscheduled rather than filed in the past.
+  /// facet attached to a [StudyGoal]. The target (level/context/track/deadline)
+  /// lives on the parent goal now, so only the interview-specific facets carry
+  /// over. [id] is caller-supplied. [notBefore] drops a past date (usually a
+  /// wrong-year slip) so the interview is simply unscheduled rather than filed in
+  /// the past.
   InterviewAim toInterview(String id, {DateTime? notBefore}) {
     final safeDate =
         (date != null && notBefore != null && date!.isBefore(notBefore))

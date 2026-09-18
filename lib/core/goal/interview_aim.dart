@@ -5,8 +5,7 @@
 /// A null `interview` on a StudyGoal → a plain (non-interview) study goal.
 ///
 /// These types are interview-generic (a screen/onsite loop with outcomes), NOT
-/// tied to the SWE target enums — so `StudyGoal` stays template-agnostic. The
-/// legacy `PrepGoal` re-exports them for the not-yet-migrated interview UI.
+/// tied to the SWE target enums — so `StudyGoal` stays template-agnostic.
 library;
 
 import '../util.dart';

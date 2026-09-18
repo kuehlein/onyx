@@ -57,11 +57,6 @@ class _DoneSession extends StudySession {
   }
 }
 
-class _FakeTargetController extends ReadinessTargetController {
-  @override
-  Future<ReadinessTarget> build() async => ReadinessTarget.fallback;
-}
-
 class _DisabledGym extends GymMode {
   @override
   Future<GymModeState> build() async =>
@@ -94,8 +89,8 @@ void main() {
         overrides: [
           studySessionProvider.overrideWith(_DoneSession.new),
           readinessProvider.overrideWith((ref) async => after),
-          readinessTargetControllerProvider
-              .overrideWith(_FakeTargetController.new),
+          activeTargetProvider
+              .overrideWith((ref) async => ReadinessTarget.fallback),
           gymModeProvider.overrideWith(_DisabledGym.new),
         ],
         child: const MaterialApp(home: QuizScreen()),

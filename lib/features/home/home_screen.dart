@@ -189,7 +189,7 @@ class _TargetCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final target = ref.watch(activeTargetProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
     final unset = target == null || identical(target, ReadinessTarget.fallback);
 
