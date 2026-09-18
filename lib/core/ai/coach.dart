@@ -17,6 +17,72 @@ class CoachMessage {
   final int? suggestedGrade;
 }
 
+/// The subject-specific **voice** of the coach — the persona + framing that a
+/// vault skill supplies, so the coach speaks each subject's language instead of a
+/// hardcoded software-interview one (task #30, coach de-privileging). The engine
+/// owns the *mechanics* ([buildCoachSystem]: hint ladder, reveal rules, the
+/// grade/assessment protocol, card embedding); a brief owns only the WHO/framing.
+///
+/// [swe] is the reference software-engineering-interview voice (moved to the
+/// vault skill `_meta/coach.md` in Phase 2); [generic] is the subject-neutral
+/// fallback used when a vault has no coach skill.
+class CoachBrief {
+  const CoachBrief({
+    required this.reviewIntro,
+    required this.learnIntro,
+    this.topicFit,
+  });
+
+  /// The grading (Review / mock) persona intro.
+  final String reviewIntro;
+
+  /// The tutor (Learn / Browse) persona intro.
+  final String learnIntro;
+
+  /// Optional interviewer topic-fit guidance (one bullet), or null for a subject
+  /// with no track-specific emphasis.
+  final String? topicFit;
+
+  /// The reference software-engineering-interview voice. Kept as the default so
+  /// behavior is unchanged until a vault coach skill supplies its own.
+  static const swe = CoachBrief(
+    reviewIntro: 'You are a calm, rigorous technical interviewer from a strong '
+        'engineering org, running a mock interview inside Onyx (a '
+        'spaced-repetition app for software-engineering interview prep). Your '
+        'job is the part flashcards cannot do: not rote recall, but whether '
+        'the candidate can APPLY the idea. Relentlessly probe conditional '
+        'knowledge — "what in the problem signalled this approach?", "when '
+        'would it be the wrong choice?", "what if the input were sorted / '
+        'streaming / 10x larger?".',
+    topicFit: 'Fit the topic: algorithms → clarify, approach, complexity, '
+        'edge cases; system design → force trade-offs and "why this over '
+        'X?"; behavioral → STAR, probe the missing action or result.',
+    learnIntro: 'You are a patient, Socratic tutor inside Onyx (a '
+        'spaced-repetition app for software-engineering interview prep). Build '
+        'durable, principle-based understanding — GUIDE, do not tell. Never '
+        'dump the answer or full code; if asked to "just tell me", respond '
+        'with a hint or a question. Ask ONE question at a time; every turn '
+        'should have the learner reasoning, not passively receiving.',
+  );
+
+  /// The subject-neutral fallback (no vault coach skill present): a rigorous
+  /// examiner / patient tutor for *this study material*, with no software slant.
+  static const generic = CoachBrief(
+    reviewIntro:
+        'You are a calm, rigorous examiner running a mock assessment inside '
+        'Onyx (a spaced-repetition study app). Your job is the part flashcards '
+        'cannot do: not rote recall, but whether the learner can APPLY the '
+        'idea. Probe for transfer — why this idea fits here, when it would '
+        'not, and how it holds up when a detail of the problem changes.',
+    learnIntro: 'You are a patient, Socratic tutor inside Onyx (a '
+        'spaced-repetition study app). Build durable, principle-based '
+        'understanding — GUIDE, do not tell. Never just hand over the answer; '
+        'if asked to "just tell me", respond with a hint or a question. Ask '
+        'ONE question at a time; every turn should have the learner reasoning, '
+        'not passively receiving.',
+  );
+}
+
 /// Builds the system prompt for a coaching conversation. The prompt embeds the
 /// card (and, in a study session, the specific section being recalled) so the
 /// coach can reason about the exact material without another round-trip.
@@ -27,24 +93,21 @@ class CoachMessage {
 ///   *tutor* (Learn/Browse): explains to build understanding, no grade tag.
 /// - [revealed]: before reveal the coach must *hint* without spoiling; after
 ///   reveal it may discuss the answer fully.
+///
+/// [brief] supplies the subject voice (the vault skill in production; [CoachBrief.swe]
+/// by default so callers that don't pass one keep the reference behavior).
 String buildCoachSystem({
   required Card card,
   CardSection? section,
   required bool revealed,
   required bool grading,
   String? interviewContext,
+  CoachBrief brief = CoachBrief.swe,
 }) {
   final b = StringBuffer();
   if (grading) {
-    // Interviewer persona (Review / mock interview).
-    b.writeln('You are a calm, rigorous technical interviewer from a strong '
-        'engineering org, running a mock interview inside Onyx (a '
-        'spaced-repetition app for software-engineering interview prep). Your '
-        'job is the part flashcards cannot do: not rote recall, but whether '
-        'the candidate can APPLY the idea. Relentlessly probe conditional '
-        'knowledge — "what in the problem signalled this approach?", "when '
-        'would it be the wrong choice?", "what if the input were sorted / '
-        'streaming / 10x larger?".');
+    // Interviewer persona (Review / mock interview) — voice from [brief].
+    b.writeln(brief.reviewIntro);
     if (interviewContext != null && interviewContext.trim().isNotEmpty) {
       b.writeln('This mock is prep for a specific interview: '
           '${interviewContext.trim()}. Pitch the difficulty and emphasis to '
@@ -62,10 +125,9 @@ String buildCoachSystem({
           'stuck: (1) ask where they are stuck; (2) redirect them to the '
           'relevant detail; (3) name the category of problem; (4) point to the '
           'pattern; (5) as a last resort, give one concrete mechanical step — '
-          'never the whole solution. Fade help as they recover.')
-      ..writeln('- Fit the topic: algorithms → clarify, approach, complexity, '
-          'edge cases; system design → force trade-offs and "why this over '
-          'X?"; behavioral → STAR, probe the missing action or result.')
+          'never the whole solution. Fade help as they recover.');
+    if (brief.topicFit != null) b.writeln('- ${brief.topicFit}');
+    b
       ..writeln('- Firm through hard questions, never hostile; keep it '
           'low-stakes so they reason freely. The candidate owns their grade — '
           'never grade for them or tell them which button to press.')
@@ -121,14 +183,9 @@ String buildCoachSystem({
             'recall.');
     }
   } else {
-    // Tutor persona (Learn / Browse).
+    // Tutor persona (Learn / Browse) — voice from [brief].
     b
-      ..writeln('You are a patient, Socratic tutor inside Onyx (a '
-          'spaced-repetition app for software-engineering interview prep). Build '
-          'durable, principle-based understanding — GUIDE, do not tell. Never '
-          'dump the answer or full code; if asked to "just tell me", respond '
-          'with a hint or a question. Ask ONE question at a time; every turn '
-          'should have the learner reasoning, not passively receiving.')
+      ..writeln(brief.learnIntro)
       ..writeln()
       ..writeln('- The card content is on screen — REFER to it ("look at the '
           'second property — why does that force O(log n)?") instead of '
