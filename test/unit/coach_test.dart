@@ -80,7 +80,7 @@ void main() {
     });
 
     test(
-        'grading selects the examiner voice; otherwise the tutor (default brief)',
+        'with no skill, the research-backed foundation stands (examiner/tutor)',
         () {
       final examiner = buildCoachSystem(
           card: _card(),
@@ -89,18 +89,18 @@ void main() {
           grading: true);
       final tutor = buildCoachSystem(
           card: _card(), section: null, revealed: true, grading: false);
-      // The default is the subject-neutral CoachBrief.generic — an examiner /
-      // tutor, never a hardcoded software "interviewer".
+      // CoachSkill.none → the subject-neutral foundation: an examiner / tutor,
+      // never a hardcoded software "interviewer".
       expect(examiner.toLowerCase(), contains('examiner'));
       expect(examiner.toLowerCase(), isNot(contains('interviewer')));
       expect(tutor.toLowerCase(), contains('tutor'));
       expect(tutor.toLowerCase(), isNot(contains('examiner')));
     });
 
-    test('the injected brief supplies the subject voice', () {
-      const brief = CoachBrief(
-        reviewIntro: 'REVIEW-VOICE-XYZ',
-        learnIntro: 'LEARN-VOICE-XYZ',
+    test('a vault skill AUGMENTS the foundation, never replaces it', () {
+      const skill = CoachSkill(
+        reviewAugment: 'REVIEW-AUG-XYZ',
+        learnAugment: 'LEARN-AUG-XYZ',
         topicFit: 'TOPICFIT-XYZ',
       );
       final review = buildCoachSystem(
@@ -108,17 +108,20 @@ void main() {
           section: _card().sections.first,
           revealed: true,
           grading: true,
-          brief: brief);
+          skill: skill);
       final learn = buildCoachSystem(
           card: _card(),
           section: null,
           revealed: true,
           grading: false,
-          brief: brief);
-      expect(review, contains('REVIEW-VOICE-XYZ'));
+          skill: skill);
+      // Foundation still present (examiner/tutor) AND the domain augmentation.
+      expect(review.toLowerCase(), contains('examiner'));
+      expect(review, contains('REVIEW-AUG-XYZ'));
       expect(review, contains('TOPICFIT-XYZ'));
-      expect(learn, contains('LEARN-VOICE-XYZ'));
-      expect(learn, isNot(contains('REVIEW-VOICE-XYZ')));
+      expect(learn.toLowerCase(), contains('tutor'));
+      expect(learn, contains('LEARN-AUG-XYZ'));
+      expect(learn, isNot(contains('REVIEW-AUG-XYZ')));
     });
 
     test('browse mode (no section) includes all sections and no grade tag', () {
@@ -213,28 +216,28 @@ void main() {
     });
   });
 
-  group('coachBriefFromMarkdown', () {
-    test('parses Reviewing / Learning / Topic fit sections', () {
-      final b = coachBriefFromMarkdown('<!-- header -->\n\n'
-          '## Reviewing\n\nThe examiner voice.\n\n'
-          '## Learning\n\nThe tutor voice.\n\n'
+  group('coachSkillFromMarkdown', () {
+    test('parses Reviewing / Learning / Topic fit augmentations', () {
+      final s = coachSkillFromMarkdown('<!-- header -->\n\n'
+          '## Reviewing\n\nThe review augment.\n\n'
+          '## Learning\n\nThe learn augment.\n\n'
           '## Topic fit\n\nThe emphasis.\n');
-      expect(b, isNotNull);
-      expect(b!.reviewIntro, 'The examiner voice.');
-      expect(b.learnIntro, 'The tutor voice.');
-      expect(b.topicFit, 'The emphasis.');
+      expect(s.reviewAugment, 'The review augment.');
+      expect(s.learnAugment, 'The learn augment.');
+      expect(s.topicFit, 'The emphasis.');
     });
 
-    test('topic fit is optional', () {
-      final b = coachBriefFromMarkdown('## Reviewing\nR.\n\n## Learning\nL.');
-      expect(b, isNotNull);
-      expect(b!.topicFit, isNull);
-    });
-
-    test('a missing required section → null (caller falls back to generic)',
+    test('every section is optional (a skill only augments the foundation)',
         () {
-      expect(coachBriefFromMarkdown('## Reviewing\nonly review'), isNull);
-      expect(coachBriefFromMarkdown('no headings at all'), isNull);
+      final s = coachSkillFromMarkdown('## Reviewing\nonly review');
+      expect(s.reviewAugment, 'only review');
+      expect(s.learnAugment, isNull);
+      expect(s.topicFit, isNull);
+      // No recognized headings → an empty augmentation (foundation stands alone).
+      final none = coachSkillFromMarkdown('no headings at all');
+      expect(none.reviewAugment, isNull);
+      expect(none.learnAugment, isNull);
+      expect(none.topicFit, isNull);
     });
   });
 }

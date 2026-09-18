@@ -17,26 +17,25 @@ import 'vault.dart';
 
 part 'coach.g.dart';
 
-/// The active subject's coach **voice**, loaded from its vault skill
+/// The active subject's coach **skill augmentation**, loaded from its vault skill
 /// ([SubjectConfig.coachSkill] → `_meta/coach.md`, parsed by
-/// [coachBriefFromMarkdown]), or [CoachBrief.generic] when the subject declares
-/// no skill or the file is missing/unparseable — so the coach speaks each
-/// subject's language, not a hardcoded software-interview one (coach de-privileging).
+/// [coachSkillFromMarkdown]), or [CoachSkill.none] when the subject declares no
+/// skill or the file is missing — the research-backed foundation always stands,
+/// and a subject's vault skill layers its own domain framing on top.
 @riverpod
-Future<CoachBrief> coachBrief(Ref ref) async {
-  // Any failure to resolve the subject / vault / skill falls back to the neutral
-  // voice — a coach turn must never break because a skill file couldn't load.
+Future<CoachSkill> coachSkill(Ref ref) async {
+  // Any failure to resolve the subject / vault / skill → no augmentation; the
+  // research-backed foundation still stands, so a coach turn never breaks because
+  // a skill file couldn't load.
   try {
     final source = ref.watch(vaultSourceProvider);
     final config = await ref.watch(activeSubjectConfigProvider.future);
     final name = config.coachSkill;
-    if (name == null || source == null) return CoachBrief.generic;
+    if (name == null || source == null) return CoachSkill.none;
     final md = await source.readMeta(name);
-    return md == null
-        ? CoachBrief.generic
-        : (coachBriefFromMarkdown(md) ?? CoachBrief.generic);
+    return md == null ? CoachSkill.none : coachSkillFromMarkdown(md);
   } catch (_) {
-    return CoachBrief.generic;
+    return CoachSkill.none;
   }
 }
 
@@ -86,18 +85,18 @@ class CoachState {
 /// so it is intentionally dropped on reinstall.
 @riverpod
 class Coach extends _$Coach {
-  /// The subject voice, resolved as part of this provider's own build (not with a
-  /// fresh await inside `send`, which would open a disposal window on the slow
-  /// vault read). Re-resolved whenever the coach skill changes.
-  CoachBrief _brief = CoachBrief.generic;
+  /// The subject's skill augmentation, resolved as part of this provider's own
+  /// build (not with a fresh await inside `send`, which would open a disposal
+  /// window on the slow vault read). Re-resolved whenever the skill changes.
+  CoachSkill _skill = CoachSkill.none;
 
   @override
   Future<CoachState> build(String cardId, String? sectionSlug) async {
     // Register both deps before the first await (disposal hazard: a rebuild while
     // the vault read is pending must not leave a post-await `ref.watch`).
-    final briefFuture = ref.watch(coachBriefProvider.future);
+    final skillFuture = ref.watch(coachSkillProvider.future);
     final db = ref.watch(appDatabaseProvider);
-    _brief = await briefFuture;
+    _skill = await skillFuture;
     // Multiple where() calls AND together, avoiding the `&` operator import.
     final rows = await (db.select(db.coachMessages)
           ..where((m) => m.cardId.equals(cardId))
@@ -147,7 +146,7 @@ class Coach extends _$Coach {
           revealed: revealed,
           grading: grading,
           interviewContext: interviewContext,
-          brief: _brief, // resolved in build(); no await gap here
+          skill: _skill, // resolved in build(); no await gap here
         ),
         messages: [
           for (final m in history)
@@ -214,7 +213,7 @@ class Coach extends _$Coach {
     try {
       final reply = await claude.complete(
         system: buildCriticSystem(
-            card: card, section: section, topicFit: _brief.topicFit),
+            card: card, section: section, topicFit: _skill.topicFit),
         prompt: buildCriticTranscript([
           for (final m in history)
             (

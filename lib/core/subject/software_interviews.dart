@@ -20,8 +20,9 @@ const kTypeBehavioral = 'behavioral';
 /// `onyx-goals.json` values resolve unchanged.
 const softwareInterviewsConfig = SubjectConfig(
   id: 'software-interviews',
-  // The SWE coach voice lives in the shipped vault's `_meta/coach.md` (read via
-  // VaultSource.readMeta, parsed by coachBriefFromMarkdown); absent → generic.
+  // The SWE domain augmentation lives in the shipped vault's `_meta/coach.md`
+  // (read via readMeta, parsed by coachSkillFromMarkdown); absent → the
+  // learning-science foundation stands alone.
   coachSkill: 'coach.md',
   target: TargetSpec(
     // level → tier-depth curve (was _tierRelevanceByLevel in target.dart).

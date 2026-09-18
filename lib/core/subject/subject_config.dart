@@ -157,9 +157,9 @@ class SubjectConfig {
   final List<FlowSpec> flows;
 
   /// The `_meta/` file name of this subject's **coach skill** (read via
-  /// `VaultSource.readMeta`, e.g. `coach.md`) — the persona + framing the general
-  /// flashcard coach speaks in (task #30, coach de-privileging). Null / missing →
-  /// the neutral built-in `CoachBrief.generic`.
+  /// `VaultSource.readMeta`, e.g. `coach.md`) — the domain framing that augments
+  /// the coach's research-backed foundation (task #30, coach de-privileging).
+  /// Null / missing → the foundation stands alone (`CoachSkill.none`).
   final String? coachSkill;
 
   /// The flow describing a card `type:` value, or null if the subject declares

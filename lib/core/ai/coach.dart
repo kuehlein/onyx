@@ -17,57 +17,52 @@ class CoachMessage {
   final int? suggestedGrade;
 }
 
-/// The subject-specific **voice** of the coach — the persona + framing that a
-/// vault skill supplies, so the coach speaks each subject's language instead of a
-/// hardcoded software-interview one (task #30, coach de-privileging). The engine
-/// owns the *mechanics* ([buildCoachSystem]: hint ladder, reveal rules, the
-/// grade/assessment protocol, card embedding); a brief owns only the WHO/framing.
-///
-/// A subject's own voice comes from its **vault skill** (`_meta/coach.md`, parsed
-/// by [coachBriefFromMarkdown]); [generic] is the subject-neutral fallback used
-/// when a vault declares no coach skill. The reference software-interviews voice
-/// now lives in the shipped SWE vault's `_meta/coach.md`, not in this file.
-class CoachBrief {
-  const CoachBrief({
-    required this.reviewIntro,
-    required this.learnIntro,
-    this.topicFit,
-  });
+/// The research-backed **foundation** of the coach's voice — ALWAYS emitted,
+/// grounded in learning science (retrieval practice, transfer, the Socratic
+/// method, autonomy-support). A subject's vault skill ([CoachSkill]) *augments*
+/// this with domain specifics; it never replaces it, so every subject keeps the
+/// pedagogical foundation even with a thin or absent skill (task #30).
+const _foundationReview =
+    'You are a calm, rigorous examiner running a mock assessment inside Onyx (a '
+    'spaced-repetition study app). Your job is the part flashcards cannot do: '
+    'not rote recall, but whether the learner can APPLY the idea. Probe for '
+    'transfer — why this idea fits here, when it would not, and how it holds up '
+    'when a detail of the problem changes.';
 
-  /// The grading (Review / mock) persona intro.
-  final String reviewIntro;
+const _foundationLearn =
+    'You are a patient, Socratic tutor inside Onyx (a spaced-repetition study '
+    'app). Build durable, principle-based understanding — GUIDE, do not tell. '
+    'Never just hand over the answer; if asked to "just tell me", respond with a '
+    'hint or a question. Ask ONE question at a time; every turn should have the '
+    'learner reasoning, not passively receiving.';
 
-  /// The tutor (Learn / Browse) persona intro.
-  final String learnIntro;
+/// A subject's **domain augmentation** to the coach's foundational voice, authored
+/// in the vault skill `_meta/coach.md` (parsed by [coachSkillFromMarkdown]) and
+/// LAYERED on top of the learning-science foundation — never replacing it. Every
+/// field is optional; [none] (no skill) leaves the foundation to stand alone. The
+/// engine still owns the *mechanics* (hint ladder, reveal rules, grade/assessment
+/// protocol, card embedding); a skill only adds the subject's framing + emphasis.
+class CoachSkill {
+  const CoachSkill({this.reviewAugment, this.learnAugment, this.topicFit});
 
-  /// Optional interviewer topic-fit guidance (one bullet), or null for a subject
-  /// with no track-specific emphasis.
+  /// Domain framing layered onto the grading (Review) foundation.
+  final String? reviewAugment;
+
+  /// Domain framing layered onto the tutor (Learn) foundation.
+  final String? learnAugment;
+
+  /// Optional examiner topic-fit guidance (one bullet) for the grading persona.
   final String? topicFit;
 
-  /// The subject-neutral fallback (no vault coach skill present): a rigorous
-  /// examiner / patient tutor for *this study material*, with no software slant.
-  static const generic = CoachBrief(
-    reviewIntro:
-        'You are a calm, rigorous examiner running a mock assessment inside '
-        'Onyx (a spaced-repetition study app). Your job is the part flashcards '
-        'cannot do: not rote recall, but whether the learner can APPLY the '
-        'idea. Probe for transfer — why this idea fits here, when it would '
-        'not, and how it holds up when a detail of the problem changes.',
-    learnIntro: 'You are a patient, Socratic tutor inside Onyx (a '
-        'spaced-repetition study app). Build durable, principle-based '
-        'understanding — GUIDE, do not tell. Never just hand over the answer; '
-        'if asked to "just tell me", respond with a hint or a question. Ask '
-        'ONE question at a time; every turn should have the learner reasoning, '
-        'not passively receiving.',
-  );
+  /// No vault skill — the foundation stands alone.
+  static const none = CoachSkill();
 }
 
-/// Parse a vault coach skill (`_meta/coach.md`) into a [CoachBrief]. The file is
-/// markdown with `## Reviewing` and `## Learning` sections (the interviewer and
-/// tutor voice) plus an optional `## Topic fit`; each section's body is the prose
-/// up to the next H2. Returns null when either required section is missing/empty,
-/// so the caller falls back to [CoachBrief.generic]. Pure.
-CoachBrief? coachBriefFromMarkdown(String md) {
+/// Parse a vault coach skill (`_meta/coach.md`) into a [CoachSkill]. The file is
+/// markdown with any of `## Reviewing`, `## Learning`, `## Topic fit` (each body
+/// the prose up to the next H2) — ALL optional, since a skill only *augments* the
+/// foundation. Missing/empty → that field is null (foundation stands). Pure.
+CoachSkill coachSkillFromMarkdown(String md) {
   final sections = <String, String>{};
   String? key;
   final buf = StringBuffer();
@@ -90,12 +85,9 @@ CoachBrief? coachBriefFromMarkdown(String md) {
   }
   flush();
 
-  final review = sections['reviewing'];
-  final learn = sections['learning'];
-  if (review == null || learn == null) return null;
-  return CoachBrief(
-    reviewIntro: review,
-    learnIntro: learn,
+  return CoachSkill(
+    reviewAugment: sections['reviewing'],
+    learnAugment: sections['learning'],
     topicFit: sections['topic fit'],
   );
 }
@@ -111,22 +103,25 @@ CoachBrief? coachBriefFromMarkdown(String md) {
 /// - [revealed]: before reveal the coach must *hint* without spoiling; after
 ///   reveal it may discuss the answer fully.
 ///
-/// [brief] supplies the subject voice — the loaded vault skill in production
-/// (`coachBriefProvider`), falling back to [CoachBrief.generic] when a vault has
-/// none. Defaults to [CoachBrief.generic] so a caller that passes nothing still
-/// gets a subject-neutral coach rather than a hardcoded software one.
+/// [skill] is the subject's OPTIONAL vault-skill augmentation (loaded in
+/// production by `coachSkillProvider`). The research-backed foundation is always
+/// emitted first, so a caller that passes nothing ([CoachSkill.none]) still gets
+/// the full pedagogical coach — only without domain-specific framing.
 String buildCoachSystem({
   required Card card,
   CardSection? section,
   required bool revealed,
   required bool grading,
   String? interviewContext,
-  CoachBrief brief = CoachBrief.generic,
+  CoachSkill skill = CoachSkill.none,
 }) {
   final b = StringBuffer();
   if (grading) {
-    // Grading persona (Review) — voice from [brief].
-    b.writeln(brief.reviewIntro);
+    // Foundation (always) + the subject's optional domain augmentation.
+    b.writeln(_foundationReview);
+    if (skill.reviewAugment != null) {
+      b.writeln('For this material: ${skill.reviewAugment}');
+    }
     if (interviewContext != null && interviewContext.trim().isNotEmpty) {
       b.writeln('This mock is prep for a specific interview: '
           '${interviewContext.trim()}. Pitch the difficulty and emphasis to '
@@ -144,7 +139,7 @@ String buildCoachSystem({
           'relevant detail; (3) name the category of problem; (4) point to the '
           'pattern; (5) as a last resort, give one concrete mechanical step — '
           'never the whole solution. Fade help as they recover.');
-    if (brief.topicFit != null) b.writeln('- ${brief.topicFit}');
+    if (skill.topicFit != null) b.writeln('- ${skill.topicFit}');
     b
       ..writeln('- Firm through hard questions, never hostile; keep it '
           'low-stakes so they reason freely. The learner owns their grade — '
@@ -201,9 +196,12 @@ String buildCoachSystem({
             'recall.');
     }
   } else {
-    // Tutor persona (Learn / Browse) — voice from [brief].
+    // Foundation (always) + the subject's optional domain augmentation.
+    b.writeln(_foundationLearn);
+    if (skill.learnAugment != null) {
+      b.writeln('For this material: ${skill.learnAugment}');
+    }
     b
-      ..writeln(brief.learnIntro)
       ..writeln()
       ..writeln('- The card content is on screen — REFER to it ("look at the '
           'second property — why does that force O(log n)?") instead of '
