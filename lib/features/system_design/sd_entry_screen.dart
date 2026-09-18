@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +34,10 @@ class _SdEntryScreenState extends ConsumerState<SdEntryScreen> {
       loading: () => const Scaffold(body: LoadingView()),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('System design')),
-        body: Center(child: Text('Could not load problems: $e')),
+        body: EmptyState(
+            icon: Icons.error_outline,
+            title: 'Could not load problems',
+            message: '$e'),
       ),
       data: (cards) {
         if (cards.isEmpty) return const _EmptySd();
@@ -51,21 +55,12 @@ class _EmptySd extends StatelessWidget {
   const _EmptySd();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('System design')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No system-design problems in the vault yet.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('System design')),
+        body: const EmptyState(
+          icon: Icons.architecture_outlined,
+          title: 'Nothing to practice yet',
+          message: 'No system-design problems in the vault yet.',
         ),
-      ),
-    );
-  }
+      );
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/shared/design/onyx_design.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/widgets/confidence_badge.dart';
+import 'package:onyx/shared/widgets/empty_state.dart';
 import 'package:onyx/shared/widgets/status_pill.dart';
 
 import 'golden_harness.dart';
@@ -17,6 +18,22 @@ void main() {
       target,
       matchesGoldenFile('goldens/design_catalog.png'),
     );
+  });
+
+  testWidgets('empty state — icon + title + message + action', (tester) async {
+    final target = await pumpGolden(
+      tester,
+      EmptyState(
+        icon: Icons.inbox_outlined,
+        title: 'No cards indexed',
+        message:
+            'Point Onyx at a vault in Settings and your cards show up here.',
+        action:
+            FilledButton(onPressed: () {}, child: const Text('Open Settings')),
+      ),
+      size: const Size(400, 340),
+    );
+    await expectLater(target, matchesGoldenFile('goldens/empty_state.png'));
   });
 }
 

@@ -15,6 +15,7 @@ import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../home/readiness_panel.dart';
 
 /// Insights (task #27+, redesigned #62): the "details" tier of the app's
@@ -1078,31 +1079,10 @@ class _Empty extends StatelessWidget {
   const _Empty();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.query_stats_outlined,
-                size: 44, color: theme.colorScheme.primary),
-            const SizedBox(height: 14),
-            Text('No insights yet',
-                style: theme.textTheme.titleMedium,
-                textAlign: TextAlign.center),
-            const SizedBox(height: 6),
-            Text(
-              'Review some cards and run a mock or two — this fills in with how '
-              'well it’s sticking, where you’re leaking, and how you perform.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const EmptyState(
+        icon: Icons.query_stats_outlined,
+        title: 'No insights yet',
+        message: 'Review some cards and run a mock or two — this fills in with '
+            'how well it’s sticking, where you’re leaking, and how you perform.',
+      );
 }

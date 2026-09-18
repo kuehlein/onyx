@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +35,10 @@ class _BehavioralEntryScreenState extends ConsumerState<BehavioralEntryScreen> {
       loading: () => const Scaffold(body: LoadingView()),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Behavioral')),
-        body: Center(child: Text('Could not load competencies: $e')),
+        body: EmptyState(
+            icon: Icons.error_outline,
+            title: 'Could not load competencies',
+            message: '$e'),
       ),
       data: (cards) {
         if (cards.isEmpty) return const _EmptyBehavioral();
@@ -51,21 +55,12 @@ class _EmptyBehavioral extends StatelessWidget {
   const _EmptyBehavioral();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Behavioral')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No behavioral competencies in the vault yet.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Behavioral')),
+        body: const EmptyState(
+          icon: Icons.forum_outlined,
+          title: 'Nothing to practice yet',
+          message: 'No behavioral competencies in the vault yet.',
         ),
-      ),
-    );
-  }
+      );
 }

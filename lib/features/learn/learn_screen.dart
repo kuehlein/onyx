@@ -12,6 +12,7 @@ import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import 'study_tips_sheet.dart';
@@ -106,7 +107,14 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
               textAlign: TextAlign.center),
         ),
         data: (s) {
-          if (s.total == 0) return const _EmptyState();
+          if (s.total == 0) {
+            return const EmptyState(
+              icon: Icons.auto_stories_outlined,
+              title: 'No new material',
+              message:
+                  "You've started every card. Keep reviewing to lock it in.",
+            );
+          }
           if (s.isDone) return _CompleteState(learned: s.graduated);
           // A single priming slide before the first card of the session.
           if (!_started) {
@@ -313,34 +321,6 @@ class _Pill extends StatelessWidget {
               .textTheme
               .labelSmall
               ?.copyWith(color: scheme.onSecondaryContainer)),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.auto_stories_outlined,
-                size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
-            Text('No new material', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text("You've started every card. Keep reviewing to lock it in.",
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
-      ),
     );
   }
 }

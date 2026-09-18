@@ -1,6 +1,7 @@
 // Material's `Card` widget collides with our domain `Card` model; we render
 // with ListTile here, so hide the widget to keep the model unambiguous.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -73,11 +74,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       appBar: AppBar(title: const Text('Browse')),
       body: index.when(
         loading: () => const LoadingView(),
-        error: (e, _) => _Message('Index error:\n$e'),
+        error: (e, _) => EmptyState(
+            icon: Icons.error_outline, title: 'Index error', message: '$e'),
         data: (result) {
           if (result.cards.isEmpty) {
-            return const _Message(
-                'No cards indexed.\nConfigure a vault in Settings.');
+            return const EmptyState(
+              icon: Icons.inbox_outlined,
+              title: 'No cards indexed',
+              message: 'Configure a vault in Settings.',
+            );
           }
           return _body(result.cards, states);
         },
@@ -159,7 +164,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
           _ResultCount(count: results.length, total: allCards.length),
         Expanded(
           child: results.isEmpty
-              ? const _Message('No cards match your search and filters.')
+              ? const EmptyState(
+                  icon: Icons.search_off,
+                  title: 'No matches',
+                  message: 'No cards match your search and filters.',
+                )
               : RefreshIndicator(
                   onRefresh: () async => ref.invalidate(vaultIndexProvider),
                   child: ListView.separated(
@@ -362,20 +371,4 @@ class _CardTile extends StatelessWidget {
       onTap: () => context.go('/browse/card/${card.id}'),
     );
   }
-}
-
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(text,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge),
-        ),
-      );
 }
