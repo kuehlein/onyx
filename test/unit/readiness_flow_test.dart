@@ -103,16 +103,24 @@ void main() {
       () async {
     if (!_sqliteAvailable) return;
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
-    final c = make(db);
-    addTearDown(c.dispose);
-    // Keep the autodispose readiness graph alive across reads (a target change
-    // invalidates it in between), the way the Home panel's ref.watch does.
-    c.listen(readinessProvider, (_, __) {});
+    addTearDown(() => db.close());
 
+    // The default goal owns its own level/context/track now (Phase B — the aim
+    // moved off the legacy controller onto the StudyGoal), so drive the target
+    // through the goal's slots. A container per read keeps each goal pinned.
     Future<double> read(SeniorityLevel level, Track track) async {
-      await c.read(readinessTargetControllerProvider.notifier).save(
-          ReadinessTarget.of(
-              level: level, company: CompanyTier.faang, track: track));
+      final c = make(db, goals: [
+        StudyGoal(
+          id: 'default',
+          name: 'All',
+          templateId: 'swe',
+          levelId: level.name,
+          contextId: CompanyTier.faang.name,
+          trackId: track.name,
+        ),
+      ]);
+      addTearDown(c.dispose);
+      c.listen(readinessProvider, (_, __) {});
       return (await c.read(readinessProvider.future)).overall;
     }
 
@@ -127,7 +135,6 @@ void main() {
     // domain → lower overall.
     final backend = await read(SeniorityLevel.senior, Track.backend);
     expect(backend, lessThan(newGrad));
-    await db.close();
   });
 
   test('readiness scopes to the active goal\'s membership', () async {

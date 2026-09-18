@@ -128,10 +128,10 @@ class LearnSession extends _$LearnSession {
       final scheduler = ref.read(srsSchedulerProvider);
       final repo = ref.read(srsRepositoryProvider);
       final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
-      // A near-term prep goal raises target retention (scheduling only); base
+      // A near-term interview raises target retention (scheduling only); base
       // otherwise. Seeds the initial FSRS values for this fresh section.
       final retention = ref
-              .read(targetingProvider)
+              .read(activeTargetingProvider)
               .asData
               ?.value
               .desiredRetentionForCard(item.card, today: clock.today()) ??

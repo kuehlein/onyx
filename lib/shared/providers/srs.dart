@@ -190,10 +190,10 @@ class StudySession extends _$StudySession {
     final repo = ref.read(srsRepositoryProvider);
     final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
     final current = s.statesByKey[item.key];
-    // FSRS-safe interview lever: a near-term prep goal raises this card's target
+    // FSRS-safe interview lever: a near-term interview raises this card's target
     // retention (scheduling only — fitted state untouched). Falls back to base.
     final retention = ref
-            .read(targetingProvider)
+            .read(activeTargetingProvider)
             .asData
             ?.value
             .desiredRetentionForCard(item.card, today: clock.today()) ??

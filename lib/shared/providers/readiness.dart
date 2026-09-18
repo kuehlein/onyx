@@ -139,6 +139,9 @@ class ReadinessTargetController extends _$ReadinessTargetController {
     final source = ref.read(vaultSourceProvider);
     if (source != null) await TargetService(source).save(target);
     state = AsyncData(target);
+    // The whole-vault default goal folds this target in ([migratedDefaultGoal]);
+    // refresh it so targeting reflects the edit at once (Phase B).
+    ref.invalidate(studyGoalsProvider);
   }
 }
 
@@ -187,6 +190,9 @@ class PrepGoals extends _$PrepGoals {
     final source = ref.read(vaultSourceProvider);
     if (source != null) await GoalsService(source).save(goals);
     state = AsyncData(goals);
+    // The default goal folds these interviews in ([migratedDefaultGoal]); refresh
+    // it so targeting reflects the change at once (Phase B).
+    ref.invalidate(studyGoalsProvider);
   }
 
   /// Add a new goal or replace an existing one (matched by id).
@@ -209,29 +215,16 @@ class PrepGoals extends _$PrepGoals {
       ]);
 }
 
-/// The effective study targeting: the base target combined with the ACTIVE prep
-/// goals. Consumers (learn order, readiness weighting, pace) read this, so a
-/// specific interview biases study. Identical to the base target when no goal is
-/// active.
-@riverpod
-Future<Targeting> targeting(Ref ref) async {
-  final base = await ref.watch(readinessTargetControllerProvider.future);
-  final goals = await ref.watch(prepGoalsProvider.future);
-  return Targeting(base: base, goals: [
-    for (final g in goals)
-      if (g.active) g,
-  ]);
-}
-
 /// Resolve a goal by id from an already-loaded list, falling back to the
 /// default/first. (Pure — the caller watches [studyGoalsProvider] up front so
 /// there's no ref use after an await; see the note on [goalReadiness].)
 StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
     goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
 
-/// A given goal's base [ReadinessTarget] (task #30d). The default (whole-vault)
-/// goal uses the legacy saved target; any other goal carries its own
-/// level/context/track (+ deadline).
+/// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
+/// whole-vault default — carries its own level/context/track (+ deadline); the
+/// default's are the folded-in legacy saved target (Phase B, [migratedDefaultGoal]),
+/// kept live by the invalidation in [ReadinessTargetController.save].
 ///
 /// NOTE (#30d multi-template): [goalReadiness] now scores each goal against its
 /// OWN template (durability bar + domain weights). The remaining sliver:
@@ -246,25 +239,31 @@ Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
   // invalidation (e.g. a goal edit/pause rebuilding studyGoals) can't leave us
   // using a disposed ref after the async gap.
   final goalsF = ref.watch(studyGoalsProvider.future);
-  final controllerF = ref.watch(readinessTargetControllerProvider.future);
   final registryF = ref.watch(subjectRegistryProvider.future);
   final goal = _pick(await goalsF, goalId);
-  if (goal.id == defaultGoalId) return controllerF;
   final registry = await registryF;
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 }
 
-/// A given goal's effective [Targeting]. The default goal keeps the full
-/// base-target + active-prep-goals combination; a standalone goal has just its own
-/// target (no interview sub-targets yet).
+/// A given goal's effective [Targeting]: its base target combined with its ACTIVE
+/// interviews (Phase B — the interviews live on the [StudyGoal] now, so this is
+/// uniform across the default and standalone goals). With no active interviews it
+/// equals reading the base target directly.
 @riverpod
 Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
   final goalsF = ref.watch(studyGoalsProvider.future);
-  final baseTargetingF = ref.watch(targetingProvider.future);
   final targetF = ref.watch(targetForGoalProvider(goalId).future);
   final goal = _pick(await goalsF, goalId);
-  if (goal.id == defaultGoalId) return baseTargetingF;
-  return Targeting(base: await targetF, goals: const []);
+  final base = await targetF;
+  return Targeting(
+    base: base,
+    interviews: [
+      for (final iv in goal.interviews)
+        if (iv.active) iv,
+    ],
+    goalId: goal.id,
+    deadline: goal.deadline,
+  );
 }
 
 /// The ACTIVE goal's base target — see [targetForGoal]. Single default goal →
