@@ -63,23 +63,35 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
   );
 }
 
-/// Per-domain applied-evidence counts for the dashboard decomposition: how many
-/// mock attempts back a domain and how many were *contested* (the adversarial
-/// critic disagreed with the coach's grade). Honest evidence-strength signal.
+/// Per-domain applied-evidence counts for a goal's dashboard decomposition: how
+/// many mock attempts back a domain and how many were *contested* (the
+/// adversarial critic disagreed with the coach's grade). Scoped to the goal's
+/// member cards so a lane's evidence counts are its own; the whole-vault default
+/// goal includes every attempt, so single-goal numbers are unchanged.
 @riverpod
-Future<Map<String, ({int attempts, int contested})>> appliedSummary(
-    Ref ref) async {
-  final index = await ref.watch(vaultIndexProvider.future);
-  final now = (await ref.watch(clockProvider.future)).now();
-  final rows = await ref
-      .watch(appliedRepositoryProvider)
-      .attempts(since: now.subtract(const Duration(days: 365)));
+Future<Map<String, ({int attempts, int contested})>> goalAppliedSummary(
+    Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  // The family caches its `attempts()` read, so — like the mock providers — it
+  // refreshes off appliedTransfer (invalidated wherever a mock/solve is
+  // recorded). Invalidating the wrapper alone wouldn't reach this instance.
+  final transferF = ref.watch(appliedTransferProvider.future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final repo = ref.watch(appliedRepositoryProvider);
+  await transferF;
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final now = (await clockF).now();
+  final rows =
+      await repo.attempts(since: now.subtract(const Duration(days: 365)));
   final domains = <String>{
     for (final c in index.studyCards)
       if (c.domain != null) c.domain!,
   };
   final out = <String, ({int attempts, int contested})>{};
   for (final r in rows) {
+    if (!memberIds.contains(r.cardId)) continue;
     final d = r.domain;
     if (d == null || !domains.contains(d)) continue;
     final prev = out[d] ?? (attempts: 0, contested: 0);
@@ -89,6 +101,14 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
     );
   }
   return out;
+}
+
+/// Per-domain applied-evidence counts for the ACTIVE goal — see [goalAppliedSummary].
+@riverpod
+Future<Map<String, ({int attempts, int contested})>> appliedSummary(
+    Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalAppliedSummaryProvider(goal.id).future);
 }
 
 /// The interview being prepared for (level × company × track + optional date).

@@ -15,6 +15,7 @@ import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/readiness_panel.dart';
 
@@ -1048,10 +1049,17 @@ class _ConsistencySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(studyConsistencyProvider);
+    // Consistency is a cross-subject habit (the activity log isn't card-scoped),
+    // so under multiple goals it's honestly labelled "all subjects" — unlike the
+    // other panels, it isn't this lane's number.
+    final multiGoal =
+        (ref.watch(activeGoalCountProvider).asData?.value ?? 1) >= 2;
     return _Section(
       title: 'Study consistency',
-      subtitle: 'Study actions per day, last 4 weeks. Showing up beats '
-          'cramming.',
+      subtitle: multiGoal
+          ? 'Study actions per day across all subjects, last 4 weeks. Showing '
+              'up beats cramming.'
+          : 'Study actions per day, last 4 weeks. Showing up beats cramming.',
       child: async.when(
         loading: () => const _NoData('Loading…'),
         error: (e, _) => _NoData('Error: $e'),
