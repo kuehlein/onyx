@@ -9,6 +9,7 @@ import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';
 import 'srs.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'analytics.g.dart';
@@ -17,31 +18,51 @@ part 'analytics.g.dart';
 /// performance; stability is read from current FSRS state (not windowed).
 const retentionWindow = Duration(days: 90);
 
-/// Per-domain retention (task #27), computed from the review log + current FSRS
-/// state, grouped by each card's domain via the vault index.
+/// Per-domain retention (task #27) for a SPECIFIC goal — its member cards' review
+/// log + current FSRS state, grouped by domain. Scoped to `goalMemberCardIds` so
+/// a lane shows only its own recall; the whole-vault default goal includes every
+/// card, so single-goal numbers are unchanged.
 @riverpod
-Future<List<DomainRetention>> retentionByDomain(Ref ref) async {
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
-  final clock = await ref.watch(clockProvider.future);
-  final since = clock.now().subtract(retentionWindow);
-  final grades =
-      await ref.watch(srsRepositoryProvider).reviewGradesSince(since);
+Future<List<DomainRetention>> goalRetentionByDomain(
+    Ref ref, String goalId) async {
+  // Register deps before the first await (disposal hazard — a goal edit rebuilds
+  // studyGoals/memberIds and would invalidate this instance mid-await).
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final repo = ref.watch(srsRepositoryProvider);
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final states = await statesF;
+  final since = (await clockF).now().subtract(retentionWindow);
+  final grades = await repo.reviewGradesSince(since);
 
   final domainByCard = <String, String>{
     for (final c in index.cards)
-      if (c.domain != null) c.id: c.domain!,
+      if (c.domain != null && memberIds.contains(c.id)) c.id: c.domain!,
   };
   final stabilities = [
     for (final s in states.byKey.values)
-      (cardId: s.cardId, stability: s.stability),
+      if (memberIds.contains(s.cardId))
+        (cardId: s.cardId, stability: s.stability),
   ];
 
   return computeRetention(
-    reviews: grades,
+    reviews: [
+      for (final g in grades)
+        if (memberIds.contains(g.cardId)) g,
+    ],
     stabilities: stabilities,
     domainByCard: domainByCard,
   );
+}
+
+/// Per-domain retention for the ACTIVE goal — see [goalRetentionByDomain].
+@riverpod
+Future<List<DomainRetention>> retentionByDomain(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalRetentionByDomainProvider(goal.id).future);
 }
 
 /// Averaged mock-interview performance + rubric breakdown. Recomputes when the

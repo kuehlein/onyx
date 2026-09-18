@@ -6,9 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
+import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/study_goals.dart';
 import 'package:onyx/shared/providers/vault.dart';
 import 'package:path/path.dart' as p;
@@ -101,6 +103,42 @@ void main() {
     final budgets = await c.read(goalBudgetsProvider.future);
     expect(budgets.keys.toSet(), {'alpha', 'beta'});
     expect(budgets['alpha']! / budgets['beta']!, closeTo(3.0, 1e-9));
+  });
+
+  test('per-goal analytics scope to the goal\'s member cards (#30d honesty)',
+      () async {
+    if (!_sqliteAvailable) return;
+    final c = make();
+    addTearDown(c.dispose);
+
+    // Membership is the one scoping key every per-goal analytic filters by.
+    expect(
+        await c.read(goalMemberCardIdsProvider('alpha').future), {'a1', 'a2'});
+    expect(await c.read(goalMemberCardIdsProvider('beta').future), {'b1'});
+
+    // Seed recall for one card in each lens (different domains). Do it before the
+    // first retention read so the freshly-built srs_state picks the rows up.
+    final now = DateTime.now();
+    final repo = c.read(srsRepositoryProvider);
+    await repo.seedStudied([
+      (cardId: 'a1', sectionSlug: 'definition', stability: 12.0),
+      (cardId: 'b1', sectionSlug: 'definition', stability: 12.0),
+    ], at: now);
+    await repo.seedReviews([
+      (cardId: 'a1', sectionSlug: 'definition', grade: 3, stability: 12.0),
+      (cardId: 'b1', sectionSlug: 'definition', grade: 3, stability: 12.0),
+    ], at: now);
+
+    c.listen(goalRetentionByDomainProvider('alpha'), (_, __) {});
+    c.listen(goalRetentionByDomainProvider('beta'), (_, __) {});
+
+    // Retention is scoped: alpha sees only algebra, beta only biology — never the
+    // other lane's data (the "per-goal lie" this refactor fixes).
+    final retAlpha =
+        await c.read(goalRetentionByDomainProvider('alpha').future);
+    final retBeta = await c.read(goalRetentionByDomainProvider('beta').future);
+    expect(retAlpha.map((d) => d.domain), ['algebra']);
+    expect(retBeta.map((d) => d.domain), ['biology']);
   });
 
   test('pause redistributes the budget; remove degrades to one goal', () async {

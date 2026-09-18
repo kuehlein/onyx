@@ -112,3 +112,20 @@ Future<StudyGoal> activeStudyGoal(Ref ref) async {
     ),
   );
 }
+
+/// The set of card ids that belong to a goal — its [StudyGoal.select] membership
+/// applied to the studiable cards (task #30d, G2). This is the **one scoping key**
+/// every per-goal analytic filters its rows by (retention, mocks, forecast,
+/// leeches…), mirroring how `goalReadiness` scopes its card set. The whole-vault
+/// default goal selects every studiable card, so a single-goal app filters
+/// against "all ids" — a no-op — and the numbers are byte-identical.
+@riverpod
+Future<Set<String>> goalMemberCardIds(Ref ref, String goalId) async {
+  final goalsF = ref.watch(studyGoalsProvider.future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final goals = await goalsF;
+  final index = await indexF;
+  final goal =
+      goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
+  return {for (final c in goal.select(index.studyCards)) c.id};
+}
