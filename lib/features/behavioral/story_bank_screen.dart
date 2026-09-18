@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/story/competency.dart';
@@ -21,7 +22,7 @@ class StoryBankScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Your stories')),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Could not load stories: $e')),
         data: (stories) => _Body(stories: stories),
       ),

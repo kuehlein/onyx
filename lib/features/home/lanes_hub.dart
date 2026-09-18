@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/goal/study_goal.dart';
@@ -24,7 +25,7 @@ class LanesHub extends ConsumerWidget {
     final goalsAsync = ref.watch(studyGoalsProvider);
 
     return goalsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (_, __) => const Center(child: Text('—')),
       data: (goals) {
         final live = [

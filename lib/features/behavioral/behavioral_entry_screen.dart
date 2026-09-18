@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/providers/behavioral.dart';
@@ -30,8 +31,7 @@ class _BehavioralEntryScreenState extends ConsumerState<BehavioralEntryScreen> {
 
     final competencies = ref.watch(behavioralCompetenciesProvider);
     return competencies.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: LoadingView()),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Behavioral')),
         body: Center(child: Text('Could not load competencies: $e')),
@@ -41,7 +41,7 @@ class _BehavioralEntryScreenState extends ConsumerState<BehavioralEntryScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) setState(() => _competencyId = cards.first.id);
         });
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(body: LoadingView());
       },
     );
   }

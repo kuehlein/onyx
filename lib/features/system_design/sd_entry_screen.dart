@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/providers/system_design.dart';
@@ -29,8 +30,7 @@ class _SdEntryScreenState extends ConsumerState<SdEntryScreen> {
 
     final problems = ref.watch(systemDesignProblemsProvider);
     return problems.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: LoadingView()),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('System design')),
         body: Center(child: Text('Could not load problems: $e')),
@@ -41,7 +41,7 @@ class _SdEntryScreenState extends ConsumerState<SdEntryScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) setState(() => _problemId = cards.first.id);
         });
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(body: LoadingView());
       },
     );
   }

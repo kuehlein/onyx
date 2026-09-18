@@ -2,6 +2,7 @@ import 'dart:async';
 
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -150,7 +151,7 @@ class _ReaderLoadingState extends State<_ReaderLoading> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            const LoadingView(compact: true),
             // Still attempting; this just offers a shortcut once it drags.
             if (_slow) ...[
               const SizedBox(height: 20),

@@ -1,5 +1,6 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database.dart';
@@ -34,7 +35,7 @@ class CardDetailScreen extends ConsumerWidget {
 
     return index.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: LoadingView(),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(),

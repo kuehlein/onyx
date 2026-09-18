@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/readiness/prep_goal.dart';
@@ -28,7 +29,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
         label: const Text('Plan an interview'),
       ),
       body: goalsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (goals) {
           if (goals.isEmpty) return const _Empty();

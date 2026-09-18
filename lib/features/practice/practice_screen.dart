@@ -1,5 +1,6 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -72,7 +73,7 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
             : null,
       ),
       body: asyncSet.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (e, _) => Center(
           child: Text('Could not build a practice set:\n$e',
               textAlign: TextAlign.center),

@@ -1,6 +1,7 @@
 // Material's `Card` widget collides with our domain `Card` model; we render
 // with ListTile here, so hide the widget to keep the model unambiguous.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -71,7 +72,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Browse')),
       body: index.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (e, _) => _Message('Index error:\n$e'),
         data: (result) {
           if (result.cards.isEmpty) {
