@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import '../status_colors.dart';
 
 import '../models/card.dart';
+import 'status_pill.dart';
 
 /// A small, color-coded badge showing a card's author-assigned confidence
 /// (high/medium/low), with a tooltip explaining how much to trust the card and
 /// when to fall back to its Resources. Surfacing this lets the reader calibrate
 /// their own skepticism (see docs/card-schema.md).
+///
+/// A thin wrapper over [StatusPill] (design-system §4.1) — color + shape + label
+/// + Semantics come from the one primitive; card confidence is categorical, so
+/// there is no numeric `value` to show here.
 class ConfidenceBadge extends StatelessWidget {
   const ConfidenceBadge(this.confidence, {super.key});
 
@@ -14,23 +18,23 @@ class ConfidenceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (Color color, IconData icon, String label, String tip) =
+    final (StatusTone tone, IconData icon, String label, String tip) =
         switch (confidence) {
       Confidence.high => (
-          statusGood,
+          StatusTone.good,
           Icons.verified_outlined,
           'High confidence',
           'Passed a clean verification — study with confidence.',
         ),
       Confidence.medium => (
-          statusWarn,
+          StatusTone.warn,
           Icons.info_outline,
           'Medium confidence',
           'Minor issues were flagged at authoring — cross-check the card '
               'against its Resources.',
         ),
       Confidence.low => (
-          statusBad,
+          StatusTone.bad,
           Icons.warning_amber_outlined,
           'Low confidence',
           'Major issues were auto-corrected by an AI verifier — read the '
@@ -38,26 +42,13 @@ class ConfidenceBadge extends StatelessWidget {
         ),
     };
 
-    return Tooltip(
-      message: tip,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.w600, fontSize: 12)),
-          ],
-        ),
-      ),
+    return StatusPill(
+      tone: tone,
+      icon: icon,
+      label: label,
+      dense: true,
+      tooltip: tip,
+      semanticLabel: '$label. $tip',
     );
   }
 }
