@@ -1,116 +1,21 @@
 import 'dart:convert';
 import '../util.dart';
 
+import '../goal/interview_aim.dart';
 import 'target.dart';
 
-/// The outcome of an interview (or a single round of one).
-enum GoalOutcome { pending, passed, failed }
-
-/// Where an interview sits in its lifecycle. [active] loops still have a current
-/// upcoming round; the rest are ended and live in the "past" section — kept for
-/// the record rather than deleted (archive-by-default).
-enum InterviewStatus { active, offer, rejected, withdrawn, archived }
-
-extension InterviewStatusLabel on InterviewStatus {
-  String get label => switch (this) {
-        InterviewStatus.active => 'Active',
-        InterviewStatus.offer => 'Offer',
-        InterviewStatus.rejected => "Didn't pass",
-        InterviewStatus.withdrawn => 'Withdrew',
-        InterviewStatus.archived => 'Archived',
-      };
-
-  /// Whether the loop is over (anything but [active]).
-  bool get isEnded => this != InterviewStatus.active;
-}
-
-/// The kind of interview round.
-enum InterviewRoundType {
-  screen,
-  coding,
-  systemDesign,
-  behavioral,
-  onsite,
-  other
-}
-
-extension InterviewRoundTypeLabel on InterviewRoundType {
-  String get label => switch (this) {
-        InterviewRoundType.screen => 'Screen',
-        InterviewRoundType.coding => 'Coding',
-        InterviewRoundType.systemDesign => 'System design',
-        InterviewRoundType.behavioral => 'Behavioral',
-        InterviewRoundType.onsite => 'Onsite',
-        InterviewRoundType.other => 'Interview',
-      };
-}
-
-/// One round of an interview loop (a phone screen, a system-design round, …).
-/// An interview ([PrepGoal]) owns an ordered list of these.
-class InterviewRound {
-  const InterviewRound({
-    required this.id,
-    required this.number,
-    this.type = InterviewRoundType.other,
-    this.date,
-    this.outcome = GoalOutcome.pending,
-    this.notes,
-  });
-
-  final String id;
-
-  /// 1-based position in the loop.
-  final int number;
-  final InterviewRoundType type;
-
-  /// When this round is scheduled, or null if not yet set.
-  final DateTime? date;
-  final GoalOutcome outcome;
-  final String? notes;
-
-  /// e.g. "Round 2 · System design".
-  String get label => 'Round $number · ${type.label}';
-
-  InterviewRound copyWith({
-    int? number,
-    InterviewRoundType? type,
-    Object? date = _unset,
-    GoalOutcome? outcome,
-    Object? notes = _unset,
-  }) =>
-      InterviewRound(
-        id: id,
-        number: number ?? this.number,
-        type: type ?? this.type,
-        date: date == _unset ? this.date : date as DateTime?,
-        outcome: outcome ?? this.outcome,
-        notes: notes == _unset ? this.notes : notes as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'number': number,
-        'type': type.name,
-        if (date != null) 'date': _fmtDate(date!),
-        'outcome': outcome.name,
-        if (notes != null) 'notes': notes,
-      };
-
-  static InterviewRound? fromJson(Map<String, dynamic> m) {
-    final id = m['id'];
-    if (id is! String || id.isEmpty) return null;
-    return InterviewRound(
-      id: id,
-      number: m['number'] is int ? m['number'] as int : 1,
-      type: enumByName(InterviewRoundType.values, m['type']) ??
-          InterviewRoundType.other,
-      date: _parseDate(m['date']),
-      outcome:
-          enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
-      notes: m['notes'] is String ? m['notes'] as String : null,
-    );
-  }
-}
+// The interview lifecycle types moved to `core/goal/interview_aim.dart` (Phase B
+// aim unification) so `StudyGoal` can own an interview facet without coupling to
+// the SWE target enums. Re-exported here so the not-yet-migrated interview UI
+// keeps importing them from `prep_goal.dart`.
+export '../goal/interview_aim.dart'
+    show
+        GoalOutcome,
+        InterviewStatus,
+        InterviewStatusLabel,
+        InterviewRoundType,
+        InterviewRoundTypeLabel,
+        InterviewRound;
 
 /// A single interview-prep goal: a target (company/role/level/track/date) plus
 /// optional AI-plan boosts and an outcome. The generalization of the single

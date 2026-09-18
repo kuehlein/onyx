@@ -128,5 +128,49 @@ void main() {
       expect(dated.copyWith(budgetWeight: 0.5).deadline, isNotNull);
       expect(dated.copyWith(deadline: null).deadline, isNull);
     });
+
+    test(
+        'the interview facet round-trips through JSON + rounds logic (Phase B)',
+        () {
+      final aim = InterviewAim(
+        companyName: 'Acme',
+        rounds: [
+          InterviewRound(
+              id: 'r1',
+              number: 1,
+              type: InterviewRoundType.screen,
+              date: DateTime(2026, 4, 1),
+              outcome: GoalOutcome.passed),
+          InterviewRound(
+              id: 'r2',
+              number: 2,
+              type: InterviewRoundType.onsite,
+              date: DateTime(2026, 5, 1)),
+        ],
+        domainWeights: {'arrays': 1.5},
+      );
+      const goalId = 'acme';
+      final goal = StudyGoal(
+        id: goalId,
+        name: 'Acme',
+        templateId: 'demo',
+        deadline: DateTime(2026, 5, 1),
+        interview: aim,
+      );
+
+      final back = StudyGoal.fromJson(goal.toJson());
+      expect(back.interview, isNotNull);
+      expect(back.interview!.companyName, 'Acme');
+      expect(back.interview!.rounds.length, 2);
+      expect(back.interview!.domainWeights['arrays'], 1.5);
+
+      // The upcoming round is the first pending one; the passed one is history.
+      expect(back.interview!.currentRound(goalId, back.deadline)?.id, 'r2');
+      expect(back.interview!.pastRounds(goalId, back.deadline).map((r) => r.id),
+          ['r1']);
+
+      // A plain study goal has no interview facet.
+      expect(defaultGoalFor(_template).interview, isNull);
+    });
   });
 }

@@ -12,8 +12,10 @@ library;
 import '../../shared/models/card.dart';
 import '../readiness/target.dart';
 import '../subject/subject_config.dart';
+import 'interview_aim.dart';
 import 'membership_query.dart';
 
+export 'interview_aim.dart';
 export 'membership_query.dart';
 
 /// Where a goal sits in its lifecycle. Only [active] goals draw from the daily
@@ -34,6 +36,7 @@ class StudyGoal {
     this.deadline,
     this.budgetWeight = 1.0,
     this.state = GoalState.active,
+    this.interview,
   });
 
   /// Stable id — the key under which this goal's state persists (`_meta/`).
@@ -63,6 +66,11 @@ class StudyGoal {
   final double budgetWeight;
 
   final GoalState state;
+
+  /// The interview facet, when this goal IS an interview (Phase B aim
+  /// unification): its rounds/status/outcome/company/AI-plan weights. Null → a
+  /// plain study goal (open-ended, or a dated exam without the interview loop).
+  final InterviewAim? interview;
 
   bool get isActive => state == GoalState.active;
 
@@ -100,6 +108,7 @@ class StudyGoal {
         if (deadline != null) 'deadline': deadline!.toIso8601String(),
         'budgetWeight': budgetWeight,
         'state': state.name,
+        if (interview != null) 'interview': interview!.toJson(),
       };
 
   static StudyGoal fromJson(Map<String, dynamic> m) => StudyGoal(
@@ -121,6 +130,10 @@ class StudyGoal {
           (s) => s.name == m['state'],
           orElse: () => GoalState.active,
         ),
+        interview: m['interview'] is Map
+            ? InterviewAim.fromJson(
+                (m['interview'] as Map).cast<String, dynamic>())
+            : null,
       );
 
   // Nullable slots use an _unset sentinel so a caller can clear them back to null
@@ -136,6 +149,7 @@ class StudyGoal {
     Object? deadline = _unset,
     double? budgetWeight,
     GoalState? state,
+    Object? interview = _unset,
   }) =>
       StudyGoal(
         id: id,
@@ -148,6 +162,8 @@ class StudyGoal {
         deadline: deadline == _unset ? this.deadline : deadline as DateTime?,
         budgetWeight: budgetWeight ?? this.budgetWeight,
         state: state ?? this.state,
+        interview:
+            interview == _unset ? this.interview : interview as InterviewAim?,
       );
 }
 
