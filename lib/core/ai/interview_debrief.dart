@@ -3,19 +3,20 @@
 /// evidence supports it — emits a hidden `<debrief>{…}</debrief>` block that
 /// records the outcome and makes SMALL, conservative reweights toward genuine,
 /// recurring weaknesses. Same tagged-JSON trick as the planner; applied back
-/// onto the [PrepGoal].
+/// onto the [InterviewAim].
 ///
 /// Hardened against overreaction: one interview is a tiny, noisy sample, so the
 /// prompt only reweights durable patterns (not one-off unlucky questions),
 /// separates learnable content gaps from nerves/luck, grounds rare-vs-common in
 /// the deck's own `frequency` labels, and the parser CLAMPS every multiplier to
-/// [1.0, [weightCap]] so the model can never destabilise the plan.
+/// [1.0, [weightCap]] so the model can never destabilise the plan. Applied back
+/// onto the [InterviewAim] (Phase B aim unification).
 library;
 
 import 'dart:convert';
 
 import '../../shared/models/card.dart';
-import '../readiness/prep_goal.dart';
+import '../goal/interview_aim.dart';
 
 /// The hard ceiling on any debrief-proposed weight multiplier. Deliberately
 /// lower than the planner's (a full plan can weight ~2.0) — a single interview
@@ -41,17 +42,18 @@ class DebriefResult {
   /// The coaching summary / what changed (Markdown).
   final String summary;
 
-  /// Fold this debrief into [g]: set the outcome, merge the reweights, and
-  /// append the summary to the goal's notes + record it as the outcome note.
-  PrepGoal applyTo(PrepGoal g) => g.copyWith(
-        outcome: outcome ?? g.outcome,
-        domainWeights: {...g.domainWeights, ...domainWeights},
-        conceptWeights: {...g.conceptWeights, ...conceptWeights},
-        notes: [g.notes, summary]
+  /// Fold this debrief into [a]: set the outcome, merge the reweights, and
+  /// append the summary to the interview's plan notes + record it as the outcome
+  /// note.
+  InterviewAim applyTo(InterviewAim a) => a.copyWith(
+        outcome: outcome ?? a.outcome,
+        domainWeights: {...a.domainWeights, ...domainWeights},
+        conceptWeights: {...a.conceptWeights, ...conceptWeights},
+        planNotes: [a.planNotes, summary]
             .whereType<String>()
             .where((s) => s.isNotEmpty)
             .join('\n\n---\n\n'),
-        outcomeNotes: summary.isEmpty ? g.outcomeNotes : summary,
+        outcomeNotes: summary.isEmpty ? a.outcomeNotes : summary,
       );
 }
 
@@ -100,7 +102,7 @@ class DebriefResult {
 /// The debrief system prompt, seeded with the goal, the deck's keys, and the
 /// deck's frequency signal (which topics are common vs rare in real interviews).
 String buildDebriefSystem({
-  required PrepGoal goal,
+  required String goalLabel,
   required List<String> deckDomains,
   required List<String> deckConcepts,
   List<String> highFrequency = const [],
@@ -109,7 +111,7 @@ String buildDebriefSystem({
   final b = StringBuffer();
   b
     ..writeln('You are an interview-prep strategist inside Onyx, debriefing a '
-        'learner AFTER their interview for: ${goal.label}. Help them learn from '
+        'learner AFTER their interview for: $goalLabel. Help them learn from '
         'it and — ONLY where the evidence supports it — adjust their remaining '
         'study.')
     ..writeln()

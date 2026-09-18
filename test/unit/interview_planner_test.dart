@@ -8,14 +8,14 @@ import 'package:http/testing.dart';
 import 'package:onyx/core/ai/claude_service.dart';
 import 'package:onyx/core/clock.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
+import 'package:onyx/core/vault/vault_source.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/ai.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/interview_planner.dart';
-import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/study_goals.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -29,13 +29,25 @@ final bool _sqliteAvailable = () {
   }
 }();
 
-class _FakeTarget extends ReadinessTargetController {
+/// A VaultSource whose meta files live in memory — so the accepted interview
+/// persists onto the study goal across the notifier's rebuild.
+class _FakeSource implements VaultSource {
+  final Map<String, String> meta = {};
   @override
-  Future<ReadinessTarget> build() async => ReadinessTarget.of(
-        level: SeniorityLevel.senior,
-        company: CompanyTier.faang,
-        track: Track.general,
-      );
+  String get rootLabel => 'fake';
+  @override
+  Future<List<String>> listCardPaths() async => const [];
+  @override
+  Future<List<String>> listConfigPaths() async => const [];
+  @override
+  Future<String> readCard(String relativePath) async => '';
+  @override
+  Future<String?> readMeta(String name) async => meta[name];
+  @override
+  Future<void> writeMeta(String name, String content) async =>
+      meta[name] = content;
+  @override
+  Future<void> writeFile(String relativePath, String content) async {}
 }
 
 const _index = IndexResult(
@@ -78,9 +90,10 @@ ProviderContainer _container(ClaudeService? claude, AppDatabase db) =>
     ProviderContainer(overrides: [
       claudeServiceProvider.overrideWithValue(claude),
       vaultIndexProvider.overrideWith((ref) async => _index),
-      readinessTargetControllerProvider.overrideWith(_FakeTarget.new),
       appDatabaseProvider.overrideWithValue(db),
-      vaultSourceProvider.overrideWithValue(null),
+      // A real (in-memory) source so the default study goal persists the
+      // accepted interview across the notifier's rebuild.
+      vaultSourceProvider.overrideWithValue(_FakeSource()),
       clockProvider.overrideWith((ref) async => Clock.real),
     ]);
 
@@ -131,15 +144,19 @@ void main() {
     expect(s.plan!.company, 'Google');
     expect(s.plan!.appGaps, ['behavioral']);
 
-    final goal = await c.read(interviewPlannerProvider.notifier).accept();
-    expect(goal, isNotNull);
-    expect(goal!.companyName, 'Google');
-    expect(goal.active, isTrue);
+    final aim = await c.read(interviewPlannerProvider.notifier).accept();
+    expect(aim, isNotNull);
+    expect(aim!.companyName, 'Google');
+    expect(aim.active, isTrue);
 
-    // It landed in the store and will drive the targeting layer.
-    final goals = c.read(prepGoalsProvider).asData!.value;
-    expect(goals.map((g) => g.companyName), ['Google']);
-    expect(goals.single.domainWeights['system-design'], 1.6);
+    // It landed on the active study goal and will drive the targeting layer.
+    final goal = await c.read(activeStudyGoalProvider.future);
+    expect(goal.interviews.map((iv) => iv.companyName), ['Google']);
+    expect(goal.interviews.single.domainWeights['system-design'], 1.6);
+    // The plan seeded the goal's target slots (previously unset) + deadline.
+    expect(goal.levelId, 'senior');
+    expect(goal.trackId, 'backend');
+    expect(goal.deadline, DateTime(2026, 9, 20));
     await db.close();
   });
 

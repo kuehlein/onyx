@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/study_goal.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
-import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/subject.dart';
 import '../../shared/design/status_color.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
@@ -17,37 +18,41 @@ import 'round_editing.dart';
 /// anywhere. Shows the round history + current round, and CONTEXTUAL actions:
 /// before the round you reschedule; after it you log the result (which advances
 /// or ends the loop). Secondary/destructive actions live in the header overflow
-/// to keep the body uncluttered. Watches the goal live.
-Future<void> showInterviewSheet(BuildContext context, String goalId) =>
+/// to keep the body uncluttered. Watches the active goal's interview live.
+Future<void> showInterviewSheet(BuildContext context, String aimId) =>
     showOnyxSheet<void>(
       context,
-      builder: (_) => _InterviewSheet(goalId: goalId),
+      builder: (_) => _InterviewSheet(aimId: aimId),
     );
 
 class _InterviewSheet extends ConsumerWidget {
-  const _InterviewSheet({required this.goalId});
+  const _InterviewSheet({required this.aimId});
 
-  final String goalId;
+  final String aimId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(prepGoalsProvider).asData?.value ?? const [];
-    final goal = goals.where((g) => g.id == goalId).firstOrNull;
+    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
     if (goal == null) return const SizedBox.shrink();
+    final aim = goal.interviews.where((iv) => iv.id == aimId).firstOrNull;
+    if (aim == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final today =
         ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
     final refDate = DateTime(today.year, today.month, today.day);
-    final notifier = ref.read(prepGoalsProvider.notifier);
-    final role =
-        '${goal.level.label} · ${goal.tier.label} · ${goal.track.label}';
-    final ended = goal.status.isEnded;
-    final cur = goal.currentRound;
+    final notifier = ref.read(studyGoalsProvider.notifier);
+    final registry = ref.watch(subjectRegistryProvider).asData?.value;
+    final target = registry == null
+        ? null
+        : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
+    final role = target?.label ?? '';
+    final ended = aim.status.isEnded;
+    final cur = aim.currentRound(goal.id, goal.deadline);
     // "Occurred" = the round's day has arrived; only then can you log a result.
     final occurred = cur?.date != null && !cur!.date!.isAfter(refDate);
 
-    Future<void> save(PrepGoal g) => notifier.upsert(g);
+    Future<void> save(InterviewAim a) => notifier.upsertInterview(goal.id, a);
 
     Future<void> reschedule() async {
       if (cur == null) return;
@@ -55,31 +60,33 @@ class _InterviewSheet extends ConsumerWidget {
           today: refDate, existing: cur, title: 'Reschedule round');
       if (edited != null) {
         await save(
-            rescheduleCurrentRound(goal, date: edited.date, type: edited.type));
+            rescheduleCurrentRound(aim, date: edited.date, type: edited.type));
       }
     }
 
     Future<void> passAndNext() async {
-      final draft = draftRound(goal, seed: refDate.millisecondsSinceEpoch);
+      final draft = draftRound(aim, seed: refDate.millisecondsSinceEpoch);
       final next = await showRoundDialog(context,
           today: refDate, existing: draft, title: 'Next round');
-      if (next != null) await save(passAndScheduleNext(goal, next));
+      if (next != null) await save(passAndScheduleNext(aim, next));
     }
 
     Future<void> end(InterviewStatus status) async {
-      await save(endInterview(goal, status));
+      await save(endInterview(aim, status));
       if (context.mounted) Navigator.pop(context);
     }
 
     Future<void> confirmDelete() async {
-      final ok = await _confirmDelete(context, goal);
+      final ok = await _confirmDelete(context, aim, target);
       if (ok) {
-        await notifier.remove(goal.id);
+        await notifier.removeInterview(goal.id, aim.id);
         if (context.mounted) Navigator.pop(context);
       }
     }
 
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+    final title = aim.companyName.isEmpty
+        ? (target?.label ?? 'Interview')
+        : aim.companyName;
 
     return SafeArea(
       child: Column(
@@ -93,8 +100,8 @@ class _InterviewSheet extends ConsumerWidget {
               context,
               ended: ended,
               onReschedule: cur != null ? reschedule : null,
-              onArchive: () => save(archiveInterview(goal)),
-              onReopen: () => save(reopenInterview(goal)),
+              onArchive: () => save(archiveInterview(aim)),
+              onReopen: () => save(reopenInterview(aim)),
               onDelete: confirmDelete,
             ),
           ),
@@ -102,18 +109,18 @@ class _InterviewSheet extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (ended) _EndedBanner(status: goal.status),
-                _Timeline(goal: goal, today: refDate),
-                if (goal.notes != null && goal.notes!.isNotEmpty) ...[
+                if (ended) _EndedBanner(status: aim.status),
+                _Timeline(aim: aim, goal: goal, today: refDate),
+                if (aim.planNotes != null && aim.planNotes!.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  CardMarkdown(goal.notes!, compact: true),
+                  CardMarkdown(aim.planNotes!, compact: true),
                 ],
                 const SizedBox(height: 16),
                 if (ended)
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => save(reopenInterview(goal)),
+                      onPressed: () => save(reopenInterview(aim)),
                       icon: const Icon(Icons.refresh, size: 18),
                       label: const Text('Reopen — still in progress'),
                     ),
@@ -150,11 +157,11 @@ class _InterviewSheet extends ConsumerWidget {
                   ),
                 if (!ended) ...[
                   const SizedBox(height: 8),
-                  _practiceButton(context, goal),
+                  _practiceButton(context, aim, target),
                   const Divider(height: 28),
                   _StudyToggle(
-                    value: goal.active,
-                    onChanged: (v) => save(goal.copyWith(active: v)),
+                    value: aim.active,
+                    onChanged: (v) => save(aim.copyWith(active: v)),
                   ),
                 ],
               ],
@@ -199,16 +206,20 @@ class _InterviewSheet extends ConsumerWidget {
     );
   }
 
-  Widget _practiceButton(BuildContext context, PrepGoal goal) {
-    final top = _topDomain(goal);
+  Widget _practiceButton(
+      BuildContext context, InterviewAim aim, ReadinessTarget? target) {
+    final top = _topDomain(aim);
     if (top == null) return const SizedBox.shrink();
+    final forLabel = aim.companyName.isEmpty
+        ? (target?.label ?? 'interview')
+        : aim.companyName;
     return SizedBox(
       width: double.infinity,
       child: FilledButton.tonalIcon(
         onPressed: () {
           Navigator.pop(context);
           context.push('/practice/$top'
-              '?for=${Uri.encodeComponent(goal.label)}');
+              '?for=${Uri.encodeComponent(forLabel)}');
         },
         icon: const Icon(Icons.psychology_outlined, size: 18),
         label: const Text('Practice for this interview'),
@@ -216,16 +227,18 @@ class _InterviewSheet extends ConsumerWidget {
     );
   }
 
-  String? _topDomain(PrepGoal goal) {
-    if (goal.domainWeights.isEmpty) return null;
-    final keys = goal.domainWeights.keys.toList()
-      ..sort(
-          (a, b) => goal.domainWeights[b]!.compareTo(goal.domainWeights[a]!));
+  String? _topDomain(InterviewAim aim) {
+    if (aim.domainWeights.isEmpty) return null;
+    final keys = aim.domainWeights.keys.toList()
+      ..sort((a, b) => aim.domainWeights[b]!.compareTo(aim.domainWeights[a]!));
     return keys.first;
   }
 
-  Future<bool> _confirmDelete(BuildContext context, PrepGoal goal) async {
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+  Future<bool> _confirmDelete(
+      BuildContext context, InterviewAim aim, ReadinessTarget? target) async {
+    final title = aim.companyName.isEmpty
+        ? (target?.label ?? 'this interview')
+        : aim.companyName;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -346,17 +359,18 @@ class _EndedBanner extends StatelessWidget {
 /// The round pipeline: resolved rounds (with their outcome) then the current
 /// upcoming round, highlighted.
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.goal, required this.today});
+  const _Timeline({required this.aim, required this.goal, required this.today});
 
-  final PrepGoal goal;
+  final InterviewAim aim;
+  final StudyGoal goal;
   final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final past = goal.pastRounds;
-    final current = goal.currentRound;
+    final past = aim.pastRounds(goal.id, goal.deadline);
+    final current = aim.currentRound(goal.id, goal.deadline);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

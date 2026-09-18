@@ -4,9 +4,10 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart';
 import 'ai.dart';
-import 'readiness.dart';
+import 'study_goals.dart';
+import 'subject.dart';
 import 'vault.dart';
 
 part 'interview_debrief.g.dart';
@@ -46,8 +47,8 @@ class InterviewDebriefState {
 }
 
 /// Drives the "how did the interview go? → adjust the plan" chat, keyed by the
-/// goal being debriefed. Sonnet, since it reasons about the role + deck and
-/// emits structured output.
+/// [InterviewAim.id] being debriefed. Sonnet, since it reasons about the role +
+/// deck and emits structured output.
 @riverpod
 class InterviewDebrief extends _$InterviewDebrief {
   static const _model = 'claude-sonnet-4-6';
@@ -55,10 +56,12 @@ class InterviewDebrief extends _$InterviewDebrief {
   @override
   InterviewDebriefState build(String goalId) => const InterviewDebriefState();
 
-  Future<PrepGoal?> _goal() async {
-    final goals = await ref.read(prepGoalsProvider.future);
-    for (final g in goals) {
-      if (g.id == goalId) return g;
+  /// The interview being debriefed — looked up by id on the active study goal
+  /// (Phase B). [goalId] is the [InterviewAim.id].
+  Future<InterviewAim?> _aim() async {
+    final goal = await ref.read(activeStudyGoalProvider.future);
+    for (final iv in goal.interviews) {
+      if (iv.id == goalId) return iv;
     }
     return null;
   }
@@ -72,9 +75,9 @@ class InterviewDebrief extends _$InterviewDebrief {
           error: 'Add your Anthropic API key in Settings to debrief.');
       return;
     }
-    final goal = await _goal();
-    if (goal == null) {
-      state = state.copyWith(error: 'This interview goal no longer exists.');
+    final aim = await _aim();
+    if (aim == null) {
+      state = state.copyWith(error: 'This interview no longer exists.');
       return;
     }
 
@@ -83,6 +86,15 @@ class InterviewDebrief extends _$InterviewDebrief {
 
     try {
       final index = await ref.read(vaultIndexProvider.future);
+      // Label the interview by its company (falling back to the goal's target
+      // role) for the prompt's "debriefing for: …" line.
+      final goal = await ref.read(activeStudyGoalProvider.future);
+      final registry = await ref.read(subjectRegistryProvider.future);
+      final role = goal
+          .toTarget(registry.byId(goal.templateId) ?? registry.primary)
+          .label;
+      final goalLabel =
+          aim.companyName.isEmpty ? role : '${aim.companyName} · $role';
       final domains = <String>{
         for (final c in index.cards)
           if (c.domain != null) c.domain!,
@@ -92,7 +104,7 @@ class InterviewDebrief extends _$InterviewDebrief {
       };
       final freq = deckFrequencySignal(index.cards);
       final system = buildDebriefSystem(
-        goal: goal,
+        goalLabel: goalLabel,
         deckDomains: domains.toList(),
         deckConcepts: concepts.toList(),
         highFrequency: freq.high,
@@ -118,16 +130,19 @@ class InterviewDebrief extends _$InterviewDebrief {
     }
   }
 
-  /// Apply the current debrief to the goal: record the outcome, merge the
-  /// reweights, append the summary. Returns the updated goal, or null if there's
-  /// nothing to apply / the goal is gone.
-  Future<PrepGoal?> apply() async {
+  /// Apply the current debrief to the interview: record the outcome, merge the
+  /// reweights, append the summary. Returns the updated interview, or null if
+  /// there's nothing to apply / the interview is gone.
+  Future<InterviewAim?> apply() async {
     final result = state.result;
     if (result == null) return null;
-    final goal = await _goal();
-    if (goal == null) return null;
-    final updated = result.applyTo(goal);
-    await ref.read(prepGoalsProvider.notifier).upsert(updated);
+    final goal = await ref.read(activeStudyGoalProvider.future);
+    final aim = await _aim();
+    if (aim == null) return null;
+    final updated = result.applyTo(aim);
+    await ref
+        .read(studyGoalsProvider.notifier)
+        .upsertInterview(goal.id, updated);
     return updated;
   }
 }

@@ -2,22 +2,23 @@ import 'package:flutter/material.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/study_goal.dart';
 import '../../shared/providers/clock.dart';
-import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
 import 'interview_card.dart';
 import 'interview_planner_sheet.dart';
 
 /// The learner's interviews — active loops (soonest round first) with a
 /// collapsible "Past" section for ended/archived ones. Every row is the shared
 /// [InterviewCard]: tap opens the action sheet, swipe archives (active) or
-/// deletes (past). The one place to manage interviews.
+/// deletes (past). The one place to manage interviews. Reads the active study
+/// goal's interviews (Phase B).
 class UpcomingInterviewsScreen extends ConsumerWidget {
   const UpcomingInterviewsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goalsAsync = ref.watch(prepGoalsProvider);
+    final goalAsync = ref.watch(activeStudyGoalProvider);
     final today =
         ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
 
@@ -28,19 +29,20 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Plan an interview'),
       ),
-      body: goalsAsync.when(
+      body: goalAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (goals) {
-          if (goals.isEmpty) return const _Empty();
+        data: (goal) {
+          final interviews = goal.interviews;
+          if (interviews.isEmpty) return const _Empty();
           final active = [
-            for (final g in goals)
-              if (!g.status.isEnded) g,
-          ]..sort(_byRound);
+            for (final iv in interviews)
+              if (!iv.status.isEnded) iv,
+          ]..sort((a, b) => _byRound(a, b, goal));
           final past = [
-            for (final g in goals)
-              if (g.status.isEnded) g,
-          ]..sort(_byRound);
+            for (final iv in interviews)
+              if (iv.status.isEnded) iv,
+          ]..sort((a, b) => _byRound(a, b, goal));
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
@@ -51,8 +53,10 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
                   child: Text('No active interviews — plan one below.'),
                 ),
-              for (final g in active) InterviewCard(goal: g, today: today),
-              if (past.isNotEmpty) _PastSection(past: past, today: today),
+              for (final iv in active)
+                InterviewCard(aim: iv, goal: goal, today: today),
+              if (past.isNotEmpty)
+                _PastSection(past: past, goal: goal, today: today),
             ],
           );
         },
@@ -62,30 +66,32 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
 
   // Sort by the CURRENT (upcoming) round — so scheduling a later round re-sorts
   // by that round, not the first one. Ended loops fall back to their last round.
-  int _byRound(PrepGoal a, PrepGoal b) {
-    final da = _sortDate(a);
-    final db = _sortDate(b);
+  int _byRound(InterviewAim a, InterviewAim b, StudyGoal goal) {
+    final da = _sortDate(a, goal);
+    final db = _sortDate(b, goal);
     if (da == null && db == null) return 0;
     if (da == null) return 1;
     if (db == null) return -1;
     return da.compareTo(db);
   }
 
-  DateTime? _sortDate(PrepGoal g) {
-    final cur = g.currentRound?.date;
+  DateTime? _sortDate(InterviewAim a, StudyGoal goal) {
+    final cur = a.currentRound(goal.id, goal.deadline)?.date;
     if (cur != null) return cur;
-    final dates = g.roundDates;
+    final dates = a.roundDates(goal.id, goal.deadline);
     return dates.isEmpty
         ? null
-        : dates.reduce((a, b) => a.isAfter(b) ? a : b); // latest
+        : dates.reduce((x, y) => x.isAfter(y) ? x : y); // latest
   }
 }
 
 /// A collapsible section for ended interviews (kept for the record).
 class _PastSection extends StatefulWidget {
-  const _PastSection({required this.past, required this.today});
+  const _PastSection(
+      {required this.past, required this.goal, required this.today});
 
-  final List<PrepGoal> past;
+  final List<InterviewAim> past;
+  final StudyGoal goal;
   final DateTime today;
 
   @override
@@ -120,8 +126,8 @@ class _PastSectionState extends State<_PastSection> {
           ),
         ),
         if (_open)
-          for (final g in widget.past)
-            InterviewCard(goal: g, today: widget.today),
+          for (final iv in widget.past)
+            InterviewCard(aim: iv, goal: widget.goal, today: widget.today),
       ],
     );
   }

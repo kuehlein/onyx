@@ -47,7 +47,7 @@ class CoachBadge extends ConsumerWidget {
 
     final seed = _chatSeed(
       ref.watch(readinessProvider).asData?.value,
-      ref.watch(readinessTargetControllerProvider).asData?.value,
+      ref.watch(activeTargetProvider).asData?.value,
       ref.watch(clockProvider).asData?.value,
     );
     final load = (

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart' show GoalOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_debrief.dart';
@@ -28,10 +28,10 @@ class _InterviewDebriefScreenState
     extends ConsumerState<InterviewDebriefScreen> {
   Future<void> _apply() async {
     final messenger = ScaffoldMessenger.of(context);
-    final goal = await ref
+    final aim = await ref
         .read(interviewDebriefProvider(widget.goalId).notifier)
         .apply();
-    if (goal == null) return;
+    if (aim == null) return;
     messenger.showSnackBar(
         const SnackBar(content: Text('Debrief saved — your plan is updated.')));
     if (mounted) context.pop();

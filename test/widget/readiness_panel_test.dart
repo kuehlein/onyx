@@ -8,15 +8,13 @@ import 'package:onyx/features/home/readiness_panel.dart';
 import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 
-/// Serves a fixed target without reaching the DB / vault.
-class _FakeTargetController extends ReadinessTargetController {
-  @override
-  Future<ReadinessTarget> build() async => ReadinessTarget.of(
-        level: SeniorityLevel.senior,
-        company: CompanyTier.faang,
-        track: Track.general,
-      );
-}
+/// A fixed active-goal target, served without reaching the DB / vault (the panel
+/// reads [activeTargetProvider] post-Phase-B).
+final _target = ReadinessTarget.of(
+  level: SeniorityLevel.senior,
+  company: CompanyTier.faang,
+  track: Track.general,
+);
 
 void main() {
   const readiness = Readiness(
@@ -57,8 +55,7 @@ void main() {
           readinessProvider.overrideWith((ref) async => readiness),
           readinessLadderPositionProvider.overrideWith((ref) async => ladder),
           readinessPaceProvider.overrideWith((ref) async => null),
-          readinessTargetControllerProvider
-              .overrideWith(_FakeTargetController.new),
+          activeTargetProvider.overrideWith((ref) async => _target),
           studyConsistencyProvider
               .overrideWith((ref) async => const [1, 0, 1, 1, 0, 1, 1]),
         ],
@@ -127,8 +124,7 @@ void main() {
           readinessProvider.overrideWith((ref) async => interviewReadiness),
           readinessLadderPositionProvider.overrideWith((ref) async => ladder),
           readinessPaceProvider.overrideWith((ref) async => null),
-          readinessTargetControllerProvider
-              .overrideWith(_FakeTargetController.new),
+          activeTargetProvider.overrideWith((ref) async => _target),
           studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
           appliedSummaryProvider.overrideWith(
               (ref) async => {'system-design': (attempts: 4, contested: 1)}),
@@ -168,8 +164,7 @@ void main() {
             readinessProvider.overrideWith((ref) async => r),
             readinessLadderPositionProvider.overrideWith((ref) async => ladder),
             readinessPaceProvider.overrideWith((ref) async => null),
-            readinessTargetControllerProvider
-                .overrideWith(_FakeTargetController.new),
+            activeTargetProvider.overrideWith((ref) async => _target),
             studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
             appliedSummaryProvider.overrideWith((ref) async => const {}),
           ],

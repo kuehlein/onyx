@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart';
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart';
 import '../../core/readiness/readiness.dart';
 import 'algo.dart';
 import 'analytics.dart';
@@ -10,6 +10,7 @@ import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
+import 'study_goals.dart';
 
 part 'coach_update.g.dart';
 
@@ -19,6 +20,9 @@ part 'coach_update.g.dart';
 /// [buildCoachUpdate] triage over them.
 @riverpod
 Future<CoachUpdate?> coachUpdate(Ref ref) async {
+  // Register synchronously (before the first await) so a mid-flight goal edit
+  // rebuilding studyGoals can't leave us using a disposed ref after the gap.
+  final goalF = ref.watch(activeStudyGoalProvider.future);
   final readiness = await ref.watch(readinessProvider.future);
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 
@@ -50,13 +54,17 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
       : consistency.sublist(consistency.length - 7);
   final activeRecently = last7.where((c) => c > 0).length >= 3;
 
-  // Days to the nearest upcoming interview (nearest non-ended prep-goal round) —
-  // gates the last-mile behavioral nudge.
-  final goals = await ref.watch(prepGoalsProvider.future);
+  // Days to the nearest upcoming interview (nearest non-ended active-interview
+  // round on the active goal, Phase B) — gates the last-mile behavioral nudge.
+  final goal = await goalF;
+  final interviews = [
+    for (final iv in goal.interviews)
+      if (iv.active) iv
+  ];
   int? daysToInterview;
-  for (final g in goals) {
-    if (g.status.isEnded) continue;
-    final d = g.currentRound?.date;
+  for (final iv in interviews) {
+    if (iv.status.isEnded) continue;
+    final d = iv.currentRound(goal.id, goal.deadline)?.date;
     if (d == null) continue;
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     if (days >= 0 && (daysToInterview == null || days < daysToInterview)) {

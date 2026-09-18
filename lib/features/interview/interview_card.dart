@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/study_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/subject.dart';
 import '../../shared/design/status_color.dart';
 import 'interview_actions.dart';
 import 'interview_sheet.dart';
@@ -12,20 +14,29 @@ import 'interview_sheet.dart';
 /// The one interview row used everywhere (target sheet + upcoming list) so the
 /// behavior is identical: tap opens the [InterviewSheet]; swipe archives (undo)
 /// an active loop or deletes (confirm) an ended one. Shows the current round +
-/// a pace status judged against the interview's OWN role.
+/// a pace status judged against the interview's OWN role (its parent goal's
+/// target).
 class InterviewCard extends ConsumerWidget {
-  const InterviewCard({super.key, required this.goal, required this.today});
+  const InterviewCard(
+      {super.key, required this.aim, required this.goal, required this.today});
 
-  final PrepGoal goal;
+  final InterviewAim aim;
+  final StudyGoal goal;
   final DateTime today;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final ended = goal.status.isEnded;
+    final ended = aim.status.isEnded;
+    // The interview's role dimensions come from the parent goal's target (Phase
+    // B — level/context/track live on the goal, not the interview).
+    final registry = ref.watch(subjectRegistryProvider).asData?.value;
+    final target = registry == null
+        ? null
+        : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 
     final row = InkWell(
-      onTap: () => showInterviewSheet(context, goal.id),
+      onTap: () => showInterviewSheet(context, aim.id),
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -33,9 +44,9 @@ class InterviewCard extends ConsumerWidget {
           children: [
             _leadingIcon(theme, ended),
             const SizedBox(width: 10),
-            Expanded(child: _titleBlock(context, ref, ended)),
+            Expanded(child: _titleBlock(context, ref, ended, target)),
             const SizedBox(width: 8),
-            _trailing(context, ref, ended),
+            _trailing(context, ref, ended, target),
           ],
         ),
       ),
@@ -44,21 +55,23 @@ class InterviewCard extends ConsumerWidget {
     // Swipe: archive an active loop (reversible, no confirm needed); delete an
     // already-ended one (permanent, so confirm first).
     return Dismissible(
-      key: ValueKey('interview-${goal.id}'),
+      key: ValueKey('interview-${aim.id}'),
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) async {
-        if (ended) return _confirmDelete(context);
+        if (ended) return _confirmDelete(context, target);
         await _archive(context, ref);
         return false; // handled with undo; don't remove from the tree ourselves
       },
-      onDismissed: (_) => ref.read(prepGoalsProvider.notifier).remove(goal.id),
+      onDismissed: (_) => ref
+          .read(studyGoalsProvider.notifier)
+          .removeInterview(goal.id, aim.id),
       background: _swipeBg(theme, ended),
       child: row,
     );
   }
 
   Widget _leadingIcon(ThemeData theme, bool ended) {
-    final (IconData icon, Color color) = switch (goal.status) {
+    final (IconData icon, Color color) = switch (aim.status) {
       InterviewStatus.active => (Icons.flag, theme.colorScheme.primary),
       InterviewStatus.offer => (Icons.celebration, StatusColor.good),
       InterviewStatus.rejected => (Icons.do_not_disturb_on, StatusColor.bad),
@@ -71,10 +84,13 @@ class InterviewCard extends ConsumerWidget {
     return Icon(icon, size: 16, color: color);
   }
 
-  Widget _titleBlock(BuildContext context, WidgetRef ref, bool ended) {
+  Widget _titleBlock(BuildContext context, WidgetRef ref, bool ended,
+      ReadinessTarget? target) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+    final title = aim.companyName.isEmpty
+        ? (target?.label ?? 'Interview')
+        : aim.companyName;
     final sub = _subtitle(ended);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,36 +110,38 @@ class InterviewCard extends ConsumerWidget {
   }
 
   String? _subtitle(bool ended) {
-    if (ended) return goal.status.label;
-    final cur = goal.currentRound;
+    if (ended) return aim.status.label;
+    final cur = aim.currentRound(goal.id, goal.deadline);
     if (cur == null) return 'No upcoming round';
-    final n = goal.effectiveRounds.length;
+    final n = aim.effectiveRounds(goal.id, goal.deadline).length;
     final roundNote = n > 1 ? '  ·  round $n' : '';
     final d = cur.date;
     if (d == null) return '${cur.type.label} · no date yet$roundNote';
     return '${cur.type.label} · ${_fmtDate(d)} · ${_daysAway(d)}$roundNote';
   }
 
-  Widget _trailing(BuildContext context, WidgetRef ref, bool ended) {
+  Widget _trailing(BuildContext context, WidgetRef ref, bool ended,
+      ReadinessTarget? target) {
     if (ended) {
-      return Text(goal.status.label,
+      return Text(aim.status.label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant));
     }
-    final cur = goal.currentRound;
-    if (cur?.date == null) return const SizedBox.shrink();
+    final cur = aim.currentRound(goal.id, goal.deadline);
+    if (cur?.date == null || target == null) return const SizedBox.shrink();
     final forecast = ref
         .watch(readinessForecastForProvider((
-          level: goal.level,
-          company: goal.tier,
-          track: goal.track,
+          level: target.level,
+          company: target.company,
+          track: target.track,
         )))
         .asData
         ?.value;
-    return _paceChip(context, forecast, cur!.date!);
+    return _paceChip(context, forecast, cur!.date!, target);
   }
 
-  Widget _paceChip(BuildContext context, ReadinessForecast? f, DateTime d) {
+  Widget _paceChip(BuildContext context, ReadinessForecast? f, DateTime d,
+      ReadinessTarget target) {
     if (f == null) return const SizedBox.shrink();
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     final (String text, Color color) = f.alreadyReady
@@ -136,8 +154,7 @@ class InterviewCard extends ConsumerWidget {
               ),
             final req => ('~$req/day', StatusColor.warn),
           };
-    final role =
-        '${goal.level.label} · ${goal.tier.label} · ${goal.track.label}';
+    final role = target.label;
     return Tooltip(
       message: 'Judged for $role',
       child: Container(
@@ -181,20 +198,27 @@ class InterviewCard extends ConsumerWidget {
 
   Future<void> _archive(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final before = goal;
-    await ref.read(prepGoalsProvider.notifier).upsert(archiveInterview(goal));
+    final before = aim;
+    await ref
+        .read(studyGoalsProvider.notifier)
+        .upsertInterview(goal.id, archiveInterview(aim));
     messenger.showSnackBar(SnackBar(
       content: Text(
-          'Archived ${goal.companyName.isEmpty ? "interview" : goal.companyName}'),
+          'Archived ${aim.companyName.isEmpty ? "interview" : aim.companyName}'),
       action: SnackBarAction(
         label: 'Undo',
-        onPressed: () => ref.read(prepGoalsProvider.notifier).upsert(before),
+        onPressed: () => ref
+            .read(studyGoalsProvider.notifier)
+            .upsertInterview(goal.id, before),
       ),
     ));
   }
 
-  Future<bool> _confirmDelete(BuildContext context) async {
-    final title = goal.companyName.isEmpty ? goal.label : goal.companyName;
+  Future<bool> _confirmDelete(
+      BuildContext context, ReadinessTarget? target) async {
+    final title = aim.companyName.isEmpty
+        ? (target?.label ?? 'this interview')
+        : aim.companyName;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

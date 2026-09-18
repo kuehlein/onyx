@@ -2,49 +2,59 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/clock.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
-import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/features/interview/upcoming_interviews_screen.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/vault.dart';
 
-class _FakeGoals extends PrepGoals {
-  _FakeGoals(this._goals);
-  final List<PrepGoal> _goals;
+/// A fake study-goals notifier holding one default goal whose [interviews] are
+/// the interviews under test (Phase B — the interview cluster reads the active
+/// goal's interviews).
+class _FakeGoals extends StudyGoals {
+  _FakeGoals(this._interviews);
+  final List<InterviewAim> _interviews;
   @override
-  Future<List<PrepGoal>> build() async => _goals;
+  Future<List<StudyGoal>> build() async => [
+        StudyGoal(
+          id: defaultGoalId,
+          name: 'default',
+          templateId: 'software-interviews',
+          interviews: _interviews,
+        ),
+      ];
 }
 
-Widget _app(List<PrepGoal> goals) => ProviderScope(
+Widget _app(List<InterviewAim> interviews) => ProviderScope(
       overrides: [
-        prepGoalsProvider.overrideWith(() => _FakeGoals(goals)),
+        studyGoalsProvider.overrideWith(() => _FakeGoals(interviews)),
         clockProvider.overrideWith((ref) async => Clock.real),
+        // subjectRegistry uses the built-in SWE config when the source is null.
+        vaultSourceProvider.overrideWithValue(null),
         // The card's pace chip depends on a heavy forecast; stub it out.
         readinessForecastForProvider.overrideWith((ref, dims) async => null),
       ],
       child: const MaterialApp(home: UpcomingInterviewsScreen()),
     );
 
+InterviewAim _aim(String id, String company, {DateTime? date}) => InterviewAim(
+      id: id,
+      companyName: company,
+      rounds: date == null
+          ? const []
+          : [InterviewRound(id: '$id-r1', number: 1, date: date)],
+    );
+
 void main() {
   testWidgets('lists active interviews soonest-first; undated last',
       (tester) async {
-    final goals = [
+    final interviews = [
       // Undated (should sort last despite being first in the list).
-      const PrepGoal(
-          id: 'g2',
-          companyName: 'Amazon',
-          tier: CompanyTier.faang,
-          level: SeniorityLevel.mid,
-          track: Track.backend),
-      PrepGoal(
-          id: 'g1',
-          companyName: 'Google',
-          tier: CompanyTier.faang,
-          level: SeniorityLevel.senior,
-          track: Track.backend,
-          date: DateTime(2099, 1, 1)),
+      _aim('g2', 'Amazon'),
+      _aim('g1', 'Google', date: DateTime(2099, 1, 1)),
     ];
-    await tester.pumpWidget(_app(goals));
+    await tester.pumpWidget(_app(interviews));
     await tester.pumpAndSettle();
 
     // The card shows the company name.
@@ -68,12 +78,9 @@ void main() {
   testWidgets('ended interviews live in a collapsible Past section',
       (tester) async {
     await tester.pumpWidget(_app([
-      const PrepGoal(
+      const InterviewAim(
         id: 'g1',
         companyName: 'Google',
-        tier: CompanyTier.faang,
-        level: SeniorityLevel.senior,
-        track: Track.backend,
         status: InterviewStatus.rejected,
       ),
     ]));

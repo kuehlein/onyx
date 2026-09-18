@@ -10,6 +10,7 @@ library;
 import 'dart:convert';
 import '../util.dart';
 
+import '../goal/interview_aim.dart';
 import '../readiness/prep_goal.dart';
 import '../readiness/target.dart';
 
@@ -79,6 +80,31 @@ class InterviewPlan {
       notes: summary.isEmpty ? null : summary,
       // Creation seeds round 1 with the inferred type; more rounds are added
       // as the loop unfolds. The denormalized [date] mirrors round 1.
+      rounds: [
+        InterviewRound(
+            id: '$id-r1', number: 1, type: roundType, date: safeDate),
+      ],
+    );
+  }
+
+  /// Convert to a persistable [InterviewAim] (active) — the Phase B unified
+  /// facet attached to a [StudyGoal]. Mirrors [toGoal], minus the target
+  /// (level/context/track/deadline live on the parent goal now). [id] is
+  /// caller-supplied. [notBefore] drops a past date (usually a wrong-year slip)
+  /// so the interview is simply unscheduled rather than filed in the past.
+  InterviewAim toInterview(String id, {DateTime? notBefore}) {
+    final safeDate =
+        (date != null && notBefore != null && date!.isBefore(notBefore))
+            ? null
+            : date;
+    return InterviewAim(
+      id: id,
+      companyName: company,
+      domainWeights: domainWeights,
+      conceptWeights: conceptWeights,
+      planNotes: summary.isEmpty ? null : summary,
+      // Creation seeds round 1 with the inferred type; more rounds are added as
+      // the loop unfolds.
       rounds: [
         InterviewRound(
             id: '$id-r1', number: 1, type: roundType, date: safeDate),

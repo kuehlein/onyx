@@ -1,14 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
-import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/goal/interview_aim.dart';
 import 'package:onyx/features/interview/interview_actions.dart';
 
-PrepGoal _active({List<InterviewRound>? rounds}) => PrepGoal(
+InterviewAim _active({List<InterviewRound>? rounds}) => InterviewAim(
       id: 'g',
       companyName: 'Stripe',
-      tier: CompanyTier.faang,
-      level: SeniorityLevel.senior,
-      track: Track.backend,
       rounds: rounds ??
           [
             InterviewRound(
@@ -20,9 +16,9 @@ PrepGoal _active({List<InterviewRound>? rounds}) => PrepGoal(
     );
 
 void main() {
-  group('currentRound / pastRounds', () {
+  group('currentRoundOf / pastRounds', () {
     test('current is the pending round; past are the resolved ones', () {
-      final g = _active(rounds: [
+      final a = _active(rounds: [
         InterviewRound(
             id: 'a',
             number: 1,
@@ -30,37 +26,34 @@ void main() {
             date: DateTime(2026, 9, 1)),
         InterviewRound(id: 'b', number: 2, date: DateTime(2026, 9, 20)),
       ]);
-      expect(g.currentRound?.id, 'b');
-      expect(g.pastRounds.map((r) => r.id), ['a']);
+      expect(currentRoundOf(a)?.id, 'b');
+      expect(a.pastRounds('g', null).map((r) => r.id), ['a']);
     });
 
-    test('a legacy single date migrates to a pending current round', () {
-      final g = PrepGoal(
-        id: 'x',
-        tier: CompanyTier.faang,
-        level: SeniorityLevel.senior,
-        track: Track.backend,
-        date: DateTime(2026, 10, 1),
-      );
-      expect(g.currentRound?.date, DateTime(2026, 10, 1));
-      expect(g.pastRounds, isEmpty);
+    test('a legacy single deadline migrates to a pending current round', () {
+      // The interview holds no rounds; the parent goal's deadline seeds a
+      // synthetic round 1 via effectiveRounds/currentRound.
+      const a = InterviewAim(id: 'x', companyName: 'Stripe');
+      expect(a.currentRound('x', DateTime(2026, 10, 1))?.date,
+          DateTime(2026, 10, 1));
+      expect(a.pastRounds('x', DateTime(2026, 10, 1)), isEmpty);
     });
   });
 
   group('passAndScheduleNext', () {
     test('marks the current round passed and adds a pending next round', () {
-      final g = _active();
+      final a = _active();
       final next = InterviewRound(
           id: 'g-r2',
           number: 2,
           type: InterviewRoundType.onsite,
           date: DateTime(2026, 10, 5));
-      final out = passAndScheduleNext(g, next);
+      final out = passAndScheduleNext(a, next);
       expect(out.status, InterviewStatus.active);
-      expect(out.pastRounds.length, 1);
-      expect(out.pastRounds.first.outcome, GoalOutcome.passed);
-      expect(out.currentRound?.id, 'g-r2');
-      expect(out.currentRound?.type, InterviewRoundType.onsite);
+      expect(out.pastRounds('g', null).length, 1);
+      expect(out.pastRounds('g', null).first.outcome, GoalOutcome.passed);
+      expect(currentRoundOf(out)?.id, 'g-r2');
+      expect(currentRoundOf(out)?.type, InterviewRoundType.onsite);
     });
   });
 
@@ -69,21 +62,21 @@ void main() {
       final out = endInterview(_active(), InterviewStatus.rejected);
       expect(out.status, InterviewStatus.rejected);
       expect(out.active, isFalse);
-      expect(out.effectiveRounds.last.outcome, GoalOutcome.failed);
-      expect(out.currentRound, isNull);
+      expect(out.rounds.last.outcome, GoalOutcome.failed);
+      expect(currentRoundOf(out), isNull);
     });
 
     test('offer passes the current round', () {
       final out = endInterview(_active(), InterviewStatus.offer);
       expect(out.status, InterviewStatus.offer);
-      expect(out.effectiveRounds.last.outcome, GoalOutcome.passed);
+      expect(out.rounds.last.outcome, GoalOutcome.passed);
     });
 
     test('withdrawn leaves the round pending', () {
       final out = endInterview(_active(), InterviewStatus.withdrawn);
       expect(out.status, InterviewStatus.withdrawn);
       expect(out.active, isFalse);
-      expect(out.effectiveRounds.last.outcome, GoalOutcome.pending);
+      expect(out.rounds.last.outcome, GoalOutcome.pending);
     });
   });
 
@@ -102,11 +95,11 @@ void main() {
         () {
       // Guards the "accidentally said didn't pass, now can't edit" case.
       final rejected = endInterview(_active(), InterviewStatus.rejected);
-      expect(rejected.currentRound, isNull);
+      expect(currentRoundOf(rejected), isNull);
       final reopened = reopenInterview(rejected);
       expect(reopened.status, InterviewStatus.active);
-      expect(reopened.currentRound, isNotNull);
-      expect(reopened.currentRound?.outcome, GoalOutcome.pending);
+      expect(currentRoundOf(reopened), isNotNull);
+      expect(currentRoundOf(reopened)?.outcome, GoalOutcome.pending);
     });
   });
 
@@ -114,15 +107,15 @@ void main() {
     test('updates the current round date + type', () {
       final out = rescheduleCurrentRound(_active(),
           date: DateTime(2026, 9, 28), type: InterviewRoundType.systemDesign);
-      expect(out.currentRound?.date, DateTime(2026, 9, 28));
-      expect(out.currentRound?.type, InterviewRoundType.systemDesign);
+      expect(currentRoundOf(out)?.date, DateTime(2026, 9, 28));
+      expect(currentRoundOf(out)?.type, InterviewRoundType.systemDesign);
     });
 
     test('is a no-op once the loop has ended', () {
       final ended = endInterview(_active(), InterviewStatus.rejected);
       final out = rescheduleCurrentRound(ended,
           date: DateTime(2026, 12, 1), type: InterviewRoundType.onsite);
-      expect(out.currentRound, isNull);
+      expect(currentRoundOf(out), isNull);
       expect(out.status, InterviewStatus.rejected);
     });
   });

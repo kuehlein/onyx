@@ -1,10 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/goal/budget.dart';
+import '../../core/goal/interview_aim.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
-import '../../core/readiness/prep_goal.dart';
 import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
@@ -71,13 +71,18 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final budgets = await ref.watch(goalBudgetsProvider.future);
   final double budget = budgets[goal.id] ?? 0;
 
-  // Days until the nearest upcoming interview (for the learn taper).
-  final goals = await ref.watch(prepGoalsProvider.future);
+  // Days until the nearest upcoming interview (for the learn taper). The active
+  // goal's ACTIVE interviews (Phase B — interviews live on the study goal now;
+  // [goal] was already watched above, before the first await).
+  final interviews = [
+    for (final iv in goal.interviews)
+      if (iv.active) iv
+  ];
   final today = DateTime(now.year, now.month, now.day);
   int? daysUntilInterview;
-  for (final g in goals) {
-    if (g.status.isEnded) continue;
-    final d = g.currentRound?.date;
+  for (final iv in interviews) {
+    if (iv.status.isEnded) continue;
+    final d = iv.currentRound(goal.id, goal.deadline)?.date;
     if (d == null) continue;
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     if (days >= 0 &&

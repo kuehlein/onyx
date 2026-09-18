@@ -28,7 +28,7 @@ class ReadinessPanel extends ConsumerWidget {
     // cards) collapses to nothing.
     if (rAsync.isLoading && r == null) return const _LoadingPanel();
     if (r == null || r.isEmpty) return const SizedBox.shrink();
-    final target = ref.watch(readinessTargetControllerProvider).asData?.value;
+    final target = ref.watch(activeTargetProvider).asData?.value;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
     final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
     final consistency = ref.watch(studyConsistencyProvider).asData?.value;

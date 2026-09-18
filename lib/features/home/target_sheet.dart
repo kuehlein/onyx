@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/study_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../core/subject/active_subject.dart';
 import '../../core/subject/subject_config.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/study_goals.dart';
 import '../../shared/design/status_color.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
@@ -47,7 +48,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
 
   ReadinessTarget get _t =>
       _draft ??
-      ref.read(readinessTargetControllerProvider).asData?.value ??
+      ref.read(activeTargetProvider).asData?.value ??
       ReadinessTarget.fallback;
 
   void _set(ReadinessTarget next) => setState(() => _draft = next);
@@ -68,41 +69,48 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
         DateTime.now();
     final muted = theme.colorScheme.onSurfaceVariant;
     // Open the dimension pickers by default until a target has been configured
-    // (the controller returns the const fallback only when nothing is set).
-    final saved = ref.watch(readinessTargetControllerProvider).asData?.value;
+    // (the active target returns the const fallback only when nothing is set).
+    final saved = ref.watch(activeTargetProvider).asData?.value;
     final unconfigured =
         saved == null || identical(saved, ReadinessTarget.fallback);
     final showDims = _showDims ?? unconfigured;
-    // Scheduled interviews (prep goals with at least one dated round) — every
-    // round is flagged on the calendar and the loops are listed below it.
-    final goals =
-        ref.watch(prepGoalsProvider).asData?.value ?? const <PrepGoal>[];
+    // The active study goal owns the interviews (Phase B) + the level/track/
+    // deadline slots the Save maps into.
+    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
+    final interviews = goal?.interviews ?? const <InterviewAim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
-    final scheduled = [
-      for (final g in goals)
-        if (!g.status.isEnded && _hasUpcomingRound(g, today)) g,
-    ]..sort(
-        (a, b) => a.nextRoundDate(today)!.compareTo(b.nextRoundDate(today)!));
+    final scheduled = goal == null
+        ? const <InterviewAim>[]
+        : ([
+            for (final iv in interviews)
+              if (!iv.status.isEnded && _hasUpcomingRound(iv, goal, today)) iv,
+          ]..sort((a, b) => a
+            .nextRoundDate(goal.id, goal.deadline, today)!
+            .compareTo(b.nextRoundDate(goal.id, goal.deadline, today)!)));
     // Every round date → the labels of the round(s) on that day (for the
     // calendar flags + their long-press tooltip).
     final roundsByDate = <DateTime, List<String>>{};
-    for (final g in scheduled) {
-      for (final r in g.effectiveRounds) {
-        final rd = r.date;
-        if (rd == null) continue;
-        final d = DateTime(rd.year, rd.month, rd.day);
-        final who = g.companyName.isEmpty ? '' : '${g.companyName} · ';
-        roundsByDate.putIfAbsent(d, () => []).add('$who${r.label}');
+    if (goal != null) {
+      for (final iv in scheduled) {
+        for (final r in iv.effectiveRounds(goal.id, goal.deadline)) {
+          final rd = r.date;
+          if (rd == null) continue;
+          final d = DateTime(rd.year, rd.month, rd.day);
+          final who = iv.companyName.isEmpty ? '' : '${iv.companyName} · ';
+          roundsByDate.putIfAbsent(d, () => []).add('$who${r.label}');
+        }
       }
     }
     Future<void> openPlanner() async {
-      // A slide-up planner (consistent with the other AI chats); it returns the
-      // saved interview so we can focus its date on the calendar.
+      // A slide-up planner (consistent with the other AI chats). The accepted
+      // plan already writes its round + date onto the active goal, so refreshing
+      // the sheet picks it up; focus the calendar on its date if it set one.
       final added = await showInterviewPlannerSheet(context);
       if (!mounted) return;
-      if (added?.date != null) {
-        _set(_t.copyWith(interviewDate: added!.date));
+      final d = added?.nextRoundDate(goal?.id ?? '', null);
+      if (d != null) {
+        _set(_t.copyWith(interviewDate: d));
       }
     }
 
@@ -252,21 +260,33 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 const _CalendarLegend(),
                 const SizedBox(height: 10),
                 // Scheduled interviews (flagged above) + the entry to plan one.
-                _ScheduledSection(
-                  goals: scheduled,
-                  today: today,
-                  onAdd: openPlanner,
-                ),
+                if (goal != null)
+                  _ScheduledSection(
+                    interviews: scheduled,
+                    goal: goal,
+                    today: today,
+                    onAdd: openPlanner,
+                  ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () async {
-                      await ref
-                          .read(readinessTargetControllerProvider.notifier)
-                          .save(t);
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
+                    onPressed: goal == null
+                        ? null
+                        : () async {
+                            // Map the draft target's slots onto the active goal
+                            // (Phase B cutover — the goal persists to
+                            // study-goals.json, bypassing the legacy bridge).
+                            await ref.read(studyGoalsProvider.notifier).upsert(
+                                  goal.copyWith(
+                                    levelId: t.levelId,
+                                    contextId: t.contextId,
+                                    trackId: t.trackId,
+                                    deadline: t.interviewDate,
+                                  ),
+                                );
+                            if (context.mounted) Navigator.of(context).pop();
+                          },
                     child: const Text('Save target'),
                   ),
                 ),
@@ -776,10 +796,10 @@ class _CalendarLegend extends StatelessWidget {
 /// This is the only date arithmetic in the calendar — public and unit-tested.
 /// Relies entirely on Dart's `DateTime` normalization (leap years, month
 /// rollover); no hand-rolled math.
-/// Whether [g] has any round on or after [today] — i.e. the loop isn't fully in
+/// Whether [a] has any round on or after [today] — i.e. the loop isn't fully in
 /// the past. Fully-past interviews drop out of the sheet's list + calendar.
-bool _hasUpcomingRound(PrepGoal g, DateTime today) {
-  final dates = g.roundDates;
+bool _hasUpcomingRound(InterviewAim a, StudyGoal goal, DateTime today) {
+  final dates = a.roundDates(goal.id, goal.deadline);
   if (dates.isEmpty) return false;
   final t = DateTime(today.year, today.month, today.day);
   return dates.any((d) => !d.isBefore(t));
@@ -802,12 +822,14 @@ bool _hasUpcomingRound(PrepGoal g, DateTime today) {
 /// list shows the 3 soonest with a 'show all' expander.
 class _ScheduledSection extends ConsumerStatefulWidget {
   const _ScheduledSection({
-    required this.goals,
+    required this.interviews,
+    required this.goal,
     required this.today,
     required this.onAdd,
   });
 
-  final List<PrepGoal> goals; // sorted by soonest round first
+  final List<InterviewAim> interviews; // sorted by soonest round first
+  final StudyGoal goal;
   final DateTime today;
   final VoidCallback onAdd;
 
@@ -823,9 +845,10 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final goals = widget.goals;
-    final capped = goals.length > _cap;
-    final visible = (_showAll || !capped) ? goals : goals.take(_cap).toList();
+    final interviews = widget.interviews;
+    final capped = interviews.length > _cap;
+    final visible =
+        (_showAll || !capped) ? interviews : interviews.take(_cap).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,19 +869,21 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
             ),
           ],
         ),
-        if (goals.isEmpty)
+        if (interviews.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 2, bottom: 2),
             child: Text('None scheduled — add one to flag it on the calendar.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),
-        for (final g in visible) InterviewCard(goal: g, today: widget.today),
+        for (final iv in visible)
+          InterviewCard(aim: iv, goal: widget.goal, today: widget.today),
         if (capped)
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () => setState(() => _showAll = !_showAll),
-              child: Text(_showAll ? 'Show fewer' : 'Show all ${goals.length}'),
+              child: Text(
+                  _showAll ? 'Show fewer' : 'Show all ${interviews.length}'),
             ),
           ),
       ],

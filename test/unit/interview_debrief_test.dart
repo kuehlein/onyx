@@ -1,25 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_debrief.dart';
-import 'package:onyx/core/readiness/prep_goal.dart';
-import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/goal/interview_aim.dart';
 import 'package:onyx/shared/models/card.dart';
 
-PrepGoal _goal() => const PrepGoal(
+const _label = 'Google · Senior · Backend';
+
+InterviewAim _aim() => const InterviewAim(
       id: 'g1',
       companyName: 'Google',
-      tier: CompanyTier.faang,
-      level: SeniorityLevel.senior,
-      track: Track.backend,
       domainWeights: {'ds-a': 1.5, 'system-design': 1.2},
       conceptWeights: {'graphs': 1.5},
-      notes: 'Original plan notes.',
+      planNotes: 'Original plan notes.',
     );
 
 void main() {
   group('buildDebriefSystem', () {
     test('seeds the goal label and the deck keys', () {
       final s = buildDebriefSystem(
-        goal: _goal(),
+        goalLabel: _label,
         deckDomains: ['ds-a', 'system-design'],
         deckConcepts: ['graphs', 'dynamic-programming'],
       );
@@ -30,7 +28,7 @@ void main() {
 
     test('warns against overreacting to one noisy interview', () {
       final s = buildDebriefSystem(
-        goal: _goal(),
+        goalLabel: _label,
         deckDomains: const ['ds-a'],
         deckConcepts: const ['graphs'],
       );
@@ -42,7 +40,7 @@ void main() {
 
     test('surfaces the deck frequency signal when provided', () {
       final s = buildDebriefSystem(
-        goal: _goal(),
+        goalLabel: _label,
         deckDomains: const ['ds-a'],
         deckConcepts: const ['graphs', 'segment-tree'],
         highFrequency: const ['graphs'],
@@ -146,7 +144,7 @@ void main() {
         conceptWeights: {'dynamic-programming': 2.5},
         summary: 'Drill DP; graphs are solid.',
       );
-      final updated = result.applyTo(_goal());
+      final updated = result.applyTo(_aim());
 
       expect(updated.outcome, GoalOutcome.failed);
       // New key overrides / adds; untouched keys survive.
@@ -155,15 +153,15 @@ void main() {
       expect(updated.domainWeights['system-design'], 1.2);
       expect(updated.conceptWeights['dynamic-programming'], 2.5);
       expect(updated.conceptWeights['graphs'], 1.5);
-      // Summary appended to notes and recorded as the outcome note.
-      expect(updated.notes, contains('Original plan notes.'));
-      expect(updated.notes, contains('Drill DP; graphs are solid.'));
+      // Summary appended to plan notes and recorded as the outcome note.
+      expect(updated.planNotes, contains('Original plan notes.'));
+      expect(updated.planNotes, contains('Drill DP; graphs are solid.'));
       expect(updated.outcomeNotes, 'Drill DP; graphs are solid.');
     });
 
-    test('a null outcome leaves the goal outcome as-is', () {
+    test('a null outcome leaves the interview outcome as-is', () {
       const result = DebriefResult(summary: 'Just some notes.');
-      final updated = result.applyTo(_goal());
+      final updated = result.applyTo(_aim());
       expect(updated.outcome, GoalOutcome.pending);
     });
   });

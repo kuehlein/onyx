@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
@@ -18,9 +18,9 @@ const _amber = StatusColor.warn;
 /// The "plan an interview" chat — a slide-up sheet (consistent with the coach
 /// and explain chats): describe an upcoming interview, answer any clarifying
 /// questions, review the proposed plan, and save it as an active interview.
-/// Returns the saved [PrepGoal], or null if dismissed without saving.
-Future<PrepGoal?> showInterviewPlannerSheet(BuildContext context) =>
-    showOnyxSheet<PrepGoal>(
+/// Returns the saved [InterviewAim], or null if dismissed without saving.
+Future<InterviewAim?> showInterviewPlannerSheet(BuildContext context) =>
+    showOnyxSheet<InterviewAim>(
       context,
       builder: (_) => const _InterviewPlannerSheet(),
     );
@@ -36,12 +36,12 @@ class _InterviewPlannerSheet extends ConsumerWidget {
 
     Future<void> accept() async {
       final messenger = ScaffoldMessenger.of(context);
-      final goal = await ref.read(interviewPlannerProvider.notifier).accept();
-      if (goal == null) return;
+      final aim = await ref.read(interviewPlannerProvider.notifier).accept();
+      if (aim == null) return;
       messenger.showSnackBar(SnackBar(
           content: Text('Saved — study is now prioritized for '
-              '${goal.companyName}.')));
-      if (context.mounted) Navigator.of(context).pop(goal);
+              '${aim.companyName}.')));
+      if (context.mounted) Navigator.of(context).pop(aim);
     }
 
     return Padding(

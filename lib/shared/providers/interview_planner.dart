@@ -4,16 +4,18 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_plan.dart';
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart';
 import 'ai.dart';
 import 'clock.dart';
 import 'readiness.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'interview_planner.g.dart';
 
 /// The interview-planner conversation: a chat that ends in a proposed
-/// [InterviewPlan] the learner can accept (→ an active [PrepGoal]).
+/// [InterviewPlan] the learner can accept (→ an active [InterviewAim] on the
+/// active study goal).
 class InterviewPlannerState {
   const InterviewPlannerState({
     this.messages = const [],
@@ -71,7 +73,7 @@ class InterviewPlanner extends _$InterviewPlanner {
 
     try {
       final index = await ref.read(vaultIndexProvider.future);
-      final base = await ref.read(readinessTargetControllerProvider.future);
+      final base = await ref.read(activeTargetProvider.future);
       final today = (await ref.read(clockProvider.future)).today();
       final domains = <String>{
         for (final c in index.cards)
@@ -106,19 +108,32 @@ class InterviewPlanner extends _$InterviewPlanner {
     }
   }
 
-  /// Accept the current plan: persist it as an active prep goal (which the
-  /// targeting layer then applies to study). Returns the saved goal, or null if
-  /// there's no plan to accept.
-  Future<PrepGoal?> accept() async {
+  /// Accept the current plan: attach it as an active [InterviewAim] on the active
+  /// study goal (which the targeting layer then applies to study). Fills the
+  /// goal's target slots + deadline ONLY if unset, so an accepted plan doesn't
+  /// clobber a target the user already chose. Returns the saved interview, or
+  /// null if there's no plan to accept.
+  Future<InterviewAim?> accept() async {
     final plan = state.plan;
     if (plan == null) return null;
     final clock = await ref.read(clockProvider.future);
     final now = clock.now();
     // notBefore drops a past date (usually a wrong-year slip) → unscheduled
     // rather than filed in the past.
-    final goal = plan.toGoal('goal-${now.microsecondsSinceEpoch}',
+    final aim = plan.toInterview('goal-${now.microsecondsSinceEpoch}',
         notBefore: clock.today());
-    await ref.read(prepGoalsProvider.notifier).upsert(goal);
-    return goal;
+    final goal = await ref.read(activeStudyGoalProvider.future);
+    // Seed the goal's target slots from the plan only when the user hasn't set
+    // one yet (a plain slot is null on the goal). One upsert carries the new
+    // interview + any seeded slots + the deadline.
+    final unset = goal.levelId == null;
+    await ref.read(studyGoalsProvider.notifier).upsert(goal.copyWith(
+          levelId: unset ? plan.level.name : goal.levelId,
+          contextId: unset ? plan.tier.name : goal.contextId,
+          trackId: unset ? plan.track.name : goal.trackId,
+          deadline: goal.deadline ?? plan.date,
+          interviews: [...goal.interviews, aim],
+        ));
+    return aim;
   }
 }

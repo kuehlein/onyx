@@ -1,60 +1,54 @@
 import 'package:flutter/material.dart';
 
-import '../../core/readiness/prep_goal.dart';
+import '../../core/goal/interview_aim.dart';
 
 /// Shared interview-round editing used by both the target sheet and the
 /// Upcoming-interviews screen: a dialog to add/edit one round, plus the pure
-/// mutation helpers that keep a [PrepGoal]'s rounds ordered, renumbered, and its
-/// denormalized [PrepGoal.date] in sync.
+/// mutation helpers that keep an [InterviewAim]'s rounds ordered and renumbered.
 
-/// Re-order [rounds] by date (dated ascending, undated last), renumber 1..n, and
-/// mirror the earliest dated round into the denormalized [PrepGoal.date] that
-/// legacy targeting still reads.
-PrepGoal syncedGoal(PrepGoal g, List<InterviewRound> rounds) {
-  final sorted = [...rounds]..sort((a, b) {
-      if (a.date == null && b.date == null) return a.number.compareTo(b.number);
-      if (a.date == null) return 1;
-      if (b.date == null) return -1;
-      return a.date!.compareTo(b.date!);
+/// Re-order [rounds] by date (dated ascending, undated last, ties by number),
+/// renumber 1..n, and return the updated aim. The goal's single [deadline] is no
+/// longer denormalized here — rounds are the source of truth.
+InterviewAim syncedAim(InterviewAim a, List<InterviewRound> rounds) {
+  final sorted = [...rounds]..sort((x, y) {
+      if (x.date == null && y.date == null) return x.number.compareTo(y.number);
+      if (x.date == null) return 1;
+      if (y.date == null) return -1;
+      return x.date!.compareTo(y.date!);
     });
   final renum = [
     for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(number: i + 1),
   ];
-  DateTime? earliest;
-  for (final r in renum) {
-    final d = r.date;
-    if (d != null && (earliest == null || d.isBefore(earliest))) earliest = d;
-  }
-  return g.copyWith(rounds: renum, date: earliest);
+  return a.copyWith(rounds: renum);
 }
 
-/// Add or replace a round (matched by id), returning the synced goal.
-PrepGoal goalWithRound(PrepGoal g, InterviewRound round) {
-  final rounds = [...g.effectiveRounds];
+/// Add or replace a round (matched by id), returning the synced aim.
+InterviewAim aimWithRound(InterviewAim a, InterviewRound round) {
+  final rounds = [...a.rounds];
   final i = rounds.indexWhere((r) => r.id == round.id);
   if (i >= 0) {
     rounds[i] = round;
   } else {
     rounds.add(round);
   }
-  return syncedGoal(g, rounds);
+  return syncedAim(a, rounds);
 }
 
-/// Remove a round by id. Returns the synced goal, or null when that empties the
+/// Remove a round by id. Returns the synced aim, or null when that empties the
 /// loop (the caller should then delete the whole interview).
-PrepGoal? goalWithoutRound(PrepGoal g, String roundId) {
-  final rounds = [...g.effectiveRounds]..removeWhere((r) => r.id == roundId);
+InterviewAim? aimWithoutRound(InterviewAim a, String roundId) {
+  final rounds = [...a.rounds]..removeWhere((r) => r.id == roundId);
   if (rounds.isEmpty) return null;
-  return syncedGoal(g, rounds);
+  return syncedAim(a, rounds);
 }
 
-/// A fresh round for [g], numbered next in the loop. Defaults to the generic
+/// A fresh round for [a], numbered next in the loop. Defaults to the generic
 /// [InterviewRoundType.other] — the learner picks the real kind if they know it,
 /// rather than us presuming a screen. [seed] disambiguates the id.
-InterviewRound draftRound(PrepGoal g, {required int seed}) {
-  final n = g.effectiveRounds.length + 1;
+InterviewRound draftRound(InterviewAim a, {required int seed}) {
+  final n = a.rounds.length + 1;
   return InterviewRound(
-    id: '${g.id}-r$n-$seed',
+    id: '${a.id}-r$n-$seed',
     number: n,
   );
 }
