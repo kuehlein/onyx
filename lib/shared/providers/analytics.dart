@@ -65,19 +65,26 @@ Future<List<DomainRetention>> retentionByDomain(Ref ref) async {
   return ref.watch(goalRetentionByDomainProvider(goal.id).future);
 }
 
-/// Averaged mock-interview performance + rubric breakdown. Recomputes when the
-/// applied-transfer signal is invalidated (a new mock, or the simulator).
+/// Averaged mock-interview performance + rubric breakdown for a SPECIFIC goal —
+/// mocks on its member cards. The whole-vault default goal includes all, so
+/// single-goal numbers are unchanged. Recomputes on a new mock.
 @riverpod
-Future<MockSkills> mockSkills(Ref ref) async {
-  await ref.watch(appliedTransferProvider.future); // refresh on new mocks
-  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+Future<MockSkills> goalMockSkills(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final transferF =
+      ref.watch(appliedTransferProvider.future); // refresh on mocks
+  final repo = ref.watch(appliedRepositoryProvider);
+  await transferF;
+  final memberIds = await memberIdsF;
+  final attempts = await repo.attempts();
   return computeMockSkills([
     // Exclude self-reported solves (external + algo track) — this section is the
     // coach-mock rubric breakdown, and self-reports carry no rubric. Also exclude
     // system-design mocks: they use a different rubric and get their own section.
     // All still count as applied evidence toward readiness.
     for (final a in attempts)
-      if (a.source != 'external' &&
+      if (memberIds.contains(a.cardId) &&
+          a.source != 'external' &&
           a.source != 'algo' &&
           a.source != 'sd-practice' &&
           a.source != 'behavioral')
@@ -90,15 +97,57 @@ Future<MockSkills> mockSkills(Ref ref) async {
   ]);
 }
 
-/// System-design mock performance + rubric breakdown (its own rubric, distinct
-/// from the coding mock skills). Recomputes on a new mock.
+/// Mock skills for the ACTIVE goal — see [goalMockSkills].
+@riverpod
+Future<MockSkills> mockSkills(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalMockSkillsProvider(goal.id).future);
+}
+
+/// System-design mock performance + rubric breakdown for a goal (its own rubric,
+/// distinct from the coding mock skills). Recomputes on a new mock.
+@riverpod
+Future<MockSkills> goalSystemDesignSkills(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final transferF =
+      ref.watch(appliedTransferProvider.future); // refresh on mocks
+  final repo = ref.watch(appliedRepositoryProvider);
+  await transferF;
+  final memberIds = await memberIdsF;
+  final attempts = await repo.attempts();
+  return computeMockSkills([
+    for (final a in attempts)
+      if (a.source == 'sd-practice' && memberIds.contains(a.cardId))
+        (
+          appliedScore: a.appliedScore,
+          hintLevel: a.hintLevel,
+          novel: a.novel,
+          rubric: AppliedAssessment.decodeRubric(a.rubric),
+        ),
+  ]);
+}
+
+/// System-design skills for the ACTIVE goal — see [goalSystemDesignSkills].
 @riverpod
 Future<MockSkills> systemDesignSkills(Ref ref) async {
-  await ref.watch(appliedTransferProvider.future); // refresh on new mocks
-  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalSystemDesignSkillsProvider(goal.id).future);
+}
+
+/// Behavioral mock performance + STAR+L rubric breakdown for a goal (its own
+/// rubric). Its own Insights section so it doesn't mix with coding/SD mocks.
+@riverpod
+Future<MockSkills> goalBehavioralSkills(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final transferF =
+      ref.watch(appliedTransferProvider.future); // refresh on mocks
+  final repo = ref.watch(appliedRepositoryProvider);
+  await transferF;
+  final memberIds = await memberIdsF;
+  final attempts = await repo.attempts();
   return computeMockSkills([
     for (final a in attempts)
-      if (a.source == 'sd-practice')
+      if (a.source == 'behavioral' && memberIds.contains(a.cardId))
         (
           appliedScore: a.appliedScore,
           hintLevel: a.hintLevel,
@@ -108,36 +157,32 @@ Future<MockSkills> systemDesignSkills(Ref ref) async {
   ]);
 }
 
-/// Behavioral mock performance + STAR+L rubric breakdown (its own rubric). Its
-/// own Insights section so it doesn't mix with the coding/SD mock skills.
+/// Behavioral skills for the ACTIVE goal — see [goalBehavioralSkills].
 @riverpod
 Future<MockSkills> behavioralSkills(Ref ref) async {
-  await ref.watch(appliedTransferProvider.future); // refresh on new mocks
-  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
-  return computeMockSkills([
-    for (final a in attempts)
-      if (a.source == 'behavioral')
-        (
-          appliedScore: a.appliedScore,
-          hintLevel: a.hintLevel,
-          novel: a.novel,
-          rubric: AppliedAssessment.decodeRubric(a.rubric),
-        ),
-  ]);
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalBehavioralSkillsProvider(goal.id).future);
 }
 
-/// Algorithms-track progress: problems picked up, clean-solve rate, momentum.
-/// Recomputes when a solve is logged (which invalidates appliedTransfer).
+/// Algorithms-track progress for a goal: problems picked up, clean-solve rate,
+/// momentum. Recomputes when a solve is logged (invalidates appliedTransfer).
 @riverpod
-Future<AlgoStats> algoStats(Ref ref) async {
-  await ref.watch(appliedTransferProvider.future); // refresh on new solves
-  final index = await ref.watch(vaultIndexProvider.future);
-  final clock = await ref.watch(clockProvider.future);
-  final attempts = await ref.watch(appliedRepositoryProvider).attempts();
+Future<AlgoStats> goalAlgoStats(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final transferF =
+      ref.watch(appliedTransferProvider.future); // refresh on solves
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final repo = ref.watch(appliedRepositoryProvider);
+  await transferF;
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final clock = await clockF;
+  final attempts = await repo.attempts();
   final patternByCard = {for (final c in index.cards) c.id: c.title};
   return computeAlgoStats([
     for (final a in attempts)
-      if (a.source == 'algo')
+      if (a.source == 'algo' && memberIds.contains(a.cardId))
         (
           appliedScore: a.appliedScore,
           occurredAt: a.occurredAt,
@@ -147,15 +192,26 @@ Future<AlgoStats> algoStats(Ref ref) async {
   ], clock.now());
 }
 
-/// Per-pattern mastery for the Algorithms track — how much of each pattern you
-/// can durably solve (execution clock). Recomputes after solves change FSRS.
+/// Algorithms progress for the ACTIVE goal — see [goalAlgoStats].
 @riverpod
-Future<List<PatternMastery>> patternMastery(Ref ref) async {
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
+Future<AlgoStats> algoStats(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalAlgoStatsProvider(goal.id).future);
+}
+
+/// Per-pattern mastery for the Algorithms track within a goal — how much of each
+/// pattern you can durably solve (execution clock). Recomputes after solves.
+@riverpod
+Future<List<PatternMastery>> goalPatternMastery(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final states = await statesF;
   return computePatternMastery([
     for (final c in index.cards)
-      if (c.type == kTypeAlgorithm)
+      if (c.type == kTypeAlgorithm && memberIds.contains(c.id))
         (
           pattern: c.title,
           strengths: [
@@ -169,25 +225,63 @@ Future<List<PatternMastery>> patternMastery(Ref ref) async {
   ]);
 }
 
-/// How many cards come due on each of the next 14 days (from FSRS `dueAt`).
+/// Pattern mastery for the ACTIVE goal — see [goalPatternMastery].
 @riverpod
-Future<List<int>> dueForecast(Ref ref) async {
-  final states = await ref.watch(srsStatesProvider.future);
-  final clock = await ref.watch(clockProvider.future);
+Future<List<PatternMastery>> patternMastery(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalPatternMasteryProvider(goal.id).future);
+}
+
+/// How many of a goal's cards come due on each of the next 14 days (FSRS `dueAt`).
+@riverpod
+Future<List<int>> goalDueForecast(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final memberIds = await memberIdsF;
+  final states = await statesF;
+  final clock = await clockF;
   return computeDueForecast(
-    dueDates: [for (final s in states.byKey.values) s.dueAt],
+    dueDates: [
+      for (final s in states.byKey.values)
+        if (memberIds.contains(s.cardId)) s.dueAt,
+    ],
     today: clock.today(),
   );
 }
 
-/// The most-lapsed cards (leeches worth reformulating), most-failed first.
+/// Due forecast for the ACTIVE goal — see [goalDueForecast].
+@riverpod
+Future<List<int>> dueForecast(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalDueForecastProvider(goal.id).future);
+}
+
+/// A goal's most-lapsed cards (leeches worth reformulating), most-failed first.
+@riverpod
+Future<List<StrugglingCard>> goalStrugglingCards(Ref ref, String goalId) async {
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  ref.watch(srsStatesProvider); // refresh after reviews change
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final repo = ref.watch(srsRepositoryProvider);
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final rows = await repo.lapsesByCard();
+  final titleByCard = {for (final c in index.cards) c.id: c.title};
+  return topStruggling(
+    [
+      for (final r in rows)
+        if (memberIds.contains(r.cardId)) r,
+    ],
+    titleByCard,
+  );
+}
+
+/// Struggling cards for the ACTIVE goal — see [goalStrugglingCards].
 @riverpod
 Future<List<StrugglingCard>> strugglingCards(Ref ref) async {
-  ref.watch(srsStatesProvider); // refresh after reviews change
-  final index = await ref.watch(vaultIndexProvider.future);
-  final rows = await ref.watch(srsRepositoryProvider).lapsesByCard();
-  final titleByCard = {for (final c in index.cards) c.id: c.title};
-  return topStruggling(rows, titleByCard);
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalStrugglingCardsProvider(goal.id).future);
 }
 
 /// Study actions per day over the last 4 weeks (a compact activity strip).
