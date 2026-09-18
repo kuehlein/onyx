@@ -123,6 +123,7 @@ class InterviewRound {
 /// hold several, which the targeting layer blends).
 class InterviewAim {
   const InterviewAim({
+    this.id = '',
     this.companyName = '',
     this.rounds = const [],
     this.active = true,
@@ -133,6 +134,11 @@ class InterviewAim {
     this.conceptWeights = const {},
     this.planNotes,
   });
+
+  /// Stable id, unique within the parent goal's [StudyGoal.interviews] — the key
+  /// the UI upserts/removes/mutes by, and what the debrief flow looks up. Migrated
+  /// from the legacy `PrepGoal.id`; empty only on a not-yet-persisted draft.
+  final String id;
 
   /// Free-form company name (e.g. "Google") for display + AI context.
   final String companyName;
@@ -165,7 +171,12 @@ class InterviewAim {
       rounds.isNotEmpty
           ? rounds
           : (deadline != null
-              ? [InterviewRound(id: '$goalId-r1', number: 1, date: deadline)]
+              ? [
+                  InterviewRound(
+                      id: '${id.isNotEmpty ? id : goalId}-r1',
+                      number: 1,
+                      date: deadline)
+                ]
               : const []);
 
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
@@ -219,6 +230,7 @@ class InterviewAim {
   }
 
   InterviewAim copyWith({
+    String? id,
     String? companyName,
     List<InterviewRound>? rounds,
     bool? active,
@@ -230,6 +242,7 @@ class InterviewAim {
     Object? planNotes = _unset,
   }) =>
       InterviewAim(
+        id: id ?? this.id,
         companyName: companyName ?? this.companyName,
         rounds: rounds ?? this.rounds,
         active: active ?? this.active,
@@ -244,6 +257,7 @@ class InterviewAim {
       );
 
   Map<String, dynamic> toJson() => {
+        if (id.isNotEmpty) 'id': id,
         if (companyName.isNotEmpty) 'companyName': companyName,
         if (rounds.isNotEmpty) 'rounds': [for (final r in rounds) r.toJson()],
         'active': active,
@@ -256,6 +270,7 @@ class InterviewAim {
       };
 
   static InterviewAim fromJson(Map<String, dynamic> m) => InterviewAim(
+        id: m['id'] is String ? m['id'] as String : '',
         companyName:
             m['companyName'] is String ? m['companyName'] as String : '',
         rounds: _parseRounds(m['rounds']),

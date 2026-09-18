@@ -209,4 +209,58 @@ void main() {
     expect(g.interviews.single.companyName, 'Google');
     expect(g.interviews.single.domainWeights['system-design'], 1.3);
   });
+
+  test('editing the default goal\'s interviews persists it (B4a cutover)',
+      () async {
+    if (!_sqliteAvailable) return;
+    final legacy = Directory.systemTemp.createTempSync('onyx_b4a_');
+    addTearDown(() => legacy.deleteSync(recursive: true));
+    File(p.join(legacy.path, 'x1.md')).writeAsStringSync(_card('x1', 'ds-a'));
+    File(p.join(legacy.path, '_meta', 'onyx-target.json'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+          '{"level":"senior","company":"faang","track":"backend"}');
+    const goalsJson = '[{"id":"g1","companyName":"Google","tier":"faang",'
+        '"level":"senior","track":"backend","active":true,"status":"active"}]';
+    File(p.join(legacy.path, '_meta', 'onyx-goals.json'))
+        .writeAsStringSync(goalsJson);
+    File(p.join(legacy.path, '_meta', 'onyx-goals.dev.json'))
+        .writeAsStringSync(goalsJson);
+
+    ProviderContainer container() => ProviderContainer(overrides: [
+          vaultSourceProvider
+              .overrideWithValue(DesktopVaultSource(legacy.path)),
+          appDatabaseProvider.overrideWith((ref) {
+            final db = AppDatabase.withExecutor(NativeDatabase.memory());
+            ref.onDispose(db.close);
+            return db;
+          }),
+        ]);
+    final storeFile = File(p.join(legacy.path, '_meta', 'study-goals.json'));
+
+    // First load: the migrated default with the one legacy interview (id kept).
+    // The fold is still read-only — study-goals.json doesn't exist.
+    final c = container();
+    addTearDown(c.dispose);
+    c.listen(studyGoalsProvider, (_, __) {});
+    final migrated = (await c.read(studyGoalsProvider.future)).single;
+    expect(migrated.interviews.single.id, 'g1');
+    expect(storeFile.existsSync(), isFalse);
+
+    // Add a second interview → the default goal is persisted for the first time.
+    await c.read(studyGoalsProvider.notifier).upsertInterview(
+        defaultGoalId, const InterviewAim(id: 'amzn', companyName: 'Amazon'));
+    expect(storeFile.existsSync(), isTrue);
+
+    // A FRESH container reads the STORED default (both interviews) — the migration
+    // is superseded (re-deriving from the legacy files alone would give just one).
+    final c2 = container();
+    addTearDown(c2.dispose);
+    final stored = (await c2.read(studyGoalsProvider.future)).single;
+    expect(stored.id, defaultGoalId);
+    expect(stored.interviews.map((iv) => iv.id).toSet(), {'g1', 'amzn'});
+    // Slots survived the cutover too.
+    expect([stored.levelId, stored.contextId, stored.trackId],
+        ['senior', 'faang', 'backend']);
+  });
 }

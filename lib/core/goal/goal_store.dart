@@ -8,9 +8,10 @@ import 'study_goal.dart';
 /// query per goal. This is *not* hand-edited content (per the vault conventions),
 /// so it lives in `_meta/`, unlike the authored subject templates and cards.
 ///
-/// The implicit default (whole-vault) goal is never stored — it's synthesized from
-/// the primary template — so an empty/absent file means "single default goal",
-/// identical to pre-#30d behavior.
+/// The implicit default (whole-vault) goal is synthesized from the primary
+/// template, so an empty/absent file means "single default goal", identical to
+/// pre-#30d behavior. Once the user sets a target/interview on that default goal
+/// (Phase B), it persists here like any goal (keyed by [defaultGoalId]).
 class GoalStore {
   GoalStore(this._source);
 

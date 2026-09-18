@@ -35,6 +35,7 @@ StudyGoal migratedDefaultGoal(
 /// interview-specific facets carry over. `effectiveRounds` materializes a
 /// single-date goal's synthetic round 1 so its date isn't lost.
 InterviewAim aimFromPrepGoal(PrepGoal g) => InterviewAim(
+      id: g.id,
       companyName: g.companyName,
       rounds: g.effectiveRounds,
       active: g.active,

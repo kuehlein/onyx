@@ -12,11 +12,13 @@ part 'study_goals.g.dart';
 
 /// The study goals live in the vault (task #30d, docs/multi-subject-plan.md).
 ///
-/// The user's study goals: the ones persisted in `_meta/` (G3b) if any exist,
-/// otherwise a single synthesized default goal (the whole vault, targeted by the
-/// primary template). The default is purely the *no-goals* fallback — once the
-/// user defines explicit goals, the whole-vault goal steps aside (it would overlap
-/// every lane). An empty store → just the default goal, identical to pre-#30d.
+/// The user's study goals, persisted in `_meta/` (G3b). Explicit (non-default)
+/// goals, when any is live, replace the whole-vault default (it would overlap every
+/// lane). Otherwise a single default goal — the whole vault targeted by the primary
+/// template — which is *synthesized* until the user sets a target/interview on it
+/// (Phase B), at which point it persists like any goal and supersedes the
+/// legacy-aim migration. An empty store → the synthesized default, identical to
+/// pre-#30d.
 ///
 /// keepAlive (like [SelectedStudyGoalId] and the readiness-target/prep-goal
 /// notifiers): it's user state, and `_persist` relies on `invalidateSelf()` +
@@ -29,21 +31,24 @@ class StudyGoals extends _$StudyGoals {
     final source = ref.watch(vaultSourceProvider);
     final loaded =
         source == null ? const <StudyGoal>[] : await GoalStore(source).load();
-    final stored = [
+    // Explicit (non-default) goals replace the whole-vault default. With any
+    // *live* one, run as the multi-goal hub; with all archived, Home/readiness
+    // degrade to the default whole-vault view rather than a graduated goal.
+    final explicit = [
       for (final g in loaded)
         if (g.id != defaultGoalId) g,
     ];
-    // Fall back to the whole-vault default when there are no *non-graduated*
-    // goals — with all goals archived, Home/readiness must not silently run off a
-    // graduated goal (it degrades to the default whole-vault view instead).
-    final anyLive = stored.any((g) => g.state != GoalState.graduated);
-    if (anyLive) return stored;
+    if (explicit.any((g) => g.state != GoalState.graduated)) return explicit;
+    // Single-goal mode. A *persisted* default wins over re-deriving: once the user
+    // sets a target/interview on the whole-vault goal (Phase B), it's stored like
+    // any goal, and the legacy aim files are ignored from then on.
+    for (final g in loaded) {
+      if (g.id == defaultGoalId) return [g];
+    }
     if (source == null) return [defaultGoalFor(registry.primary)];
-    // The whole-vault default, enriched from the legacy aim stores (Phase B2):
-    // the base target's slots/deadline + the interview PrepGoals fold in. This is
-    // a read-only fold — the legacy files stay authoritative, and nothing reads
-    // the default goal's slots/interviews yet (readiness short-circuits to the
-    // legacy target for the default goal), so it's inert until B3 flips targeting.
+    // First run on a pre-#30d vault: fold the legacy base target + interview
+    // PrepGoals into the default goal. Read-only until the first edit persists it
+    // (see [upsertInterview]); the legacy files stay the source until then.
     final baseTarget = await TargetService(source).load();
     final prepGoals = await GoalsService(source).load();
     return [
@@ -52,17 +57,19 @@ class StudyGoals extends _$StudyGoals {
     ];
   }
 
-  /// The persisted goals — everything except the synthesized default.
-  List<StudyGoal> get _stored => [
-        for (final g in state.asData?.value ?? const <StudyGoal>[])
-          if (g.id != defaultGoalId) g,
-      ];
+  /// The goals currently on disk — the source of truth for a mutation, since the
+  /// in-memory [state] may hold a synthesized default that isn't persisted yet.
+  Future<List<StudyGoal>> _onDisk() async {
+    final source = ref.read(vaultSourceProvider);
+    // A fresh, modifiable copy — GoalStore.load() may hand back a const [].
+    return source == null ? <StudyGoal>[] : [...await GoalStore(source).load()];
+  }
 
-  /// Add a goal or replace one by id. The default goal is synthesized, not
-  /// stored, so upserting it is a no-op.
+  /// Add a goal or replace one by id. The whole-vault default is persistable now
+  /// (Phase B — it carries the single-subject target + interviews); storing it
+  /// supersedes the legacy-aim migration on the next [build].
   Future<void> upsert(StudyGoal goal) async {
-    if (goal.id == defaultGoalId) return;
-    final goals = [..._stored];
+    final goals = await _onDisk();
     final i = goals.indexWhere((g) => g.id == goal.id);
     if (i >= 0) {
       goals[i] = goal;
@@ -72,8 +79,57 @@ class StudyGoals extends _$StudyGoals {
     await _persist(goals);
   }
 
-  Future<void> remove(String id) async =>
-      _persist([..._stored]..removeWhere((g) => g.id == id));
+  Future<void> remove(String id) async {
+    final goals = await _onDisk();
+    goals.removeWhere((g) => g.id == id);
+    await _persist(goals);
+  }
+
+  /// The current in-memory goal by id (null if absent / still loading).
+  StudyGoal? _current(String goalId) {
+    for (final g in state.asData?.value ?? const <StudyGoal>[]) {
+      if (g.id == goalId) return g;
+    }
+    return null;
+  }
+
+  /// Add or replace an interview on a goal, matched by [InterviewAim.id], then
+  /// persist the goal. The interview cluster edits goals through here (Phase B) —
+  /// on the whole-vault default this is what first persists it (see [upsert]).
+  Future<void> upsertInterview(String goalId, InterviewAim aim) async {
+    final goal = _current(goalId);
+    if (goal == null) return;
+    final interviews = [...goal.interviews];
+    final i = interviews.indexWhere((iv) => iv.id == aim.id);
+    if (i >= 0) {
+      interviews[i] = aim;
+    } else {
+      interviews.add(aim);
+    }
+    await upsert(goal.copyWith(interviews: interviews));
+  }
+
+  /// Remove an interview (by id) from a goal.
+  Future<void> removeInterview(String goalId, String aimId) async {
+    final goal = _current(goalId);
+    if (goal == null) return;
+    await upsert(goal.copyWith(interviews: [
+      for (final iv in goal.interviews)
+        if (iv.id != aimId) iv,
+    ]));
+  }
+
+  /// Mute/unmute an interview (the on/off toggle, distinct from its lifecycle
+  /// status) so it does/doesn't shape targeting.
+  Future<void> setInterviewActive(
+      String goalId, String aimId, bool active) async {
+    final goal = _current(goalId);
+    if (goal == null) return;
+    await upsert(goal.copyWith(interviews: [
+      for (final iv in goal.interviews)
+        if (iv.id == aimId) iv.copyWith(active: active) else iv,
+    ]));
+  }
 
   Future<void> _persist(List<StudyGoal> stored) async {
     final source = ref.read(vaultSourceProvider);
