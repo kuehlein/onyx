@@ -23,9 +23,10 @@ class CoachMessage {
 /// owns the *mechanics* ([buildCoachSystem]: hint ladder, reveal rules, the
 /// grade/assessment protocol, card embedding); a brief owns only the WHO/framing.
 ///
-/// [swe] is the reference software-engineering-interview voice (moved to the
-/// vault skill `_meta/coach.md` in Phase 2); [generic] is the subject-neutral
-/// fallback used when a vault has no coach skill.
+/// A subject's own voice comes from its **vault skill** (`_meta/coach.md`, parsed
+/// by [coachBriefFromMarkdown]); [generic] is the subject-neutral fallback used
+/// when a vault declares no coach skill. The reference software-interviews voice
+/// now lives in the shipped SWE vault's `_meta/coach.md`, not in this file.
 class CoachBrief {
   const CoachBrief({
     required this.reviewIntro,
@@ -42,28 +43,6 @@ class CoachBrief {
   /// Optional interviewer topic-fit guidance (one bullet), or null for a subject
   /// with no track-specific emphasis.
   final String? topicFit;
-
-  /// The reference software-engineering-interview voice. Kept as the default so
-  /// behavior is unchanged until a vault coach skill supplies its own.
-  static const swe = CoachBrief(
-    reviewIntro: 'You are a calm, rigorous technical interviewer from a strong '
-        'engineering org, running a mock interview inside Onyx (a '
-        'spaced-repetition app for software-engineering interview prep). Your '
-        'job is the part flashcards cannot do: not rote recall, but whether '
-        'the candidate can APPLY the idea. Relentlessly probe conditional '
-        'knowledge — "what in the problem signalled this approach?", "when '
-        'would it be the wrong choice?", "what if the input were sorted / '
-        'streaming / 10x larger?".',
-    topicFit: 'Fit the topic: algorithms → clarify, approach, complexity, '
-        'edge cases; system design → force trade-offs and "why this over '
-        'X?"; behavioral → STAR, probe the missing action or result.',
-    learnIntro: 'You are a patient, Socratic tutor inside Onyx (a '
-        'spaced-repetition app for software-engineering interview prep). Build '
-        'durable, principle-based understanding — GUIDE, do not tell. Never '
-        'dump the answer or full code; if asked to "just tell me", respond '
-        'with a hint or a question. Ask ONE question at a time; every turn '
-        'should have the learner reasoning, not passively receiving.',
-  );
 
   /// The subject-neutral fallback (no vault coach skill present): a rigorous
   /// examiner / patient tutor for *this study material*, with no software slant.
@@ -83,6 +62,44 @@ class CoachBrief {
   );
 }
 
+/// Parse a vault coach skill (`_meta/coach.md`) into a [CoachBrief]. The file is
+/// markdown with `## Reviewing` and `## Learning` sections (the interviewer and
+/// tutor voice) plus an optional `## Topic fit`; each section's body is the prose
+/// up to the next H2. Returns null when either required section is missing/empty,
+/// so the caller falls back to [CoachBrief.generic]. Pure.
+CoachBrief? coachBriefFromMarkdown(String md) {
+  final sections = <String, String>{};
+  String? key;
+  final buf = StringBuffer();
+  void flush() {
+    if (key != null) {
+      final body = buf.toString().trim();
+      if (body.isNotEmpty) sections[key] = body;
+    }
+    buf.clear();
+  }
+
+  for (final line in const LineSplitter().convert(md)) {
+    final h = RegExp(r'^##\s+(.+?)\s*$').firstMatch(line);
+    if (h != null) {
+      flush();
+      key = h.group(1)!.toLowerCase();
+    } else if (key != null) {
+      buf.writeln(line);
+    }
+  }
+  flush();
+
+  final review = sections['reviewing'];
+  final learn = sections['learning'];
+  if (review == null || learn == null) return null;
+  return CoachBrief(
+    reviewIntro: review,
+    learnIntro: learn,
+    topicFit: sections['topic fit'],
+  );
+}
+
 /// Builds the system prompt for a coaching conversation. The prompt embeds the
 /// card (and, in a study session, the specific section being recalled) so the
 /// coach can reason about the exact material without another round-trip.
@@ -94,15 +111,17 @@ class CoachBrief {
 /// - [revealed]: before reveal the coach must *hint* without spoiling; after
 ///   reveal it may discuss the answer fully.
 ///
-/// [brief] supplies the subject voice (the vault skill in production; [CoachBrief.swe]
-/// by default so callers that don't pass one keep the reference behavior).
+/// [brief] supplies the subject voice — the loaded vault skill in production
+/// (`coachBriefProvider`), falling back to [CoachBrief.generic] when a vault has
+/// none. Defaults to [CoachBrief.generic] so a caller that passes nothing still
+/// gets a subject-neutral coach rather than a hardcoded software one.
 String buildCoachSystem({
   required Card card,
   CardSection? section,
   required bool revealed,
   required bool grading,
   String? interviewContext,
-  CoachBrief brief = CoachBrief.swe,
+  CoachBrief brief = CoachBrief.generic,
 }) {
   final b = StringBuffer();
   if (grading) {

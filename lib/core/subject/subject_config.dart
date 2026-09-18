@@ -147,6 +147,7 @@ class SubjectConfig {
     required this.id,
     required this.target,
     this.flows = const [],
+    this.coachSkill,
   });
 
   final String id;
@@ -154,6 +155,12 @@ class SubjectConfig {
 
   /// One flow per card `type:`. See [flowForType].
   final List<FlowSpec> flows;
+
+  /// The `_meta/` file name of this subject's **coach skill** (read via
+  /// `VaultSource.readMeta`, e.g. `coach.md`) — the persona + framing the general
+  /// flashcard coach speaks in (task #30, coach de-privileging). Null / missing →
+  /// the neutral built-in `CoachBrief.generic`.
+  final String? coachSkill;
 
   /// The flow describing a card `type:` value, or null if the subject declares
   /// none (callers fall back to a safe default).

@@ -27,6 +27,7 @@ SubjectConfig subjectConfigFromYaml(String yaml) {
     id: (root['id'] as String?) ?? 'subject',
     target: _target(root['target']),
     flows: _list(root['flows']).map(_flow).toList(),
+    coachSkill: root['coachSkill'] as String?,
   );
 }
 

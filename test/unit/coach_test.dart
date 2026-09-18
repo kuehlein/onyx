@@ -79,17 +79,46 @@ void main() {
       expect(prompt, isNot(contains('<assessment>')));
     });
 
-    test('grading selects the interviewer persona; otherwise the tutor', () {
-      final interviewer = buildCoachSystem(
+    test(
+        'grading selects the examiner voice; otherwise the tutor (default brief)',
+        () {
+      final examiner = buildCoachSystem(
           card: _card(),
           section: _card().sections.first,
           revealed: true,
           grading: true);
       final tutor = buildCoachSystem(
           card: _card(), section: null, revealed: true, grading: false);
-      expect(interviewer.toLowerCase(), contains('interviewer'));
+      // The default is the subject-neutral CoachBrief.generic — an examiner /
+      // tutor, never a hardcoded software "interviewer".
+      expect(examiner.toLowerCase(), contains('examiner'));
+      expect(examiner.toLowerCase(), isNot(contains('interviewer')));
       expect(tutor.toLowerCase(), contains('tutor'));
-      expect(tutor.toLowerCase(), isNot(contains('interviewer')));
+      expect(tutor.toLowerCase(), isNot(contains('examiner')));
+    });
+
+    test('the injected brief supplies the subject voice', () {
+      const brief = CoachBrief(
+        reviewIntro: 'REVIEW-VOICE-XYZ',
+        learnIntro: 'LEARN-VOICE-XYZ',
+        topicFit: 'TOPICFIT-XYZ',
+      );
+      final review = buildCoachSystem(
+          card: _card(),
+          section: _card().sections.first,
+          revealed: true,
+          grading: true,
+          brief: brief);
+      final learn = buildCoachSystem(
+          card: _card(),
+          section: null,
+          revealed: true,
+          grading: false,
+          brief: brief);
+      expect(review, contains('REVIEW-VOICE-XYZ'));
+      expect(review, contains('TOPICFIT-XYZ'));
+      expect(learn, contains('LEARN-VOICE-XYZ'));
+      expect(learn, isNot(contains('REVIEW-VOICE-XYZ')));
     });
 
     test('browse mode (no section) includes all sections and no grade tag', () {
@@ -181,6 +210,31 @@ void main() {
       expect(r.assessment!.appliedScore, 100);
       expect(r.assessment!.rubric['correctness'], 5);
       expect(r.assessment!.hintLevel, 5);
+    });
+  });
+
+  group('coachBriefFromMarkdown', () {
+    test('parses Reviewing / Learning / Topic fit sections', () {
+      final b = coachBriefFromMarkdown('<!-- header -->\n\n'
+          '## Reviewing\n\nThe examiner voice.\n\n'
+          '## Learning\n\nThe tutor voice.\n\n'
+          '## Topic fit\n\nThe emphasis.\n');
+      expect(b, isNotNull);
+      expect(b!.reviewIntro, 'The examiner voice.');
+      expect(b.learnIntro, 'The tutor voice.');
+      expect(b.topicFit, 'The emphasis.');
+    });
+
+    test('topic fit is optional', () {
+      final b = coachBriefFromMarkdown('## Reviewing\nR.\n\n## Learning\nL.');
+      expect(b, isNotNull);
+      expect(b!.topicFit, isNull);
+    });
+
+    test('a missing required section → null (caller falls back to generic)',
+        () {
+      expect(coachBriefFromMarkdown('## Reviewing\nonly review'), isNull);
+      expect(coachBriefFromMarkdown('no headings at all'), isNull);
     });
   });
 }
