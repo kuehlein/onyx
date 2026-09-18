@@ -21,7 +21,9 @@ import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/status_colors.dart';
+import '../../shared/widgets/destructive_row.dart';
 import '../home/goal_editor_sheet.dart';
+import 'api_key_sheet.dart';
 import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -202,17 +204,20 @@ class SettingsScreen extends ConsumerWidget {
             enabled: source != null,
             onTap: source == null ? null : () => _backupNow(context, ref),
           ),
-          ListTile(
-            leading: Icon(Icons.settings_backup_restore,
-                color: source == null
-                    ? null
-                    : Theme.of(context).colorScheme.error),
-            title: const Text('Restore from vault'),
-            subtitle: const Text(
+          DestructiveRow(
+            icon: Icons.settings_backup_restore,
+            title: 'Restore from vault',
+            subtitle:
                 'Replace local progress with the vault snapshot — happens '
-                'automatically on a fresh install'),
+                'automatically on a fresh install',
+            actionLabel: 'Restore',
+            confirmTitle: 'Restore from vault?',
+            confirmMessage:
+                'This replaces your current progress with the snapshot saved in '
+                'the vault. Any reviews recorded since that snapshot will be '
+                'lost.',
             enabled: source != null,
-            onTap: source == null ? null : () => _restore(context, ref),
+            onConfirmed: () => _restore(context, ref),
           ),
           const _SectionHeader('Claude'),
           ...apiKey.when(
@@ -261,7 +266,7 @@ class SettingsScreen extends ConsumerWidget {
                           onPressed: () => _clearApiKey(context, ref),
                         )
                       : null,
-                  onTap: fromEnv ? null : () => _editApiKey(context, ref),
+                  onTap: fromEnv ? null : () => showApiKeySheet(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.wifi_tethering),
@@ -275,15 +280,20 @@ class SettingsScreen extends ConsumerWidget {
           ),
           if (isDevDataMode) ...[
             const _SectionHeader('Developer'),
-            ListTile(
-              leading: Icon(Icons.delete_forever_outlined,
-                  color: Theme.of(context).colorScheme.error),
-              title: const Text('Reset local progress'),
-              subtitle: const Text(
+            DestructiveRow(
+              icon: Icons.delete_forever_outlined,
+              title: 'Reset local progress',
+              subtitle:
                   'Wipe this dev build\'s schedule, reviews, streak, coach '
                   'chats and mock attempts. Dev data is isolated — your real '
-                  '(release) progress is separate and untouched.'),
-              onTap: () => _resetProgress(context, ref),
+                  '(release) progress is separate and untouched.',
+              actionLabel: 'Reset',
+              confirmTitle: 'Reset local progress?',
+              confirmMessage:
+                  'Clears this development build\'s study data (schedule, review '
+                  'log, streak, coach chats). This only affects the isolated dev '
+                  'database and dev snapshot — real progress is untouched.',
+              onConfirmed: () => _resetProgress(context, ref),
             ),
             ref.watch(devSimDayProvider).when(
                   loading: () => const SizedBox.shrink(),
@@ -348,34 +358,10 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  // The confirm step lives in [DestructiveRow]; this runs only after the user
+  // has confirmed.
   Future<void> _resetProgress(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reset local progress?'),
-        content: const Text(
-          'Clears this development build\'s study data (schedule, review log, '
-          'streak, coach chats). This only affects the isolated dev database '
-          'and dev snapshot — real progress is untouched.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
     await ref.read(appDatabaseProvider).wipeStudyData();
     // Reset the dev clock too — a fresh testing baseline means back to real time,
     // otherwise a left-over fast-forward silently skews the next run's schedule.
@@ -606,41 +592,31 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _editApiKey(BuildContext context, WidgetRef ref) async {
+  Future<void> _clearApiKey(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final controller = TextEditingController();
-    final key = await showDialog<String>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Anthropic API key'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'sk-ant-…'),
-        ),
+        title: const Text('Remove API key?'),
+        content: const Text(
+            'Coach and mock features stop until you add a key again. Your '
+            'study progress is unaffected.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
           ),
         ],
       ),
     );
-    if (key == null || key.isEmpty) return;
-    try {
-      await ref.read(apiKeyProvider.notifier).set(key);
-      messenger.showSnackBar(const SnackBar(content: Text('API key saved')));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not save key: $e')));
-    }
-  }
-
-  Future<void> _clearApiKey(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
+    if (confirmed != true) return;
     try {
       await ref.read(apiKeyProvider.notifier).clear();
       messenger.showSnackBar(const SnackBar(content: Text('API key removed')));
@@ -676,32 +652,9 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  // The confirm step lives in [DestructiveRow]; this runs only after the user
+  // has confirmed.
   Future<void> _restore(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Restore from vault?'),
-        content: const Text(
-          'This replaces your current progress with the snapshot saved in the '
-          'vault. Any reviews recorded since that snapshot will be lost.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Restore'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
     final restored = await ref.read(backupProvider.notifier).restore();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
