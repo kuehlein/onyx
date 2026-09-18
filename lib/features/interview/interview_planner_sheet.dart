@@ -22,7 +22,6 @@ const _amber = StatusColor.warn;
 Future<PrepGoal?> showInterviewPlannerSheet(BuildContext context) =>
     showOnyxSheet<PrepGoal>(
       context,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       builder: (_) => const _InterviewPlannerSheet(),
     );
 
@@ -31,7 +30,6 @@ class _InterviewPlannerSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final state = ref.watch(interviewPlannerProvider);
     final hasKey = ref.watch(claudeServiceProvider) != null;
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
@@ -70,7 +68,7 @@ class _InterviewPlannerSheet extends ConsumerWidget {
                       error: state.error,
                       hintText:
                           'e.g. Google, senior backend, Maps, in 2 weeks…',
-                      fadeColor: theme.colorScheme.surfaceContainerLow,
+                      fadeColor: sheetSurface(context),
                       opener: const _Opener(),
                       trailing: state.plan != null
                           ? _PlanCard(state.plan!, accept)

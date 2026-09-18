@@ -9,7 +9,6 @@ import '../../shared/widgets/sheet_header.dart';
 Future<void> showStudyTipsSheet(BuildContext context) {
   return showOnyxSheet<void>(
     context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _StudyTipsSheet(),
   );
 }
@@ -19,7 +18,6 @@ class _StudyTipsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.8,
       child: Column(
@@ -34,7 +32,7 @@ class _StudyTipsSheet extends StatelessWidget {
           ),
           Expanded(
             child: FadingScrollEdges(
-              color: theme.colorScheme.surfaceContainerLow,
+              color: sheetSurface(context),
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 itemCount: studyTips.length,

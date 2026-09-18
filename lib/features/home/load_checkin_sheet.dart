@@ -15,7 +15,6 @@ Future<void> showLoadCheckInSheet(BuildContext context, WidgetRef ref) {
   return showOnyxSheet<void>(
     context,
     isScrollControlled: false,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _LoadCheckInSheet(),
   );
 }

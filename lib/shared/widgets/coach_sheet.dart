@@ -35,7 +35,6 @@ Future<void> showCoachSheet(
     showDragHandle: false,
     // Set explicitly so the transcript's fade edges can blend into the same
     // color (see FadingScrollEdges below).
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => CoachSheet(
       card: card,
       section: section,
@@ -235,7 +234,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                 child: !ready
                     ? const LoadingView()
                     : FadingScrollEdges(
-                        color: theme.colorScheme.surfaceContainerLow,
+                        color: sheetSurface(context),
                         child: ListView(
                           controller: _scroll,
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),

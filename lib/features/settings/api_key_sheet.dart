@@ -12,7 +12,6 @@ import '../../shared/widgets/sheet_header.dart';
 Future<void> showApiKeySheet(BuildContext context) {
   return showOnyxSheet<void>(
     context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => const _ApiKeySheet(),
   );
 }

@@ -42,7 +42,6 @@ Future<void> showCoachChatSheet(
   );
   return showOnyxSheet<void>(
     context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _CoachChatSheet(system: system, seed: update.headline),
   );
 }
@@ -55,7 +54,6 @@ class _CoachChatSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final state = ref.watch(coachChatProvider);
     final hasKey = ref.watch(claudeServiceProvider) != null;
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
@@ -80,7 +78,7 @@ class _CoachChatSheet extends ConsumerWidget {
                       busy: state.busy,
                       error: state.error,
                       hintText: 'Ask the coach…',
-                      fadeColor: theme.colorScheme.surfaceContainerLow,
+                      fadeColor: sheetSurface(context),
                       opener: _Opener(seed: seed),
                       trailing: state.proposal == null
                           ? null

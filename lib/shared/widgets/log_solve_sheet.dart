@@ -33,7 +33,6 @@ const _outcomes = <_Outcome>[
 Future<void> showLogSolveSheet(BuildContext context, {required Card card}) {
   return showOnyxSheet<void>(
     context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _LogSolveSheet(card: card),
   );
 }

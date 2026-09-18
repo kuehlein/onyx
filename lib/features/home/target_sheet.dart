@@ -113,7 +113,6 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
         children: [
           const SheetHeader(title: 'Your target'),
           SheetScrollBody(
-            color: theme.colorScheme.surface,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

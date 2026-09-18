@@ -24,7 +24,6 @@ Future<void> showExplainSheet(
 }) {
   return showOnyxSheet<void>(
     context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
     builder: (_) => _ExplainSheet(card: card, section: section),
   );
 }
@@ -89,7 +88,7 @@ class _ExplainSheet extends ConsumerWidget {
                       busy: state.busy,
                       error: state.error,
                       hintText: 'Explain your approach…',
-                      fadeColor: theme.colorScheme.surfaceContainerLow,
+                      fadeColor: sheetSurface(context),
                       opener: Text(
                         'Talk through it out loud (no coding): the recognition '
                         'trigger, the approach, the complexity, the edge cases. '

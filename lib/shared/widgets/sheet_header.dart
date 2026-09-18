@@ -9,14 +9,17 @@ import 'fading_scroll_edges.dart';
 /// common case, and typed `T?` returns. Compose the [builder]'s content with a
 /// [SheetHeader] on top and a [SheetScrollBody] for scrolling bodies.
 ///
-/// [backgroundColor] defaults to the theme's sheet surface
-/// (`surfaceContainerHighest`, §2.5 tier 3); the handful of content sheets that
-/// pass `surfaceContainerLow` do so their `FadingScrollEdges` blend into the same
-/// color. The remaining knobs cover the few variants (e.g. the coach sheet's
-/// custom handle → `showDragHandle: false`) without another copy-pasted call.
+/// [backgroundColor] defaults to the theme's sheet surface (`bottomSheetTheme`);
+/// the remaining knobs cover the few variants (e.g. the coach sheet's custom
+/// handle → `showDragHandle: false`) without another copy-pasted call.
 ///
-/// One choke point also means the §4.9 polish still owed — a `barrierColor`
-/// (black @ 0.45) and `useSafeArea` — can later be switched on here in one edit.
+/// [barrierColor] is the §4.9 scrim (black @ ~0.45) applied to every sheet from
+/// here. [useSafeArea] is exposed but defaults **off** on purpose: ~7 sheets
+/// hand-size to a fixed fraction of the screen height (`0.8`–`0.9`), and wrapping
+/// those in a safe area would shrink the available height and clip them on
+/// notched devices — turning it on globally needs those converted to `maxHeight`
+/// constraints first. Per-sheet safe-area is already handled where it matters
+/// (bodies use `SafeArea` / `MediaQuery.viewInsets`).
 Future<T?> showOnyxSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -25,6 +28,8 @@ Future<T?> showOnyxSheet<T>(
   Color? backgroundColor,
   bool isDismissible = true,
   bool enableDrag = true,
+  bool useSafeArea = false,
+  Color barrierColor = const Color(0x73000000), // black @ ~0.45 (§4.9)
   BoxConstraints? constraints,
 }) {
   return showModalBottomSheet<T>(
@@ -32,11 +37,23 @@ Future<T?> showOnyxSheet<T>(
     isScrollControlled: isScrollControlled,
     showDragHandle: showDragHandle,
     backgroundColor: backgroundColor,
+    barrierColor: barrierColor,
+    useSafeArea: useSafeArea,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     constraints: constraints,
     builder: builder,
   );
+}
+
+/// The resolved surface a sheet sits on — its themed background
+/// (`bottomSheetTheme.backgroundColor`, §2.5) with a scaffold-surface fallback.
+/// Fade edges inside sheets read this so they always blend into the *current*
+/// sheet color; retune the sheet surface in one place (the theme) and every fade
+/// follows automatically.
+Color sheetSurface(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.bottomSheetTheme.backgroundColor ?? theme.colorScheme.surface;
 }
 
 /// The scrollable body of a slide-up sheet, with a soft fade at whichever edge
@@ -56,15 +73,16 @@ class SheetScrollBody extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
 
-  /// The color the content fades into — pass the sheet's background so the fade
-  /// blends into it (defaults to the scaffold background).
+  /// The color the content fades into — defaults to the current sheet surface
+  /// ([sheetSurface]) so the fade blends into it; override only if the body sits
+  /// on a different color.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Flexible(
       child: FadingScrollEdges(
-        color: color,
+        color: color ?? sheetSurface(context),
         child: SingleChildScrollView(padding: padding, child: child),
       ),
     );

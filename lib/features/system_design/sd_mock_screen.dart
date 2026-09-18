@@ -62,7 +62,6 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   Future<void> _adjust(SeniorityLevel level, SdSupportMode autoSupport) async {
     await showOnyxSheet<void>(
       context,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       builder: (_) => _AdjustSheet(
         level: level,
         supportOverride: _supportOverride,
