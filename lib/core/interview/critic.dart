@@ -22,17 +22,25 @@ class CriticVerdict {
 
 /// Builds the critic's system prompt: an independent, deliberately skeptical
 /// grader who scores only what the candidate actually demonstrated.
-String buildCriticSystem({required Card card, CardSection? section}) {
-  final b = StringBuffer()
-    ..writeln('You are a senior technical interviewer giving an INDEPENDENT '
-        'second-opinion grade on a candidate\'s mock-interview answers. Another '
-        'interviewer already graded them; you do NOT see that grade — score the '
-        'transcript yourself, from scratch.')
+String buildCriticSystem(
+    {required Card card, CardSection? section, String? topicFit}) {
+  final b = StringBuffer();
+  b
+    ..writeln(
+        'You are a rigorous, INDEPENDENT examiner giving a second-opinion '
+        'grade on a learner\'s answers. Another grader already scored them; you '
+        'do NOT see that grade — score the transcript yourself, from scratch.')
     ..writeln()
-    ..writeln('- Grade ONLY what the candidate actually demonstrated in their '
-        'own words. Reward correct approach, sound complexity reasoning, edge '
-        'cases, and independence; do not credit fluent-sounding but wrong or '
-        'vague answers.')
+    ..writeln(
+        '- Grade ONLY what the learner actually demonstrated in their own '
+        'words. Reward a correct, complete, well-reasoned answer that works '
+        'through the details unaided; do not credit fluent-sounding but wrong or '
+        'vague answers.');
+  if (topicFit != null && topicFit.trim().isNotEmpty) {
+    b.writeln('- What a strong answer emphasizes for this material: '
+        '${topicFit.trim()}');
+  }
+  b
     ..writeln('- Be skeptical and calibrated, not generous: most real answers '
         'are partial. Reserve 85–100 for genuinely strong, near-complete, '
         'largely unaided performance; use the low end freely when warranted.')
@@ -64,10 +72,10 @@ String buildCriticSystem({required Card card, CardSection? section}) {
 /// Renders the candidate's turns into a transcript for the critic to grade.
 String buildCriticTranscript(List<({String role, String content})> messages) {
   final b = StringBuffer()
-    ..writeln('Transcript (grade the candidate\'s answers):')
+    ..writeln('Transcript (grade the learner\'s answers):')
     ..writeln();
   for (final m in messages) {
-    final who = m.role == 'user' ? 'Candidate' : 'Interviewer';
+    final who = m.role == 'user' ? 'Learner' : 'Examiner';
     b.writeln('$who: ${m.content}');
   }
   return b.toString();

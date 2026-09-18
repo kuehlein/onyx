@@ -73,10 +73,11 @@ class ReadinessReportData {
 String buildReadinessReportChatSystem(String reportText) {
   final b = StringBuffer();
   b
-    ..writeln('You are a candid software-engineering interview-prep strategist '
-        'inside Onyx. You just wrote the readiness assessment below for this '
-        'learner, and they want to discuss it. Answer their follow-up questions '
-        'about where they stand and what to do next.')
+    ..writeln(
+        'You are a candid study-readiness strategist inside Onyx. You just '
+        'wrote the readiness assessment below for this learner, and they want to '
+        'discuss it. Answer their follow-up questions about where they stand and '
+        'what to do next.')
     ..writeln()
     ..writeln('Rules:')
     ..writeln(
@@ -102,24 +103,25 @@ String buildReadinessReportChatSystem(String reportText) {
 String buildReadinessReportSystem() {
   final b = StringBuffer();
   b
-    ..writeln('You are a seasoned software-engineering interviewer and prep '
-        'strategist writing a candid interview-readiness assessment for a '
-        'candidate using Onyx (a spaced-repetition + mock-interview prep app). '
-        'You are given their target role and hard data about their study '
-        'progress. Write the assessment they need, not the one that feels good.')
+    ..writeln(
+        'You are a seasoned examiner and study strategist writing a candid '
+        'readiness assessment for a learner using Onyx (a spaced-repetition + '
+        'mock-practice study app). You are given their target and hard data '
+        'about their study progress. Write the assessment they need, not the one '
+        'that feels good.')
     ..writeln()
     ..writeln('Ground rules:')
     ..writeln('- Be honest and specific. No vague encouragement, no false '
         'comfort. Anchor every claim to the numbers provided (name the domain '
         'and its coverage/strength/mock evidence).')
-    ..writeln('- Judge against the SPECIFIC target (level × company × track), '
-        'not a generic bar. A FAANG senior bar is very different from a '
-        'new-grad-at-a-typical-company bar; weight system design vs. DS&A '
+    ..writeln('- Judge against the SPECIFIC target (level × context × track), '
+        'not a generic bar. A demanding senior/advanced bar is very different '
+        'from an entry-level one; weight the domains per the target\'s track '
         'accordingly.')
     ..writeln('- Distinguish RECALL (they can retrieve it) from APPLIED '
-        'TRANSFER (they proved they can use it under interview pressure, via '
-        'mocks). If there is little or no mock evidence, say plainly that '
-        'readiness is unproven — recall alone does not clear an interview.')
+        'TRANSFER (they proved they can use it under pressure, via mocks). If '
+        'there is little or no mock evidence, say plainly that readiness is '
+        'unproven — recall alone does not clear the bar.')
     ..writeln(
         '- LEARNING GAPS are your primary focus: within the material they '
         'ALREADY have (topics/concepts listed per domain), what have they not '
@@ -134,7 +136,7 @@ String buildReadinessReportSystem() {
         'the listed topics/concepts — framed as "as you build out the deck, '
         'consider adding X" — but this is inferred from titles/concepts and may '
         'already be covered under another name, so keep it tentative and short.')
-    ..writeln('- If an interview date is given, factor the time remaining into '
+    ..writeln('- If a target date is given, factor the time remaining into '
         'what is realistic to fix.')
     ..writeln('- End with a short, PRIORITIZED action list ordered by impact '
         'toward this target — mostly what to STUDY, STRENGTHEN, or MOCK.')
@@ -156,13 +158,13 @@ String buildReadinessReportUser(ReadinessReportData d) {
   final b = StringBuffer();
   b
     ..writeln('# Target')
-    ..writeln('Role: ${d.targetLabel} (level: ${d.level}, company: '
+    ..writeln('${d.targetLabel} (level: ${d.level}, context: '
         '${d.company}, track: ${d.track}).');
   if (d.daysToInterview != null) {
-    b.writeln('Interview in ${d.daysToInterview} day'
+    b.writeln('Target date in ${d.daysToInterview} day'
         '${d.daysToInterview == 1 ? '' : 's'}.');
   } else {
-    b.writeln('No interview date set.');
+    b.writeln('No target date set.');
   }
 
   b
@@ -171,7 +173,7 @@ String buildReadinessReportUser(ReadinessReportData d) {
     ..writeln('${pct(d.overall)}% (plausible range ${pct(d.low)}–'
         '${pct(d.high)}%). Evidence: '
         '${d.interviewTested ? 'mock-tested (transfer measured)' : 'recall-only '
-            '— no mock-interview evidence yet, so this is unproven'}.');
+            '— no mock evidence yet, so this is unproven'}.');
 
   b
     ..writeln()
@@ -183,7 +185,7 @@ String buildReadinessReportUser(ReadinessReportData d) {
           '${r.transfer != null ? ' (transfer ${pct(r.transfer!)}%)' : ''}')
       ..writeln('- Coverage: ${r.studied}/${r.total} sections started '
           '(${pct(r.coverage)}%); retention strength ${pct(r.strength)}%')
-      ..writeln('- Mock interviews: ${r.mocks}'
+      ..writeln('- Mock attempts: ${r.mocks}'
           '${r.contested > 0 ? ' (${r.contested} grade(s) the critic '
               'disputed)' : ''}');
     if (r.topics.isEmpty) {

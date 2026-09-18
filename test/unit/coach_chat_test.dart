@@ -52,7 +52,7 @@ void main() {
       expect(s, contains('42%'));
       expect(s, contains('30%'));
       expect(s, contains('Senior · FAANG · General'));
-      expect(s, contains('interview in 21 days'));
+      expect(s, contains('target date in 21 days'));
       // Both adjustable tracks are described with current load.
       expect(s, contains('12 new cards/day'));
       expect(s, contains('88%'));
@@ -77,7 +77,7 @@ void main() {
         algoMin: 2,
         algoMax: 5,
       );
-      expect(s, contains('no interview date set'));
+      expect(s, contains('no target date set'));
     });
   });
 

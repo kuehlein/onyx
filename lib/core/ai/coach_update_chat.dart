@@ -32,24 +32,24 @@ String buildCoachChatSystem({
 }) {
   final b = StringBuffer();
   b
-    ..writeln('You are a sharp, supportive interview-prep strategist inside '
-        'Onyx (a spaced-repetition + mock-interview study app). The learner is '
-        'a motivated adult preparing for software-engineering interviews. They '
-        'tapped "talk about it" on this coach nudge:')
+    ..writeln(
+        'You are a sharp, supportive study/pace strategist inside Onyx (a '
+        'spaced-repetition study app). The learner is a motivated adult working '
+        'toward their study goal. They tapped "talk about it" on this coach '
+        'nudge:')
     ..writeln()
     ..writeln('  Nudge: "${update.headline}"')
     ..writeln('  Why: ${update.why}')
     ..writeln()
     ..writeln('Their current state: readiness ~$overallPct% for $targetLabel; '
         'material coverage ~$coveragePct%'
-        '${daysToInterview != null ? '; interview in $daysToInterview day'
-            '${daysToInterview == 1 ? '' : 's'}' : '; no interview date set'}.')
+        '${daysToInterview != null ? '; target date in $daysToInterview day'
+            '${daysToInterview == 1 ? '' : 's'}' : '; no target date set'}.')
     ..writeln()
     ..writeln(
         'There are two independently-paced tracks, each with its own daily '
         'load you can adjust for them:')
-    ..writeln(
-        '  1. Concept/review track (data-structures & systems knowledge): '
+    ..writeln('  1. Concept/review track (the spaced concept deck): '
         '$newPerDay new cards/day'
         '${retentionPct != null ? ', recent recall ~$retentionPct%' : ''}, '
         '$reviewBacklog reviews due now.')
@@ -90,8 +90,7 @@ String buildCoachChatSystem({
         'prefer "you could… / one option is…".')
     ..writeln('- Where it helps, guide them to a concrete implementation '
         'intention — a specific if-then plan ("after dinner, I\'ll do 15 '
-        'minutes of system-design cards"). These reliably improve follow-'
-        'through.')
+        'minutes of review cards"). These reliably improve follow-through.')
     ..writeln('- Ask ONE focused question or offer ONE suggestion at a time. '
         'Keep it to 2–4 sentences, plain Markdown, no headings.')
     ..writeln('- On load/pace questions, use sound principles: cutting new '

@@ -45,7 +45,7 @@ void main() {
     final sys = buildReadinessReportSystem();
     test('demands honesty and target-specific judgement', () {
       expect(sys.toLowerCase(), contains('honest'));
-      expect(sys, contains('level × company × track'));
+      expect(sys, contains('level × context × track'));
     });
     test('leads with LEARNING gaps and keeps CONTENT gaps soft/secondary', () {
       expect(sys.toUpperCase(), contains('LEARNING GAP'));
@@ -66,7 +66,7 @@ void main() {
     test('embeds the target, band, per-domain numbers and deck topics', () {
       final u = buildReadinessReportUser(data(days: 30));
       expect(u, contains('Senior · FAANG · General'));
-      expect(u, contains('Interview in 30 days'));
+      expect(u, contains('Target date in 30 days'));
       expect(u, contains('42%')); // overall
       expect(u, contains('30–54%')); // band
       // Weakest domain first, with its coverage + mock evidence + scope topics.
@@ -86,7 +86,7 @@ void main() {
 
     test('says when no interview date is set', () {
       final u = buildReadinessReportUser(data());
-      expect(u, contains('No interview date set'));
+      expect(u, contains('No target date set'));
     });
   });
 }

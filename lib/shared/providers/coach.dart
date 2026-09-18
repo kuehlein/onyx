@@ -213,7 +213,8 @@ class Coach extends _$Coach {
   }) async {
     try {
       final reply = await claude.complete(
-        system: buildCriticSystem(card: card, section: section),
+        system: buildCriticSystem(
+            card: card, section: section, topicFit: _brief.topicFit),
         prompt: buildCriticTranscript([
           for (final m in history)
             (
