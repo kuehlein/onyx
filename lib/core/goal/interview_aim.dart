@@ -125,6 +125,7 @@ class InterviewAim {
   const InterviewAim({
     this.companyName = '',
     this.rounds = const [],
+    this.active = true,
     this.status = InterviewStatus.active,
     this.outcome = GoalOutcome.pending,
     this.outcomeNotes,
@@ -135,6 +136,10 @@ class InterviewAim {
 
   /// Free-form company name (e.g. "Google") for display + AI context.
   final String companyName;
+
+  /// Whether this interview currently shapes study (an on/off toggle, distinct
+  /// from the lifecycle [status] — a user can mute an active interview).
+  final bool active;
 
   /// The interview loop's rounds, in order. Source of truth for scheduling; the
   /// goal's `deadline` seeds a synthetic round 1 for a legacy single-date goal.
@@ -216,6 +221,7 @@ class InterviewAim {
   InterviewAim copyWith({
     String? companyName,
     List<InterviewRound>? rounds,
+    bool? active,
     InterviewStatus? status,
     GoalOutcome? outcome,
     Object? outcomeNotes = _unset,
@@ -226,6 +232,7 @@ class InterviewAim {
       InterviewAim(
         companyName: companyName ?? this.companyName,
         rounds: rounds ?? this.rounds,
+        active: active ?? this.active,
         status: status ?? this.status,
         outcome: outcome ?? this.outcome,
         outcomeNotes: outcomeNotes == _unset
@@ -239,6 +246,7 @@ class InterviewAim {
   Map<String, dynamic> toJson() => {
         if (companyName.isNotEmpty) 'companyName': companyName,
         if (rounds.isNotEmpty) 'rounds': [for (final r in rounds) r.toJson()],
+        'active': active,
         'status': status.name,
         'outcome': outcome.name,
         if (outcomeNotes != null) 'outcomeNotes': outcomeNotes,
@@ -251,6 +259,7 @@ class InterviewAim {
         companyName:
             m['companyName'] is String ? m['companyName'] as String : '',
         rounds: _parseRounds(m['rounds']),
+        active: m['active'] is bool ? m['active'] as bool : true,
         status: enumByName(InterviewStatus.values, m['status']) ??
             InterviewStatus.active,
         outcome:
