@@ -168,4 +168,45 @@ void main() {
     final one = await c.read(studyGoalsProvider.future);
     expect(one.map((g) => g.id), ['alpha']);
   });
+
+  test('no study-goals.json → the default goal folds in the legacy aims (B2c)',
+      () async {
+    if (!_sqliteAvailable) return;
+    // A pre-#30d vault: the legacy base target + interview goal, no study-goals.
+    final legacy = Directory.systemTemp.createTempSync('onyx_legacy_');
+    addTearDown(() => legacy.deleteSync(recursive: true));
+    File(p.join(legacy.path, 'x1.md')).writeAsStringSync(_card('x1', 'ds-a'));
+    File(p.join(legacy.path, '_meta', 'onyx-target.json'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"level":"senior","company":"faang",'
+          '"track":"backend","interviewDate":"2026-06-01"}');
+    const goalsJson = '[{"id":"g1","companyName":"Google","tier":"faang",'
+        '"level":"senior","track":"backend","date":"2026-05-15","active":true,'
+        '"domainWeights":{"system-design":1.3},"status":"active"}]';
+    // GoalsService reads the dev-isolated file under test (isDevDataMode); write
+    // both so the fold is exercised regardless of the build's data mode.
+    File(p.join(legacy.path, '_meta', 'onyx-goals.json'))
+        .writeAsStringSync(goalsJson);
+    File(p.join(legacy.path, '_meta', 'onyx-goals.dev.json'))
+        .writeAsStringSync(goalsJson);
+
+    final c = ProviderContainer(overrides: [
+      vaultSourceProvider.overrideWithValue(DesktopVaultSource(legacy.path)),
+      appDatabaseProvider.overrideWith((ref) {
+        final db = AppDatabase.withExecutor(NativeDatabase.memory());
+        ref.onDispose(db.close);
+        return db;
+      }),
+    ]);
+    addTearDown(c.dispose);
+
+    final goals = await c.read(studyGoalsProvider.future);
+    expect(goals.length, 1);
+    final g = goals.single;
+    expect(g.id, defaultGoalId);
+    expect([g.levelId, g.contextId, g.trackId], ['senior', 'faang', 'backend']);
+    expect(g.deadline, DateTime(2026, 6, 1));
+    expect(g.interviews.single.companyName, 'Google');
+    expect(g.interviews.single.domainWeights['system-design'], 1.3);
+  });
 }

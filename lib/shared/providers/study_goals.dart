@@ -1,7 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/goal/aim_migration.dart';
 import '../../core/goal/goal_store.dart';
 import '../../core/goal/study_goal.dart';
+import '../../core/readiness/goals_service.dart';
+import '../../core/readiness/target_service.dart';
 import 'subject.dart';
 import 'vault.dart';
 
@@ -34,7 +37,19 @@ class StudyGoals extends _$StudyGoals {
     // goals — with all goals archived, Home/readiness must not silently run off a
     // graduated goal (it degrades to the default whole-vault view instead).
     final anyLive = stored.any((g) => g.state != GoalState.graduated);
-    return anyLive ? stored : [defaultGoalFor(registry.primary)];
+    if (anyLive) return stored;
+    if (source == null) return [defaultGoalFor(registry.primary)];
+    // The whole-vault default, enriched from the legacy aim stores (Phase B2):
+    // the base target's slots/deadline + the interview PrepGoals fold in. This is
+    // a read-only fold — the legacy files stay authoritative, and nothing reads
+    // the default goal's slots/interviews yet (readiness short-circuits to the
+    // legacy target for the default goal), so it's inert until B3 flips targeting.
+    final baseTarget = await TargetService(source).load();
+    final prepGoals = await GoalsService(source).load();
+    return [
+      migratedDefaultGoal(registry.primary,
+          baseTarget: baseTarget, prepGoals: prepGoals),
+    ];
   }
 
   /// The persisted goals — everything except the synthesized default.
