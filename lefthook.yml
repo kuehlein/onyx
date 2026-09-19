@@ -7,6 +7,14 @@ pre-commit:
     dart-analyze:
       run: flutter analyze --no-fatal-infos
 
+# custom_lint (riverpod_lint) is a full-project pass (~30s), too slow for every
+# commit — it runs on push instead. The analyzer plugin gives live IDE feedback
+# in between.
+pre-push:
+  commands:
+    custom-lint:
+      run: flutter pub run custom_lint
+
 commit-msg:
   commands:
     validate-format:

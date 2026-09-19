@@ -1,6 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  # Enables riverpod_lint's rules (missing autoDispose, provider-dependency and
+  # ref-misuse checks, etc.) in the IDE and via `dart run custom_lint`. The
+  # codebase is currently clean against them; this keeps it that way.
+  plugins:
+    - custom_lint
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
