@@ -13,6 +13,7 @@ import '../../core/subject/subject_config.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
+import '../editor/card_editor_screen.dart';
 import '../generation/card_generation_sheet.dart';
 import 'browse_filters.dart';
 import 'import_deck_sheet.dart';
@@ -76,6 +77,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       appBar: AppBar(
         title: const Text('Browse'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New card',
+            onPressed: () => showCardEditor(context),
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
             tooltip: 'Generate cards',

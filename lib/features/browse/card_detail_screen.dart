@@ -13,6 +13,7 @@ import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import '../../shared/widgets/log_solve_sheet.dart';
+import '../editor/card_editor_screen.dart';
 
 /// Read-only view of a single card: its overview plus each H2 section, rendered
 /// as Markdown with syntax-highlighted code. Reached from Browse; the card is
@@ -94,6 +95,18 @@ class _CardDetail extends ConsumerWidget {
       appBar: AppBar(
         title: Text(card.title),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit card',
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              final saved = await showCardEditor(context, card: card);
+              // The editor already invalidated the index; this detail holds a
+              // stale snapshot (and the file may have been renamed/deleted), so
+              // pop back to the refreshed Browse list on save.
+              if (saved && navigator.canPop()) navigator.pop();
+            },
+          ),
           CoachButton(
             onPressed: () => showCoachSheet(
               context,

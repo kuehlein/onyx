@@ -8,6 +8,7 @@ import '../../shared/providers/drafts.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import '../../shared/widgets/loading_view.dart';
+import '../editor/card_editor_screen.dart';
 
 /// The draft-review gate: a bounded self-test-then-promote session over
 /// `status: draft` cards (docs/content-creation.md §3–§4). For each draft you see
@@ -40,6 +41,14 @@ class _DraftReviewScreenState extends ConsumerState<DraftReviewScreen> {
   void _skip() {
     setState(() => _revealed = false);
     ref.read(draftReviewProvider.notifier).skip();
+  }
+
+  /// Open the in-app editor on the current draft, then refresh the session's
+  /// snapshot so the reveal reflects the edit. The card stays a draft (edit
+  /// preserves status), so the user can still Keep it after editing.
+  Future<void> _edit(Card card) async {
+    final saved = await showCardEditor(context, card: card);
+    if (saved) await ref.read(draftReviewProvider.notifier).refreshCurrent();
   }
 
   @override
@@ -83,6 +92,7 @@ class _DraftReviewScreenState extends ConsumerState<DraftReviewScreen> {
             onKeep: _keep,
             onSkip: _skip,
             onDiscard: _discard,
+            onEdit: () => _edit(s.current!),
           );
         },
       ),
@@ -102,6 +112,7 @@ class _ReviewView extends StatelessWidget {
     required this.onKeep,
     required this.onSkip,
     required this.onDiscard,
+    required this.onEdit,
   });
 
   final Card card;
@@ -112,6 +123,7 @@ class _ReviewView extends StatelessWidget {
   final VoidCallback onKeep;
   final VoidCallback onSkip;
   final VoidCallback onDiscard;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +181,7 @@ class _ReviewView extends StatelessWidget {
               onKeep: onKeep,
               onSkip: onSkip,
               onDiscard: onDiscard,
+              onEdit: onEdit,
             ),
           ],
         ),
@@ -186,6 +199,7 @@ class _ActionBar extends StatelessWidget {
     required this.onKeep,
     required this.onSkip,
     required this.onDiscard,
+    required this.onEdit,
   });
 
   final bool revealed;
@@ -193,6 +207,7 @@ class _ActionBar extends StatelessWidget {
   final VoidCallback onKeep;
   final VoidCallback onSkip;
   final VoidCallback onDiscard;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +238,13 @@ class _ActionBar extends StatelessWidget {
                         child: TextButton(
                           onPressed: onSkip,
                           child: const Text('Skip'),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: onEdit,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Edit'),
                         ),
                       ),
                       Expanded(

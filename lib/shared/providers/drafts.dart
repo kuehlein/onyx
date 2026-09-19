@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/vault/card_parser.dart';
 import '../../core/vault/card_promotion.dart';
 import '../../core/vault/vault_source.dart';
 import '../models/card.dart';
@@ -47,13 +48,14 @@ class DraftReviewSession {
   Card? get current => isDone ? null : queue[index];
 
   DraftReviewSession copyWith({
+    List<Card>? queue,
     int? index,
     int? promoted,
     int? discarded,
     int? skipped,
   }) =>
       DraftReviewSession(
-        queue: queue,
+        queue: queue ?? this.queue,
         index: index ?? this.index,
         promoted: promoted ?? this.promoted,
         discarded: discarded ?? this.discarded,
@@ -103,6 +105,33 @@ class DraftReview extends _$DraftReview {
     state = AsyncData(
       s.copyWith(index: s.index + 1, discarded: s.discarded + 1),
     );
+    ref.invalidate(vaultIndexProvider);
+  }
+
+  /// EDIT applied: the in-app editor rewrote the current draft's file, but the
+  /// session snapshotted the queue at start (see [build]) so `current` is stale.
+  /// Re-read + re-parse the file and swap the fresh [Card] into `queue[index]`
+  /// so the displayed card reflects the edit — then invalidate the index so
+  /// Browse/study see it too. The card stays a draft (frontmatter/status
+  /// preserved on edit), so the user can then Keep it. Guards nulls +
+  /// parse-failure (a bad edit just leaves the old card in place).
+  Future<void> refreshCurrent() async {
+    final s = state.asData?.value;
+    final card = s?.current;
+    final source = _source;
+    if (s == null || card == null || source == null) return;
+    final Card? fresh;
+    try {
+      final raw = await source.readCard(card.filePath);
+      fresh = const CardParser()
+          .parse(raw, filePath: card.filePath, subjectId: card.subjectId);
+    } catch (_) {
+      return; // read/parse failed — leave the stale card rather than crash
+    }
+    if (fresh == null) return; // no longer a card (shouldn't happen on edit)
+    final queue = [...s.queue];
+    queue[s.index] = fresh;
+    state = AsyncData(s.copyWith(queue: queue));
     ref.invalidate(vaultIndexProvider);
   }
 
