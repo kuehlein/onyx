@@ -39,8 +39,9 @@ class _InterviewPlannerSheet extends ConsumerWidget {
       final aim = await ref.read(interviewPlannerProvider.notifier).accept();
       if (aim == null) return;
       messenger.showSnackBar(SnackBar(
-          content: Text('Saved — study is now prioritized for '
-              '${aim.companyName}.')));
+          content: Text(aim.companyName.isEmpty
+              ? 'Saved — study is now prioritized for this interview.'
+              : 'Saved — study is now prioritized for ${aim.companyName}.')));
       if (context.mounted) Navigator.of(context).pop(aim);
     }
 

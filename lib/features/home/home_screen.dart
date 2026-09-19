@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
-import '../../core/readiness/target.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
@@ -191,7 +190,10 @@ class _TargetCard extends ConsumerWidget {
     final cs = theme.colorScheme;
     final target = ref.watch(activeTargetProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
-    final unset = target == null || identical(target, ReadinessTarget.fallback);
+    // "Unset" = the goal has no explicitly-chosen target (activeTarget always
+    // fills template fallbacks, so it can't be the signal).
+    final unset = target == null ||
+        ref.watch(activeTargetIsSetProvider).asData?.value != true;
 
     final String title;
     String? countdown;

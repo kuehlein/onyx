@@ -15,6 +15,11 @@ class DesktopVaultSource implements VaultSource {
 
   final String rootPath;
 
+  /// Monotonic suffix so two overlapping writes to the same file use distinct
+  /// temp files — a shared `$target.tmp` would make the second rename fail
+  /// (`PathNotFoundException`) once the first renamed its tmp away.
+  static int _tmpSeq = 0;
+
   @override
   String get rootLabel => rootPath;
 
@@ -71,7 +76,7 @@ class DesktopVaultSource implements VaultSource {
     if (!dir.existsSync()) dir.createSync(recursive: true);
     // Atomic: write to a temp file, then rename over the target.
     final target = p.join(dir.path, name);
-    final tmp = File('$target.tmp');
+    final tmp = File('$target.${_tmpSeq++}.tmp');
     await tmp.writeAsString(content, flush: true);
     await tmp.rename(target);
   }
@@ -82,7 +87,7 @@ class DesktopVaultSource implements VaultSource {
     final dir = Directory(p.dirname(target));
     if (!dir.existsSync()) dir.createSync(recursive: true);
     // Atomic: write to a temp file, then rename over the target.
-    final tmp = File('$target.tmp');
+    final tmp = File('$target.${_tmpSeq++}.tmp');
     await tmp.writeAsString(content, flush: true);
     await tmp.rename(target);
   }

@@ -156,13 +156,21 @@ Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
   );
 }
 
-/// The ACTIVE goal's base target — see [targetForGoal]. Single default goal →
-/// identical to the legacy saved target.
+/// The ACTIVE goal's base target — see [targetForGoal].
 @riverpod
 Future<ReadinessTarget> activeTarget(Ref ref) async {
   final goal = await ref.watch(activeStudyGoalProvider.future);
   return ref.watch(targetForGoalProvider(goal.id).future);
 }
+
+/// Whether the active goal has an explicitly-chosen target (vs the template's
+/// fallbacks) — drives the "Set your target" onboarding CTA. [activeTarget] always
+/// resolves null slots to fallbacks, so it can't answer this; the goal's null
+/// slots are the signal (Save writes all three together, so `levelId` is a
+/// faithful proxy).
+@riverpod
+Future<bool> activeTargetIsSet(Ref ref) async =>
+    (await ref.watch(activeStudyGoalProvider.future)).levelId != null;
 
 /// The ACTIVE goal's targeting — see [targetingForGoal]. Single default goal →
 /// identical to [targeting].

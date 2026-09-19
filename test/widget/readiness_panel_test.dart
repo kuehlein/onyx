@@ -56,6 +56,8 @@ void main() {
           readinessLadderPositionProvider.overrideWith((ref) async => ladder),
           readinessPaceProvider.overrideWith((ref) async => null),
           activeTargetProvider.overrideWith((ref) async => _target),
+          // The label shows only when the target is explicitly set (else the CTA).
+          activeTargetIsSetProvider.overrideWith((ref) async => true),
           studyConsistencyProvider
               .overrideWith((ref) async => const [1, 0, 1, 1, 0, 1, 1]),
         ],
@@ -125,6 +127,8 @@ void main() {
           readinessLadderPositionProvider.overrideWith((ref) async => ladder),
           readinessPaceProvider.overrideWith((ref) async => null),
           activeTargetProvider.overrideWith((ref) async => _target),
+          // The label shows only when the target is explicitly set (else the CTA).
+          activeTargetIsSetProvider.overrideWith((ref) async => true),
           studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
           appliedSummaryProvider.overrideWith(
               (ref) async => {'system-design': (attempts: 4, contested: 1)}),

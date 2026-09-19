@@ -318,8 +318,9 @@ void main() {
     // appear (not mere existence), then assert the graduated goal wasn't dropped.
     final deadline = DateTime.now().add(const Duration(seconds: 5));
     while (!storeFile.readAsStringSync().contains('"$defaultGoalId"')) {
-      if (DateTime.now().isAfter(deadline))
+      if (DateTime.now().isAfter(deadline)) {
         fail('write-through never persisted');
+      }
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
     expect(storeFile.readAsStringSync().contains('"old"'), isTrue,

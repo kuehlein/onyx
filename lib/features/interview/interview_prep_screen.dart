@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/readiness/target.dart';
 import '../../core/story/competency.dart';
 import '../../core/story/coverage.dart';
 import '../../shared/providers/behavioral_readiness.dart';
@@ -24,7 +23,8 @@ class InterviewPrepScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final target = ref.watch(activeTargetProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
-    final unset = target == null || identical(target, ReadinessTarget.fallback);
+    final unset = target == null ||
+        ref.watch(activeTargetIsSetProvider).asData?.value != true;
 
     String? countdown;
     final d = target?.interviewDate;

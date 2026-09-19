@@ -205,4 +205,28 @@ void main() {
     expect(dsa.appliedN, greaterThan(0));
     await db.close();
   });
+
+  test('activeTargetIsSet drives the "set your target" CTA off the goal slots',
+      () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    addTearDown(() => db.close());
+
+    // Bare default goal (null slots) → NOT set → Home shows "Set your target".
+    // (Regression: activeTarget fills template fallbacks, so an identity check
+    // against ReadinessTarget.fallback silently read as "already set".)
+    final bare = make(db, goals: [
+      const StudyGoal(id: 'default', name: 'All', templateId: 'swe'),
+    ]);
+    addTearDown(bare.dispose);
+    expect(await bare.read(activeTargetIsSetProvider.future), isFalse);
+
+    // A goal with a chosen level → set.
+    final chosen = make(db, goals: [
+      const StudyGoal(
+          id: 'default', name: 'All', templateId: 'swe', levelId: 'senior'),
+    ]);
+    addTearDown(chosen.dispose);
+    expect(await chosen.read(activeTargetIsSetProvider.future), isTrue);
+  });
 }

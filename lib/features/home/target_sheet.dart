@@ -69,10 +69,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
         DateTime.now();
     final muted = theme.colorScheme.onSurfaceVariant;
     // Open the dimension pickers by default until a target has been configured
-    // (the active target returns the const fallback only when nothing is set).
+    // (the goal's slots are null until the user sets one; activeTarget always
+    // fills fallbacks, so it can't be the signal).
     final saved = ref.watch(activeTargetProvider).asData?.value;
-    final unconfigured =
-        saved == null || identical(saved, ReadinessTarget.fallback);
+    final unconfigured = saved == null ||
+        ref.watch(activeTargetIsSetProvider).asData?.value != true;
     final showDims = _showDims ?? unconfigured;
     // The active study goal owns the interviews (Phase B) + the level/track/
     // deadline slots the Save maps into.

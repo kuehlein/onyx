@@ -29,6 +29,7 @@ class ReadinessPanel extends ConsumerWidget {
     if (rAsync.isLoading && r == null) return const _LoadingPanel();
     if (r == null || r.isEmpty) return const SizedBox.shrink();
     final target = ref.watch(activeTargetProvider).asData?.value;
+    final isSet = ref.watch(activeTargetIsSetProvider).asData?.value ?? false;
     final pace = ref.watch(readinessPaceProvider).asData?.value;
     final ladder = ref.watch(readinessLadderPositionProvider).asData?.value;
     final consistency = ref.watch(studyConsistencyProvider).asData?.value;
@@ -72,7 +73,10 @@ class ReadinessPanel extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _Headline(
-                    target: target, readiness: r, anyStudied: anyStudied),
+                    target: target,
+                    isSet: isSet,
+                    readiness: r,
+                    anyStudied: anyStudied),
               ),
               if (showConsistency) ...[
                 const SizedBox(width: 8),
@@ -181,11 +185,13 @@ class _DomainListState extends State<_DomainList> {
 class _Headline extends StatelessWidget {
   const _Headline({
     required this.target,
+    required this.isSet,
     required this.readiness,
     required this.anyStudied,
   });
 
   final ReadinessTarget? target;
+  final bool isSet;
   final Readiness readiness;
   final bool anyStudied;
 
@@ -195,7 +201,7 @@ class _Headline extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     const green = StatusColor.good;
 
-    final unset = target == null || identical(target, ReadinessTarget.fallback);
+    final unset = target == null || !isSet;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,

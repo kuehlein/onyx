@@ -131,7 +131,10 @@ class InterviewPlanner extends _$InterviewPlanner {
           levelId: unset ? plan.level.name : goal.levelId,
           contextId: unset ? plan.tier.name : goal.contextId,
           trackId: unset ? plan.track.name : goal.trackId,
-          deadline: goal.deadline ?? plan.date,
+          // The aim's round carries the notBefore-guarded date; use it (not the
+          // raw plan.date) so a dropped past date doesn't file the goal in the past.
+          deadline: goal.deadline ??
+              (aim.rounds.isNotEmpty ? aim.rounds.first.date : null),
           interviews: [...goal.interviews, aim],
         ));
     return aim;

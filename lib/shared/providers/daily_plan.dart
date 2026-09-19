@@ -57,23 +57,33 @@ Future<Map<String, double>> goalBudgets(Ref ref) async {
 /// goal, budgeted to its slice of the shared daily time (G4).
 @riverpod
 Future<DailyPlan> dailyPlan(Ref ref) async {
-  final availRaw = await ref.watch(practiceAvailabilityProvider.future);
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
-  final targeting = await ref.watch(activeTargetingProvider.future);
-  final clock = await ref.watch(clockProvider.future);
+  // Register every dependency synchronously (before the first await) so a
+  // mid-flight invalidation (e.g. a goal edit rebuilding studyGoals) can't leave
+  // this using a disposed ref after the async gap.
+  final availF = ref.watch(practiceAvailabilityProvider.future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final targetingF = ref.watch(activeTargetingProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final goalF = ref.watch(activeStudyGoalProvider.future);
+  final budgetsF = ref.watch(goalBudgetsProvider.future);
+  final availRaw = await availF;
+  final index = await indexF;
+  final states = await statesF;
+  final targeting = await targetingF;
+  final clock = await clockF;
   final now = clock.now();
   // The active goal's slice of the shared budget. A single active goal owns the
   // whole budget (goalBudgets → {id: total}); an inactive (paused/graduated)
   // selected goal isn't in the split, so it gets no plan budget (0), not the
   // whole day.
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  final budgets = await ref.watch(goalBudgetsProvider.future);
+  final goal = await goalF;
+  final budgets = await budgetsF;
   final double budget = budgets[goal.id] ?? 0;
 
   // Days until the nearest upcoming interview (for the learn taper). The active
   // goal's ACTIVE interviews (Phase B — interviews live on the study goal now;
-  // [goal] was already watched above, before the first await).
+  // [goal] is watched above, before the first await).
   final interviews = [
     for (final iv in goal.interviews)
       if (iv.active) iv

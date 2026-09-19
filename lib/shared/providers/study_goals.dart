@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/goal/aim_migration.dart';
@@ -56,9 +54,16 @@ class StudyGoals extends _$StudyGoals {
     // Write-through: durably persist the folded default so the legacy files are no
     // longer needed (only when there IS legacy data — never persist a bare default).
     // Preserve any graduated explicit goals alongside it (they're hidden here but
-    // not deleted — a plain [migrated] save would erase them).
+    // not deleted — a plain [migrated] save would erase them). Awaited (not
+    // fire-and-forget) so the file lands before this build resolves: re-derivation
+    // then stops (the next build reads the stored default) and no concurrent save
+    // or user edit can race it. Best-effort — a persist failure must not fail load.
     if (baseTarget != null || interviews.isNotEmpty) {
-      unawaited(GoalStore(source).save([...explicit, migrated]));
+      try {
+        await GoalStore(source).save([...explicit, migrated]);
+      } catch (_) {
+        // Non-fatal: the read-only fold still stands; we retry on the next build.
+      }
     }
     return [migrated];
   }
