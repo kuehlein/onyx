@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// A plain-language reference on study load — what the daily levers mean, a
@@ -32,14 +33,14 @@ class _StudyLoadHelp extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
               children: [
                 const _H('The five activities'),
                 _P(
                     'You make progress on five fronts. They cost very different '
                     'amounts of time:',
                     muted),
-                const SizedBox(height: 8),
+                const SizedBox(height: Dim.space2),
                 const _Bullet(
                     'Learn — new concept cards. Quick each, but this is the '
                     'hidden load dial: every new card creates a tail of future '
@@ -59,7 +60,7 @@ class _StudyLoadHelp extends StatelessWidget {
                 const _H('A start-slow ramp'),
                 _P('Only step up when the week felt fine (see the guardrail below).',
                     muted),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 const _RampTable(),
                 const SizedBox(height: 20),
                 const _H('The one guardrail'),
@@ -71,7 +72,7 @@ class _StudyLoadHelp extends StatelessWidget {
                     'than ~90% isn’t worth it; it explodes the workload for little '
                     'gain.',
                     muted),
-                const SizedBox(height: 16),
+                const SizedBox(height: Dim.space4),
                 _P(
                     'New cards are the lever to ramp slowly — everything else mostly '
                     'follows from them. The coach on Home watches these signals and '
@@ -102,7 +103,8 @@ class _RampTable extends StatelessWidget {
           children: [
             for (final c in cells)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Dim.space2, vertical: Dim.space2),
                 child: Text(c, style: header ? head : cell),
               ),
           ],
@@ -111,7 +113,7 @@ class _RampTable extends StatelessWidget {
       border: TableBorder.all(
         color: theme.colorScheme.outlineVariant,
         width: 0.5,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: Dim.brChip,
       ),
       columnWidths: const {
         0: FlexColumnWidth(1.5),
@@ -135,7 +137,7 @@ class _H extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: Dim.space2),
         child: Text(text,
             style: Theme.of(context)
                 .textTheme
@@ -160,7 +162,7 @@ class _Bullet extends StatelessWidget {
     final muted = Theme.of(context).textTheme.bodyMedium?.copyWith(
         color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.4);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Dim.space2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

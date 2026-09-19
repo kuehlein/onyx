@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/goal/interview_aim.dart';
+import '../../shared/design/onyx_design.dart';
 
 /// Shared interview-round editing used by both the target sheet and the
 /// Upcoming-interviews screen: a dialog to add/edit one round, plus the pure
@@ -91,8 +92,10 @@ class _RoundDialogState extends State<_RoundDialog> {
     final dated = _date != null;
     return AlertDialog(
       // Roomier than the default content-sized dialog, which felt cramped.
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+      insetPadding: const EdgeInsets.symmetric(
+          horizontal: Dim.space6, vertical: Dim.space5),
+      contentPadding:
+          const EdgeInsets.fromLTRB(Dim.space5, 20, Dim.space5, Dim.space2),
       title: Text(widget.title ?? 'Round ${widget.existing.number}'),
       content: SizedBox(
         width: double.maxFinite,
@@ -114,7 +117,7 @@ class _RoundDialogState extends State<_RoundDialog> {
               ],
               onChanged: (v) => setState(() => _type = v ?? _type),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             // Date — a matching bordered field that opens the picker on tap.
             InkWell(
               onTap: _pickDate,

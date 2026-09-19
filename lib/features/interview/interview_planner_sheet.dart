@@ -9,7 +9,7 @@ import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -94,14 +94,14 @@ class _NoKey extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Dim.space5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Add your Anthropic API key to plan an interview.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium),
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             FilledButton.tonal(
               onPressed: () {
                 Navigator.of(context).pop();
@@ -128,10 +128,10 @@ class _Opener extends StatelessWidget {
         children: [
           Icon(Icons.event_note_outlined,
               size: 40, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
+          const SizedBox(height: Dim.space3),
           Text('Describe your interview',
               style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Text(
             'Company, role, team, and roughly when. I’ll build a study plan '
             'from what you already have — and flag what to prep elsewhere. '
@@ -164,13 +164,13 @@ class _PlanCard extends StatelessWidget {
           (a, b) => plan.conceptWeights[b]!.compareTo(plan.conceptWeights[a]!));
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: Dim.space2),
+      padding: const EdgeInsets.all(Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+        border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +178,7 @@ class _PlanCard extends StatelessWidget {
           Text('Proposed plan',
               style: theme.textTheme.labelMedium
                   ?.copyWith(color: theme.colorScheme.primary)),
-          const SizedBox(height: 4),
+          const SizedBox(height: Dim.space1),
           Text('${plan.company}${plan.role.isEmpty ? '' : ' · ${plan.role}'}',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700)),
@@ -189,17 +189,17 @@ class _PlanCard extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(color: muted),
           ),
           if (domains.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             _ChipRow(
                 label: 'Prioritize', items: domains, tone: StatusTone.accent),
           ],
           if (concepts.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             _ChipRow(
                 label: 'Concepts', items: concepts, tone: StatusTone.muted),
           ],
           if (plan.missingConcepts.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text(
                 'As you build your deck, consider adding: '
                 '${plan.missingConcepts.join(', ')}.',
@@ -223,7 +223,7 @@ class _PlanCard extends StatelessWidget {
             ),
           ],
           if (plan.summary.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             CardMarkdown(plan.summary, compact: true),
           ],
           const SizedBox(height: 14),

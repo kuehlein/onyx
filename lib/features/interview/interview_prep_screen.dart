@@ -8,6 +8,7 @@ import '../../shared/providers/behavioral_readiness.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/story.dart';
+import '../../shared/design/onyx_design.dart';
 import '../home/target_sheet.dart';
 
 /// The "Interview prep" hub — everything about a *specific* interview you're
@@ -40,7 +41,7 @@ class InterviewPrepScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
             children: [
               const _SectionHeader('Your target'),
               Card(
@@ -79,9 +80,9 @@ class InterviewPrepScreen extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               const _BehavioralReadinessBanner(),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               Card(
                 margin: EdgeInsets.zero,
                 color: theme.colorScheme.surfaceContainerHigh,
@@ -130,15 +131,15 @@ class _BehavioralReadinessBanner extends ConsumerWidget {
     final r = ref.watch(behavioralReadinessProvider).asData?.value;
     if (r == null) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: Dim.brCard,
       ),
       child: Row(
         children: [
           Icon(Icons.insights_outlined, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +193,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 2),
+      padding: const EdgeInsets.only(bottom: Dim.space2, left: 2),
       child: Text(title,
           style: theme.textTheme.titleSmall
               ?.copyWith(fontWeight: FontWeight.w700)),

@@ -4,6 +4,7 @@ import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/url.dart';
@@ -125,11 +126,12 @@ class _CardDetail extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 640),
           child: FadingScrollEdges(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+              padding: const EdgeInsets.fromLTRB(
+                  Dim.space4, Dim.space3, Dim.space4, 40),
               children: [
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: Dim.space2,
+                  runSpacing: Dim.space1,
                   children: [
                     _MetaChip(
                       icon: isInterview
@@ -152,14 +154,14 @@ class _CardDetail extends ConsumerWidget {
                   ],
                 ),
                 if (card.overview.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Dim.space4),
                   CardMarkdown(card.overview),
                 ],
                 if (isInterview) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Dim.space4),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: Dim.space2,
+                    runSpacing: Dim.space2,
                     children: [
                       if (card.practiceUrl != null)
                         FilledButton.icon(
@@ -175,7 +177,7 @@ class _CardDetail extends ConsumerWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: Dim.space4),
                 for (final section in card.sections)
                   _SectionPanel(
                     section: section,
@@ -220,7 +222,7 @@ class _SectionPanel extends StatelessWidget {
         color: scheme.surfaceContainerHigh,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: Dim.brCard,
           side: BorderSide(color: scheme.outlineVariant),
         ),
         // IntrinsicHeight so the accent rail can stretch to the panel's height
@@ -236,8 +238,10 @@ class _SectionPanel extends StatelessWidget {
                   data: theme.copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     initiallyExpanded: initiallyExpanded,
-                    tilePadding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    tilePadding: const EdgeInsets.fromLTRB(
+                        Dim.space4, Dim.space1, Dim.space4, Dim.space1),
+                    childrenPadding: const EdgeInsets.fromLTRB(
+                        Dim.space4, 0, Dim.space4, 18),
                     expandedCrossAxisAlignment: CrossAxisAlignment.start,
                     title: Row(
                       children: [

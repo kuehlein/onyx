@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/status_pill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -48,7 +48,8 @@ class ReadinessPanel extends ConsumerWidget {
     final showConsistency = last7.any((c) => c > 0);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding:
+          const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
@@ -81,38 +82,38 @@ class ReadinessPanel extends ConsumerWidget {
                     anyStudied: anyStudied),
               ),
               if (showConsistency) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 _ConsistencyChip(last7),
               ],
             ],
           ),
           if (!anyStudied)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: Dim.space2),
               child: Text('Study some cards and this fills in.',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             )
           else ...[
             if (pace != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
               _PaceRow(pace),
             ],
             // The single progress bar — its fill IS the headline % toward the
             // goal, so the number and the bar always agree.
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             _OverallBar(r),
             // Ladder standing shown as discrete milestone chips (levels
             // unlocked), NOT a rival fill bar — see the goal flag on the target.
             if (ladder != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               _MilestoneChips(ladder),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             // Explain the two-tone bars once, only after mocks graduate the view.
             if (r.interview) ...[
               const _BarLegend(),
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
             ],
             _DomainList(domains: r.domains, appliedSummary: appliedSummary),
           ],
@@ -151,7 +152,7 @@ class _DomainListState extends State<_DomainList> {
       children: [
         for (final d in shown)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Dim.space2),
             child: _DomainRow(d,
                 focus: identical(d, all.first),
                 summary: widget.appliedSummary[d.domain]),
@@ -161,12 +162,12 @@ class _DomainListState extends State<_DomainList> {
             borderRadius: BorderRadius.circular(6),
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: Dim.space1),
               child: Row(
                 children: [
                   Icon(_expanded ? Icons.expand_less : Icons.expand_more,
                       size: 16, color: theme.colorScheme.primary),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Dim.space1),
                   Text(
                     _expanded ? 'Show fewer' : 'Show all ${all.length} domains',
                     style: theme.textTheme.labelMedium
@@ -214,14 +215,14 @@ class _Headline extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Material(
             color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: Dim.brChip,
             child: InkWell(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: Dim.brChip,
               onTap: () => showTargetSheet(context),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(9, 5, 7, 5),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: Dim.brChip,
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
                 child: Row(
@@ -302,7 +303,8 @@ class _LoadingPanel extends StatelessWidget {
               BoxDecoration(color: bar, borderRadius: BorderRadius.circular(6)),
         );
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding:
+          const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
@@ -313,7 +315,7 @@ class _LoadingPanel extends StatelessWidget {
           Row(
             children: [
               block(48, 30),
-              const SizedBox(width: 12),
+              const SizedBox(width: Dim.space3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,10 +328,10 @@ class _LoadingPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           for (var i = 0; i < 3; i++) ...[
             block(double.infinity, 12),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
           ],
           block(double.infinity, 12),
         ],
@@ -394,7 +396,7 @@ class _PaceRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: color),
-        const SizedBox(width: 8),
+        const SizedBox(width: Dim.space2),
         Expanded(
           child: Text(text,
               style: theme.textTheme.bodySmall
@@ -762,7 +764,7 @@ class _BarLegend extends StatelessWidget {
         const SizedBox(width: 5),
         Text('proven in mocks',
             style: theme.textTheme.labelSmall?.copyWith(color: muted)),
-        const SizedBox(width: 12),
+        const SizedBox(width: Dim.space3),
         swatch(0.28),
         const SizedBox(width: 5),
         Flexible(
@@ -804,7 +806,7 @@ class _DomainRow extends ConsumerWidget {
     // domain (task #23) — why it's where it is + targeted next steps. Padded so
     // the tap target is comfortable without shifting the row's visual rhythm.
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: Dim.brChip,
       onTap: () => showWeakAreaSheet(context, ref,
           domain: d.domain, prettyName: prettyDomain(d.domain)),
       child: Padding(
@@ -836,7 +838,7 @@ class _DomainRow extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 Text(d.studied == 0 ? d.label : '${(shown * 100).round()}%',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: color, fontWeight: FontWeight.w700)),

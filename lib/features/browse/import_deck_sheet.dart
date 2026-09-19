@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/registry/deck.dart';
 import '../../core/registry/import_deck.dart';
-import '../../shared/design/context_x.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/registry.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/loading_view.dart';
@@ -78,7 +78,7 @@ class _ImportDeckSheetState extends ConsumerState<_ImportDeckSheet> {
           icon: Icons.download_outlined,
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, Dim.space3),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -113,11 +113,11 @@ class _DeckList extends ConsumerWidget {
     final decksAsync = ref.watch(deckListProvider);
     return decksAsync.when(
       loading: () => const Padding(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
         child: LoadingView(label: 'Loading decks…'),
       ),
       error: (e, _) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
         child: Text(
           "Couldn't reach the deck registry: $e",
           style: context.text.bodyMedium?.copyWith(color: context.colors.error),
@@ -126,7 +126,7 @@ class _DeckList extends ConsumerWidget {
       data: (decks) {
         if (decks.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
             child: Text(
               'No decks are available to import yet.',
               style: context.text.bodyMedium
@@ -137,7 +137,7 @@ class _DeckList extends ConsumerWidget {
         return Flexible(
           child: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: Dim.space3),
             children: [
               for (final deck in decks)
                 ListTile(

@@ -83,19 +83,20 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          padding:
+              const EdgeInsets.fromLTRB(Dim.space4, Dim.space1, Dim.space4, 0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.timeline_outlined, color: muted),
-              const SizedBox(width: 16),
+              const SizedBox(width: Dim.space4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('At ~$value new/day:',
                         style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Dim.space1),
                     _PaceLine(
                         label: 'Get through all cards',
                         value: coverText,
@@ -104,7 +105,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
                         label: 'Interview-ready',
                         value: readyText,
                         color: StatusColor.good),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Dim.space1),
                     Text(
                       total == 0
                           ? 'A what-if forecast for your saved target.'
@@ -120,7 +121,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: Dim.space2),
           child: Slider(
             value: value.toDouble(),
             min: minPace.toDouble(),
@@ -131,7 +132,7 @@ class _PacePlannerState extends ConsumerState<_PacePlanner> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(56, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(56, 0, Dim.space4, Dim.space2),
           child: Row(
             children: [
               Text('Your pace: $limit/day',
@@ -187,7 +188,7 @@ class _PaceLine extends StatelessWidget {
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Expanded(
             child: Text.rich(TextSpan(
               style: theme.textTheme.bodyMedium,
@@ -319,7 +320,8 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+      padding:
+          const EdgeInsets.fromLTRB(Dim.space4, 20, Dim.space4, Dim.space2),
       child: Text(
         title.toUpperCase(),
         style: theme.textTheme.labelMedium?.copyWith(

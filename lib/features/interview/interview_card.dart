@@ -7,7 +7,7 @@ import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
 import '../../shared/providers/subject.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import 'interview_actions.dart';
 import 'interview_sheet.dart';
 
@@ -39,13 +39,14 @@ class InterviewCard extends ConsumerWidget {
       onTap: () => showInterviewSheet(context, aim.id),
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Dim.space1, vertical: Dim.space2),
         child: Row(
           children: [
             _leadingIcon(theme, ended),
             const SizedBox(width: 10),
             Expanded(child: _titleBlock(context, ref, ended, target)),
-            const SizedBox(width: 8),
+            const SizedBox(width: Dim.space2),
             _trailing(context, ref, ended, target),
           ],
         ),
@@ -158,10 +159,11 @@ class InterviewCard extends ConsumerWidget {
     return Tooltip(
       message: 'Judged for $role',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding:
+            const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 3),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(20),
+          color: color.withValues(alpha: Dim.fill),
+          borderRadius: Dim.brSheet,
         ),
         child: Text(text,
             style: Theme.of(context)

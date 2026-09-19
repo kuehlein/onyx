@@ -6,6 +6,7 @@ import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_debrief.dart';
 import '../../core/goal/interview_aim.dart' show GoalOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_debrief.dart';
@@ -80,10 +81,10 @@ class _Opener extends StatelessWidget {
         children: [
           Icon(Icons.rate_review_outlined,
               size: 40, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
+          const SizedBox(height: Dim.space3),
           Text('How did it go?',
               style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Text(
             'Tell me how the interview went — what felt strong, where you '
             'struggled, any question you couldn’t finish. I’ll record the '
@@ -116,13 +117,13 @@ class _DebriefCard extends StatelessWidget {
           result.conceptWeights[b]!.compareTo(result.conceptWeights[a]!));
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: Dim.space2),
+      padding: const EdgeInsets.all(Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+        border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +133,7 @@ class _DebriefCard extends StatelessWidget {
                   ?.copyWith(color: theme.colorScheme.primary)),
           if (result.outcome != null && result.outcome != GoalOutcome.pending)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: Dim.space1),
               child: Text(
                   'Outcome: '
                   '${result.outcome == GoalOutcome.passed ? 'Passed' : 'Didn’t pass'}',
@@ -140,14 +141,14 @@ class _DebriefCard extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.w700)),
             ),
           if (domains.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             _ChipRow(
                 label: 'Focus more on',
                 items: domains,
                 tone: StatusTone.accent),
           ],
           if (concepts.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             _ChipRow(
                 label: 'Concepts', items: concepts, tone: StatusTone.muted),
           ],
@@ -209,14 +210,14 @@ class _NeedsKey extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Dim.space5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Add your Anthropic API key to debrief an interview.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium),
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             FilledButton.tonal(
               onPressed: () => context.go('/settings'),
               child: const Text('Open Settings'),

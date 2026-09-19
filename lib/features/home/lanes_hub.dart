@@ -3,6 +3,7 @@ import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/goal/study_goal.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
@@ -41,25 +42,26 @@ class LanesHub extends ConsumerWidget {
             if (g.state == GoalState.paused) g,
         ];
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space4, Dim.space3, Dim.space4, Dim.space5),
           children: [
             Text("Today's mix", style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 4),
+            const SizedBox(height: Dim.space1),
             Text(
               'Your study goals share the day. Tap one to study it.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             for (final g in active) ...[
               _GoalLane(goal: g, onEnter: onEnter),
               const SizedBox(height: 10),
             ],
             for (final g in paused) ...[
               _PausedRow(goal: g),
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             OutlinedButton.icon(
               icon: const Icon(Icons.add),
               label: const Text('New goal'),
@@ -100,7 +102,7 @@ class _GoalLane extends ConsumerWidget {
         onLongPress: () => showGoalEditor(context, goal: goal),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+          padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space2, 14),
           child: Row(
             children: [
               Expanded(
@@ -122,7 +124,7 @@ class _GoalLane extends ConsumerWidget {
                 ),
               ),
               if (minutes != null && minutes >= 1) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 Text('~${minutes.round()}m',
                     style: theme.textTheme.labelLarge?.copyWith(
                         color: cs.primary, fontWeight: FontWeight.w700)),
@@ -154,7 +156,7 @@ class _PausedRow extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: Dim.space1),
       child: Row(
         children: [
           Icon(Icons.pause_circle_filled, size: 18, color: cs.onSurfaceVariant),

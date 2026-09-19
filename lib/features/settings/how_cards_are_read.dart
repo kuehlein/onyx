@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/vault/card_parser.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// A read-only explainer of how Onyx turns notes into cards — the ship-now stub
@@ -37,7 +38,7 @@ class _HowCardsAreRead extends StatelessWidget {
         const SheetHeader(title: 'How cards are read', divider: true),
         Flexible(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
             shrinkWrap: true,
             children: [
               Text(
@@ -52,7 +53,7 @@ class _HowCardsAreRead extends StatelessWidget {
               const SizedBox(height: 20),
               const _SectionLabel('Later', tagged: true),
               for (final l in _later) _LaterRow(l.label, editor: l.editor),
-              const SizedBox(height: 16),
+              const SizedBox(height: Dim.space4),
               Text(
                 'Sensible defaults mean most folders never need to change these.',
                 style: theme.textTheme.bodySmall
@@ -78,7 +79,7 @@ class _SectionLabel extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: Dim.space1),
       child: Row(
         children: [
           Text(
@@ -91,10 +92,11 @@ class _SectionLabel extends StatelessWidget {
           if (tagged) ...[
             const Spacer(),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Dim.space2, vertical: 2),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: Dim.brFull,
               ),
               child: Text('Later',
                   style: theme.textTheme.labelSmall
@@ -117,13 +119,13 @@ class _NowRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: Dim.space2),
       child: Row(
         children: [
           Icon(Icons.circle, size: 12, color: theme.colorScheme.primary),
           const SizedBox(width: 14),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          const SizedBox(width: 12),
+          const SizedBox(width: Dim.space3),
           Text(value,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(fontWeight: FontWeight.w600)),
@@ -148,7 +150,7 @@ class _LaterRow extends StatelessWidget {
     return Semantics(
       label: '$label, not yet available',
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: Dim.space2),
         child: Row(
           children: [
             Icon(Icons.circle_outlined, size: 12, color: dim),

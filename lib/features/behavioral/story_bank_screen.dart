@@ -6,7 +6,7 @@ import '../../core/story/competency.dart';
 import '../../core/story/coverage.dart';
 import '../../core/story/story.dart';
 import '../../shared/providers/story.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// The story bank: a competency-coverage matrix (do you have a strong story for
@@ -44,16 +44,16 @@ class _Body extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
           children: [
             Text('Coverage', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 4),
+            const SizedBox(height: Dim.space1),
             Text(
                 '${covered.length} of ${kBehavioralCompetencies.length} '
                 'competencies have a story.',
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Card(
               margin: EdgeInsets.zero,
               color: theme.colorScheme.surfaceContainerHigh,
@@ -68,10 +68,10 @@ class _Body extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Dim.space5),
             Text('Your stories (${stories.length})',
                 style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             if (stories.isEmpty)
               Text(
                 'No stories yet — use "Build your stories" to draft some with the '
@@ -107,7 +107,7 @@ class _CoverageRow extends StatelessWidget {
               color: covered
                   ? StatusColor.good
                   : theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
+          const SizedBox(width: Dim.space3),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           Text(
             covered
@@ -137,7 +137,7 @@ class _StoryTile extends StatelessWidget {
       if (story.isComplete && !story.hasQuantifiedResult) 'no metric',
     ];
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: Dim.space2),
       color: theme.colorScheme.surfaceContainerHigh,
       child: ListTile(
         title: Text(story.title),
@@ -193,7 +193,8 @@ class _StorySheet extends StatelessWidget {
               divider: true),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding:
+                  const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
               children: [
                 if (story.competencies.isNotEmpty)
                   Padding(

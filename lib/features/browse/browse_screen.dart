@@ -132,7 +132,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space3, Dim.space2, Dim.space2, Dim.space2),
           child: Row(
             children: [
               Expanded(
@@ -238,7 +239,7 @@ class _SearchField extends StatelessWidget {
                 onPressed: onClear,
               ),
         isDense: true,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: const OutlineInputBorder(borderRadius: Dim.brCard),
       ),
     );
   }
@@ -288,7 +289,7 @@ class _ActiveFilters extends StatelessWidget {
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: Dim.space3),
         children: [
           for (final t in filter.types)
             _chip(context, activeSubject.flowForType(t)?.displayLabel ?? t,
@@ -310,7 +311,8 @@ class _ActiveFilters extends StatelessWidget {
 
   Widget _chip(BuildContext context, String label, VoidCallback onDeleted) =>
       Padding(
-        padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+        padding: const EdgeInsets.only(
+            right: Dim.space2, top: Dim.space1, bottom: Dim.space1),
         child: InputChip(
           label: Text(label),
           onDeleted: onDeleted,
@@ -331,7 +333,8 @@ class _ResultCount extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space1, Dim.space4, Dim.space2),
         child: Text(
           '$count of $total ${total == 1 ? 'card' : 'cards'}',
           style: theme.textTheme.labelMedium

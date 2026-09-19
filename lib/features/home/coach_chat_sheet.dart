@@ -5,6 +5,7 @@ import '../../core/ai/coach_update_chat.dart'
     show CoachRole, buildCoachChatSystem;
 import '../../core/coach/coach_update.dart';
 import '../../shared/coach_settings.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/coach_chat.dart';
 import '../../shared/widgets/chat_view.dart';
@@ -135,13 +136,15 @@ class _ProposalCard extends StatelessWidget {
     final theme = Theme.of(context);
     final sign = proposal.delta > 0 ? '+' : '';
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      margin: const EdgeInsets.fromLTRB(
+          Dim.space3, Dim.space1, Dim.space3, Dim.space3),
+      padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+        color:
+            theme.colorScheme.primaryContainer.withValues(alpha: Dim.hairline),
+        borderRadius: Dim.brCard,
+        border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +154,7 @@ class _ProposalCard extends StatelessWidget {
             style: theme.textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Row(
             children: [
               FilledButton.icon(
@@ -159,7 +162,7 @@ class _ProposalCard extends StatelessWidget {
                 icon: const Icon(Icons.check, size: 18),
                 label: const Text('Apply'),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Dim.space2),
               TextButton(onPressed: onDismiss, child: const Text('Not now')),
             ],
           ),
@@ -206,7 +209,7 @@ class _NoKey extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Text(
           'The coach needs an Anthropic API key — add one in Settings to chat.',
           textAlign: TextAlign.center,

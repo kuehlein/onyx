@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/widgets/sheet_header.dart';
 
@@ -66,7 +67,7 @@ class _ApiKeySheetState extends ConsumerState<_ApiKeySheet> {
             icon: Icons.key_outlined,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -81,7 +82,7 @@ class _ApiKeySheetState extends ConsumerState<_ApiKeySheet> {
                     labelText: 'Key',
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 Text(
                   'Your key stays on this device (Keychain) and is sent only to '
                   'Anthropic when a coach or mock runs. Get one at '
@@ -97,7 +98,7 @@ class _ApiKeySheetState extends ConsumerState<_ApiKeySheet> {
                           _saving ? null : () => Navigator.of(context).pop(),
                       child: const Text('Not now'),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Dim.space2),
                     FilledButton(
                       onPressed: _saving ? null : _save,
                       child: const Text('Save'),

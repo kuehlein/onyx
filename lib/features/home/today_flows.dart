@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/practice_plan.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
 
@@ -33,7 +34,7 @@ class TodayFlows extends ConsumerWidget {
         // Nothing required left today → offer the optional extra-practice run
         // (only when the day is clear, so it never competes with the plan).
         if (plan.tracks.isEmpty) ...[
-          if (plan.locked.isNotEmpty) const SizedBox(height: 12),
+          if (plan.locked.isNotEmpty) const SizedBox(height: Dim.space3),
           const _ExtraPractice(),
         ],
       ],
@@ -62,7 +63,7 @@ class _ExtraPractice extends ConsumerWidget {
             weakest == null ? null : () => context.push('/practice/$weakest'),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, 14),
           child: Row(
             children: [
               Icon(Icons.bolt_outlined, size: 22, color: cs.primary),
@@ -88,7 +89,7 @@ class _ExtraPractice extends ConsumerWidget {
                 ),
               ),
               if (weakest != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
               ],
             ],
@@ -132,7 +133,7 @@ class _FlowButton extends StatelessWidget {
       child: Row(
         children: [
           Icon(meta.icon, size: 20, color: fg),
-          const SizedBox(width: 12),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(track.track.label,
                 style: (isPrimary
@@ -171,7 +172,7 @@ class _LockedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 2),
       child: Row(
         children: [
           Icon(Icons.lock_outline,

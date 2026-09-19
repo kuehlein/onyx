@@ -8,6 +8,7 @@ import '../../core/story/competency.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/story.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/story_coach_chat.dart';
 import '../../shared/widgets/chat_view.dart';
 
@@ -106,7 +107,7 @@ class _CoverageStrip extends StatelessWidget {
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        padding: const EdgeInsets.fromLTRB(Dim.space4, 10, Dim.space4, 10),
         child: Row(
           children: [
             Icon(Icons.checklist_rtl_outlined,
@@ -136,7 +137,7 @@ class _Opener extends StatelessWidget {
         children: [
           Icon(Icons.auto_stories_outlined,
               size: 36, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
+          const SizedBox(height: Dim.space3),
           Text(
             'Tell me about your career and I\'ll help you turn it into strong '
             'STAR stories — a situation, what you did, and the result. Just talk; '
@@ -175,13 +176,15 @@ class _DraftCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      margin: const EdgeInsets.fromLTRB(
+          Dim.space3, Dim.space1, Dim.space3, Dim.space3),
+      padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+        color:
+            theme.colorScheme.primaryContainer.withValues(alpha: Dim.hairline),
+        borderRadius: Dim.brCard,
+        border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +197,7 @@ class _DraftCard extends StatelessWidget {
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w700)),
           if (draft.competencies.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -209,7 +212,7 @@ class _DraftCard extends StatelessWidget {
             ),
           ],
           if (!draft.hasQuantifiedResult) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             Row(
               children: [
                 Icon(Icons.info_outline,
@@ -233,7 +236,7 @@ class _DraftCard extends StatelessWidget {
                 icon: const Icon(Icons.save_outlined, size: 18),
                 label: const Text('Save to story bank'),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Dim.space2),
               TextButton(onPressed: onDismiss, child: const Text('Not now')),
             ],
           ),
@@ -251,7 +254,7 @@ class _NoKey extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Text(
           'Building stories needs an Anthropic API key — add one in Settings.',
           textAlign: TextAlign.center,

@@ -1,7 +1,7 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 import '../../shared/widgets/loading_view.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -122,7 +122,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space4, Dim.space2, Dim.space4, 0),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: RestTimer(restSeconds: gym!.restSeconds),
@@ -174,7 +175,8 @@ class _ReviewView extends StatelessWidget {
             Expanded(
               child: FadingScrollEdges(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                      Dim.space4, Dim.space4, Dim.space4, Dim.space5),
                   children: [
                     Row(
                       children: [
@@ -182,18 +184,18 @@ class _ReviewView extends StatelessWidget {
                             style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         if (card.domain != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: Dim.space2),
                           _Pill(card.domain!),
                         ],
                         if (card.confidence != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: Dim.space2),
                           ConfidenceBadge(card.confidence!),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     Text(card.title, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     // The cue: problem statement for interview cards, else the
                     // section heading you're recalling.
                     if (isInterview && card.overview.isNotEmpty)
@@ -219,9 +221,9 @@ class _ReviewView extends StatelessWidget {
                       ),
                     ],
                     if (revealed) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Dim.space4),
                       const Divider(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Dim.space2),
                       if (isInterview)
                         Text(item.section.heading,
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -230,7 +232,7 @@ class _ReviewView extends StatelessWidget {
                       if (isInterview) const SizedBox(height: 6),
                       CardMarkdown(item.section.content),
                       if (isInterview && card.practiceUrl != null) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: Dim.space3),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
@@ -303,7 +305,8 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space2, Dim.space4, Dim.space3),
         child: revealed
             ? GradeButtons(
                 buttons: [
@@ -327,11 +330,12 @@ class _ActionBar extends StatelessWidget {
                         icon: const Icon(Icons.psychology_outlined),
                         label: const Text('Answer the coach'),
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: Dim.space4),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Dim.space2),
                   ],
                   SizedBox(
                     width: double.infinity,
@@ -350,7 +354,8 @@ class _ActionBar extends StatelessWidget {
                             icon: const Icon(Icons.visibility_outlined),
                             label: const Text('Reveal'),
                             style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: Dim.space4),
                             ),
                           ),
                   ),
@@ -425,7 +430,7 @@ class _EmptyState extends ConsumerWidget {
               children: [
                 if (hasWeakest) _PracticeSuggestion(weakest),
                 if (hasNew) ...[
-                  if (hasWeakest) const SizedBox(height: 12),
+                  if (hasWeakest) const SizedBox(height: Dim.space3),
                   OutlinedButton.icon(
                     onPressed: () => context.go('/learn'),
                     icon: const Icon(Icons.auto_stories_outlined),
@@ -463,7 +468,7 @@ class _PracticeSuggestion extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.labelLarge
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         OutlinedButton.icon(
           onPressed: () => context.push('/practice/$domain'),
           icon: const Icon(Icons.fitness_center_outlined),
@@ -507,7 +512,7 @@ class _CompleteState extends ConsumerWidget {
           children: [
             Icon(Icons.check_circle_outline,
                 size: 44, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text('Session complete',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
@@ -520,11 +525,11 @@ class _CompleteState extends ConsumerWidget {
               _GradeBreakdown(session.grades),
             ],
             if (delta != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: Dim.space5),
               _ProgressDelta(delta: delta, targetLabel: target?.label),
             ],
             if (after?.weakestDomain != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: Dim.space5),
               _PracticeSuggestion(after!.weakestDomain!),
             ],
             const SizedBox(height: 28),
@@ -555,8 +560,8 @@ class _GradeBreakdown extends StatelessWidget {
     final theme = Theme.of(context);
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
+      spacing: Dim.space2,
+      runSpacing: Dim.space2,
       children: [
         for (final (:value, :label, :color) in studyGrades)
           if (grades.where((g) => g == value).length case final n when n > 0)
@@ -564,7 +569,7 @@ class _GradeBreakdown extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: Dim.brChip,
               ),
               child: Text('$label $n',
                   style: theme.textTheme.labelMedium
@@ -589,7 +594,7 @@ class _ProgressDelta extends StatelessWidget {
     final touched = delta.touched;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
@@ -601,7 +606,7 @@ class _ProgressDelta extends StatelessWidget {
             children: [
               Icon(Icons.trending_up,
                   size: 16, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: Dim.space2),
               Expanded(
                 child: Text(
                   targetLabel == null
@@ -616,7 +621,7 @@ class _ProgressDelta extends StatelessWidget {
           _DeltaLine(label: 'Overall', change: delta.overallChange, bold: true),
           for (final d in touched)
             _DeltaLine(label: prettyDomain(d.domain), change: d.change),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Text(
             'Recall strength toward your knowledge-base level — not a '
             'mock-validated interview score.',

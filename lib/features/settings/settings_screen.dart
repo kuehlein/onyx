@@ -21,7 +21,7 @@ import '../../shared/providers/learn.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/settings.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/destructive_row.dart';
 import '../home/goal_editor_sheet.dart';
 import '../onboarding/folder_source_sheet.dart';
@@ -326,7 +326,7 @@ class SettingsScreen extends ConsumerWidget {
                             'evidence at your real daily pace. Keep tapping to '
                             'advance; "Reset local progress" clears it.'),
                     trailing: Wrap(
-                      spacing: 4,
+                      spacing: Dim.space1,
                       children: [
                         ActionChip(
                           label: const Text('+1 day'),
@@ -352,7 +352,7 @@ class SettingsScreen extends ConsumerWidget {
                         : 'Clock advanced ${days > 0 ? '+' : ''}$days '
                             'day${days.abs() == 1 ? '' : 's'} from real time.'),
                     trailing: Wrap(
-                      spacing: 4,
+                      spacing: Dim.space1,
                       children: [
                         for (final d in const [1, 7])
                           ActionChip(

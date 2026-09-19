@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,16 +68,17 @@ class CoachBadge extends ConsumerWidget {
     final color = _toneColor(update.tone, theme);
     return Material(
       color: color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: Dim.brCard,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: Dim.brCard,
         onTap: () => update.kind == CoachInsightKind.loadCheckin
             ? showLoadCheckInSheet(context, ref)
             : _showDetail(context, ref, update, color, seed, load, todayPlan),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: Dim.brCard,
             border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
           child: Row(
@@ -169,7 +170,7 @@ class CoachBadge extends ConsumerWidget {
                           child: Text(u.actionLabel!),
                         ),
                       ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Dim.space2),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -193,7 +194,7 @@ class CoachBadge extends ConsumerWidget {
                         label: const Text('Talk about it'),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Dim.space2),
                     // The deep dive lives here (progressive disclosure) rather than
                     // as its own Home button.
                     SizedBox(

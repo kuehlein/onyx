@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
@@ -81,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               )
             : null,
         title: Text(focused?.name ?? 'Onyx'),
-        actions: const [_ReadinessChip(), SizedBox(width: 8)],
+        actions: const [_ReadinessChip(), SizedBox(width: Dim.space2)],
       ),
       body: const _GoalHomeBody(),
     );
@@ -112,7 +113,8 @@ class _GoalHomeBody extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding:
+                    const EdgeInsets.fromLTRB(20, Dim.space4, 20, Dim.space5),
                 // mainAxisSize.min → the column sizes to its real content
                 // (clamped up to the viewport by the ConstrainedBox), so
                 // spaceBetween spreads the slack when there's room and it
@@ -130,7 +132,7 @@ class _GoalHomeBody extends ConsumerWidget {
                       children: [
                         _DateHeader(
                             clock: ref.watch(clockProvider).asData?.value),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: Dim.space3),
                         const _TargetCard(),
                         const _DraftReviewPrompt(),
                       ],
@@ -159,7 +161,7 @@ class _GoalHomeBody extends ConsumerWidget {
                       children: [
                         const CoachBadge(),
                         if (needsKey) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: Dim.space4),
                           _Prompt(
                             icon: Icons.auto_awesome_outlined,
                             title: 'Enable AI features',
@@ -220,11 +222,12 @@ class _TargetCard extends ConsumerWidget {
         onTap: () => context.push('/interview-prep'),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
           child: Row(
             children: [
               Icon(Icons.flag_outlined, size: 20, color: cs.primary),
-              const SizedBox(width: 12),
+              const SizedBox(width: Dim.space3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +250,7 @@ class _TargetCard extends ConsumerWidget {
                     style: theme.textTheme.labelMedium?.copyWith(
                         color: cs.primary, fontWeight: FontWeight.w700)),
               ],
-              const SizedBox(width: 4),
+              const SizedBox(width: Dim.space1),
               Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
             ],
           ),
@@ -271,7 +274,7 @@ class _DraftReviewPrompt extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: Dim.space2),
       child: Material(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
@@ -284,14 +287,14 @@ class _DraftReviewPrompt extends ConsumerWidget {
               children: [
                 Icon(Icons.inbox_outlined,
                     size: 18, color: cs.onSurfaceVariant),
-                const SizedBox(width: 12),
+                const SizedBox(width: Dim.space3),
                 Expanded(
                   child: Text(
                     '$n card${n == 1 ? '' : 's'} to review before they count',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
               ],
             ),
@@ -395,7 +398,7 @@ class _ReadinessChip extends ConsumerWidget {
     final theme = Theme.of(context);
     final pct = (r.overall * 100).round();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: Dim.space2),
       child: ActionChip(
         onPressed: () => context.go('/insights?focus=readiness'),
         avatar: Icon(Icons.flag_outlined,

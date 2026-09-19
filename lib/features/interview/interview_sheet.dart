@@ -7,7 +7,7 @@ import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/study_goals.dart';
 import '../../shared/providers/subject.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -119,10 +119,10 @@ class _InterviewSheet extends ConsumerWidget {
                 if (ended) _EndedBanner(status: aim.status),
                 _Timeline(aim: aim, goal: goal, today: refDate),
                 if (aim.planNotes != null && aim.planNotes!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Dim.space3),
                   CardMarkdown(aim.planNotes!, compact: true),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: Dim.space4),
                 if (ended)
                   SizedBox(
                     width: double.infinity,
@@ -136,7 +136,7 @@ class _InterviewSheet extends ConsumerWidget {
                   Text('How did it go?',
                       style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Dim.space2),
                   _OutcomeRow(
                     onPassed: passAndNext,
                     onOffer: () => end(InterviewStatus.offer),
@@ -163,7 +163,7 @@ class _InterviewSheet extends ConsumerWidget {
                     ),
                   ),
                 if (!ended) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Dim.space2),
                   _practiceButton(context, aim, target),
                   const Divider(height: 28),
                   _StudyToggle(
@@ -344,8 +344,8 @@ class _EndedBanner extends StatelessWidget {
     };
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: Dim.space1),
+      padding: const EdgeInsets.symmetric(horizontal: Dim.space3, vertical: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
@@ -353,7 +353,7 @@ class _EndedBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Text(status.label,
               style: theme.textTheme.titleSmall
                   ?.copyWith(color: color, fontWeight: FontWeight.w700)),
@@ -385,7 +385,7 @@ class _Timeline extends StatelessWidget {
         if (current != null) _row(context, current, current: true),
         if (past.isEmpty && current == null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: Dim.space2),
             child: Text('No rounds scheduled.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),
@@ -410,11 +410,11 @@ class _Timeline extends StatelessWidget {
         : '${_fmtDate(d)}${current ? ' · ${_daysAway(d)}' : ''}';
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: Dim.space2),
       decoration: current
           ? BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: Dim.brChip,
               border: Border.all(
                   color: theme.colorScheme.primary.withValues(alpha: 0.3)),
             )

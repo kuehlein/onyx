@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/search/card_filter.dart';
 import '../../core/subject/active_subject.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the filter sheet. Returns the chosen filter, or null if dismissed
@@ -105,7 +106,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -141,10 +142,10 @@ class _FilterSheetState extends State<_FilterSheet> {
           Text(label,
               style: theme.textTheme.labelLarge
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: Dim.space2,
+            runSpacing: Dim.space2,
             children: [
               for (final v in values)
                 FilterChip(
@@ -188,7 +189,7 @@ class _SearchHelpSheet extends StatelessWidget {
             SheetHeader(title: 'Searching & filtering', divider: true),
             Flexible(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, Dim.space3, 20, Dim.space5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -197,10 +198,10 @@ class _SearchHelpSheet extends StatelessWidget {
                         'Matches the title, tags, section headings, and body. '
                         'Results are ranked by relevance — a title match beats '
                         'a body match. Multiple words must all match (AND).'),
-                    SizedBox(height: 16),
+                    SizedBox(height: Dim.space4),
                     _Heading('Power operators'),
                     _Body('Mix these into the search box alongside words:'),
-                    SizedBox(height: 8),
+                    SizedBox(height: Dim.space2),
                     _Op('tag:ds-a', 'Only this domain (also domain:)'),
                     _Op('type:interview',
                         'Interview questions (or type:flashcard)'),
@@ -208,14 +209,14 @@ class _SearchHelpSheet extends StatelessWidget {
                     _Op('is:due', 'Study state: is:new · is:due · is:strong'),
                     SizedBox(height: 10),
                     _Example('trees tag:ds-a is:due'),
-                    SizedBox(height: 16),
+                    SizedBox(height: Dim.space4),
                     _Heading('Filter button'),
                     _Body(
                         'The ⚙ button offers the same facets as tappable chips '
                         '— Type, Domain, Tier, and Study state. Filters and '
                         'operators combine, and active filters show as chips '
                         'you can remove.'),
-                    SizedBox(height: 16),
+                    SizedBox(height: Dim.space4),
                     _Heading('Study state'),
                     _Body('New — not studied yet · Due — ready to review now · '
                         'Strong — reviewed and scheduled ahead.'),
@@ -249,7 +250,7 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: Dim.space1),
       child: Text(text, style: theme.textTheme.bodyMedium),
     );
   }
@@ -296,7 +297,8 @@ class _Code extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space2, vertical: Dim.space1),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(6),

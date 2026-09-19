@@ -9,7 +9,7 @@ import '../../core/subject/subject_config.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
 import '../interview/interview_planner_sheet.dart';
@@ -132,7 +132,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: theme.colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: Dim.brCard,
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: AnimatedSize(
@@ -146,8 +146,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                               InkWell(
                                 onTap: () => setState(() => _showDims = false),
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(14, 10, 10, 4),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      14, 10, 10, Dim.space1),
                                   child: Row(children: [
                                     Text('Target',
                                         style: theme.textTheme.labelLarge
@@ -231,7 +231,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 // Forecast readout ABOVE the calendar (the headline outcome).
                 _ForecastBlock(chosenDate: date, dims: dims),
                 const SizedBox(height: 14),
@@ -248,7 +248,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Dim.space1),
                 // Inline calendar with per-day readiness-zone markers (the OS picker
                 // can't color individual cells). Tapping a day sets the date.
                 _ZoneCalendar(
@@ -257,7 +257,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                   roundsByDate: roundsByDate,
                   onSelect: (d) => _set(t.copyWith(interviewDate: d)),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Dim.space2),
                 const _CalendarLegend(),
                 const SizedBox(height: 10),
                 // Scheduled interviews (flagged above) + the entry to plan one.
@@ -268,7 +268,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                     today: today,
                     onAdd: openPlanner,
                   ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -319,7 +319,7 @@ class _ChipGroup<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Dim.space2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -373,7 +373,7 @@ class _ForecastBlock extends ConsumerWidget {
 
     Widget shell(Widget child) => Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(Dim.space3),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(10),
@@ -419,7 +419,7 @@ class _ForecastBlock extends ConsumerWidget {
         ));
         final push = f.pushReadyDate;
         final chill = f.chillReadyDate;
-        rows.add(const SizedBox(height: 4));
+        rows.add(const SizedBox(height: Dim.space1));
         rows.add(Text(
           'Push ~${f.pushPerDay}/day → ${push == null ? '1yr+' : _fmtDate(push)}'
           '    ·    '
@@ -431,7 +431,7 @@ class _ForecastBlock extends ConsumerWidget {
       if (chosenDate != null) {
         final days = chosenDate!.difference(f.today).inDays;
         final req = f.requiredPerDayFor(days);
-        rows.add(const SizedBox(height: 8));
+        rows.add(const SizedBox(height: Dim.space2));
         if (req == null) {
           final earliest = f.earliestReadyDate;
           rows.add(_note(
@@ -628,7 +628,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         Row(
           children: [
             for (var i = 0; i < 7; i++)
@@ -689,7 +689,7 @@ class _DayCell extends StatelessWidget {
             ? zoneColor!.withValues(alpha: 0.22)
             : null;
     final numberColor = past
-        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: Dim.hairline)
         : selected
             ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
@@ -766,8 +766,8 @@ class _CalendarLegend extends StatelessWidget {
           ],
         );
     return Wrap(
-      spacing: 12,
-      runSpacing: 4,
+      spacing: Dim.space3,
+      runSpacing: Dim.space1,
       children: [
         item(StatusColor.good, 'Ready at your pace'),
         item(StatusColor.warn, 'Needs a faster pace'),
@@ -866,7 +866,7 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
               label: const Text('Add'),
               style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  padding: const EdgeInsets.symmetric(horizontal: Dim.space2)),
             ),
           ],
         ),

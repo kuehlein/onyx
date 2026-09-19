@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/clock.dart';
 import '../../core/coach/coach_update.dart';
 import '../../shared/coach_settings.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -74,7 +75,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
     final theme = Theme.of(context);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+        padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +105,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Dim.space4),
         for (final o in _options) ...[
           SizedBox(
             width: double.infinity,
@@ -116,12 +117,12 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
                 child: Text(o.label),
               ),
               style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Dim.space4, vertical: 14),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
         ],
         Align(
           alignment: Alignment.center,
@@ -164,7 +165,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
       Text(title,
           style: theme.textTheme.titleMedium
               ?.copyWith(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 8),
+      const SizedBox(height: Dim.space2),
       Text(body,
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurface, height: 1.4)),
@@ -178,7 +179,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
             label: Text(applyLabel),
           ),
         ),
-      const SizedBox(height: 8),
+      const SizedBox(height: Dim.space2),
       SizedBox(
         width: double.infinity,
         child: TextButton(

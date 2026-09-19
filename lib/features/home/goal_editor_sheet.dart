@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/goal/study_goal.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/study_goals.dart';
 import '../../shared/providers/subject.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -176,7 +177,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Dim.space4),
               if (templates.length > 1) ...[
                 DropdownButtonFormField<String>(
                   initialValue: _templateId,
@@ -187,10 +188,10 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                   ],
                   onChanged: (v) => setState(() => _templateId = v),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Dim.space4),
               ],
               Text('Which cards', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
               SegmentedButton<_Kind>(
                 segments: const [
                   ButtonSegment(value: _Kind.all, label: Text('Whole vault')),
@@ -201,7 +202,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                 onSelectionChanged: (s) => setState(() => _kind = s.first),
               ),
               if (_kind != _Kind.all) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 TextField(
                   controller: _value,
                   decoration: InputDecoration(
@@ -230,7 +231,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                       ),
                 onTap: _pickDeadline,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
               Text('Share of daily time  ·  ${_weight.toStringAsFixed(1)}×',
                   style: theme.textTheme.labelLarge),
               Slider(
@@ -241,13 +242,13 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                 label: '${_weight.toStringAsFixed(1)}×',
                 onChanged: (v) => setState(() => _weight = v),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               FilledButton(
                 onPressed: _valid ? _save : null,
                 child: Text(existing == null ? 'Create goal' : 'Save'),
               ),
               if (existing != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: Dim.space2),
                 Row(
                   children: [
                     Expanded(

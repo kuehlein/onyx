@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/goal/study_goal.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/study_goals.dart';
+import '../../shared/design/onyx_design.dart';
 import 'interview_card.dart';
 import 'interview_planner_sheet.dart';
 
@@ -45,12 +46,14 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
           ]..sort((a, b) => _byRound(a, b, goal));
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space3, Dim.space2, Dim.space3, 96),
             children: [
               const _Explainer(),
               if (active.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
+                  padding: EdgeInsets.fromLTRB(
+                      Dim.space2, Dim.space2, Dim.space2, Dim.space2),
                   child: Text('No active interviews — plan one below.'),
                 ),
               for (final iv in active)
@@ -107,12 +110,13 @@ class _PastSectionState extends State<_PastSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         InkWell(
           onTap: () => setState(() => _open = !_open),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: Dim.brChip,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+                horizontal: Dim.space2, vertical: Dim.space2),
             child: Row(
               children: [
                 Icon(_open ? Icons.expand_more : Icons.chevron_right,
@@ -141,13 +145,13 @@ class _Explainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      padding: const EdgeInsets.fromLTRB(Dim.space2, 0, Dim.space2, Dim.space2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.info_outline,
               size: 16, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(
               'Tap an interview to log a result, reschedule, or manage it. '
@@ -170,7 +174,7 @@ class _Empty extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
