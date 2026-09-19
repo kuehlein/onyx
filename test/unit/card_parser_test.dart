@@ -326,6 +326,56 @@ void main() {
     });
   });
 
+  // Real Obsidian vaults are messy; a parse crash aborts indexing for the WHOLE
+  // vault, so the parser must degrade gracefully (null/typed-throw), never throw
+  // a raw error. These pin that contract on the ugly inputs the fixtures miss.
+  group('adversarial / messy inputs', () {
+    test('CRLF line endings parse the same as LF', () {
+      const md = '---\r\nid: crlf-1\r\ntype: flashcard\r\ntags: [x]\r\n---\r\n'
+          '\r\n# Title\r\n\r\n## When to Use\r\n\r\nBody.\r\n';
+      final card = _parser.parse(md, filePath: 'crlf.md')!;
+      expect(card.id, 'crlf-1');
+      expect(card.title, 'Title');
+      expect(card.tags, ['x']);
+      expect(card.sections.map((s) => s.heading), ['When to Use']);
+    });
+
+    test('malformed frontmatter YAML is skipped (null), not a crash', () {
+      // An unterminated flow sequence → loadYaml throws → the parser returns
+      // null (skip this file) rather than aborting the whole index.
+      const md = '---\nid: bad\ntype: flashcard\ntags: [x, y\n'
+          '---\n\n# T\n\n## S\n\ny\n';
+      expect(_parser.parse(md, filePath: 'bad.md'), isNull);
+    });
+
+    test('an H2 before the H1 is malformed (missing title) → typed throw', () {
+      const md = '---\nid: h2first\ntype: flashcard\n---\n\n'
+          '## Section First\n\nbody\n\n# Title\n';
+      expect(
+        () => _parser.parse(md, filePath: 'h2first.md'),
+        throwsA(isA<MalformedCardException>()),
+      );
+    });
+
+    test('an unterminated code fence after the H1 does not crash', () {
+      // The fence opens and never closes; everything after is swallowed as
+      // fenced content, so the card keeps its title and simply has no sections.
+      const md = '---\nid: fence\ntype: flashcard\n---\n\n# Title\n\n'
+          '```\nnot closed\n## Not A Heading\n';
+      final card = _parser.parse(md, filePath: 'fence.md')!;
+      expect(card.title, 'Title');
+      expect(card.sections, isEmpty);
+    });
+
+    test('duplicate section headings parse without crashing (both kept)', () {
+      const md = '---\nid: dup\ntype: flashcard\n---\n\n# T\n\n'
+          '## Same\n\nfirst\n\n## Same\n\nsecond\n';
+      final card = _parser.parse(md, filePath: 'dup.md')!;
+      expect(card.sections.length, 2);
+      expect(card.sections.map((s) => s.slug), ['same', 'same']);
+    });
+  });
+
   // While the staged cards still exist in the repo, parse every one to catch
   // real-world formatting the fixtures miss. Skipped automatically once the
   // cards are promoted to the vault and staging/ is removed.

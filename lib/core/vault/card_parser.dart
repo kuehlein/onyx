@@ -73,7 +73,12 @@ class CardParser {
   /// the active subject's id, so single-subject parsing is unchanged. In a
   /// multi-subject vault the indexer passes the per-path subject id (M2).
   Card? parse(String content, {required String filePath, String? subjectId}) {
-    final match = _frontmatter.firstMatch(content);
+    // Normalize Windows CRLF up front so neither the frontmatter values nor the
+    // line-based H1/H2/fence scan carry a trailing \r. Dart's `.` and `$` don't
+    // span/precede a \r, so a CRLF-terminated `# Title` otherwise fails the
+    // heading regex and the whole card is rejected (MalformedCardException).
+    final normalized = content.replaceAll('\r\n', '\n');
+    final match = _frontmatter.firstMatch(normalized);
     if (match == null) return null; // no frontmatter → not a card
 
     final Map<String, dynamic> frontmatter;
