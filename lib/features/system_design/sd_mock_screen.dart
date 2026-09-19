@@ -10,7 +10,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/system_design.dart';
 import '../../shared/providers/vault.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/mock_grade_summary.dart';
 import '../../shared/widgets/session_timer.dart';
@@ -387,45 +387,18 @@ class _SettingsPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final coaching = support == SdSupportMode.coaching;
-    final color =
-        coaching ? StatusColor.info : theme.colorScheme.onSurfaceVariant;
-    return Tooltip(
-      message: coaching
+    return StatusPill(
+      tone: coaching ? StatusTone.info : StatusTone.muted,
+      icon: coaching ? Icons.volunteer_activism_outlined : Icons.gavel_outlined,
+      label: '${level.label} · ${coaching ? 'Coaching' : 'Realistic'}',
+      trailingIcon: Icons.tune,
+      onTap: onTap,
+      tooltip: coaching
           ? 'Coaching — the interviewer steps in and helps if you get stuck.\n'
               'Tap to change interview level or support.'
           : 'Realistic — hands-off, like a real interview.\n'
               'Tap to change interview level or support.',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                  coaching
-                      ? Icons.volunteer_activism_outlined
-                      : Icons.gavel_outlined,
-                  size: 14,
-                  color: color),
-              const SizedBox(width: 6),
-              Text('${level.label} · ${coaching ? 'Coaching' : 'Realistic'}',
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: color, fontWeight: FontWeight.w600)),
-              const SizedBox(width: 4),
-              Icon(Icons.tune,
-                  size: 12, color: theme.colorScheme.onSurfaceVariant),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

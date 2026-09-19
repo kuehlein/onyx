@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../design/onyx_design.dart';
 
-/// Which status a pill conveys — maps to the [OnyxColors] ramp.
-enum StatusTone { good, warn, bad, info, muted }
+/// Which status a pill conveys — maps to the [OnyxColors] ramp. [accent] is the
+/// one non-status tone: the primary/accent hue for emphasis or selection chips
+/// (milestones, "focus on", a tappable setting summary), never a status.
+enum StatusTone { good, warn, bad, info, muted, accent }
 
 /// How prominently a [StatusPill] is drawn.
 enum StatusPillVariant {
@@ -31,16 +33,22 @@ class StatusPill extends StatelessWidget {
     required this.tone,
     required this.label,
     this.icon,
+    this.trailingIcon,
     this.value,
     this.variant = StatusPillVariant.filled,
     this.dense = false,
     this.tooltip,
     this.semanticLabel,
+    this.onTap,
   });
 
   final StatusTone tone;
   final String label;
   final IconData? icon;
+
+  /// An optional trailing glyph (e.g. a goal flag, an "editable" affordance),
+  /// drawn in the same tone color as the label.
+  final IconData? trailingIcon;
 
   /// An optional value rendered after the label (e.g. a confidence score
   /// `"0.82"`) — the "number" channel of color+shape+number+label.
@@ -54,12 +62,18 @@ class StatusPill extends StatelessWidget {
   /// context, e.g. `"Confidence high, 0.82. Tap for why."`.
   final String? semanticLabel;
 
+  /// When non-null the pill becomes a tappable, ripple-backed chip (e.g. a
+  /// setting summary that opens an adjust sheet) and is announced as a button.
+  final VoidCallback? onTap;
+
   Color _color(BuildContext c) => switch (tone) {
         StatusTone.good => c.onyx.good,
         StatusTone.warn => c.onyx.warn,
         StatusTone.bad => c.onyx.bad,
         StatusTone.info => c.onyx.info,
         StatusTone.muted => c.onyx.muted,
+        // Not a status: the accent/primary hue for emphasis/selection chips.
+        StatusTone.accent => c.colors.primary,
       };
 
   @override
@@ -85,6 +99,10 @@ class StatusPill extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (trailingIcon != null) ...[
+          SizedBox(width: t.space1),
+          Icon(trailingIcon, size: dense ? 12 : 14, color: color),
+        ],
       ],
     );
 
@@ -110,10 +128,16 @@ class StatusPill extends StatelessWidget {
         ),
     };
 
+    final tappable = onTap == null
+        ? pill
+        : InkWell(onTap: onTap, borderRadius: t.brChip, child: pill);
+
     final semantic = Semantics(
       container: true,
+      button: onTap != null,
+      onTap: onTap,
       label: semanticLabel ?? visible,
-      child: ExcludeSemantics(child: pill),
+      child: ExcludeSemantics(child: tappable),
     );
 
     return tooltip == null

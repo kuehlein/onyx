@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/app/theme.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
@@ -61,8 +62,9 @@ void main() {
           studyConsistencyProvider
               .overrideWith((ref) async => const [1, 0, 1, 1, 0, 1, 1]),
         ],
-        child: const MaterialApp(
-          home: Scaffold(
+        child: MaterialApp(
+          theme: OnyxTheme.dark(),
+          home: const Scaffold(
             body: Center(
               child: SizedBox(
                 width: 400,
@@ -134,8 +136,9 @@ void main() {
               (ref) async => {'system-design': (attempts: 4, contested: 1)}),
         ],
         // A narrow phone width to guard against row overflow.
-        child: const MaterialApp(
-          home: Scaffold(
+        child: MaterialApp(
+          theme: OnyxTheme.dark(),
+          home: const Scaffold(
             body: Center(
               child: SizedBox(
                 width: 320,
@@ -172,8 +175,9 @@ void main() {
             studyConsistencyProvider.overrideWith((ref) async => const <int>[]),
             appliedSummaryProvider.overrideWith((ref) async => const {}),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            theme: OnyxTheme.dark(),
+            home: const Scaffold(
               body: Center(
                 child: SizedBox(
                     width: 400,

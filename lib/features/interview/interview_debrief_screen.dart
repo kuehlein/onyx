@@ -6,6 +6,7 @@ import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_debrief.dart';
 import '../../core/goal/interview_aim.dart' show GoalOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_debrief.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -106,7 +107,6 @@ class _DebriefCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
     // Reweighted domains/concepts, strongest boost first.
     final domains = result.domainWeights.keys.toList()
       ..sort((a, b) =>
@@ -144,11 +144,12 @@ class _DebriefCard extends StatelessWidget {
             _ChipRow(
                 label: 'Focus more on',
                 items: domains,
-                color: theme.colorScheme.primary),
+                tone: StatusTone.accent),
           ],
           if (concepts.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _ChipRow(label: 'Concepts', items: concepts, color: muted),
+            _ChipRow(
+                label: 'Concepts', items: concepts, tone: StatusTone.muted),
           ],
           if (result.summary.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -171,11 +172,11 @@ class _DebriefCard extends StatelessWidget {
 
 class _ChipRow extends StatelessWidget {
   const _ChipRow(
-      {required this.label, required this.items, required this.color});
+      {required this.label, required this.items, required this.tone});
 
   final String label;
   final List<String> items;
-  final Color color;
+  final StatusTone tone;
 
   @override
   Widget build(BuildContext context) {
@@ -192,16 +193,7 @@ class _ChipRow extends StatelessWidget {
           runSpacing: 6,
           children: [
             for (final it in items)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.4)),
-                ),
-                child: Text(prettyDomain(it),
-                    style: theme.textTheme.labelSmall?.copyWith(color: color)),
-              ),
+              StatusPill(tone: tone, label: prettyDomain(it), dense: true),
           ],
         ),
       ],

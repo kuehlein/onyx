@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../shared/design/status_color.dart';
+import '../../shared/widgets/status_pill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/readiness/ladder.dart';
@@ -613,55 +614,19 @@ class _LevelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    final muted = theme.colorScheme.onSurfaceVariant;
     final cleared = clearedInLevel >= 2;
     final active = cleared || clearedInLevel >= 1 || isFrontier;
-
-    final Color bg, border, fg;
-    if (cleared) {
-      bg = primary.withValues(alpha: 0.16);
-      border = primary.withValues(alpha: 0.5);
-      fg = primary;
-    } else if (active) {
-      bg = Colors.transparent;
-      border = primary.withValues(alpha: 0.45);
-      fg = primary;
-    } else {
-      bg = Colors.transparent;
-      border = muted.withValues(alpha: 0.3);
-      fg = muted;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            cleared
-                ? Icons.check_circle
-                : (active ? Icons.radio_button_unchecked : Icons.lock_outline),
-            size: 12,
-            color: fg,
-          ),
-          const SizedBox(width: 4),
-          Text(label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  fontWeight: cleared ? FontWeight.w600 : FontWeight.w500)),
-          if (isGoal) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.flag, size: 11, color: fg),
-          ],
-        ],
-      ),
+    // Milestone emphasis (not a status): accent for reached/active rungs, muted
+    // when locked; filled once cleared, outline while active/locked.
+    return StatusPill(
+      tone: active ? StatusTone.accent : StatusTone.muted,
+      variant: cleared ? StatusPillVariant.filled : StatusPillVariant.outline,
+      icon: cleared
+          ? Icons.check_circle
+          : (active ? Icons.radio_button_unchecked : Icons.lock_outline),
+      label: label,
+      trailingIcon: isGoal ? Icons.flag : null,
+      dense: true,
     );
   }
 }

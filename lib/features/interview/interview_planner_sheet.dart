@@ -6,6 +6,7 @@ import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
 import '../../core/goal/interview_aim.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_planner.dart';
 import '../../shared/design/status_color.dart';
@@ -190,13 +191,12 @@ class _PlanCard extends StatelessWidget {
           if (domains.isNotEmpty) ...[
             const SizedBox(height: 12),
             _ChipRow(
-                label: 'Prioritize',
-                items: domains,
-                color: theme.colorScheme.primary),
+                label: 'Prioritize', items: domains, tone: StatusTone.accent),
           ],
           if (concepts.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _ChipRow(label: 'Concepts', items: concepts, color: muted),
+            _ChipRow(
+                label: 'Concepts', items: concepts, tone: StatusTone.muted),
           ],
           if (plan.missingConcepts.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -246,11 +246,11 @@ class _PlanCard extends StatelessWidget {
 
 class _ChipRow extends StatelessWidget {
   const _ChipRow(
-      {required this.label, required this.items, required this.color});
+      {required this.label, required this.items, required this.tone});
 
   final String label;
   final List<String> items;
-  final Color color;
+  final StatusTone tone;
 
   @override
   Widget build(BuildContext context) {
@@ -267,16 +267,7 @@ class _ChipRow extends StatelessWidget {
           runSpacing: 6,
           children: [
             for (final it in items)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.4)),
-                ),
-                child: Text(prettyDomain(it),
-                    style: theme.textTheme.labelSmall?.copyWith(color: color)),
-              ),
+              StatusPill(tone: tone, label: prettyDomain(it), dense: true),
           ],
         ),
       ],
