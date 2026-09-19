@@ -539,6 +539,48 @@ build-timing mark.
 
 ---
 
+## 7.1 The website is one control plane — develop against fakes, not a server
+
+The eventual **onyx.app website** is a single *control plane* hosting several capabilities
+that all sit on the cloud track above: the **deck registry** (push/pull, §4), **payments /
+purchasing** and **managed-AI provisioning** for users who don't bring their own key (§5 +
+§1 accounts/billing), and community surfaces (a **help/support forum**, docs). The
+governing constraint holds for all of it: the app is *mostly offline and must never rely on
+the website* — every one of these is capability-gated and **absent, not disabled**, when the
+backend is unreachable (§1.1).
+
+The engineering consequence (decided 2026-09-18): **each of these is a *runtime* dependency,
+never a *development* dependency.** Everything the app needs from the website has a
+client-side seam that is faked in dev, so the whole cloud-touching UX is buildable, demoable,
+and testable locally with **no server, no payments integration, and no deployed site**:
+
+| Website function | App-side seam | Dev fake (runs locally now) |
+|---|---|---|
+| Push/pull decks | `RegistryClient` interface | in-memory / JSON-file fake decks |
+| Payments / purchasing | `Account { capabilities }` + entitlement flags (§1.2) | a faked `entitled` toggle |
+| Managed AI (no BYO key) | `ManagedAiConfig` + `ClaudeService.managed()` (§5.1, already seamed) | local mock proxy, or BYO-key in dev |
+| Forum / help | *none* — no app coupling | link out |
+
+Working rules:
+- **Build each fake lazily, with the feature that needs it** — not speculatively. The
+  `RegistryClient` fake arrives with "import a deck"; the entitlement toggle with the
+  "upgrade" UI. Most transports are already reserved (ADR-0004 `ClaudeService.managed`,
+  ADR-0003 `deckId`, §1.2 account/capability model).
+- A **thin local mock HTTP server** is an *optional* later upgrade (wire-level fidelity)
+  once a contract firms — not needed while an in-process fake behind the interface suffices.
+- The **production website** (deployed registry + billing + hosted AI proxy + forum) is a
+  separate, later project, on the cloud track — started when the app is a product people
+  want and there's an audience/commercial reason, not before. Sequencing within it: the
+  **forum** is trivial + fully independent (off-the-shelf, anytime); the **registry** is
+  audience-gated; **payments + the managed-AI proxy** are the heaviest and commercialization-
+  gated (the last mile).
+
+So the current client work (onboarding folder path, then the import on-ramp + AI-gen) never
+blocks on the website: the folder path needs no cloud at all, and the import/upgrade flows
+develop against the fakes above.
+
+---
+
 ## 8. Code seams verified for this doc
 
 - `lib/core/backup/snapshot.dart` — **confirms the LWW bug (T2/§2.1):** `export()`
