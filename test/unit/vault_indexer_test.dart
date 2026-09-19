@@ -99,6 +99,25 @@ void main() {
       expect(result.malformed, 0);
     });
 
+    test('counts a malformed card (id + type, but no H1 title)', () async {
+      // A recognized card that fails structural parse lands in the `malformed`
+      // bucket (which drives the Settings "fix your vault" surface) — distinct
+      // from idless (missing id) and skipped (not a card at all). Indexing must
+      // bucket it, not crash the whole reindex.
+      write(
+        'malformed.md',
+        '---\nid: cccccccc-cccc-4ccc-8ccc-cccccccccccc\ntype: flashcard\n'
+            '---\n\nNo H1 title here.\n\n## When to Use\n\nx\n',
+      );
+      final result = await indexer.reindex();
+      expect(result.malformed, 1);
+      expect(result.cardCount, 2, reason: 'the two valid cards still index');
+      expect(result.idless, 1);
+      expect(result.skipped, 1);
+      // The malformed file is not cached.
+      expect((await db.select(db.cardCache).get()).length, 2);
+    });
+
     test('populates card_cache with parsed metadata', () async {
       await indexer.reindex();
       final rows = await db.select(db.cardCache).get();
