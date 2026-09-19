@@ -10,6 +10,7 @@ import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
 import '../../core/subject/active_subject.dart';
 import '../../core/subject/subject_config.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -26,16 +27,6 @@ IconData flowIcon(String? key) => switch (key) {
       'systemDesign' => Icons.architecture_outlined,
       'behavioral' => Icons.record_voice_over_outlined,
       _ => Icons.style_outlined,
-    };
-
-/// Maps a flow's [FlowSpec.colorKey] to a Browse hue (fallback: blue-grey).
-MaterialColor flowColor(String? key) => switch (key) {
-      'indigo' => Colors.indigo,
-      'teal' => Colors.teal,
-      'deepOrange' => Colors.deepOrange,
-      'purple' => Colors.purple,
-      'green' => Colors.green,
-      _ => Colors.blueGrey,
     };
 
 /// Browse: full-text search + composable filters over the indexed cards.
@@ -360,15 +351,13 @@ class _CardTile extends StatelessWidget {
     // One flow lookup per tile; icon/hue/label come from its display keys so a
     // card reads the same everywhere (concept deck vs each practice track).
     final flow = activeSubject.flowForType(card.type);
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final color = flowColor(flow?.colorKey);
-    final fg = dark ? color.shade200 : color.shade700;
+    final color = SubjectColor.forKey(flow?.colorKey);
     final sectionCount = card.quizzableSections.length;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: dark ? 0.24 : 0.14),
-        child: Icon(flowIcon(flow?.iconKey), size: 20, color: fg),
+        backgroundColor: color.withValues(alpha: 0.24),
+        child: Icon(flowIcon(flow?.iconKey), size: 20, color: color),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       // Lead with the type label so same-titled cards are unambiguous even when

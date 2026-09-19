@@ -57,6 +57,18 @@ abstract final class PaletteColor {
   static const onError = Color(0xFF3A0E12);
   static const errorContainer = Color(0xFF5C2126);
   static const onErrorContainer = Color(0xFFFAD6D8);
+
+  // Categorical SUBJECT hues — the one sanctioned exception to single-accent
+  // (distinct hues let a learner tell subjects/tracks apart at a glance; always
+  // paired with the flow's icon + label upstream, never color-only). Tuned to sit
+  // on the dark surface (the light ~200 band, like the status ramp). Surfaced via
+  // SubjectColor.
+  static const subjectIndigo = Color(0xFF9FA8DA);
+  static const subjectTeal = Color(0xFF80CBC4);
+  static const subjectDeepOrange = Color(0xFFFFAB91);
+  static const subjectPurple = Color(0xFFCE93D8);
+  static const subjectGreen = Color(0xFFA5D6A7);
+  static const subjectSlate = Color(0xFFB0BEC5);
 }
 
 /// DTCG `$type: dimension` — the 8pt grid (4pt half-step) + the radius scale, in
