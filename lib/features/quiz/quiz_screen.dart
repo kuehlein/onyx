@@ -21,6 +21,8 @@ import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import 'rest_timer.dart';
 
@@ -359,26 +361,19 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
+/// A calm neutral meta chip (the card's domain). Composes [StatusPill] so it
+/// shares the one status-surface shape; muted tone since it carries no
+/// good/attention/bad meaning.
 class _Pill extends StatelessWidget {
   const _Pill(this.label);
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(label,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: scheme.onSecondaryContainer)),
-    );
-  }
+  Widget build(BuildContext context) => StatusPill(
+        tone: StatusTone.muted,
+        label: label,
+        dense: true,
+      );
 }
 
 /// The "no review session" state, which is context-aware:
@@ -389,82 +384,58 @@ class _EmptyState extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final review = ref.watch(reviewQueueProvider).asData?.value;
     final hasProgress = review?.statesByKey.isNotEmpty ?? false;
     final newCount = ref.watch(learnQueueProvider).asData?.value.length ?? 0;
     final weakest = ref.watch(readinessProvider).asData?.value.weakestDomain;
 
-    Widget frame(List<Widget> children) => Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: children,
-              ),
-            ),
-          ),
-        );
-
     // Nothing studied yet → you can't be tested on material you haven't learned.
     if (!hasProgress) {
-      return frame([
-        Icon(Icons.auto_stories_outlined,
-            size: 48, color: theme.colorScheme.primary),
-        const SizedBox(height: 12),
-        Text('Nothing to test yet', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 6),
-        Text(
-          newCount > 0
-              ? 'Learn some material first — once you\'ve studied a card it '
-                  'comes back here for review.'
-              : 'Add a vault in Settings, then learn some cards to begin.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        if (newCount > 0) ...[
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: () => context.go('/learn'),
-            icon: const Icon(Icons.auto_stories_outlined),
-            label: Text('Learn $newCount new card${newCount == 1 ? '' : 's'}'),
-          ),
-        ],
-      ]);
+      return EmptyState(
+        icon: Icons.auto_stories_outlined,
+        title: 'Nothing to test yet',
+        message: newCount > 0
+            ? 'Learn some material first — once you\'ve studied a card it '
+                'comes back here for review.'
+            : 'Add a vault in Settings, then learn some cards to begin.',
+        action: newCount > 0
+            ? FilledButton.icon(
+                onPressed: () => context.go('/learn'),
+                icon: const Icon(Icons.auto_stories_outlined),
+                label:
+                    Text('Learn $newCount new card${newCount == 1 ? '' : 's'}'),
+              )
+            : null,
+      );
     }
 
     // Studied before, nothing due now → caught up for today; offer extra work.
-    return frame([
-      Icon(Icons.check_circle_outline,
-          size: 48, color: theme.colorScheme.primary),
-      const SizedBox(height: 12),
-      Text('Caught up for today', style: theme.textTheme.titleMedium),
-      const SizedBox(height: 6),
-      Text(
-        newCount > 0
-            ? 'No reviews due. $newCount new card${newCount == 1 ? '' : 's'} '
-                'waiting in Learn whenever you want them.'
-            : 'No reviews due right now — they\'ll reappear as they come up.',
-        textAlign: TextAlign.center,
-        style: theme.textTheme.bodyMedium
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-      if (weakest != null) ...[
-        const SizedBox(height: 24),
-        _PracticeSuggestion(weakest),
-      ],
-      if (newCount > 0) ...[
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.go('/learn'),
-          icon: const Icon(Icons.auto_stories_outlined),
-          label: Text('Learn $newCount new'),
-        ),
-      ],
-    ]);
+    final hasWeakest = weakest != null;
+    final hasNew = newCount > 0;
+    return EmptyState(
+      icon: Icons.check_circle_outline,
+      title: 'Caught up for today',
+      message: newCount > 0
+          ? 'No reviews due. $newCount new card${newCount == 1 ? '' : 's'} '
+              'waiting in Learn whenever you want them.'
+          : 'No reviews due right now — they\'ll reappear as they come up.',
+      action: (hasWeakest || hasNew)
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasWeakest) _PracticeSuggestion(weakest),
+                if (hasNew) ...[
+                  if (hasWeakest) const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/learn'),
+                    icon: const Icon(Icons.auto_stories_outlined),
+                    label: Text('Learn $newCount new'),
+                  ),
+                ],
+              ],
+            )
+          : null,
+    );
   }
 }
 

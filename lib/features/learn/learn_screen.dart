@@ -13,6 +13,7 @@ import '../../shared/providers/learn.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import 'study_tips_sheet.dart';
@@ -303,26 +304,18 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
+/// A calm neutral meta chip (the learn mode + the card's domain). Composes
+/// [StatusPill] with the muted tone — it carries no good/attention/bad meaning.
 class _Pill extends StatelessWidget {
   const _Pill(this.label);
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(label,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: scheme.onSecondaryContainer)),
-    );
-  }
+  Widget build(BuildContext context) => StatusPill(
+        tone: StatusTone.muted,
+        label: label,
+        dense: true,
+      );
 }
 
 class _CompleteState extends ConsumerWidget {

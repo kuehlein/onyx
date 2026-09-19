@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/drafts.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../editor/card_editor_screen.dart';
@@ -282,40 +283,16 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle_outline,
-                  size: 48, color: theme.colorScheme.primary),
-              const SizedBox(height: 12),
-              Text('No drafts to review', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text(
-                'New cards from an import or generation land here to review '
-                'before they count.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () =>
-                    context.canPop() ? context.pop() : context.go('/'),
-                child: const Text('Done'),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.check_circle_outline,
+        title: 'No drafts to review',
+        message: 'New cards from an import or generation land here to review '
+            'before they count.',
+        action: FilledButton(
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          child: const Text('Done'),
         ),
-      ),
-    );
-  }
+      );
 }
 
 /// Session summary: a calm count of what happened — no celebration hype.

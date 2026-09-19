@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/app/theme.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/srs/review_queue.dart';
 import 'package:onyx/features/quiz/quiz_screen.dart';
@@ -52,7 +53,9 @@ Widget _app({required bool gymOn}) => ProviderScope(
         readinessProvider.overrideWith((ref) async => _empty),
         gymModeProvider.overrideWith(() => _Gym(gymOn)),
       ],
-      child: const MaterialApp(home: QuizScreen()),
+      // The review header composes StatusPill (via the domain pill), which reads
+      // OnyxColors/OnyxTokens — so pump inside the app theme that registers them.
+      child: MaterialApp(theme: OnyxTheme.dark(), home: const QuizScreen()),
     );
 
 void main() {

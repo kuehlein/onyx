@@ -10,7 +10,9 @@ import '../../shared/design/status_color.dart';
 import '../../shared/study_grades.dart' show gradeColor;
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/grade_buttons.dart';
+import '../../shared/widgets/status_pill.dart';
 import 'explain_sheet.dart';
 
 // Color comes from each outcome's FSRS grade (clean=4 … failed=1) via
@@ -365,57 +367,32 @@ class _ReasonChip extends StatelessWidget {
   }
 }
 
+/// A calm neutral chip naming the current pattern. Composes [StatusPill] with
+/// the muted tone — it carries no good/attention/bad meaning (the colored
+/// [_ReasonChip] beside it does that).
 class _Pill extends StatelessWidget {
   const _Pill(this.label);
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(label,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: scheme.onSecondaryContainer)),
-    );
-  }
+  Widget build(BuildContext context) => StatusPill(
+        tone: StatusTone.muted,
+        label: label,
+        dense: true,
+      );
 }
 
 class _Empty extends StatelessWidget {
   const _Empty();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.terminal_outlined,
-                size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
-            Text('No algorithms yet', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              'Add algorithm cards to your vault (a card per pattern, a section '
-              'per problem) and they’ll show up here on a daily schedule.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const EmptyState(
+        icon: Icons.terminal_outlined,
+        title: 'No algorithms yet',
+        message:
+            'Add algorithm cards to your vault (a card per pattern, a section '
+            'per problem) and they’ll show up here on a daily schedule.',
+      );
 }
 
 class _Complete extends StatelessWidget {

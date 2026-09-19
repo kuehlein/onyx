@@ -11,6 +11,7 @@ import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import '../../shared/widgets/log_solve_sheet.dart';
 import '../editor/card_editor_screen.dart';
@@ -271,6 +272,8 @@ class _SectionPanel extends StatelessWidget {
   }
 }
 
+/// A calm neutral meta chip (card type, domain, tier, priority). Composes
+/// [StatusPill] with the muted tone — these carry no good/attention/bad meaning.
 class _MetaChip extends StatelessWidget {
   const _MetaChip({required this.label, this.icon});
 
@@ -278,12 +281,10 @@ class _MetaChip extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) {
-    return Chip(
-      avatar: icon == null ? null : Icon(icon, size: 16),
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
+  Widget build(BuildContext context) => StatusPill(
+        tone: StatusTone.muted,
+        label: label,
+        icon: icon,
+        dense: true,
+      );
 }

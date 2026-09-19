@@ -2,6 +2,7 @@
 // with ListTile here, so hide the widget to keep the model unambiguous.
 import 'package:flutter/material.dart' hide Card;
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -397,27 +398,15 @@ class _CardTile extends StatelessWidget {
 }
 
 /// A calm, muted "Draft" marker for cards not yet promoted (excluded from
-/// scheduling + readiness). Deliberately low-key (surface container + variant
-/// text, no bright hue) — it signals "not counted yet", not an alert.
+/// scheduling + readiness). Deliberately low-key (the muted status tone, no
+/// bright hue) — it signals "not counted yet", not an alert.
 class _DraftPill extends StatelessWidget {
   const _DraftPill();
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        'Draft',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const StatusPill(
+        tone: StatusTone.muted,
+        label: 'Draft',
+        dense: true,
+      );
 }
