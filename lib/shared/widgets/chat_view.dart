@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
 import 'card_markdown.dart';
 import 'fading_scroll_edges.dart';
 
@@ -124,7 +125,8 @@ class _ChatViewState extends State<ChatView> {
             // Laying everything out gives an exact extent and smooth scrolling.
             child: SingleChildScrollView(
               controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                  Dim.space4, Dim.space3, Dim.space4, Dim.space2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -140,14 +142,15 @@ class _ChatViewState extends State<ChatView> {
         ),
         if (widget.busy)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: Dim.space2),
             child: _Thinking(),
           ),
         if (widget.error != null)
           Container(
             width: double.infinity,
             color: theme.colorScheme.errorContainer,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: Dim.space4, vertical: 10),
             child: Text(
               widget.error!,
               style: TextStyle(color: theme.colorScheme.onErrorContainer),
@@ -183,7 +186,7 @@ class _Bubble extends StatelessWidget {
               maxWidth: MediaQuery.of(context).size.width * 0.82,
             ),
             child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: Dim.space3),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: turn.isUser
@@ -226,7 +229,7 @@ class _Thinking extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.more_horiz, size: 16, color: muted),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Text('Thinking…', style: TextStyle(color: muted)),
         ],
       ),
@@ -255,7 +258,8 @@ class _Composer extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space3, Dim.space2, Dim.space3, Dim.space3),
         child: Row(
           children: [
             Expanded(
@@ -271,8 +275,8 @@ class _Composer extends StatelessWidget {
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: Dim.space4, vertical: Dim.space3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -280,7 +284,7 @@ class _Composer extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Dim.space2),
             IconButton.filled(
               onPressed: busy ? null : onSend,
               icon: const Icon(Icons.arrow_upward),

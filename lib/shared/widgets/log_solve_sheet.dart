@@ -8,7 +8,7 @@ import '../providers/analytics.dart';
 import '../providers/clock.dart';
 import '../providers/interview.dart';
 import '../providers/readiness.dart';
-import '../design/status_color.dart';
+import '../design/onyx_design.dart';
 import 'sheet_header.dart';
 
 /// The self-report you log after solving an interview question on your own
@@ -98,7 +98,7 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
           children: [
             SheetHeader(title: 'Log a solve', subtitle: widget.card.title),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, Dim.space4),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,17 +113,17 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
                           'The key insight or what tripped you (optional)',
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      border: const OutlineInputBorder(
+                        borderRadius: Dim.brCard,
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Dim.space4),
                   Text('How did it go?',
                       style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Dim.space2),
                   for (final o in _outcomes) ...[
                     SizedBox(
                       width: double.infinity,
@@ -131,17 +131,17 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
                         onPressed: _saving ? null : () => _log(o),
                         style: FilledButton.styleFrom(
                           alignment: Alignment.centerLeft,
-                          backgroundColor: o.color.withValues(alpha: 0.16),
+                          backgroundColor: o.color.withValues(alpha: Dim.fill),
                           foregroundColor: o.color,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                              horizontal: Dim.space4, vertical: 14),
                         ),
                         child: Text(o.label,
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Dim.space2),
                   ],
                 ],
               ),

@@ -10,7 +10,7 @@ import 'package:highlight/languages/all.dart' show allLanguages;
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 
-import '../design/onyx_code_theme.dart';
+import '../design/onyx_design.dart';
 
 /// Renders fenced code blocks with syntax highlighting on a distinct panel
 /// background that separates code from prose. Inline code falls through to the
@@ -79,7 +79,7 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     final code = content.replaceFirst(RegExp(r'\n$'), '');
     const background = onyxCodePanel;
     const foreground = onyxCodeInk;
-    const padding = EdgeInsets.symmetric(horizontal: 14, vertical: 12);
+    const padding = EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3);
 
     // Soft-wrap rather than scroll horizontally: on a phone, panning long lines
     // is a real irritant while studying. Both HighlightView's RichText and the
@@ -98,9 +98,9 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
           );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: Dim.space2),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: Dim.brChip,
         child: Container(
           width: double.infinity,
           color: background,

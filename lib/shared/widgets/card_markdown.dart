@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 
+import '../design/onyx_design.dart';
 import '../providers/glossary.dart';
 import 'callout.dart';
 import 'code_block.dart';
@@ -51,7 +52,9 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
     } else {
       final children = <Widget>[];
       for (final segment in segments) {
-        if (children.isNotEmpty) children.add(const SizedBox(height: 12));
+        if (children.isNotEmpty) {
+          children.add(const SizedBox(height: Dim.space3));
+        }
         children.add(
           segment.isCallout
               ? Callout(
@@ -171,9 +174,9 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
                 child: Material(
                   elevation: 8,
                   color: theme.colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: Dim.brCard,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, 14),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -210,7 +213,7 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
     // Body: softened off-white (~87% of onSurface), never pure white — cuts
     // halation/glare on the dark surface while staying well above 4.5:1. Reserve
     // full-brightness onSurface for emphasis (see `strong`) so bold terms pop.
-    final bodyColor = scheme.onSurface.withValues(alpha: 0.87);
+    final bodyColor = scheme.onSurface.withValues(alpha: Dim.emphasisHigh);
     final body = text.bodyLarge!.copyWith(
       color: bodyColor,
       height: 1.5,
@@ -278,7 +281,8 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
       codeblockPadding: EdgeInsets.zero,
       codeblockDecoration: const BoxDecoration(),
       blockquote: body.copyWith(color: scheme.onSurfaceVariant),
-      blockquotePadding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      blockquotePadding:
+          const EdgeInsets.fromLTRB(14, Dim.space2, 14, Dim.space2),
       blockquoteDecoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         border: Border(left: BorderSide(color: scheme.primary, width: 3)),
@@ -289,8 +293,8 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
       // share the width so cells wrap instead of forcing a horizontal scroll.
       tableColumnWidth: const FlexColumnWidth(),
       tableBorder: TableBorder.all(color: scheme.outlineVariant),
-      tableCellsPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      tableCellsPadding: const EdgeInsets.symmetric(
+          horizontal: Dim.space3, vertical: Dim.space2),
       tableHeadAlign: TextAlign.left,
       tableHead: body.copyWith(
         color: scheme.onSurface,

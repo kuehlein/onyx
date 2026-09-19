@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../design/status_color.dart';
+import '../design/onyx_design.dart';
 
 /// Visual spec for a callout type: an accent color, an icon, and a default
 /// title. Colors are muted so they read as semantic signals on the dark
@@ -95,14 +95,15 @@ class Callout extends StatelessWidget {
             Container(width: 4, color: color),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                padding:
+                    const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Icon(icon, size: 18, color: color),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: Dim.space2),
                         Flexible(
                           child: Text(
                             label,

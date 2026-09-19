@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
+
 /// A list row for a **destructive** action — restore / reset / delete (design-
 /// system §4.9, constraint 7: *danger is never signaled by color alone*). It
 /// pairs the `error` hue with an **outlined, verb-labeled** trailing button — a
@@ -50,8 +52,9 @@ class DestructiveRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final tint =
-        enabled ? scheme.error : scheme.onSurface.withValues(alpha: 0.38);
+    final tint = enabled
+        ? scheme.error
+        : scheme.onSurface.withValues(alpha: Dim.emphasisLow);
     return ListTile(
       leading: Icon(icon, color: tint),
       title: Text(title),

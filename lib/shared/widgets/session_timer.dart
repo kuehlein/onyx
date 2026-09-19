@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../design/status_color.dart';
+import '../design/onyx_design.dart';
 
 /// Which way a [SessionTimer] runs.
 enum TimerMode {
@@ -183,17 +183,18 @@ class _SessionTimerState extends State<SessionTimer> {
         borderRadius: BorderRadius.circular(10),
         onTap: _onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Dim.space3, vertical: Dim.space2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
+              const SizedBox(width: Dim.space2),
               Text(label,
                   style: theme.textTheme.titleSmall?.copyWith(
                       color: color,
                       fontFeatures: const [FontFeature.tabularFigures()])),
-              const SizedBox(width: 8),
+              const SizedBox(width: Dim.space2),
               Text(hint,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: scheme.onSurfaceVariant)),

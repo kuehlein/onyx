@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
+
 /// The one calm "nothing here (yet)" state (design-system §6 catalog). Replaces
 /// the ad-hoc `Center > Column` blocks that had drifted across screens so every
 /// empty/first-run/error frame reads the same way.
@@ -46,7 +48,7 @@ class EmptyState extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(dense ? 20 : 32),
+        padding: EdgeInsets.all(dense ? 20 : Dim.space6),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: Column(

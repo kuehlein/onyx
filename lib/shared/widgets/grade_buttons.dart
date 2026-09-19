@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
+
 /// One button in a [GradeButtons] row.
 class GradeButton {
   const GradeButton({
@@ -43,7 +45,7 @@ class GradeButtons extends StatelessWidget {
       children: [
         for (var i = 0; i < buttons.length; i++) ...[
           Expanded(child: _button(buttons[i])),
-          if (i != buttons.length - 1) const SizedBox(width: 8),
+          if (i != buttons.length - 1) const SizedBox(width: Dim.space2),
         ],
       ],
     );
@@ -53,7 +55,8 @@ class GradeButtons extends StatelessWidget {
     final style = FilledButton.styleFrom(
       backgroundColor: b.color.withValues(alpha: 0.18),
       foregroundColor: b.color,
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: verticalPadding),
+      padding: EdgeInsets.symmetric(
+          horizontal: Dim.space2, vertical: verticalPadding),
       side: b.highlighted ? BorderSide(color: b.color, width: 2) : null,
     );
     final label = Text(b.label,

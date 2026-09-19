@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
 import 'fading_scroll_edges.dart';
 
 /// The one launcher for Onyx's slide-up modals (design-system §4.9): a thin
@@ -126,7 +127,7 @@ class SheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final header = Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
+      padding: const EdgeInsets.fromLTRB(20, 0, Dim.space2, Dim.space2),
       child: Row(
         children: [
           if (icon != null) ...[
@@ -151,7 +152,7 @@ class SheetHeader extends StatelessWidget {
             ),
           ),
           if (trailing != null) trailing!,
-          const SizedBox(width: 4),
+          const SizedBox(width: Dim.space1),
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: 'Close',

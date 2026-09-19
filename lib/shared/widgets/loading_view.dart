@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
+
 /// A calm, **non-spinning** indeterminate loading state (design-system §2.6/§8
 /// progressPolicy): a static status line — a muted glyph + label wrapped in a
 /// `Semantics` live-region — never a spinning `CircularProgressIndicator` (which
@@ -28,7 +30,7 @@ class LoadingView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.hourglass_empty, size: 16, color: muted),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Text(label, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
         ],
       ),

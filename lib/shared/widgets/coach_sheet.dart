@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../core/ai/coach.dart';
+import '../design/onyx_design.dart';
 import '../models/card.dart';
 import '../providers/ai.dart';
 import '../providers/coach.dart';
@@ -55,7 +56,7 @@ class CoachButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.only(right: Dim.space1),
       child: TextButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.psychology_outlined, size: 20),
@@ -213,12 +214,13 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
           children: [
             // Slim drag handle, tight to the top (replaces the framework one).
             Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 4),
+              margin:
+                  const EdgeInsets.only(top: Dim.space2, bottom: Dim.space1),
               width: 32,
               height: 4,
               decoration: BoxDecoration(
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurfaceVariant
+                    .withValues(alpha: Dim.hairline),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -237,14 +239,15 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                         color: sheetSurface(context),
                         child: ListView(
                           controller: _scroll,
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          padding: const EdgeInsets.fromLTRB(
+                              Dim.space4, Dim.space3, Dim.space4, Dim.space2),
                           children: [
                             // Keep the question in view while the learner talks.
                             _PromptContext(
                               card: widget.card,
                               section: widget.section,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: Dim.space3),
                             if (state.isEmpty)
                               _EmptyHint(revealed: widget.revealed)
                             else
@@ -259,15 +262,15 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
               ),
               if (state.busy)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: Dim.space2),
                   child: _Thinking(),
                 ),
               if (state.error != null)
                 Container(
                   width: double.infinity,
                   color: theme.colorScheme.errorContainer,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Dim.space4, vertical: 10),
                   child: Text(
                     state.error!,
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
@@ -301,7 +304,8 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space1, Dim.space2, Dim.space2),
       child: Row(
         children: [
           Icon(Icons.psychology_outlined, color: theme.colorScheme.primary),
@@ -344,7 +348,7 @@ class _EmptyHint extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Text(
           revealed
               ? 'Ask anything about this card — for a clearer explanation, an '
@@ -379,10 +383,10 @@ class _PromptContext extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, Dim.space3),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: Dim.brCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +394,7 @@ class _PromptContext extends StatelessWidget {
           Text('PROMPT',
               style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.primary, letterSpacing: 0.6)),
-          const SizedBox(height: 4),
+          const SizedBox(height: Dim.space1),
           Text(card.title,
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
@@ -401,7 +405,7 @@ class _PromptContext extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.primary)),
           ],
           if (problem != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             CardMarkdown(problem, compact: true),
           ],
         ],
@@ -426,13 +430,13 @@ class _NoKeyPanel extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.vpn_key_outlined,
                 size: 40, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text(
               'The coach needs an Anthropic API key',
               textAlign: TextAlign.center,
@@ -482,7 +486,7 @@ class _Bubble extends StatelessWidget {
     final grade = message.suggestedGrade;
 
     final bubble = Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Dim.space3),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: isUser
@@ -520,7 +524,7 @@ class _Bubble extends StatelessWidget {
               ),
               if (!isUser && showGrade && grade != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: Dim.space3),
                   child: _GradeSuggestion(grade: grade),
                 ),
             ],
@@ -545,7 +549,7 @@ class _GradeSuggestion extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: spec.color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: Dim.brChip,
         border: Border.all(color: spec.color.withValues(alpha: 0.5)),
       ),
       child: Text(
@@ -570,7 +574,7 @@ class _Thinking extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.more_horiz, size: 16, color: muted),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Text('Thinking…', style: TextStyle(color: muted)),
         ],
       ),
@@ -613,7 +617,8 @@ class _InputBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 18),
+        padding:
+            const EdgeInsets.fromLTRB(Dim.space3, Dim.space2, Dim.space3, 18),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -630,7 +635,7 @@ class _InputBar extends StatelessWidget {
                   : 'Voice input unavailable on this device',
               style: buttonStyle,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Dim.space2),
             Expanded(
               child: TextField(
                 controller: controller,
@@ -645,8 +650,8 @@ class _InputBar extends StatelessWidget {
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: Dim.space4, vertical: Dim.space3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -654,7 +659,7 @@ class _InputBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Dim.space2),
             IconButton.filled(
               onPressed: busy ? null : onSend,
               icon: const Icon(Icons.arrow_upward),

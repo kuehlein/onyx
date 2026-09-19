@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/interview/assessment.dart' show rubricLabel;
 import '../../core/practice/mock_grader.dart';
-import '../design/status_color.dart';
+import '../design/onyx_design.dart';
 
 /// A clean banner of a reconciled mock [MockGrade]: a prominent score disc, a
 /// calibrated verdict label, per-dimension rubric bars, and the grader's note.
@@ -34,7 +34,8 @@ class MockGradeSummary extends StatelessWidget {
     final theme = Theme.of(context);
     final v = _verdict;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      margin: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space3, Dim.space4, Dim.space1),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(16),
@@ -47,7 +48,7 @@ class MockGradeSummary extends StatelessWidget {
           Row(
             children: [
               _ScoreDisc(score: grade.appliedScore, color: v.color),
-              const SizedBox(width: 16),
+              const SizedBox(width: Dim.space4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,19 +66,19 @@ class MockGradeSummary extends StatelessWidget {
             ],
           ),
           if (grade.rubric.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             for (final key in dimensions)
               if (grade.rubric[key] != null)
                 _RubricRow(label: rubricLabel(key), value: grade.rubric[key]!),
           ],
           if ((grade.note ?? '').isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text(grade.note!,
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic)),
           ],
-          const SizedBox(height: 4),
+          const SizedBox(height: Dim.space1),
           Text('Read the debrief below, or ask the coach how to improve.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -129,7 +130,7 @@ class _RubricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Dim.space2),
       child: Row(
         children: [
           SizedBox(
