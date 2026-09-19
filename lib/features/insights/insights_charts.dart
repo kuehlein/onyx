@@ -1,0 +1,366 @@
+part of 'insights_screen.dart';
+
+// ── Summary strip ───────────────────────────────────────────────────────────
+
+class _Kpi {
+  const _Kpi({
+    required this.value,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
+  final String value;
+  final String label;
+  final Color color;
+
+  /// Tap to reveal (expand + scroll to) the group this KPI summarizes.
+  final VoidCallback? onTap;
+}
+
+/// The critical-few KPI strip: at most four glanceable tiles, only for signals
+/// that have data. The "summary" tier above the progressive-disclosure groups.
+class _SummaryStrip extends StatelessWidget {
+  const _SummaryStrip({required this.kpis});
+  final List<_Kpi> kpis;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kpis.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 12.0;
+        // Two per row so numbers stay large and legible.
+        final w = (c.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [for (final k in kpis) SizedBox(width: w, child: _Tile(k))],
+        );
+      },
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile(this.kpi);
+  final _Kpi kpi;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final radius = BorderRadius.circular(14);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: kpi.onTap,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(kpi.value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                      color: kpi.color,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(kpi.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ),
+                  if (kpi.onTap != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right,
+                        size: 14, color: theme.colorScheme.onSurfaceVariant),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Collapsible group (progressive disclosure) ──────────────────────────────
+
+/// A titled, collapsible group of sections with a one-line summary in the header
+/// (so you get the signal without expanding). Non-lead groups start collapsed —
+/// this is the "details" tier revealed on demand.
+class _Group extends StatefulWidget {
+  const _Group({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.children,
+    this.summary,
+    this.initiallyExpanded = false,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? summary;
+  final bool initiallyExpanded;
+  final List<Widget> children;
+
+  @override
+  State<_Group> createState() => _GroupState();
+}
+
+class _GroupState extends State<_Group> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  /// Open the group (used by a KPI tap or a Home deep-link). No-op if already open.
+  void expand() {
+    if (!_expanded) setState(() => _expanded = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 10),
+                Text(widget.title,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                const Spacer(),
+                if (widget.summary != null && !_expanded)
+                  Flexible(
+                    child: Text(widget.summary!,
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            theme.textTheme.bodySmall?.copyWith(color: muted)),
+                  ),
+                const SizedBox(width: 6),
+                Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20, color: muted),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: widget.children,
+            ),
+          ),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
+      ],
+    );
+  }
+}
+
+// ── Section scaffold ────────────────────────────────────────────────────────
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, this.subtitle, required this.child});
+  final String title;
+  final String? subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle!,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _NoData extends StatelessWidget {
+  const _NoData(this.text);
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(text,
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant));
+  }
+}
+
+// ── Shared bars ─────────────────────────────────────────────────────────────
+
+/// A labeled metric bar (used for retention domains and mock rubric dimensions).
+class _StatBar extends StatelessWidget {
+  const _StatBar({
+    required this.label,
+    required this.fraction,
+    required this.value,
+    required this.color,
+    this.subtitle,
+  });
+
+  final String label;
+  final double? fraction; // null → empty track, "—" value
+  final String value;
+  final Color color;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _Track(fraction: fraction, color: color)),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 42,
+                child: Text(value,
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.labelLarge
+                        ?.copyWith(color: color, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 5),
+            Text(subtitle!,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Track extends StatelessWidget {
+  const _Track({required this.fraction, required this.color});
+  final double? fraction;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: Container(
+        height: 10,
+        color: cs.surfaceContainerHighest,
+        alignment: Alignment.centerLeft,
+        child: fraction == null
+            ? null
+            : FractionallySizedBox(
+                widthFactor: fraction!.clamp(0.0, 1.0),
+                child: Container(color: color),
+              ),
+      ),
+    );
+  }
+}
+
+/// A compact histogram strip (used for due forecast + study consistency).
+class _BarStrip extends StatelessWidget {
+  const _BarStrip({required this.values, this.height = 56});
+  final List<int> values;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final max = values.fold(0, (m, v) => v > m ? v : m);
+    final c = cs.primary;
+    return SizedBox(
+      height: height,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final v in values)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: Container(
+                  height: max == 0 ? 2 : 2 + (height - 2) * (v / max),
+                  decoration: BoxDecoration(
+                    color: v == 0 ? cs.surfaceContainerHighest : c,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StripAxis extends StatelessWidget {
+  const _StripAxis(this.left, this.right);
+  final String left;
+  final String right;
+  @override
+  Widget build(BuildContext context) {
+    final s = Theme.of(context)
+        .textTheme
+        .labelSmall
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [Text(left, style: s), Text(right, style: s)],
+      ),
+    );
+  }
+}
+
+class _Empty extends StatelessWidget {
+  const _Empty();
+
+  @override
+  Widget build(BuildContext context) => const EmptyState(
+        icon: Icons.query_stats_outlined,
+        title: 'No insights yet',
+        message: 'Review some cards and run a mock or two — this fills in with '
+            'how well it’s sticking, where you’re leaking, and how you perform.',
+      );
+}
