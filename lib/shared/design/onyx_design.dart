@@ -4,6 +4,7 @@
 library;
 
 export 'context_x.dart';
+export 'dim.dart';
 export 'onyx_code_theme.dart';
 export 'onyx_colors.dart';
 export 'onyx_scheme.dart';
