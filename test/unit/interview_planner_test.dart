@@ -48,6 +48,8 @@ class _FakeSource implements VaultSource {
       meta[name] = content;
   @override
   Future<void> writeFile(String relativePath, String content) async {}
+  @override
+  Future<void> deleteFile(String relativePath) async {}
 }
 
 const _index = IndexResult(

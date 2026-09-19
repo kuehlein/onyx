@@ -29,6 +29,8 @@ class _FakeSource implements VaultSource {
       meta[name] = content;
   @override
   Future<void> writeFile(String path, String content) async {}
+  @override
+  Future<void> deleteFile(String path) async {}
 }
 
 void main() {

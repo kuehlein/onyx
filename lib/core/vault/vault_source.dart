@@ -35,4 +35,9 @@ abstract class VaultSource {
   /// app-authored notes that live IN the vault as first-class markdown — e.g. the
   /// behavioral story bank under `stories/`.
   Future<void> writeFile(String relativePath, String content);
+
+  /// Deletes the vault file at [relativePath] (POSIX, relative to the root).
+  /// A no-op if the file does not exist. Used by the draft-review gate's DISCARD
+  /// action to remove an unwanted draft card entirely.
+  Future<void> deleteFile(String relativePath);
 }

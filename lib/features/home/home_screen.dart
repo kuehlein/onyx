@@ -7,6 +7,7 @@ import '../../core/clock.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
+import '../../shared/providers/drafts.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
 import '../../shared/providers/today_progress.dart';
@@ -131,6 +132,7 @@ class _GoalHomeBody extends ConsumerWidget {
                             clock: ref.watch(clockProvider).asData?.value),
                         const SizedBox(height: 12),
                         const _TargetCard(),
+                        const _DraftReviewPrompt(),
                       ],
                     ),
                     // Middle: today's ring hero + the priority flow stack.
@@ -248,6 +250,51 @@ class _TargetCard extends ConsumerWidget {
               const SizedBox(width: 4),
               Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A quiet, low-key row surfacing pending drafts — "N cards to review before
+/// they count" → the draft-review gate. Renders nothing while loading or when
+/// there are no drafts. Deliberately not an alert hue (a draft is a normal,
+/// expected state, docs/content-creation.md §3.3), just an unobtrusive nudge.
+class _DraftReviewPrompt extends ConsumerWidget {
+  const _DraftReviewPrompt();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = ref.watch(draftCardsProvider).asData?.value.length ?? 0;
+    if (n == 0) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Material(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: () => context.push('/draft-review'),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.inbox_outlined,
+                    size: 18, color: cs.onSurfaceVariant),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '$n card${n == 1 ? '' : 's'} to review before they count',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
       ),

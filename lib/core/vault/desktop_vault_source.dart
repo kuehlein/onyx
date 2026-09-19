@@ -92,6 +92,13 @@ class DesktopVaultSource implements VaultSource {
     await tmp.rename(target);
   }
 
+  @override
+  Future<void> deleteFile(String relativePath) async {
+    final target = p.join(rootPath, p.joinAll(p.posix.split(relativePath)));
+    final file = File(target);
+    if (file.existsSync()) await file.delete();
+  }
+
   /// Skip `_meta/` (vault metadata) and hidden folders like `.obsidian/`.
   bool _excluded(String relative) => p
       .split(relative)

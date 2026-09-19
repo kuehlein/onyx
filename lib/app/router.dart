@@ -9,6 +9,7 @@ import '../features/behavioral/story_bank_screen.dart';
 import '../features/behavioral/story_capture_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
+import '../features/drafts/draft_review_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
@@ -97,6 +98,11 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         // Home (like Learn / Algorithms), not a bottom-nav tab — the tabs are
         // app SECTIONS, the study sessions are actions.
         GoRoute(path: '/quiz', builder: (_, __) => const QuizScreen()),
+        // The draft-review gate: self-test-then-promote over draft cards. A
+        // bounded full-screen session (like /quiz, /learn), outside the shell.
+        GoRoute(
+            path: '/draft-review',
+            builder: (_, __) => const DraftReviewScreen()),
         // In-app reader for a recommended-reading link (`/read?url=…`).
         GoRoute(
           path: '/read',

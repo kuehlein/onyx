@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/registry/deck.dart';
 import '../../core/registry/import_deck.dart';
@@ -36,6 +37,9 @@ class _ImportDeckSheetState extends ConsumerState<_ImportDeckSheet> {
     setState(() => _importing = summary.deckId);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    // Capture the router before the async gap + sheet pop, so the snackbar's
+    // "Review" action can navigate once this sheet's context is gone.
+    final router = GoRouter.of(context);
     try {
       final client = ref.read(registryClientProvider);
       final manifest = await client.getDeck(summary.deckId);
@@ -46,6 +50,11 @@ class _ImportDeckSheetState extends ConsumerState<_ImportDeckSheet> {
         SnackBar(
           content: Text('Imported $count '
               '${count == 1 ? 'card' : 'cards'} from ${summary.name} as drafts.'),
+          // Straight into the gate: the drafts don't count until reviewed.
+          action: SnackBarAction(
+            label: 'Review',
+            onPressed: () => router.go('/draft-review'),
+          ),
         ),
       );
     } catch (e) {
