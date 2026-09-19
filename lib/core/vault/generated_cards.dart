@@ -72,11 +72,11 @@ String _cardMarkdown(
     ..writeln('tags: ${_flowList(card.tags)}')
     ..writeln('---')
     ..writeln()
-    ..writeln('# ${card.title}');
+    ..writeln('# ${_oneLine(card.title)}');
   for (final section in card.sections) {
     buffer
       ..writeln()
-      ..writeln('## ${section.heading}')
+      ..writeln('## ${_oneLine(section.heading)}')
       ..writeln()
       ..writeln(section.content);
   }
@@ -105,6 +105,13 @@ String? _provenance(String? sourceLabel) {
 /// A YAML flow-sequence the parser accepts (`_stringList` reads a `YamlList`),
 /// e.g. `["tcp", "networking"]`, or `[]` when empty.
 String _flowList(List<String> tags) => '[${tags.map(_scalar).join(', ')}]';
+
+/// Collapses internal line breaks (and surrounding whitespace) to a single space
+/// so a title/heading written into a one-line `#`/`##` markdown line can't split
+/// the line and shift section boundaries on re-parse (the H1/H2 regexes are
+/// single-line). Mirrors the flattening `_provenance` already does.
+String _oneLine(String value) =>
+    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
 
 /// A double-quoted YAML scalar so a value carrying YAML-special characters (`#`,
 /// `:`, leading `-`, etc.) round-trips intact rather than being reinterpreted.

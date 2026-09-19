@@ -76,10 +76,20 @@ class StoryCaptureScreen extends ConsumerWidget {
 
   Future<void> _save(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final story = await ref.read(storyCoachChatProvider.notifier).saveDraft();
-    if (story != null) {
+    try {
+      final story = await ref.read(storyCoachChatProvider.notifier).saveDraft();
+      if (story != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Saved “${story.title}” to your story bank.')),
+        );
+      }
+    } catch (_) {
+      // A failed write would otherwise lose a just-authored story silently. The
+      // draft is preserved (saveDraft only clears it on success), so a retry works.
       messenger.showSnackBar(
-        SnackBar(content: Text('Saved “${story.title}” to your story bank.')),
+        const SnackBar(
+          content: Text("Couldn't save the story — please try again."),
+        ),
       );
     }
   }

@@ -143,6 +143,30 @@ void main() {
       )!;
       expect(card.tags, isEmpty);
     });
+
+    test('flattens a newline in a card title so the H1 stays one line',
+        () async {
+      const messy = DeckManifest(
+        deckId: 'd',
+        name: 'D',
+        author: 'x',
+        cards: [
+          DeckCard(
+            id: 'c',
+            type: 'flashcard',
+            title: 'Title with\na newline',
+            body: '## A\n\nb.',
+          ),
+        ],
+      );
+      await importDeck(source, messy);
+      final card = _parser.parse(
+        await source.readCard('d/c.md'),
+        filePath: 'd/c.md',
+      )!;
+      expect(card.title, 'Title with a newline');
+      expect(card.sections.map((s) => s.heading), contains('A'));
+    });
   });
 
   group('DeckManifest / DeckCard (scheduling never travels)', () {

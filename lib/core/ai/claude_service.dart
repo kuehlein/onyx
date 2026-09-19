@@ -101,14 +101,23 @@ class ClaudeService {
           statusCode: response.statusCode);
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final blocks = (data['content'] as List?) ?? const [];
-    return blocks
-        .whereType<Map<String, dynamic>>()
-        .where((b) => b['type'] == 'text')
-        .map((b) => b['text'] as String? ?? '')
-        .join()
-        .trim();
+    // A 200 with a non-JSON / unexpected body (proxy interstitial, captive
+    // portal, truncated response) must surface as a ClaudeException so it flows
+    // through the same `on ClaudeException` handlers as other API failures.
+    // Otherwise a raw FormatException/TypeError escapes and strands callers —
+    // e.g. a coach-chat spinner that never clears + an uncaught zone error.
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final blocks = (data['content'] as List?) ?? const [];
+      return blocks
+          .whereType<Map<String, dynamic>>()
+          .where((b) => b['type'] == 'text')
+          .map((b) => b['text'] as String? ?? '')
+          .join()
+          .trim();
+    } catch (_) {
+      throw ClaudeException('Unexpected response from the AI service.');
+    }
   }
 
   String _errorMessage(http.Response response) {

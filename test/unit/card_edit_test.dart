@@ -170,6 +170,21 @@ void main() {
       expect(out.endsWith('\n'), isTrue);
       expect(out.endsWith('\n\n'), isFalse);
     });
+
+    test('flattens a newline in the edited title (no bleed into the body)', () {
+      final out = rebuildCardMarkdown(
+        _richFlow,
+        title: 'Multi\nLine Title',
+        body: '## New Section\n\nc',
+        tags: null,
+      );
+      final card = _parser.parse(out, filePath: 'rich.md')!;
+      expect(card.title, 'Multi Line Title');
+      expect(card.sections.map((s) => s.heading), ['New Section']);
+      // Frontmatter still intact around the title rewrite.
+      expect(card.id, 'rich-card');
+      expect(card.tiers, {'ds-a': 2, 'system-design': 1});
+    });
   });
 
   group('newCardMarkdown', () {
@@ -208,6 +223,19 @@ void main() {
 
       final noDeck = newCardMarkdown(id: 'y', title: 'Y', body: '## S\n\nc');
       expect(noDeck.contains('deck:'), isFalse);
+    });
+
+    test('flattens a newline in the title so it stays a single H1 line', () {
+      final out = newCardMarkdown(
+        id: 'x',
+        title: 'Line one\nLine two',
+        body: '## Answer\n\nc',
+      );
+      final card = _parser.parse(out, filePath: 'x.md')!;
+      expect(card.title, 'Line one Line two');
+      expect(card.overview, isEmpty,
+          reason: 'no title remainder bled into the body');
+      expect(card.sections.map((s) => s.heading), ['Answer']);
     });
   });
 

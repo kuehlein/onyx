@@ -97,6 +97,19 @@ void main() {
       );
     });
 
+    test('surfaces a malformed 200 body as ClaudeException (not a raw error)',
+        () async {
+      // A 200 with a non-JSON body (proxy/captive-portal/truncation) must not
+      // escape as a FormatException/TypeError — that bypasses every
+      // on-ClaudeException handler and hangs the caller (e.g. the coach spinner).
+      final client = MockClient(
+          (_) async => http.Response('<html>gateway timeout</html>', 200));
+      expect(
+        () => ClaudeService(apiKey: 'k', client: client).complete(prompt: 'x'),
+        throwsA(isA<ClaudeException>()),
+      );
+    });
+
     test(
         'managed posts to the proxy with a bearer token, no x-api-key (ADR-0004)',
         () async {

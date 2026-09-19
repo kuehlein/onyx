@@ -41,7 +41,7 @@ String _cardMarkdown(String deckId, DeckCard card) {
     ..writeln('tags: ${_flowList(card.tags)}')
     ..writeln('---')
     ..writeln()
-    ..writeln('# ${card.title}')
+    ..writeln('# ${_oneLine(card.title)}')
     ..writeln();
   buffer.write(card.body);
   if (!card.body.endsWith('\n')) buffer.writeln();
@@ -51,6 +51,12 @@ String _cardMarkdown(String deckId, DeckCard card) {
 /// A YAML flow-sequence the parser accepts (`_stringList` reads a `YamlList`),
 /// e.g. `["geography", "capitals"]`, or `[]` when empty.
 String _flowList(List<String> tags) => '[${tags.map(_scalar).join(', ')}]';
+
+/// Collapses internal line breaks (and surrounding whitespace) to a single space
+/// so a card title written into a one-line `#` markdown heading can't split the
+/// line and corrupt the card on re-parse (the H1 regex is single-line).
+String _oneLine(String value) =>
+    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
 
 /// A double-quoted YAML scalar for a frontmatter value, so a string carrying
 /// YAML-special characters (`#`, `:`, leading `-`, etc.) round-trips intact

@@ -31,8 +31,15 @@ class Backup extends _$Backup {
   /// Debounced write — call after each graded review / graduation.
   void schedule() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(seconds: 2), () {
-      unawaited(_service()?.export() ?? Future<void>.value());
+    _debounce = Timer(const Duration(seconds: 2), () async {
+      // Best-effort: the DB stays the source of truth, so a transient or
+      // persistent export failure must not become an unhandled async error.
+      // An explicit flush()/restore() still propagates so a real problem surfaces.
+      try {
+        await _service()?.export();
+      } catch (_) {
+        // Swallowed by design (see above); the DB is authoritative regardless.
+      }
     });
   }
 

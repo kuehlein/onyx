@@ -89,7 +89,7 @@ String _assemble(String yaml, {required String title, required String body}) {
     ..writeln(yaml)
     ..writeln('---')
     ..writeln()
-    ..write('# ${title.trim()}')
+    ..write('# ${_oneLine(title)}')
     ..write('\n');
   if (trimmedBody.isNotEmpty) {
     buffer
@@ -150,6 +150,13 @@ String _replaceTags(String yaml, List<String> tags) {
 /// so a tag carrying YAML-special characters round-trips intact.
 String _flowList(List<String> tags) =>
     tags.isEmpty ? '[]' : '[ ${tags.map(_scalar).join(', ')} ]';
+
+/// Collapses internal line breaks (and surrounding whitespace) to a single space
+/// so a title written into the one-line `# ` H1 can't split the line and shift
+/// the remainder into the body on re-parse (the parser's H1 regex is
+/// single-line). A pasted multi-line title is the realistic source.
+String _oneLine(String value) =>
+    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
 
 /// A double-quoted YAML scalar so a value carrying YAML-special characters (`#`,
 /// `:`, leading `-`, etc.) round-trips intact rather than being reinterpreted.

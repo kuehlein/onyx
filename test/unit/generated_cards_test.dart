@@ -168,6 +168,30 @@ void main() {
       final card = _parser.parse(await source.readCard(path), filePath: path)!;
       expect(card.isDraft, isTrue);
     });
+
+    test('flattens newlines in a title/heading so the card structure holds',
+        () async {
+      // A model could emit a title/heading with an embedded newline; written
+      // verbatim it would split the single-line `#`/`##` and shift sections.
+      const messy = GeneratedBatch(
+        name: 'Messy',
+        cards: [
+          GeneratedCard(
+            title: 'Title with\na newline',
+            tags: ['x'],
+            sections: [
+              (heading: 'Heading with\na break', content: 'body'),
+            ],
+          ),
+        ],
+      );
+      await writeGeneratedCards(source, messy);
+      final path = (await source.listCardPaths()).single;
+      final card = _parser.parse(await source.readCard(path), filePath: path)!;
+      expect(card.title, 'Title with a newline');
+      expect(card.sections.single.heading, 'Heading with a break');
+      expect(card.sections.single.content, 'body');
+    });
   });
 
   group('generated drafts flow into the gate', () {

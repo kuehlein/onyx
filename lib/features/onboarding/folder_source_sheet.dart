@@ -52,9 +52,21 @@ class _FolderSourceBodyState extends ConsumerState<FolderSourceBody> {
 
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
+    // Capture before the await so we don't touch context across the async gap.
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
     try {
       await action();
+    } catch (_) {
+      // This is the very first write a new user hits (create+seed, or choose a
+      // folder). A silent failure — permissions, disk, a stale bookmark — would
+      // strand them with no recourse, so surface it and stay on the sheet.
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+              "Couldn't set up the folder — check its permissions and try again."),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
