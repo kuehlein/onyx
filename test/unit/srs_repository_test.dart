@@ -81,6 +81,43 @@ void main() {
 
       expect((await db.select(db.reviews).get()).length, 2); // log keeps both
     });
+
+    test('a lapse persists relearning state and shows in lapsesByCard',
+        () async {
+      final at = DateTime.utc(2026, 1, 1, 9);
+      // A successful review first (the card is in the review state)…
+      await repo.recordReview(
+        cardId: 'card-a',
+        sectionSlug: 's',
+        grade: 3,
+        outcome: _outcome(at, stability: 20),
+      );
+      // …then a lapse: Again → relearning, as the scheduler would produce.
+      await repo.recordReview(
+        cardId: 'card-a',
+        sectionSlug: 's',
+        grade: 1,
+        outcome: ReviewOutcome(
+          stability: 2,
+          difficulty: 6,
+          state: 3, // relearning
+          step: 0,
+          due: at.add(const Duration(minutes: 10)),
+          lastReview: at.add(const Duration(days: 5)),
+          elapsedDays: 5,
+        ),
+      );
+
+      final s = (await repo.loadStates())['card-a::s']!;
+      expect(s.state, 3, reason: 'relearning state persisted');
+      expect(s.stability, 2);
+      expect(s.reviewCount, 2, reason: 'upsert incremented; still one row');
+
+      final row =
+          (await repo.lapsesByCard()).firstWhere((r) => r.cardId == 'card-a');
+      expect(row.lapses, 1, reason: 'one Again counted as a lapse');
+      expect(row.total, 2);
+    });
   },
       skip: _sqliteAvailable
           ? false
