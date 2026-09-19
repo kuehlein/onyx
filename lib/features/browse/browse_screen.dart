@@ -14,6 +14,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import 'browse_filters.dart';
+import 'import_deck_sheet.dart';
 
 /// Maps a flow's [FlowSpec.iconKey] to a Browse icon (fallback: a generic card).
 IconData flowIcon(String? key) => switch (key) {
@@ -71,7 +72,16 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     final states = ref.watch(srsStatesProvider).asData?.value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Browse')),
+      appBar: AppBar(
+        title: const Text('Browse'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: 'Import a deck',
+            onPressed: () => showImportDeckSheet(context),
+          ),
+        ],
+      ),
       body: index.when(
         loading: () => const LoadingView(),
         error: (e, _) => EmptyState(
@@ -350,15 +360,27 @@ class _CardTile extends StatelessWidget {
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       // Lead with the type label so same-titled cards are unambiguous even when
-      // the line truncates (e.g. "Algorithm · ds-a" vs "Flashcard · ds-a").
-      subtitle: Text(
-        [
-          flow?.displayLabel ?? card.type,
-          if (card.domain != null) card.domain!,
-          '$sectionCount quizzable',
-        ].join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      // the line truncates (e.g. "Algorithm · ds-a" vs "Flashcard · ds-a"). A
+      // draft (e.g. an imported deck's card) gets a calm muted pill so it reads
+      // as "not counted yet".
+      subtitle: Row(
+        children: [
+          if (card.isDraft) ...[
+            const _DraftPill(),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              [
+                flow?.displayLabel ?? card.type,
+                if (card.domain != null) card.domain!,
+                '$sectionCount quizzable',
+              ].join(' · '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
       trailing: card.tiers.isEmpty
           ? null
@@ -369,6 +391,32 @@ class _CardTile extends StatelessWidget {
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
       onTap: () => context.go('/browse/card/${card.id}'),
+    );
+  }
+}
+
+/// A calm, muted "Draft" marker for cards not yet promoted (excluded from
+/// scheduling + readiness). Deliberately low-key (surface container + variant
+/// text, no bright hue) — it signals "not counted yet", not an alert.
+class _DraftPill extends StatelessWidget {
+  const _DraftPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'Draft',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
     );
   }
 }
