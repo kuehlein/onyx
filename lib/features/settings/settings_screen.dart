@@ -9,6 +9,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/clock.dart';
 import '../../core/dev.dart';
 import '../../core/interview/assessment.dart';
+import '../../core/vault/card_parser.dart' show cardParsingRules;
 import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/analytics.dart';
@@ -25,6 +26,7 @@ import '../../shared/widgets/destructive_row.dart';
 import '../home/goal_editor_sheet.dart';
 import '../onboarding/folder_source_sheet.dart';
 import 'api_key_sheet.dart';
+import 'how_cards_are_read.dart';
 import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
@@ -67,6 +69,15 @@ class SettingsScreen extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(vaultIndexProvider),
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.rule_outlined),
+            title: const Text('Card parsing'),
+            // Derived from the live parser facts (sections marker · file type).
+            subtitle: Text(
+                '${cardParsingRules[0].value} · ${cardParsingRules[1].value}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showHowCardsAreReadSheet(context),
           ),
           const _SectionHeader('Learning'),
           ListTile(

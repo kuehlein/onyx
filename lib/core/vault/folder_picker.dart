@@ -40,8 +40,8 @@ class PlatformFolderPicker implements FolderPicker {
 
   @override
   Future<VaultRef?> pickExisting() async {
-    if (!canPickExisting)
-      return null; // iOS/Android need a bookmark/SAF (ADR-0002)
+    // iOS/Android need a bookmark/SAF to persist access across launches (ADR-0002).
+    if (!canPickExisting) return null;
     final dir = await FilePicker.getDirectoryPath(dialogTitle: 'Study folder');
     if (dir == null || dir.isEmpty) return null; // cancelled
     return VaultRef(VaultRefKind.path, dir);

@@ -4,6 +4,18 @@ import '../../shared/models/card.dart';
 import '../subject/active_subject.dart';
 import '../subject/subject_config.dart';
 
+/// The current (fixed) card-parsing rules, surfaced read-only by the "How cards
+/// are read" settings sheet (docs/settings-ux.md §4). Co-located with the parser
+/// so a rule change updates the shown fact here in the same place. Parsing isn't
+/// user-configurable yet — the sheet's "Later" rows reserve that. Facts:
+///  * sections split on H2 (`_h2` below); a note is a card when it has a
+///    recognized `type:` (the parser returns null otherwise); files are `.md`.
+const List<({String label, String value})> cardParsingRules = [
+  (label: 'Sections split on', value: 'Headings (H2)'),
+  (label: 'Reads files', value: '.md'),
+  (label: 'A note is a card when it has', value: 'type:'),
+];
+
 /// Parses a single Obsidian markdown file into a [Card].
 ///
 /// The parser is pure (no I/O): callers read the file and hand over its text
