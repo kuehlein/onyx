@@ -28,6 +28,7 @@ authoritative over everything).
 
 ## Tier 3 — feature / domain design
 - **[card-schema.md](card-schema.md)** — the card frontmatter + markdown contract.
+- **[adding-a-card-type.md](adding-a-card-type.md)** — contributor how-to: add a new card `type:` / flow via the data-driven `FlowSpec` system.
 - **[learning-science.md](learning-science.md)** — the retrieval/spacing/interference research the design rests on.
 - **[readiness-dashboard.md](readiness-dashboard.md)** — the readiness/progress model.
 - **[curriculum.md](curriculum.md)** — the built-in software-interviews example curriculum (one config, not the default).

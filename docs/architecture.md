@@ -30,12 +30,12 @@ Desktop (Neovim + Obsidian)
                                     ┌─────────────────────────────┐
                                     │       Onyx (Flutter)        │
                                     │                             │
-                                    │  VaultService               │
+                                    │  CardParser + VaultIndexer  │
                                     │    parse .md files          │
                                     │    extract frontmatter      │
                                     │    index wikilinks          │
                                     │         │                   │
-                                    │  FSRSEngine                 │
+                                    │  SrsScheduler + SrsRepo     │
                                     │    compute due dates        │
                                     │    update stability         │
                                     │         │                   │
@@ -48,6 +48,12 @@ Desktop (Neovim + Obsidian)
                                     │  ClaudeService ──────────► Claude API
                                     └─────────────────────────────┘
 ```
+
+> **Note:** boxes name today's types (`CardParser`/`VaultIndexer`,
+> `SrsScheduler`/`SrsRepository`, `ClaudeService`). This doc is a high-level map
+> kept current at the *shape* level; the ADRs (`docs/adr/`) are the authoritative
+> record of specific decisions, and `docs/adding-a-card-type.md` covers the
+> data-driven flow system.
 
 ## iOS Vault Access
 
