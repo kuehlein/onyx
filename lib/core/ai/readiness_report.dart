@@ -11,6 +11,7 @@ import '../util.dart';
 /// One domain's evidence, as fed to the model.
 class DomainReportRow {
   const DomainReportRow({
+    required this.domain,
     required this.name,
     required this.coverage,
     required this.strength,
@@ -24,6 +25,7 @@ class DomainReportRow {
     this.transfer,
   });
 
+  final String domain; // raw domain key, e.g. "system-design" (for matching)
   final String name; // pretty domain name, e.g. "System design"
   final double coverage; // 0..1 fraction of sections started
   final double strength; // 0..1 retention of studied ones

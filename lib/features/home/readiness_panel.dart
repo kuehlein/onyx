@@ -8,6 +8,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
+import '../insights/weak_area_sheet.dart';
 import 'target_sheet.dart';
 
 /// Home dashboard panel: a compact readiness summary — a headline % toward the
@@ -810,7 +811,7 @@ class _BarLegend extends StatelessWidget {
   }
 }
 
-class _DomainRow extends StatelessWidget {
+class _DomainRow extends ConsumerWidget {
   const _DomainRow(this.d, {required this.focus, this.summary});
 
   final DomainReadiness d;
@@ -820,7 +821,7 @@ class _DomainRow extends StatelessWidget {
   final ({int attempts, int contested})? summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final mocks = summary?.attempts ?? 0;
@@ -834,56 +835,67 @@ class _DomainRow extends StatelessWidget {
     final color = d.studied == 0 ? StatusColor.muted : _bandColor(shown);
 
     final meta = _meta;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Name (ellipsizes) + focus marker on the left; % flush-right. The name
-        // group is a single Expanded so the % lands at the same x on every row
-        // (previously a Flexible + Spacer both flexed, drifting the % by title
-        // length).
-        Row(
+    // The whole bar is tappable: it opens the AI weak-area drill-down for this
+    // domain (task #23) — why it's where it is + targeted next steps. Padded so
+    // the tap target is comfortable without shifting the row's visual rhythm.
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => showWeakAreaSheet(context, ref,
+          domain: d.domain, prettyName: prettyDomain(d.domain)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(prettyDomain(d.domain),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+            // Name (ellipsizes) + focus marker on the left; % flush-right. The
+            // name group is a single Expanded so the % lands at the same x on
+            // every row (previously a Flexible + Spacer both flexed, drifting the
+            // % by title length).
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(prettyDomain(d.domain),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600)),
+                      ),
+                      if (focus) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.my_location,
+                            size: 13, color: theme.colorScheme.primary),
+                      ],
+                    ],
                   ),
-                  if (focus) ...[
-                    const SizedBox(width: 6),
-                    Icon(Icons.my_location,
-                        size: 13, color: theme.colorScheme.primary),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Text(d.studied == 0 ? d.label : '${(shown * 100).round()}%',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: color, fontWeight: FontWeight.w700)),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(d.studied == 0 ? d.label : '${(shown * 100).round()}%',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: color, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 3),
+            // Goal flag at the "Strong" line (0.75) — the target for this domain.
+            // In interview mode the lighter portion is recall, the darker is what
+            // mocks have actually proven.
+            _TickedBar(
+                value: shown,
+                recall: proven ? d.recall : null,
+                color: color,
+                goal: 0.75),
+            // Evidence caption (interview mode only): mock count + contested flag.
+            if (meta != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(meta,
+                    style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+              ),
           ],
         ),
-        const SizedBox(height: 3),
-        // Goal flag at the "Strong" line (0.75) — the target for this domain.
-        // In interview mode the lighter portion is recall, the darker is what
-        // mocks have actually proven.
-        _TickedBar(
-            value: shown,
-            recall: proven ? d.recall : null,
-            color: color,
-            goal: 0.75),
-        // Evidence caption (interview mode only): mock count + contested flag.
-        if (meta != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(meta,
-                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
-          ),
-      ],
+      ),
     );
   }
 

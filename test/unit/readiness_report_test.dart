@@ -15,6 +15,7 @@ void main() {
         daysToInterview: days,
         domains: [
           const DomainReportRow(
+            domain: 'system-design',
             name: 'System design',
             coverage: 0.3,
             strength: 0.5,
@@ -28,6 +29,7 @@ void main() {
             concepts: ['consistent-hashing', 'cap-theorem'],
           ),
           const DomainReportRow(
+            domain: 'ds-a',
             name: 'DS & A',
             coverage: 0.9,
             strength: 0.8,
