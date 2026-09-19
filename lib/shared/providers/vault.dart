@@ -27,6 +27,15 @@ class VaultRefController extends _$VaultRefController {
   /// Set (or clear) the active ref. Callers that want it to persist should also
   /// write it via [VaultRefStore] and invalidate [vaultIndexProvider].
   void set(VaultRef? ref) => state = ref;
+
+  /// Persist [source] as the content root, activate it, and re-index. This is
+  /// the one-call path used by onboarding + the Settings folder picker (write
+  /// through [VaultRefStore], flip the in-memory state, drop the stale index).
+  Future<void> choose(VaultRef source) async {
+    await VaultRefStore(ref.read(preferencesRepositoryProvider)).save(source);
+    state = source;
+    ref.invalidate(vaultIndexProvider);
+  }
 }
 
 /// The current vault source, or null if none is configured yet.

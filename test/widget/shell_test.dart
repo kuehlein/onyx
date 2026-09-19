@@ -10,6 +10,7 @@ import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/today_progress.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/backup.dart';
@@ -43,6 +44,12 @@ void main() {
   // Override the SRS providers so the widget tree never touches a real DB.
   Widget app(IndexResult index) => ProviderScope(
         overrides: [
+          // A configured source + a settled load so the first-run gate lets the
+          // shell render Home instead of redirecting to /welcome. The index is
+          // already stubbed below, so this path never needs to exist.
+          vaultSourceProvider
+              .overrideWithValue(DesktopVaultSource('/tmp/onyx-test')),
+          loadVaultRefProvider.overrideWith((ref) async {}),
           vaultIndexProvider.overrideWith((ref) async => index),
           srsStatesProvider
               .overrideWith((ref) async => const SectionStates({})),

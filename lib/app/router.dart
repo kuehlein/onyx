@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/algorithms/algo_screen.dart';
@@ -14,6 +15,7 @@ import '../features/interview/interview_debrief_screen.dart';
 import '../features/interview/interview_prep_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
+import '../features/onboarding/welcome_screen.dart';
 import '../features/practice/practice_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/reader/reader_screen.dart';
@@ -21,6 +23,7 @@ import '../features/report/readiness_report_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/system_design/sd_entry_screen.dart';
 import '../features/system_design/sd_mock_screen.dart';
+import '../shared/providers/vault.dart';
 
 /// Builds the app router: a persistent bottom-nav shell (indexed stack, so each
 /// tab keeps its state and scroll position) over four top-level destinations.
@@ -28,9 +31,29 @@ import '../features/system_design/sd_mock_screen.dart';
 /// A function rather than a singleton so each [OnyxApp] instance owns fresh
 /// navigation state — production has one app, but widget tests pump many, and a
 /// shared router would leak one test's location into the next.
-GoRouter createRouter() => GoRouter(
+///
+/// [ref] reads the vault-configured state for the first-run gate (redirect
+/// below); [refresh] re-evaluates that redirect when the source (or its startup
+/// load) settles — see [OnyxApp], which bumps it via `listenManual`.
+GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
       initialLocation: '/',
+      refreshListenable: refresh,
+      // First-run gate (docs/settings-ux.md §3): with no study folder configured,
+      // land on /welcome; once configured, keep it out of reach. Deciding is
+      // *deferred* while the persisted ref is still loading, so a returning user
+      // never flashes /welcome before their saved folder resolves.
+      redirect: (context, state) {
+        if (ref.read(loadVaultRefProvider).isLoading) return null;
+        final configured = ref.read(vaultSourceProvider) != null;
+        final atWelcome = state.matchedLocation == '/welcome';
+        if (!configured && !atWelcome) return '/welcome';
+        if (configured && atWelcome) return '/';
+        return null;
+      },
       routes: [
+        // The first-run folder-source gate — a pre-shell full page (item 5),
+        // outside the tab shell.
+        GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
         // Full-screen, focused flow launched from Home (outside the tab shell).
         GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
         // The daily Algorithms session (separate paced track).

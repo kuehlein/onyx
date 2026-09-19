@@ -23,6 +23,7 @@ import '../../shared/providers/settings.dart';
 import '../../shared/design/status_color.dart';
 import '../../shared/widgets/destructive_row.dart';
 import '../home/goal_editor_sheet.dart';
+import '../onboarding/folder_source_sheet.dart';
 import 'api_key_sheet.dart';
 import 'study_load_help.dart';
 import '../../shared/providers/srs.dart';
@@ -49,6 +50,8 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.folder_outlined),
             title: const Text('Source'),
             subtitle: Text(source?.rootLabel ?? 'Not configured'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showFolderSourceSheet(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.inventory_2_outlined),
