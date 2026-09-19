@@ -209,13 +209,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
           ),
           TextButton(
             onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
+            child: Text(_saving ? 'Saving…' : 'Save'),
           ),
           if (_isEdit)
             PopupMenuButton<String>(

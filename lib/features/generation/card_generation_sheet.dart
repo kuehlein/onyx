@@ -168,11 +168,7 @@ class _Form extends StatelessWidget {
         FilledButton.icon(
           onPressed: busy ? null : onGenerate,
           icon: busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const Icon(Icons.hourglass_empty)
               : const Icon(Icons.auto_awesome_outlined),
           label: Text(busy ? 'Generating…' : 'Generate'),
         ),

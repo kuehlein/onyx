@@ -9,6 +9,7 @@ import '../../shared/providers/ai.dart';
 import '../../shared/providers/readiness_report.dart';
 import '../../shared/providers/weak_area.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../settings/api_key_sheet.dart';
 
@@ -157,18 +158,7 @@ class _Analysis extends ConsumerWidget {
     return ref.watch(weakAreaAnalysisProvider(domain)).when(
           loading: () => const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 12),
-                Text('Analyzing…'),
-              ],
-            ),
+            child: LoadingView(label: 'Analyzing…'),
           ),
           error: (e, _) => Text(
             e is WeakAreaException

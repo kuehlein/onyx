@@ -7,6 +7,7 @@ import '../../core/registry/import_deck.dart';
 import '../../shared/design/context_x.dart';
 import '../../shared/providers/registry.dart';
 import '../../shared/providers/vault.dart';
+import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the "Import a deck" sheet (design-system §4.9). Pulls a shared deck from
@@ -113,7 +114,7 @@ class _DeckList extends ConsumerWidget {
     return decksAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Center(child: CircularProgressIndicator()),
+        child: LoadingView(label: 'Loading decks…'),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -149,11 +150,7 @@ class _DeckList extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: importing == deck.deckId
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const LoadingView(compact: true, label: 'Importing…')
                       : const Icon(Icons.download_outlined),
                   // Disable every row while any import is running.
                   enabled: importing == null,
