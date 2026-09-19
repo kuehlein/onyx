@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/srs/learn_queue.dart';
 import '../../core/study/study_tips.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/study_grades.dart';
@@ -70,7 +71,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           // A labeled accent button so it pairs cleanly with the Coach button
           // (rather than a lone bare icon).
           Padding(
-            padding: const EdgeInsets.only(right: 4),
+            padding: const EdgeInsets.only(right: Dim.space1),
             child: TextButton.icon(
               onPressed: () => showStudyTipsSheet(context),
               icon: const Icon(Icons.tips_and_updates_outlined, size: 20),
@@ -172,22 +173,23 @@ class _LearnView extends StatelessWidget {
             Expanded(
               child: FadingScrollEdges(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                      Dim.space4, Dim.space4, Dim.space4, Dim.space5),
                   children: [
                     Row(
                       children: [
                         Text('${graduated + 1} / $total',
                             style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: Dim.space2),
                         _Pill(pretest ? 'Learn · recall' : 'Learn · study'),
                         if (item.card.domain != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: Dim.space2),
                           _Pill(item.card.domain!),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     Text(item.card.title, style: theme.textTheme.headlineSmall),
                     const SizedBox(height: 6),
                     Text(section.heading,
@@ -202,7 +204,7 @@ class _LearnView extends StatelessWidget {
                       ),
                     ],
                     if (revealed) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: Dim.space3),
                       CardMarkdown(section.content),
                       // Reference sections (e.g. the implementation) aren't
                       // quizzed — read them here without leaving the flow.
@@ -252,7 +254,8 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space2, Dim.space4, Dim.space2),
         child: revealed
             ? Column(
                 mainAxisSize: MainAxisSize.min,
@@ -282,7 +285,7 @@ class _ActionBar extends StatelessWidget {
                           ),
                         ),
                         if (i < learnGrades.length - 1)
-                          const SizedBox(width: 8),
+                          const SizedBox(width: Dim.space2),
                       ],
                     ],
                   ),
@@ -295,7 +298,7 @@ class _ActionBar extends StatelessWidget {
                   icon: const Icon(Icons.visibility_outlined),
                   label: const Text('Reveal'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: Dim.space4),
                   ),
                 ),
               ),
@@ -327,13 +330,13 @@ class _CompleteState extends ConsumerWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.school_outlined,
                 size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text('Nice work', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
@@ -341,7 +344,7 @@ class _CompleteState extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 24),
+            const SizedBox(height: Dim.space5),
             FilledButton(
               onPressed: () {
                 ref.read(backupProvider.notifier).flush();

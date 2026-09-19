@@ -68,8 +68,8 @@ abstract final class OnyxTheme {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(t.radiusCard)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: Dim.space4, vertical: Dim.space3),
       ),
       // (Page transitions use Flutter's M3 defaults; a Cupertino-on-iOS override
       // is a later polish — it needs the cupertino import.)

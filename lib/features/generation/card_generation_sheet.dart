@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../shared/design/context_x.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/card_generation.dart';
 import '../../shared/providers/vault.dart';
@@ -96,7 +96,7 @@ class _CardGenerationSheetState extends ConsumerState<_CardGenerationSheet> {
             icon: Icons.auto_awesome_outlined,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
             child: !hasKey
                 ? const _NoKey()
                 : !hasFolder
@@ -141,7 +141,7 @@ class _Form extends StatelessWidget {
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Dim.space3),
         TextField(
           controller: controller,
           enabled: !busy,
@@ -157,14 +157,14 @@ class _Form extends StatelessWidget {
           ),
         ),
         if (error != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: Dim.space3),
           Text(
             error!,
             style:
                 context.text.bodySmall?.copyWith(color: context.colors.error),
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: Dim.space4),
         FilledButton.icon(
           onPressed: busy ? null : onGenerate,
           icon: busy
@@ -194,7 +194,7 @@ class _NoKey extends ConsumerWidget {
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Dim.space4),
         FilledButton.tonal(
           onPressed: () {
             Navigator.of(context).pop();

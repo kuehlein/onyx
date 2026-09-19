@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ai/readiness_report.dart';
 import '../../core/util.dart';
-import '../../shared/design/context_x.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/readiness_report.dart';
 import '../../shared/providers/weak_area.dart';
@@ -51,7 +50,7 @@ class _WeakAreaSheet extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _StatChips(domain: domain),
-              const SizedBox(height: 16),
+              const SizedBox(height: Dim.space4),
               if (!hasKey) const _NoKey() else _Analysis(domain: domain),
             ],
           ),
@@ -82,8 +81,8 @@ class _StatChips extends ConsumerWidget {
     if (row == null) return const SizedBox.shrink();
     final proven = row.transfer != null && row.mocks > 0;
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: Dim.space2,
+      runSpacing: Dim.space2,
       children: [
         _Chip(
           label: 'Readiness',
@@ -130,7 +129,7 @@ class _Chip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: context.colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: Dim.brChip,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -157,7 +156,7 @@ class _Analysis extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ref.watch(weakAreaAnalysisProvider(domain)).when(
           loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+            padding: EdgeInsets.symmetric(vertical: Dim.space5),
             child: LoadingView(label: 'Analyzing…'),
           ),
           error: (e, _) => Text(
@@ -189,7 +188,7 @@ class _NoKey extends StatelessWidget {
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Dim.space4),
         FilledButton.tonal(
           onPressed: () {
             Navigator.of(context).pop();

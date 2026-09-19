@@ -6,6 +6,7 @@ import '../../core/ai/coach.dart' show CoachRole;
 import '../../core/ai/system_design_interviewer.dart' show SdSupportMode;
 import '../../core/interview/assessment.dart';
 import '../../core/readiness/target.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/system_design.dart';
@@ -119,7 +120,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
             ),
           if (running && !state.busy)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: Dim.space2),
               child: TextButton.icon(
                 onPressed: answered
                     ? () => session.endAndGrade(
@@ -135,7 +136,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
             ),
           if (done)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: Dim.space2),
               child: TextButton.icon(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.check, size: 18),
@@ -152,7 +153,8 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+                    padding: const EdgeInsets.fromLTRB(
+                        Dim.space4, Dim.space2, Dim.space3, Dim.space2),
                     child: Row(
                       children: [
                         const SessionTimer(
@@ -249,7 +251,7 @@ class _AdjustSheetState extends State<_AdjustSheet> {
             divider: true,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -298,7 +300,7 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                     },
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Dim.space3),
                 // What the choices mean — most users leave this on Auto.
                 _Explain(
                   'Auto',
@@ -326,7 +328,7 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                   children: [
                     Icon(Icons.info_outline,
                         size: 15, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Dim.space2),
                     Expanded(
                       child: Text(
                         'Now: ${_level.label} · '

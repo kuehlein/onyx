@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/reader/reader.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/reader.dart';
@@ -66,14 +67,15 @@ class ReaderScreen extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 720),
             child: FadingScrollEdges(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space4, Dim.space2, Dim.space4, 40),
                 children: [
                   Text(host,
                       style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Dim.space1),
                   Text(article.title, style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Dim.space3),
                   CardMarkdown(article.markdown),
                 ],
               ),
@@ -147,7 +149,7 @@ class _ReaderLoadingState extends State<_ReaderLoading> {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -159,7 +161,7 @@ class _ReaderLoadingState extends State<_ReaderLoading> {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               OutlinedButton.icon(
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('Open in browser instead'),
@@ -184,13 +186,13 @@ class _ReaderError extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.article_outlined,
                 size: 44, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text(message,
                 textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 18),

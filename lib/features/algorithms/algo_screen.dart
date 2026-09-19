@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/srs/algo_queue.dart';
 import '../../shared/providers/algo.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/study_grades.dart' show gradeColor;
 import '../../shared/url.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -127,26 +127,27 @@ class _ProblemView extends StatelessWidget {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space4, Dim.space4, Dim.space4, Dim.space5),
                 children: [
                   Row(
                     children: [
                       Text(position,
                           style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Dim.space2),
                       _Pill(item.card.title), // the pattern
                       const Spacer(),
                       _ReasonChip(task.reason, task.mode),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Dim.space3),
                   Text(item.section.heading, // the problem
                       style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Dim.space3),
                   CardMarkdown(item.section.content),
                   if (url != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: FilledButton.icon(
@@ -215,7 +216,7 @@ class _ActionArea extends StatelessWidget {
     } else {
       children = [
         _SolveBlock(note: note, onLog: onLog),
-        const SizedBox(height: 4),
+        const SizedBox(height: Dim.space1),
         _AltButton(
           icon: Icons.record_voice_over_outlined,
           label: 'Away from a computer? Explain it instead',
@@ -226,7 +227,8 @@ class _ActionArea extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space2, Dim.space4, Dim.space3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -285,17 +287,17 @@ class _SolveBlock extends StatelessWidget {
             filled: true,
             fillColor: theme.colorScheme.surfaceContainerHighest,
             isDense: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: const OutlineInputBorder(
+              borderRadius: Dim.brCard,
               borderSide: BorderSide.none,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         Text('Solve it, then log how it went:',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         GradeButtons(
           buttons: [
             for (final o in _outcomes)
@@ -353,9 +355,9 @@ class _ReasonChip extends StatelessWidget {
     final color =
         mode == AlgoMode.explain ? StatusColor.warn : StatusColor.good;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
+        color: color.withValues(alpha: Dim.fill),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(reason,
@@ -404,13 +406,13 @@ class _Complete extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Dim.space6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline,
                 size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text(done == 0 ? 'All done for today' : 'Nice work',
                 style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
@@ -423,7 +425,7 @@ class _Complete extends StatelessWidget {
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Dim.space5),
             FilledButton(
               onPressed: () => context.go('/'),
               child: const Text('Done'),

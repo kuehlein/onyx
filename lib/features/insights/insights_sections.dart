@@ -379,12 +379,12 @@ class _StrugglingSection extends ConsumerWidget {
                     children: [
                       Icon(Icons.error_outline,
                           size: 16, color: theme.colorScheme.error),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Dim.space2),
                       Expanded(
                         child: Text(c.title,
                             maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Dim.space2),
                       Text('${c.lapses} lapses / ${c.reviews}',
                           style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.error,

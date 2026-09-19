@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -140,7 +140,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
         children: [
           _SummaryStrip(kpis: [
             if (anyStudied)
@@ -186,7 +186,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             initiallyExpanded: true,
             children: [
               const ReadinessPanel(),
-              const SizedBox(height: 4),
+              const SizedBox(height: Dim.space1),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(

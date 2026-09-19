@@ -9,7 +9,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/explain_chat.dart';
-import '../../shared/design/status_color.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -123,7 +123,8 @@ class _GradeBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        padding:
+            const EdgeInsets.fromLTRB(Dim.space4, 10, Dim.space4, Dim.space3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +137,7 @@ class _GradeBar extends StatelessWidget {
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Dim.space2),
             GradeButtons(
               verticalPadding: 12,
               buttons: [
@@ -164,7 +165,7 @@ class _NoKey extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(Dim.space5),
         child: Text(
           'Add your Anthropic API key in Settings to have the coach quiz you. '
           'You can still explain it to yourself and grade how it went below.',

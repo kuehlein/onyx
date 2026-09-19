@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/study/study_tips.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
 import '../../shared/widgets/sheet_header.dart';
 
@@ -34,9 +35,10 @@ class _StudyTipsSheet extends StatelessWidget {
             child: FadingScrollEdges(
               color: sheetSurface(context),
               child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding:
+                    const EdgeInsets.fromLTRB(20, Dim.space3, 20, Dim.space5),
                 itemCount: studyTips.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, __) => const SizedBox(height: Dim.space4),
                 itemBuilder: (_, i) => _TipRow(studyTips[i]),
               ),
             ),
@@ -62,7 +64,7 @@ class _TipRow extends StatelessWidget {
           child: Icon(Icons.check_circle_outline,
               size: 18, color: theme.colorScheme.primary),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: Dim.space3),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +119,7 @@ class StudyTipIntro extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge
                       ?.copyWith(color: theme.colorScheme.primary)),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               Text(tip.title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge
@@ -131,10 +133,10 @@ class StudyTipIntro extends StatelessWidget {
               FilledButton(
                 onPressed: onStart,
                 style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16)),
+                    padding: const EdgeInsets.symmetric(vertical: Dim.space4)),
                 child: const Text('Start learning'),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: Dim.space1),
               TextButton(onPressed: onMore, child: const Text('More tips')),
             ],
           ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/practice/practice.dart';
 import '../../core/readiness/readiness.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/practice.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -131,14 +132,15 @@ class _PracticeCard extends StatelessWidget {
             Expanded(
               child: FadingScrollEdges(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                      Dim.space4, Dim.space4, Dim.space4, Dim.space5),
                   children: [
                     Text('$position / $total',
                         style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     Text(card.title, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     // The cue: the problem statement for interview cards, else
                     // the card title alone (concept recall).
                     if (isInterview && card.overview.isNotEmpty)
@@ -148,9 +150,9 @@ class _PracticeCard extends StatelessWidget {
                           style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
                     if (revealed) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Dim.space4),
                       const Divider(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Dim.space2),
                       for (final section in card.sections) ...[
                         Text(section.heading,
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -158,7 +160,7 @@ class _PracticeCard extends StatelessWidget {
                                 color: theme.colorScheme.primary)),
                         const SizedBox(height: 6),
                         CardMarkdown(section.content),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: Dim.space3),
                       ],
                     ],
                   ],
@@ -202,14 +204,16 @@ class _PracticeActions extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space2, Dim.space4, Dim.space3),
         child: revealed
             ? SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: onNext,
                   style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: Dim.space4)),
                   child: Text(isLast ? 'Finish' : 'Next'),
                 ),
               )
@@ -230,10 +234,11 @@ class _PracticeActions extends StatelessWidget {
                       icon: const Icon(Icons.psychology_outlined),
                       label: const Text('Answer the coach'),
                       style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16)),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: Dim.space4)),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Dim.space2),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -266,7 +271,7 @@ class _PracticeDone extends StatelessWidget {
           children: [
             Icon(Icons.check_circle_outline,
                 size: 44, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text('Nice — $count practiced',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
@@ -278,7 +283,7 @@ class _PracticeDone extends StatelessWidget {
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Dim.space5),
             FilledButton(
               onPressed: () => context.pop(),
               child: const Text('Done'),
@@ -305,11 +310,11 @@ class _EmptyPractice extends StatelessWidget {
           children: [
             Icon(Icons.inbox_outlined,
                 size: 44, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Text('No practice material in ${prettyDomain(domain)} yet',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium),
-            const SizedBox(height: 24),
+            const SizedBox(height: Dim.space5),
             FilledButton(
               onPressed: () => context.pop(),
               child: const Text('Back'),

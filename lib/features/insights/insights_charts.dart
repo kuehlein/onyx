@@ -56,7 +56,7 @@ class _Tile extends StatelessWidget {
         onTap: kpi.onTap,
         borderRadius: radius,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,7 +65,7 @@ class _Tile extends StatelessWidget {
                       color: kpi.color,
                       fontWeight: FontWeight.w700,
                       height: 1.0)),
-              const SizedBox(height: 4),
+              const SizedBox(height: Dim.space1),
               Row(
                 children: [
                   Flexible(
@@ -134,7 +134,7 @@ class _GroupState extends State<_Group> {
           borderRadius: BorderRadius.circular(10),
           onTap: () => setState(() => _expanded = !_expanded),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: Dim.space3),
             child: Row(
               children: [
                 Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
@@ -161,7 +161,7 @@ class _GroupState extends State<_Group> {
         ),
         if (_expanded)
           Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            padding: const EdgeInsets.only(top: Dim.space1, bottom: Dim.space2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: widget.children,
@@ -240,18 +240,18 @@ class _StatBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: Dim.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Row(
             children: [
               Expanded(child: _Track(fraction: fraction, color: color)),
-              const SizedBox(width: 12),
+              const SizedBox(width: Dim.space3),
               SizedBox(
                 width: 42,
                 child: Text(value,

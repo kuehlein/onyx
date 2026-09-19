@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness_report.dart';
@@ -81,16 +82,16 @@ class _NeedsKey extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.auto_awesome_outlined,
               size: 40, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           Text('Add your Anthropic API key to generate a report.',
               textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: Dim.space2),
           Text(
             'The report is written on-device with your own key — no Onyx server '
             'sees your data.',
@@ -118,7 +119,7 @@ class _Busy extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(width: 28, height: 28, child: LoadingView(compact: true)),
-        SizedBox(height: 16),
+        SizedBox(height: Dim.space4),
         Text('Analyzing your progress and deck…'),
       ],
     );
@@ -133,13 +134,13 @@ class _Intro extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.insights_outlined,
               size: 40, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           Text('AI readiness report',
               style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: 10),
@@ -152,10 +153,10 @@ class _Intro extends ConsumerWidget {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           if (error != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: Dim.space4),
             _ErrorNote(error!),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: Dim.space5),
           FilledButton.icon(
             onPressed: () => ref
                 .read(readinessReportProvider.notifier)
@@ -212,9 +213,9 @@ class _ReportHeader extends ConsumerWidget {
           style: theme.textTheme.labelSmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Dim.space2),
         const Divider(height: 1),
-        const SizedBox(height: 12),
+        const SizedBox(height: Dim.space3),
       ],
     );
   }
@@ -240,12 +241,12 @@ class _AskHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      padding: const EdgeInsets.fromLTRB(Dim.space1, 0, Dim.space1, Dim.space2),
       child: Row(
         children: [
           Icon(Icons.forum_outlined,
               size: 18, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
+          const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(
               'Ask a follow-up about your assessment — where to focus, why a '

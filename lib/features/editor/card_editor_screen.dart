@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/vault/card_edit.dart';
 import '../../core/vault/card_parser.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -223,7 +224,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
                     children: [
                       Icon(Icons.delete_outline,
                           size: 20, color: theme.colorScheme.error),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: Dim.space3),
                       Text('Delete',
                           style: TextStyle(color: theme.colorScheme.error)),
                     ],
@@ -247,7 +248,8 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
   Widget _buildForm(ThemeData theme) {
     return FadingScrollEdges(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space4, Dim.space4, Dim.space6),
         children: [
           TextField(
             controller: _title,
@@ -260,7 +262,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           TextField(
             controller: _tags,
             textInputAction: TextInputAction.next,
@@ -270,7 +272,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           TextField(
             controller: _body,
             minLines: 8,
@@ -289,13 +291,13 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
             ),
           ),
           if (_warning != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: Dim.space3),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.info_outline,
                     size: 18, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 8),
+                const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(
                     _warning!,
@@ -307,7 +309,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
               ],
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: Dim.space3),
           Text(
             'The title is the recall cue; each ## section is a scheduled review '
             'unit. Sections like Overview, Related, or Resources aren\'t quizzed.',
@@ -326,13 +328,14 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
     final body = _body.text.trim();
     return FadingScrollEdges(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space4, Dim.space4, Dim.space6),
         children: [
           Text(
             title.isEmpty ? 'Untitled card' : title,
             style: theme.textTheme.headlineSmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Dim.space4),
           if (body.isEmpty)
             Text(
               'Nothing to preview yet.',

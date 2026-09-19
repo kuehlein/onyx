@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/drafts.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -138,12 +139,13 @@ class _ReviewView extends StatelessWidget {
             Expanded(
               child: FadingScrollEdges(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                      Dim.space4, Dim.space4, Dim.space4, Dim.space5),
                   children: [
                     Text('$position / $total',
                         style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Dim.space3),
                     // The CUE: the card title. Recall what's on it, then reveal.
                     Text(card.title, style: theme.textTheme.headlineSmall),
                     if (!revealed) ...[
@@ -155,12 +157,12 @@ class _ReviewView extends StatelessWidget {
                       ),
                     ],
                     if (revealed) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Dim.space4),
                       const Divider(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Dim.space2),
                       if (card.overview.isNotEmpty) ...[
                         CardMarkdown(card.overview),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Dim.space2),
                       ],
                       for (final section in card.sections) ...[
                         Text(section.heading,
@@ -169,7 +171,7 @@ class _ReviewView extends StatelessWidget {
                                 color: theme.colorScheme.primary)),
                         const SizedBox(height: 6),
                         CardMarkdown(section.content),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: Dim.space3),
                       ],
                     ],
                   ],
@@ -216,7 +218,8 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space2, Dim.space4, Dim.space3),
         child: revealed
             ? Column(
                 mainAxisSize: MainAxisSize.min,
@@ -228,11 +231,12 @@ class _ActionBar extends StatelessWidget {
                       icon: const Icon(Icons.check),
                       label: const Text('Keep'),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: Dim.space4),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Dim.space2),
                   Row(
                     children: [
                       Expanded(
@@ -269,7 +273,7 @@ class _ActionBar extends StatelessWidget {
                   icon: const Icon(Icons.visibility_outlined),
                   label: const Text('Reveal'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: Dim.space4),
                   ),
                 ),
               ),
@@ -313,11 +317,11 @@ class _CompleteState extends StatelessWidget {
             children: [
               Icon(Icons.check_circle_outline,
                   size: 44, color: theme.colorScheme.primary),
-              const SizedBox(height: 12),
+              const SizedBox(height: Dim.space3),
               Text('Review complete',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge),
-              const SizedBox(height: 8),
+              const SizedBox(height: Dim.space2),
               Text(
                 'Promoted ${session.promoted} · '
                 'Discarded ${session.discarded} · '
