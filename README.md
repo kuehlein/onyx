@@ -14,10 +14,13 @@ set + reading order.
 
 ## Status
 
-Working today: the vault parser, the drift (SQLite) schema, the vault indexer
-(`card_cache` + wikilink graph), the Riverpod data layer, and a Material 3 app
-shell (Home · Browse · Insights · Settings). Browse lists every indexed card. The
-FSRS study loop is next.
+Working today: the vault parser + drift (SQLite) index (`card_cache` + wikilink
+graph), the Riverpod data layer, and a Material 3 shell (Home · Browse · Insights
+· Settings). The FSRS study loop is shipped — Quiz (review) and Learn (first
+exposure), plus dedicated practice tracks (algorithms, system-design, behavioral),
+a cross-track daily plan, a readiness dashboard, AI card generation/import/
+coaching, and an in-app card editor. See [`docs/INDEX.md`](docs/INDEX.md) for the
+current design set.
 
 ## Dev environment
 
@@ -47,8 +50,9 @@ Run inside the dev shell.
 flutter test
 
 # Regenerate code after touching drift tables or Riverpod providers.
-# NB: after a major build_runner bump, clear .dart_tool/build first.
-dart run build_runner build
+# NB: use `flutter pub run` — a plain `dart run build_runner` fails version
+# solving here. After a major build_runner bump, clear .dart_tool/build first.
+flutter pub run build_runner build --delete-conflicting-outputs
 
 # Static analysis + formatting (also enforced by the pre-commit hook).
 flutter analyze
@@ -84,10 +88,3 @@ dev-only shortcut around that.
 The app's derived database lives in the application-support dir
 (`~/.local/share/com.example.onyx/onyx.sqlite` on Linux) and is rebuilt from the
 vault on launch, so it's safe to delete.
-
-## TODO
-
-possible features to add
-- readiness gauge - progress bar that indicates how close to interview ready i am in a given subject (put on dashboard?)
-- during quizzes, perhaps link to a leetcode problem, optionally solve it separately and self report result
-- possibly have a feature to verbally answer and listen with mic, ai would analyze correctness of answer (maybe even prompt more if not fully answered)
