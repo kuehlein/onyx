@@ -5,6 +5,8 @@
 build/
 *.g.dart
 *.freezed.dart
+# custom_lint runner debug log
+custom_lint.log
 
 # Dev-only: app-written state files in the staged vault at runtime — the SRS
 # snapshot, the readiness target, and prep goals (real + dev-isolated variants).
