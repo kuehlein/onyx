@@ -143,13 +143,12 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // Base weights: review/learn are high foundational constants; algorithms and
   // system design ride the readiness target's domain weights, so the mix shifts
   // with level (junior → algos heavier, staff → system design heavier).
-  final baseWeight = <TrackId, double>{
-    TrackId.review: 1.2,
+  final baseWeight = <String, double>{
+    kTrackReview: 1.2,
     // Taper new learning as an interview nears (preserve retrieval + mocks).
-    TrackId.learn:
-        1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
-    TrackId.algorithms: targeting.weightForDomain('ds-a'),
-    TrackId.systemDesign: targeting.weightForDomain('system-design'),
+    kTrackLearn: 1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
+    kTrackAlgorithms: targeting.weightForDomain('ds-a'),
+    kTrackSystemDesign: targeting.weightForDomain('system-design'),
   };
 
   // Recency = fraction of the last 7 days each track was practiced (variety).
@@ -161,15 +160,15 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final learnTs = await srs.learnTimestamps(since: since);
   int days(Iterable<DateTime> ds) =>
       {for (final d in ds) DateTime(d.year, d.month, d.day)}.length;
-  final recency = <TrackId, double>{
-    TrackId.review: days(reviewTs) / 7,
-    TrackId.learn: days(learnTs) / 7,
-    TrackId.algorithms: days([
+  final recency = <String, double>{
+    kTrackReview: days(reviewTs) / 7,
+    kTrackLearn: days(learnTs) / 7,
+    kTrackAlgorithms: days([
           for (final a in attempts)
             if (a.source == 'algo') a.occurredAt
         ]) /
         7,
-    TrackId.systemDesign: days([
+    kTrackSystemDesign: days([
           for (final a in attempts)
             if (a.source == 'sd-practice') a.occurredAt
         ]) /
@@ -180,12 +179,12 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // behavioral) is reserved only when one is genuinely due to re-practice (its
   // spaced clock is overdue), so it surfaces on cadence (~2–3×/week), never
   // back-to-back.
-  final reserved = <TrackId>{TrackId.review};
+  final reserved = <String>{kTrackReview};
   final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
-  bool anyMockDue(TrackId track) {
+  bool anyMockDue(String track) {
     final a = gated.firstWhere(
       (a) => a.track == track,
-      orElse: () => TrackAvailability(track: track, units: const []),
+      orElse: () => TrackAvailability(track: track, label: '', units: const []),
     );
     if (!a.unlocked || a.units.isEmpty) return false;
     return a.units.any((u) {
@@ -194,7 +193,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     });
   }
 
-  if (anyMockDue(TrackId.systemDesign)) reserved.add(TrackId.systemDesign);
+  if (anyMockDue(kTrackSystemDesign)) reserved.add(kTrackSystemDesign);
 
   return buildDailyPlan(
     availabilities: gated,

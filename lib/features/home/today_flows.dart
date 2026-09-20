@@ -137,7 +137,7 @@ class _FlowButton extends StatelessWidget {
           Icon(meta.icon, size: Dim.iconMd, color: fg),
           const SizedBox(width: Dim.space3),
           Expanded(
-            child: Text(track.track.label,
+            child: Text(track.label,
                 style: (isPrimary
                         ? theme.textTheme.titleMedium
                         : theme.textTheme.titleSmall)
@@ -183,7 +183,7 @@ class _LockedRow extends StatelessWidget {
           const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(
-              track.gateReason ?? '${track.track.label} locked',
+              track.gateReason ?? '${track.label} locked',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
@@ -202,14 +202,17 @@ class _TrackMeta {
   final bool push;
 }
 
-_TrackMeta _trackMeta(TrackId t) => switch (t) {
-      TrackId.review => const _TrackMeta(Icons.school_outlined, '/quiz', 'due'),
-      TrackId.learn =>
-        const _TrackMeta(Icons.auto_stories_outlined, '/learn', 'new'),
-      TrackId.algorithms => const _TrackMeta(
-          Icons.terminal_outlined, '/algorithms', 'problem',
-          push: true),
-      TrackId.systemDesign => const _TrackMeta(
-          Icons.architecture_outlined, '/system-design', 'mock',
-          push: true),
-    };
+// The same four SWE tracks, keyed by their String id (a later phase derives this
+// from config). A track without an entry falls back to the review meta.
+const _trackMetaById = <String, _TrackMeta>{
+  kTrackReview: _TrackMeta(Icons.school_outlined, '/quiz', 'due'),
+  kTrackLearn: _TrackMeta(Icons.auto_stories_outlined, '/learn', 'new'),
+  kTrackAlgorithms:
+      _TrackMeta(Icons.terminal_outlined, '/algorithms', 'problem', push: true),
+  kTrackSystemDesign: _TrackMeta(
+      Icons.architecture_outlined, '/system-design', 'mock',
+      push: true),
+};
+
+_TrackMeta _trackMeta(String t) =>
+    _trackMetaById[t] ?? _trackMetaById[kTrackReview]!;

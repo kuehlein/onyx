@@ -6,7 +6,7 @@ import 'package:onyx/core/plan/practice_plan.dart';
 import 'package:onyx/features/home/today_flows.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 
-PracticeUnit _u(TrackId t, String id, double m) =>
+PracticeUnit _u(String t, String id, double m) =>
     PracticeUnit(track: t, id: id, label: id, estMinutes: m);
 
 Widget _harness(DailyPlan plan) => ProviderScope(
@@ -21,7 +21,8 @@ void main() {
       budgetMinutes: 150,
       locked: const [
         TrackAvailability(
-          track: TrackId.systemDesign,
+          track: kTrackSystemDesign,
+          label: 'System design',
           units: [],
           unlocked: false,
           gateReason: 'Unlocks as you get comfortable with graphs',
@@ -29,20 +30,23 @@ void main() {
       ],
       tracks: [
         PlannedTrack(
-          track: TrackId.review,
-          units: [_u(TrackId.review, 'a', 1.5), _u(TrackId.review, 'b', 1.5)],
+          track: kTrackReview,
+          label: 'Review',
+          units: [_u(kTrackReview, 'a', 1.5), _u(kTrackReview, 'b', 1.5)],
           deferred: 0,
           nonNegotiable: true,
         ),
         PlannedTrack(
-          track: TrackId.algorithms,
-          units: [_u(TrackId.algorithms, 'two-sum', 25)],
+          track: kTrackAlgorithms,
+          label: 'Algorithms',
+          units: [_u(kTrackAlgorithms, 'two-sum', 25)],
           deferred: 2,
           nonNegotiable: false,
         ),
         PlannedTrack(
-          track: TrackId.learn,
-          units: [_u(TrackId.learn, 'x', 3)],
+          track: kTrackLearn,
+          label: 'Learn',
+          units: [_u(kTrackLearn, 'x', 3)],
           deferred: 0,
           nonNegotiable: false,
         ),

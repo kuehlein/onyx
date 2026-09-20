@@ -95,7 +95,7 @@ TrackAvailability _gateTrack(
   String Function(String slug)? labelFor,
 ) {
   // Review/Learn are never gated; short-circuit.
-  if (a.track == TrackId.review || a.track == TrackId.learn) return a;
+  if (a.track == kTrackReview || a.track == kTrackLearn) return a;
 
   final kept = <PracticeUnit>[];
   final blockedConcepts = <String>{};
@@ -111,7 +111,8 @@ TrackAvailability _gateTrack(
   }
   if (kept.length == a.units.length) return a;
   if (kept.isNotEmpty) {
-    return TrackAvailability(track: a.track, units: kept, unlocked: true);
+    return TrackAvailability(
+        track: a.track, label: a.label, units: kept, unlocked: true);
   }
   // Nothing available yet — lock the track with a reason.
   final names =
@@ -120,5 +121,9 @@ TrackAvailability _gateTrack(
       ? 'Unlocks as you build the foundations'
       : 'Unlocks as you get comfortable with ${names.join(' and ')}';
   return TrackAvailability(
-      track: a.track, units: const [], unlocked: false, gateReason: reason);
+      track: a.track,
+      label: a.label,
+      units: const [],
+      unlocked: false,
+      gateReason: reason);
 }

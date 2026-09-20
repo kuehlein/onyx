@@ -2,25 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/plan/daily_plan.dart';
 import 'package:onyx/core/plan/practice_plan.dart';
 
-TrackAvailability _avail(TrackId t, List<double> mins,
-        {bool unlocked = true}) =>
+TrackAvailability _avail(String t, List<double> mins, {bool unlocked = true}) =>
     TrackAvailability(
       track: t,
+      label: t,
       unlocked: unlocked,
       units: [
         for (var i = 0; i < mins.length; i++)
           PracticeUnit(
-              track: t,
-              id: '${t.name}-$i',
-              label: '${t.name} $i',
-              estMinutes: mins[i]),
+              track: t, id: '$t-$i', label: '$t $i', estMinutes: mins[i]),
       ],
     );
 
-PracticeUnit _u(TrackId t, String id, double m) =>
+PracticeUnit _u(String t, String id, double m) =>
     PracticeUnit(track: t, id: id, label: id, estMinutes: m);
 
-PlannedTrack? _track(DailyPlan p, TrackId t) {
+PlannedTrack? _track(DailyPlan p, String t) {
   for (final pt in p.tracks) {
     if (pt.track == t) return pt;
   }
@@ -34,7 +31,7 @@ void main() {
     expect(
         buildDailyPlan(
           availabilities: [
-            _avail(TrackId.review, [1, 1])
+            _avail(kTrackReview, [1, 1])
           ],
           budgetMinutes: 0,
         ).isEmpty,
@@ -44,11 +41,11 @@ void main() {
   test('schedules everything when the budget is ample', () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.review, [1, 1, 1])
+        _avail(kTrackReview, [1, 1, 1])
       ],
       budgetMinutes: 60,
     );
-    final r = _track(p, TrackId.review)!;
+    final r = _track(p, kTrackReview)!;
     expect(r.units.length, 3);
     expect(r.deferred, 0);
     expect(p.plannedMinutes, 3);
@@ -56,10 +53,10 @@ void main() {
 
   test('dispenses only a subset that fits, deferring the rest', () {
     final p = buildDailyPlan(
-      availabilities: [_avail(TrackId.review, List.filled(10, 1))],
+      availabilities: [_avail(kTrackReview, List.filled(10, 1))],
       budgetMinutes: 4,
     );
-    final r = _track(p, TrackId.review)!;
+    final r = _track(p, kTrackReview)!;
     expect(r.units.length, 4);
     expect(r.deferred, 6);
     expect(p.plannedMinutes, lessThanOrEqualTo(4));
@@ -70,11 +67,11 @@ void main() {
     // 40-min "knapsack" won't fit a 15-min budget; the 10-min "isPalindrome" does.
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.algorithms, [40, 10]),
+        _avail(kTrackAlgorithms, [40, 10]),
       ],
       budgetMinutes: 15,
     );
-    final a = _track(p, TrackId.algorithms)!;
+    final a = _track(p, kTrackAlgorithms)!;
     expect(a.units.length, 1);
     expect(a.units.single.estMinutes, 10);
     expect(a.deferred, 1); // the 40-min problem rolls over (rises next day)
@@ -83,48 +80,48 @@ void main() {
   test('locked tracks are excluded from the plan but surfaced separately', () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.review, [1]),
-        _avail(TrackId.systemDesign, [40], unlocked: false),
+        _avail(kTrackReview, [1]),
+        _avail(kTrackSystemDesign, [40], unlocked: false),
       ],
       budgetMinutes: 60,
     );
-    expect(_track(p, TrackId.systemDesign), isNull);
-    expect(p.locked.map((a) => a.track), contains(TrackId.systemDesign));
-    expect(_track(p, TrackId.review), isNotNull);
+    expect(_track(p, kTrackSystemDesign), isNull);
+    expect(p.locked.map((a) => a.track), contains(kTrackSystemDesign));
+    expect(_track(p, kTrackReview), isNotNull);
   });
 
   test('a reserved track gets its unit even when a rival outweighs it', () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.review, [5]),
-        _avail(TrackId.algorithms, [5, 5, 5]),
+        _avail(kTrackReview, [5]),
+        _avail(kTrackAlgorithms, [5, 5, 5]),
       ],
       budgetMinutes: 5, // only room for one 5-min unit
       ctx: const PlanContext(
-        baseWeight: {TrackId.review: 0.1, TrackId.algorithms: 0.9},
-        reserved: {TrackId.review},
+        baseWeight: {kTrackReview: 0.1, kTrackAlgorithms: 0.9},
+        reserved: {kTrackReview},
       ),
     );
     // Review is reserved, so it claims the single slot despite lower weight.
-    expect(_track(p, TrackId.review)!.units.length, 1);
-    expect(_track(p, TrackId.algorithms), isNull);
+    expect(_track(p, kTrackReview)!.units.length, 1);
+    expect(_track(p, kTrackAlgorithms), isNull);
   });
 
   test('recency down-weights a track (variety): the neglected one gets more',
       () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.learn, List.filled(10, 1)),
-        _avail(TrackId.algorithms, List.filled(10, 1)),
+        _avail(kTrackLearn, List.filled(10, 1)),
+        _avail(kTrackAlgorithms, List.filled(10, 1)),
       ],
       budgetMinutes: 6,
       ctx: const PlanContext(
-        baseWeight: {TrackId.learn: 0.5, TrackId.algorithms: 0.5},
-        recencyLoad: {TrackId.learn: 1.0}, // learn done a lot lately
+        baseWeight: {kTrackLearn: 0.5, kTrackAlgorithms: 0.5},
+        recencyLoad: {kTrackLearn: 1.0}, // learn done a lot lately
       ),
     );
-    final learn = _track(p, TrackId.learn)!;
-    final algo = _track(p, TrackId.algorithms)!;
+    final learn = _track(p, kTrackLearn)!;
+    final algo = _track(p, kTrackAlgorithms)!;
     expect(algo.units.length, greaterThan(learn.units.length));
     expect(p.plannedMinutes, 6);
   });
@@ -132,16 +129,16 @@ void main() {
   test('balances across equally-weighted tracks', () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.review, List.filled(10, 1)),
-        _avail(TrackId.algorithms, List.filled(10, 1)),
+        _avail(kTrackReview, List.filled(10, 1)),
+        _avail(kTrackAlgorithms, List.filled(10, 1)),
       ],
       budgetMinutes: 4,
       ctx: const PlanContext(
-        baseWeight: {TrackId.review: 0.5, TrackId.algorithms: 0.5},
+        baseWeight: {kTrackReview: 0.5, kTrackAlgorithms: 0.5},
       ),
     );
-    expect(_track(p, TrackId.review)!.units.length, 2);
-    expect(_track(p, TrackId.algorithms)!.units.length, 2);
+    expect(_track(p, kTrackReview)!.units.length, 2);
+    expect(_track(p, kTrackAlgorithms)!.units.length, 2);
   });
 
   group('rampedBudgetMinutes', () {
@@ -171,7 +168,8 @@ void main() {
         budgetMinutes: 90,
         locked: const [
           TrackAvailability(
-            track: TrackId.systemDesign,
+            track: kTrackSystemDesign,
+            label: 'System design',
             units: [],
             unlocked: false,
             gateReason: 'Unlocks as you get comfortable with rate limiting',
@@ -179,14 +177,16 @@ void main() {
         ],
         tracks: [
           PlannedTrack(
-            track: TrackId.review,
-            units: [_u(TrackId.review, 'a', 1.5), _u(TrackId.review, 'b', 1.5)],
+            track: kTrackReview,
+            label: 'Review',
+            units: [_u(kTrackReview, 'a', 1.5), _u(kTrackReview, 'b', 1.5)],
             deferred: 0,
             nonNegotiable: true,
           ),
           PlannedTrack(
-            track: TrackId.algorithms,
-            units: [_u(TrackId.algorithms, 'two-sum', 25)],
+            track: kTrackAlgorithms,
+            label: 'Algorithms',
+            units: [_u(kTrackAlgorithms, 'two-sum', 25)],
             deferred: 3,
             nonNegotiable: false,
           ),
@@ -214,17 +214,17 @@ void main() {
   test('marks the top-priority track non-negotiable when none reserved', () {
     final p = buildDailyPlan(
       availabilities: [
-        _avail(TrackId.review, [1]),
-        _avail(TrackId.algorithms, [1]),
+        _avail(kTrackReview, [1]),
+        _avail(kTrackAlgorithms, [1]),
       ],
       budgetMinutes: 60,
       ctx: const PlanContext(
-        baseWeight: {TrackId.review: 0.5, TrackId.algorithms: 0.9},
+        baseWeight: {kTrackReview: 0.5, kTrackAlgorithms: 0.9},
       ),
     );
-    expect(_track(p, TrackId.algorithms)!.nonNegotiable, isTrue);
-    expect(_track(p, TrackId.review)!.nonNegotiable, isFalse);
+    expect(_track(p, kTrackAlgorithms)!.nonNegotiable, isTrue);
+    expect(_track(p, kTrackReview)!.nonNegotiable, isFalse);
     // Highest priority first in the list.
-    expect(p.tracks.first.track, TrackId.algorithms);
+    expect(p.tracks.first.track, kTrackAlgorithms);
   });
 }

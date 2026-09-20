@@ -82,16 +82,16 @@ class PlanContext {
   });
 
   /// Track importance, 0..1 (research × level × domain). Missing → [kDefaultBaseWeight].
-  final Map<TrackId, double> baseWeight;
+  final Map<String, double> baseWeight;
 
   /// How much each track has been done recently, 0..1 (down-weights it for variety).
-  final Map<TrackId, double> recencyLoad;
+  final Map<String, double> recencyLoad;
 
   /// Tracks that must get at least their top fitting unit today if available
   /// (e.g. daily review, a cadence-due mock).
-  final Set<TrackId> reserved;
+  final Set<String> reserved;
 
-  double priority(TrackId t) {
+  double priority(String t) {
     final base = baseWeight[t] ?? kDefaultBaseWeight;
     final rec = (recencyLoad[t] ?? 0).clamp(0.0, 1.0);
     final p = base * (1 - kRecencyPenalty * rec);
@@ -103,12 +103,16 @@ class PlanContext {
 class PlannedTrack {
   const PlannedTrack({
     required this.track,
+    required this.label,
     required this.units,
     required this.deferred,
     required this.nonNegotiable,
   });
 
-  final TrackId track;
+  final String track;
+
+  /// Human-readable track name, carried from [TrackAvailability.label].
+  final String label;
 
   /// Units to do today, in the flow's priority order.
   final List<PracticeUnit> units;
@@ -155,11 +159,11 @@ String describeDailyPlan(DailyPlan plan) {
     final n = t.units.length;
     final core = t.nonNegotiable ? ', must-do' : '';
     final later = t.deferred > 0 ? ', +${t.deferred} deferred' : '';
-    b.writeln('  - ${t.track.label}: $n item${n == 1 ? '' : 's'}, '
+    b.writeln('  - ${t.label}: $n item${n == 1 ? '' : 's'}, '
         '~${t.estMinutes.round()} min$core$later');
   }
   for (final l in plan.locked) {
-    b.writeln('  - ${l.track.label}: locked — '
+    b.writeln('  - ${l.label}: locked — '
         '${l.gateReason ?? 'prerequisites not yet met'}');
   }
   return b.toString().trimRight();
@@ -196,7 +200,7 @@ DailyPlan buildDailyPlan({
   // First not-yet-considered unit of [t] that fits the remaining budget, or -1.
   // Skips (abandons) higher-priority units that are too big — budget only shrinks,
   // so they can't fit later this build; they become "deferred".
-  int nextFitting(TrackId t) {
+  int nextFitting(String t) {
     final units = byTrack[t]!.units;
     for (var i = cursor[t]!; i < units.length; i++) {
       if (units[i].estMinutes <= budgetLeft + 1e-9) return i;
@@ -204,7 +208,7 @@ DailyPlan buildDailyPlan({
     return -1;
   }
 
-  void schedule(TrackId t, int i) {
+  void schedule(String t, int i) {
     final u = byTrack[t]!.units[i];
     scheduled[t]!.add(u);
     used[t] = used[t]! + u.estMinutes;
@@ -224,12 +228,12 @@ DailyPlan buildDailyPlan({
 
   // 2) Weighted fair-queuing: repeatedly give the next fitting unit to the track
   // furthest below its priority-proportional fair share of the whole budget.
-  double fairShare(TrackId t) => totalPri > 0
+  double fairShare(String t) => totalPri > 0
       ? pri[t]! / totalPri * budgetMinutes
       : budgetMinutes / eligible.length;
 
   while (true) {
-    TrackId? best;
+    String? best;
     var bestDeficit = double.negativeInfinity;
     for (final a in eligible) {
       final t = a.track;
@@ -253,6 +257,7 @@ DailyPlan buildDailyPlan({
       if (scheduled[a.track]!.isNotEmpty)
         PlannedTrack(
           track: a.track,
+          label: a.label,
           units: scheduled[a.track]!,
           deferred: a.units.length - scheduled[a.track]!.length,
           nonNegotiable: ctx.reserved.contains(a.track) ||

@@ -9,7 +9,7 @@ import 'system_design.dart';
 part 'practice_plan.g.dart';
 
 /// The unified availability across all four flows — a priority-ordered list of
-/// [PracticeUnit]s per [TrackId], adapted from each flow's existing scheduler.
+/// [PracticeUnit]s per track, adapted from each flow's existing scheduler.
 /// This is the single source the daily-plan meta-scheduler, the plan-aware coach,
 /// the Home queue, and analytics will read (task #57). Additive: it only *views*
 /// the existing schedulers; it changes none of them.
@@ -26,11 +26,12 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
 
   return [
     TrackAvailability(
-      track: TrackId.review,
+      track: kTrackReview,
+      label: 'Review',
       units: [
         for (final it in review.queue)
           PracticeUnit(
-            track: TrackId.review,
+            track: kTrackReview,
             id: '${it.card.id}::${it.section.slug}',
             label: '${it.card.title} — ${it.section.heading}',
             estMinutes: it.card.estMinutes ?? kReviewMinutes,
@@ -38,11 +39,12 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
       ],
     ),
     TrackAvailability(
-      track: TrackId.learn,
+      track: kTrackLearn,
+      label: 'Learn',
       units: [
         for (final it in learn)
           PracticeUnit(
-            track: TrackId.learn,
+            track: kTrackLearn,
             id: '${it.card.id}::${it.section.slug}',
             label: '${it.card.title} — ${it.section.heading}',
             estMinutes: it.card.estMinutes ?? kLearnMinutes,
@@ -50,11 +52,12 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
       ],
     ),
     TrackAvailability(
-      track: TrackId.algorithms,
+      track: kTrackAlgorithms,
+      label: 'Algorithms',
       units: [
         for (final t in algo)
           PracticeUnit(
-            track: TrackId.algorithms,
+            track: kTrackAlgorithms,
             id: '${t.item.card.id}::${t.item.section.slug}',
             label: '${t.item.card.title}: ${t.item.section.heading}',
             estMinutes: t.item.card.estMinutes ??
@@ -63,11 +66,12 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
       ],
     ),
     TrackAvailability(
-      track: TrackId.systemDesign,
+      track: kTrackSystemDesign,
+      label: 'System design',
       units: [
         for (final c in sd)
           PracticeUnit(
-            track: TrackId.systemDesign,
+            track: kTrackSystemDesign,
             id: c.id,
             label: c.title,
             estMinutes: c.estMinutes ?? kSystemDesignMinutes,

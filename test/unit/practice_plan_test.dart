@@ -14,27 +14,38 @@ void main() {
 
   group('TrackAvailability', () {
     PracticeUnit u(double m) => PracticeUnit(
-        track: TrackId.algorithms, id: 'c::s', label: 'x', estMinutes: m);
+        track: kTrackAlgorithms, id: 'c::s', label: 'x', estMinutes: m);
 
     test('sums estimated minutes and counts units', () {
-      const t = TrackId.algorithms;
-      final a = TrackAvailability(track: t, units: [u(10), u(25), u(40)]);
+      const t = kTrackAlgorithms;
+      final a = TrackAvailability(
+          track: t, label: 'Algorithms', units: [u(10), u(25), u(40)]);
       expect(a.count, 3);
       expect(a.totalEstMinutes, 75);
     });
 
     test('take() caps the unit list', () {
       final a = TrackAvailability(
-          track: TrackId.review, units: [u(1), u(1), u(1), u(1)]);
+          track: kTrackReview,
+          label: 'Review',
+          units: [u(1), u(1), u(1), u(1)]);
       expect(a.take(2).length, 2);
       expect(a.take(10).length, 4);
     });
   });
 
-  group('TrackId labels', () {
+  group('track labels', () {
     test('are human-readable', () {
-      expect(TrackId.systemDesign.label, 'System design');
-      expect(TrackId.review.label, 'Review');
+      expect(
+          const TrackAvailability(
+              track: kTrackSystemDesign,
+              label: 'System design',
+              units: []).label,
+          'System design');
+      expect(
+          const TrackAvailability(
+              track: kTrackReview, label: 'Review', units: []).label,
+          'Review');
     });
   });
 }

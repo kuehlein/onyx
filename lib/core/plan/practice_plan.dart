@@ -12,17 +12,16 @@
 /// task list. Nothing here schedules; it only describes what's available.
 library;
 
-/// The four practice flows.
-enum TrackId { review, learn, algorithms, systemDesign }
-
-extension TrackIdLabel on TrackId {
-  String get label => switch (this) {
-        TrackId.review => 'Review',
-        TrackId.learn => 'Learn',
-        TrackId.algorithms => 'Algorithms',
-        TrackId.systemDesign => 'System design',
-      };
-}
+/// The four practice-track ids (String, to prepare for config-driven tracks).
+///
+/// The practice-track ids deliberately equal the SWE FlowSpec `cardType` values
+/// so a later phase can derive them from `activeSubject.flows`; review/learn are
+/// the two universal recall modes.
+const String kTrackReview = 'review';
+const String kTrackLearn = 'learn';
+const String kTrackAlgorithms = 'algorithm'; // == the algo FlowSpec cardType
+const String kTrackSystemDesign =
+    'system-design'; // == the SD FlowSpec cardType
 
 // ── Time estimates ──────────────────────────────────────────────────────────
 // Rough per-unit minute estimates (used only to size the day; imperfect is fine).
@@ -60,7 +59,7 @@ class PracticeUnit {
     required this.estMinutes,
   });
 
-  final TrackId track;
+  final String track;
 
   /// Stable identifier: `"cardId::sectionSlug"` for section-based flows, or the
   /// card id for whole-card flows (algorithms/system-design).
@@ -75,12 +74,18 @@ class PracticeUnit {
 class TrackAvailability {
   const TrackAvailability({
     required this.track,
+    required this.label,
     required this.units,
     this.unlocked = true,
     this.gateReason,
   });
 
-  final TrackId track;
+  final String track;
+
+  /// Human-readable track name (e.g. "Review", "System design"). Carried here
+  /// because the pure core can't reach `SubjectConfig`; the provider that builds
+  /// availabilities supplies it and the UI/summary render it.
+  final String label;
   final List<PracticeUnit> units;
   final bool unlocked;
 

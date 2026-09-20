@@ -5,15 +5,15 @@ import 'package:onyx/core/plan/gating.dart';
 import 'package:onyx/core/plan/practice_plan.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 
-PracticeUnit _unit(TrackId t, String cardId, [String? slug]) => PracticeUnit(
+PracticeUnit _unit(String t, String cardId, [String? slug]) => PracticeUnit(
       track: t,
       id: slug == null ? cardId : '$cardId::$slug',
       label: cardId,
       estMinutes: 20,
     );
 
-TrackAvailability _avail(TrackId t, List<PracticeUnit> u) =>
-    TrackAvailability(track: t, units: u);
+TrackAvailability _avail(String t, List<PracticeUnit> u) =>
+    TrackAvailability(track: t, label: t, units: u);
 
 void main() {
   group('prereqsMet', () {
@@ -37,8 +37,8 @@ void main() {
   group('gatePracticeAvailabilities', () {
     test('review and learn are never gated', () {
       final avail = [
-        _avail(TrackId.review, [_unit(TrackId.review, 'c', 's')]),
-        _avail(TrackId.learn, [_unit(TrackId.learn, 'c', 's')]),
+        _avail(kTrackReview, [_unit(kTrackReview, 'c', 's')]),
+        _avail(kTrackLearn, [_unit(kTrackLearn, 'c', 's')]),
       ];
       final gated = gatePracticeAvailabilities(
         availabilities: avail,
@@ -54,8 +54,8 @@ void main() {
     test('foundational algo group (no prereqs) stays available', () {
       final gated = gatePracticeAvailabilities(
         availabilities: [
-          _avail(TrackId.algorithms,
-              [_unit(TrackId.algorithms, 'algo-two-pointers', '3sum')]),
+          _avail(kTrackAlgorithms,
+              [_unit(kTrackAlgorithms, 'algo-two-pointers', '3sum')]),
         ],
         prereqsByCard: const {'algo-two-pointers': []},
         comfortByConcept: const {},
@@ -67,8 +67,8 @@ void main() {
     test('gated algo group locks when its concept is not comfortable', () {
       final gated = gatePracticeAvailabilities(
         availabilities: [
-          _avail(TrackId.algorithms,
-              [_unit(TrackId.algorithms, 'algo-1d-dp', 'coin-change')]),
+          _avail(kTrackAlgorithms,
+              [_unit(kTrackAlgorithms, 'algo-1d-dp', 'coin-change')]),
         ],
         prereqsByCard: const {
           'algo-1d-dp': ['dynamic-programming-1d']
@@ -84,8 +84,8 @@ void main() {
     test('gated group unlocks once the concept is comfortable', () {
       final gated = gatePracticeAvailabilities(
         availabilities: [
-          _avail(TrackId.algorithms,
-              [_unit(TrackId.algorithms, 'algo-1d-dp', 'coin-change')]),
+          _avail(kTrackAlgorithms,
+              [_unit(kTrackAlgorithms, 'algo-1d-dp', 'coin-change')]),
         ],
         prereqsByCard: const {
           'algo-1d-dp': ['dynamic-programming-1d']
@@ -99,9 +99,9 @@ void main() {
     test('keeps the ready SD problems and drops the not-ready ones', () {
       final gated = gatePracticeAvailabilities(
         availabilities: [
-          _avail(TrackId.systemDesign, [
-            _unit(TrackId.systemDesign, 'design-rate-limiter'),
-            _unit(TrackId.systemDesign, 'design-key-value-store'),
+          _avail(kTrackSystemDesign, [
+            _unit(kTrackSystemDesign, 'design-rate-limiter'),
+            _unit(kTrackSystemDesign, 'design-key-value-store'),
           ]),
         ],
         prereqsByCard: const {
