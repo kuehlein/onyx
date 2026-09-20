@@ -4,6 +4,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/system_design_interviewer.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/interview/system_design_grader.dart';
+import '../../core/practice/mock_schedule.dart';
 import '../../core/practice/mock_session.dart';
 import '../../core/readiness/target.dart';
 import '../../core/srs/recognition.dart';
@@ -48,22 +49,9 @@ Future<List<Card>> systemDesignProblems(Ref ref) async {
     for (final c in goal.select(index.studyCards))
       if (c.type == kTypeSystemDesign) c,
   ];
-  DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
-  // 0 = overdue, 1 = never mocked, 2 = upcoming.
-  int bucket(Card c) {
-    final d = dueOf(c);
-    if (d == null) return 1;
-    return d.isAfter(now) ? 2 : 0;
-  }
-
-  problems.sort((a, b) {
-    final ba = bucket(a), bb = bucket(b);
-    if (ba != bb) return ba.compareTo(bb);
-    final da = dueOf(a), db = dueOf(b);
-    if (da != null && db != null) return da.compareTo(db);
-    return a.title.compareTo(b.title);
-  });
-  return problems;
+  // Spaced-recurrence order (shared with every mock flow, task #30 G2a).
+  return orderByMockDue(
+      problems, now, (c) => states['${c.id}::$_recognitionSlug']?.dueAt);
 }
 
 /// The due date for a problem's next re-mock, or null if never mocked.

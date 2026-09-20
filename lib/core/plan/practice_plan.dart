@@ -38,6 +38,11 @@ const double kLearnMinutes = 3;
 /// Minutes for one full system-design mock.
 const double kSystemDesignMinutes = 40;
 
+/// Minutes for one generic config-flow mock (a vault-authored mock flow that
+/// declares no per-card `est_minutes`). System design keeps its own 40; a card's
+/// frontmatter `est_minutes` still overrides this.
+const double kMockMinutes = 20;
+
 /// Minutes for an algorithm problem, from its difficulty (parsed from the card
 /// section, e.g. "… · Medium"). Falls back to the medium estimate.
 double algoEstMinutes(String sectionContent) {
