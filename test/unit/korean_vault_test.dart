@@ -47,11 +47,19 @@ void main() {
     final concept = cards.where((c) => !c.isPracticeTrack).toList();
     final practice = cards.where((c) => c.isPracticeTrack).toList();
 
-    // Concept recall flow: Hangul + vocabulary + grammar, all quizzable.
-    expect(concept.map((c) => c.id),
-        containsAll(['hangul-a', 'word-hello', 'grammar-topic-particle']));
-    expect(concept.length, 7);
+    // Concept recall flow: Hangul + vocabulary + grammar + culture, all quizzable.
+    expect(
+        concept.map((c) => c.id),
+        containsAll([
+          'hangul-a',
+          'word-hello',
+          'grammar-topic-particle',
+          'culture-politeness-levels',
+        ]));
+    expect(concept.length, 9);
     expect(concept.every((c) => c.quizzableSections.isNotEmpty), isTrue);
+    // A coherent starter deck spans the language's facets, culture included.
+    expect(concept.where((c) => c.tags.contains('culture')).length, 2);
 
     // Practice flow: the one conversation, whole-card mock unit, gated on words.
     expect(practice.map((c) => c.id), ['order-water']);

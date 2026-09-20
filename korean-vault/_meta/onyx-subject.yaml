@@ -1,5 +1,8 @@
-# A throwaway Korean-language subject for testing the multi-subject generalization
-# (#30). Point the app at this vault with ONYX_VAULT_PATH=korean-vault.
+# The reference SECOND subject (Korean language) — the living acceptance harness
+# that drives the multi-subject generalization (#30), and, fleshed out, a real
+# starter deck. It proves a subject is config-only: readiness, ladder, parser,
+# flows, and gating all run off THIS file plus the cards, with zero code changes.
+# Point the app at it in dev with ONYX_VAULT_PATH=korean-vault.
 id: korean
 target:
   # Ordered proficiency (drives knowledge-depth / tier relevance).
