@@ -90,4 +90,53 @@ void main() {
       expect(r.first.domain, 'system-design');
     });
   });
+
+  group('computeRetentionByTag', () {
+    test('a card counts toward EVERY tag it carries', () {
+      final r = computeRetentionByTag(
+        reviews: const [
+          (cardId: 'x', grade: 3),
+          (cardId: 'x', grade: 3),
+          (cardId: 'x', grade: 1),
+          (cardId: 'x', grade: 3),
+          (cardId: 'x', grade: 3),
+        ],
+        stabilities: const [(cardId: 'x', stability: 12)],
+        tagsByCard: const {
+          'x': ['databases', 'query-optimization'],
+        },
+        minSample: 5,
+      );
+      final byKey = {for (final d in r) d.domain: d};
+      expect(byKey.keys.toSet(), {'databases', 'query-optimization'});
+      // The single card's reviews + stability land on BOTH tags.
+      for (final tag in ['databases', 'query-optimization']) {
+        expect(byKey[tag]!.reviews, 5);
+        expect(byKey[tag]!.recall, closeTo(4 / 5, 1e-9));
+        expect(byKey[tag]!.avgStabilityDays, 12);
+      }
+    });
+
+    test('a shared tag aggregates across cards; distinct tags stay separate',
+        () {
+      final r = computeRetentionByTag(
+        reviews: const [
+          (cardId: 'x', grade: 3),
+          (cardId: 'y', grade: 1),
+        ],
+        stabilities: const [],
+        tagsByCard: const {
+          'x': ['caching', 'databases'],
+          'y': ['caching', 'networking'],
+        },
+        minSample: 1,
+      );
+      final byKey = {for (final d in r) d.domain: d};
+      // 'caching' spans both cards — the domain-only view would have split them.
+      expect(byKey['caching']!.reviews, 2);
+      expect(byKey['databases']!.reviews, 1);
+      expect(byKey['networking']!.reviews, 1);
+      expect(byKey.keys.toSet(), {'caching', 'databases', 'networking'});
+    });
+  });
 }

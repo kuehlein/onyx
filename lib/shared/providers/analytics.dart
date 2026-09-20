@@ -65,6 +65,51 @@ Future<List<DomainRetention>> retentionByDomain(Ref ref) async {
   return ref.watch(goalRetentionByDomainProvider(goal.id).future);
 }
 
+/// Per-TAG retention for a SPECIFIC goal (task #27): like [goalRetentionByDomain]
+/// but each member card counts toward EVERY tag it carries, not just its domain
+/// (first tag). So a cross-cutting tag (e.g. `caching`, `sharding`) gets its own
+/// recall across domains — a finer lens than the domain rollup.
+@riverpod
+Future<List<DomainRetention>> goalRetentionByTag(Ref ref, String goalId) async {
+  // Register deps before the first await (disposal hazard).
+  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final repo = ref.watch(srsRepositoryProvider);
+  final memberIds = await memberIdsF;
+  final index = await indexF;
+  final states = await statesF;
+  final since = (await clockF).now().subtract(retentionWindow);
+  final grades = await repo.reviewGradesSince(since);
+
+  final tagsByCard = <String, List<String>>{
+    for (final c in index.cards)
+      if (c.tags.isNotEmpty && memberIds.contains(c.id)) c.id: c.tags,
+  };
+  final stabilities = [
+    for (final s in states.byKey.values)
+      if (memberIds.contains(s.cardId))
+        (cardId: s.cardId, stability: s.stability),
+  ];
+
+  return computeRetentionByTag(
+    reviews: [
+      for (final g in grades)
+        if (memberIds.contains(g.cardId)) g,
+    ],
+    stabilities: stabilities,
+    tagsByCard: tagsByCard,
+  );
+}
+
+/// Per-tag retention for the ACTIVE goal — see [goalRetentionByTag].
+@riverpod
+Future<List<DomainRetention>> retentionByTag(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  return ref.watch(goalRetentionByTagProvider(goal.id).future);
+}
+
 /// Averaged mock-interview performance + rubric breakdown for a SPECIFIC goal —
 /// mocks on its member cards. The whole-vault default goal includes all, so
 /// single-goal numbers are unchanged. Recomputes on a new mock.

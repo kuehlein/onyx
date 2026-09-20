@@ -1,7 +1,10 @@
-/// Retention analytics (task #27): how well memory is holding, per domain.
+/// Retention analytics (task #27): how well memory is holding, per domain and
+/// per tag.
 ///
 /// Pure aggregation over the review log + current FSRS state, grouped by the
-/// card's domain (tag). Two honest signals per domain:
+/// card's domain (its first tag) or — in the by-tag view — by EVERY tag a card
+/// carries, so a cross-cutting tag (e.g. `caching`, `sharding`) gets its own
+/// recall across domains. Two honest signals per group:
 /// - **recall** — the fraction of reviews that were NOT a lapse (grade ≥ 2, i.e.
 ///   not "Again"). This is the FSRS sense of retention: did you still remember?
 /// - **avgStabilityDays** — the mean current FSRS stability of the domain's
@@ -21,7 +24,8 @@ class DomainRetention {
     required this.studiedSections,
   });
 
-  /// Domain key (the card's first tag), e.g. "system-design".
+  /// The grouping key — a domain (the card's first tag, e.g. "system-design")
+  /// in the by-domain view, or a tag in the by-tag view.
   final String domain;
 
   /// Reviews logged for this domain in the window.
@@ -40,36 +44,70 @@ class DomainRetention {
   bool get lowSample => recall == null;
 }
 
-/// Aggregate [reviews] and [stabilities] into per-domain retention, joining each
-/// card to its domain via [domainByCard]. Records — not drift rows — keep this
-/// pure and trivially testable.
+/// By-DOMAIN retention: each card joins its single domain via [domainByCard].
+/// Records — not drift rows — keep this pure and trivially testable.
 List<DomainRetention> computeRetention({
   required List<({String cardId, int grade})> reviews,
   required List<({String cardId, double stability})> stabilities,
   required Map<String, String> domainByCard,
   int minSample = 5,
+}) =>
+    _computeGrouped(
+      reviews: reviews,
+      stabilities: stabilities,
+      groupsByCard: {
+        for (final e in domainByCard.entries) e.key: [e.value],
+      },
+      minSample: minSample,
+    );
+
+/// By-TAG retention: each card contributes to EVERY tag in [tagsByCard], so a
+/// card tagged `[databases, query-optimization]` counts toward both — a
+/// cross-cutting tag (which can span domains) gets its own recall. Otherwise
+/// identical to [computeRetention].
+List<DomainRetention> computeRetentionByTag({
+  required List<({String cardId, int grade})> reviews,
+  required List<({String cardId, double stability})> stabilities,
+  required Map<String, List<String>> tagsByCard,
+  int minSample = 5,
+}) =>
+    _computeGrouped(
+      reviews: reviews,
+      stabilities: stabilities,
+      groupsByCard: tagsByCard,
+      minSample: minSample,
+    );
+
+/// Shared aggregation for both views. Each card maps to one-or-more group keys
+/// (a single domain, or all its tags); every review/stability counts toward each
+/// of the card's groups.
+List<DomainRetention> _computeGrouped({
+  required List<({String cardId, int grade})> reviews,
+  required List<({String cardId, double stability})> stabilities,
+  required Map<String, List<String>> groupsByCard,
+  required int minSample,
 }) {
   final total = <String, int>{};
   final retained = <String, int>{};
   for (final r in reviews) {
-    final d = domainByCard[r.cardId];
-    if (d == null) continue;
-    total[d] = (total[d] ?? 0) + 1;
-    if (r.grade >= 2) retained[d] = (retained[d] ?? 0) + 1;
+    for (final d in groupsByCard[r.cardId] ?? const <String>[]) {
+      total[d] = (total[d] ?? 0) + 1;
+      if (r.grade >= 2) retained[d] = (retained[d] ?? 0) + 1;
+    }
   }
 
   final stabSum = <String, double>{};
   final stabN = <String, int>{};
   for (final s in stabilities) {
-    final d = domainByCard[s.cardId];
-    if (d == null) continue;
-    stabSum[d] = (stabSum[d] ?? 0) + s.stability;
-    stabN[d] = (stabN[d] ?? 0) + 1;
+    for (final d in groupsByCard[s.cardId] ?? const <String>[]) {
+      stabSum[d] = (stabSum[d] ?? 0) + s.stability;
+      stabN[d] = (stabN[d] ?? 0) + 1;
+    }
   }
 
-  final domains = {...total.keys, ...stabN.keys};
+  final groups = {...total.keys, ...stabN.keys};
   final out = [
-    for (final d in domains)
+    for (final d in groups)
       DomainRetention(
         domain: d,
         reviews: total[d] ?? 0,
@@ -81,8 +119,8 @@ List<DomainRetention> computeRetention({
       ),
   ];
 
-  // Trustworthy domains first, weakest recall at the top (where attention is
-  // needed); low-sample domains sink to the bottom, most-studied first.
+  // Trustworthy groups first, weakest recall at the top (where attention is
+  // needed); low-sample groups sink to the bottom, most-studied first.
   out.sort((a, b) {
     if (a.lowSample != b.lowSample) return a.lowSample ? 1 : -1;
     if (!a.lowSample) return a.recall!.compareTo(b.recall!);

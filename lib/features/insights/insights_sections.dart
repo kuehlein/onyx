@@ -263,35 +263,64 @@ class _PatternsSection extends ConsumerWidget {
   }
 }
 
-// ── 2. Retention by domain ──────────────────────────────────────────────────
+// ── 2. Retention by domain / tag ─────────────────────────────────────────────
 
-class _RetentionSection extends ConsumerWidget {
+class _RetentionSection extends ConsumerStatefulWidget {
   const _RetentionSection();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(retentionByDomainProvider);
+  ConsumerState<_RetentionSection> createState() => _RetentionSectionState();
+}
+
+class _RetentionSectionState extends ConsumerState<_RetentionSection> {
+  // Domain (the card's first tag) is the rollup; Tag counts each card toward
+  // ALL its tags — a finer, cross-cutting lens (task #27).
+  bool _byTag = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final async = _byTag
+        ? ref.watch(retentionByTagProvider)
+        : ref.watch(retentionByDomainProvider);
     return _Section(
-      title: 'Retention by domain',
+      title: 'Retention by ${_byTag ? 'tag' : 'domain'}',
       subtitle: 'Recall (you didn’t forget) and how durable it is, '
           'last ${retentionWindow.inDays} days.',
-      child: async.when(
-        loading: () => const _NoData('Loading…'),
-        error: (e, _) => _NoData('Error: $e'),
-        data: (domains) {
-          if (domains.isEmpty) {
-            return const _NoData('Review some cards to see this.');
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [for (final d in domains) _domainBar(context, d)],
-          );
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: false, label: Text('Domain')),
+                ButtonSegment(value: true, label: Text('Tag')),
+              ],
+              selected: {_byTag},
+              onSelectionChanged: (s) => setState(() => _byTag = s.first),
+            ),
+          ),
+          const SizedBox(height: Dim.space3),
+          async.when(
+            loading: () => const _NoData('Loading…'),
+            error: (e, _) => _NoData('Error: $e'),
+            data: (groups) {
+              if (groups.isEmpty) {
+                return const _NoData('Review some cards to see this.');
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [for (final d in groups) _bar(context, d)],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _domainBar(BuildContext context, DomainRetention d) {
+  Widget _bar(BuildContext context, DomainRetention d) {
     final cs = Theme.of(context).colorScheme;
     final recall = d.recall;
     final parts = <String>[
