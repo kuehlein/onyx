@@ -1,21 +1,36 @@
 # _meta
 
-Vault metadata for the Onyx flashcard system. Files here are NOT indexed as
-flashcards (they have no `type: flashcard` frontmatter). Onyx skips this folder.
+Config + the authoring kit for this Onyx study vault. Onyx never indexes `_meta/`
+as cards (nothing here has a card `type:`), so it's a safe home for machine config
+and author-facing docs.
+
+**Start at the vault root `CLAUDE.md`** — it orients you and maps everything here.
 
 ## Contents
 
-| File | Purpose |
-|---|---|
-| `tags.md` | Tag index — definitions, conventions, rules for choosing tags |
-| `curriculum.md` | Recommended study sequence by domain and tier |
-| `conventions.md` | Card writing conventions and section formatting rules |
-| `card-creation-skill.md` | Standalone Claude prompt for generating new cards in Neovim |
+| File | Layer | Purpose |
+|---|---|---|
+| `onyx-subject.yaml` | config | The machine config: readiness target, flows (card types), parse rules, terminology. Makes this folder a loadable Onyx subject. |
+| `authoring-method.md` | **universal** | The domain-agnostic card-authoring method + quality bar. The same in every Onyx vault. |
+| `conventions.md` | **universal** | Card format + section conventions (frontmatter, headings, what's quizzed). |
+| `curriculum.md` | **profile** | THIS subject's study sequence, sources, tiers. Example: software-interview prep. |
+| `tags.md` | **profile** | THIS subject's tag/domain vocabulary. Check before adding a tag. |
+| `card-creation-skill.md` | profile | The subject-specific card templates (an older, SWE-shaped companion to `authoring-method.md`). |
+| `coach.md` | profile *(optional)* | Domain framing that AUGMENTS the coach's built-in voice (never replaces it). |
+
+## Two layers, kept separate
+
+- **Universal** (`authoring-method.md`, `conventions.md`): the app model + the
+  method. Identical across subjects — a language or medicine vault reuses them
+  unchanged.
+- **Profile** (`curriculum.md`, `tags.md`, and the domain parts of
+  `card-creation-skill.md`): what *this* vault studies. Here it's software
+  interviews — one example. Replace these to describe a different subject; the
+  universal layer doesn't move.
 
 ## Why this folder exists
 
-Without a tag index, tags drift. Two cards that should be linked by the same
-tag end up with slightly different spellings (`binary-search` vs `binary_search`
-vs `binarySearch`). The graph becomes less connected, quiz filtering becomes
-less reliable, and the readiness calculation breaks. Check `tags.md` before
-adding any new tag. If a tag you want doesn't exist, add it there first.
+Without a tag index, tags drift — `binary-search` vs `binary_search` vs
+`binarySearch` — and the graph, quiz filtering, and readiness all degrade. Check
+`tags.md` before adding any tag; if it's missing, add it there first. And without a
+single authoring method, cards drift in quality; `authoring-method.md` is the bar.

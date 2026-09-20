@@ -1,0 +1,59 @@
+# Example subject config — a complete, annotated `onyx-subject.yaml`.
+#
+# This makes the example vault a real, loadable Onyx subject AND doubles as the
+# reference for every config seam. A subject is CONFIG, not code: readiness,
+# flows, parsing, and terminology all run off this file plus the cards. The
+# subject here is software-interview prep (matching this vault's example domain
+# profile in curriculum.md / tags.md); swap the values to describe any subject.
+id: software-interviews-example
+
+# ── target: the readiness model ──────────────────────────────────────────────
+# Three slots with FIXED roles, per-subject VALUES:
+#   level   → how deep knowledge must go   (drives tier relevance)
+#   context → how locked-in recall must be (drives the FSRS durability bar, days)
+#   track   → which domains weigh most     (drives per-domain weighting)
+target:
+  levels:
+    # tierCurve[i] = relevance of tier (i+1); the last entry applies to that tier
+    # and everything deeper. Higher levels stay high into the advanced tiers.
+    - {id: mid, label: Mid, tierCurve: [1.0, 0.9, 0.55, 0.30]}
+    - {id: senior, label: Senior, tierCurve: [1.0, 1.0, 0.90, 0.50]}
+  contexts:
+    - {id: typical, label: Typical, stabilityTargetDays: 90}
+    - {id: faang, label: FAANG, stabilityTargetDays: 120}
+  tracks:
+    - {id: general, label: General}
+    - {id: backend, label: Backend, familyWeights: {systems: 1.15}}
+  families:
+    # A domain matches a family by exact key or substring; the family's weight
+    # then applies under a track that lists it.
+    - {id: systems, exact: [system-design, databases], contains: [distributed]}
+  fallback: {level: mid, context: faang, track: general}
+
+# ── flows: one per card `type:` ──────────────────────────────────────────────
+# A file is only a card if its `type:` matches a flow here. scheduling (use the
+# exact enum name):
+#   recall    → the spaced Learn/Review concept deck (FSRS)
+#   twoClock  → a paced practice track (solve + explain)
+#   mock      → an AI mock session (skill authored in the vault under skills/)
+# quizzability: which sections become retrieval units (blocklist = all but the
+#   never-quizzed headings; approachOnly / allSections / noSections as needed).
+flows:
+  - {cardType: flashcard, scheduling: recall, quizzability: blocklist, label: Concepts, iconKey: flashcard}
+  - {cardType: interview-question, scheduling: recall, quizzability: approachOnly, label: Questions}
+  - {cardType: algorithm, scheduling: twoClock, quizzability: allSections, label: Algorithms, iconKey: terminal}
+  - {cardType: system-design, scheduling: mock, quizzability: noSections, label: System design, iconKey: architecture}
+
+# ── vocabulary (optional): the assessment noun for shared copy ────────────────
+# So the grading persona reads right per subject. Omit → neutral ("examiner").
+vocabulary:
+  examinerNoun: interviewer
+
+# ── parse (optional): how notes become cards ─────────────────────────────────
+# Every field defaults to Onyx's built-in rules, so this block is only needed to
+# deviate. Shown here in full to document the seam; these values are the defaults.
+parse:
+  sectionHeadingLevel: 2        # 2 = split on `##`, 3 = `###`
+  fileExtensions: [md]          # which files the walk reads as candidate cards
+  wikilinks: true               # extract [[wikilinks]] from bodies
+  # neverQuizzed: [related, references, resources, variants]  # omit → engine default
