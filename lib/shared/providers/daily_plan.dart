@@ -5,6 +5,8 @@ import '../../core/goal/interview_aim.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
+import '../../core/subject/active_subject.dart';
+import '../../core/subject/flow_spec.dart';
 import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
@@ -140,15 +142,23 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     labelForConcept: (s) => conceptLabel[s] ?? s,
   );
 
-  // Base weights: review/learn are high foundational constants; algorithms and
-  // system design ride the readiness target's domain weights, so the mix shifts
-  // with level (junior → algos heavier, staff → system design heavier).
+  // Base weights: review/learn are high foundational constants; each practice
+  // track rides the readiness target's domain weight named by its flow's
+  // `weightDomain`, so the mix shifts with level (junior → algos heavier, staff
+  // → system design heavier). Recall tracks (review/learn) keep their constants.
+  final flowByType = {for (final f in activeSubject.flows) f.cardType: f};
+  bool isRecall(String t) => t == kTrackReview || t == kTrackLearn;
+
   final baseWeight = <String, double>{
     kTrackReview: 1.2,
     // Taper new learning as an interview nears (preserve retrieval + mocks).
     kTrackLearn: 1.0 * learnTaperFactor(daysUntilInterview: daysUntilInterview),
-    kTrackAlgorithms: targeting.weightForDomain('ds-a'),
-    kTrackSystemDesign: targeting.weightForDomain('system-design'),
+    for (final a in gated)
+      if (!isRecall(a.track))
+        a.track: switch (flowByType[a.track]?.weightDomain) {
+          final d? => targeting.weightForDomain(d),
+          _ => 1.0,
+        },
   };
 
   // Recency = fraction of the last 7 days each track was practiced (variety).
@@ -163,16 +173,16 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final recency = <String, double>{
     kTrackReview: days(reviewTs) / 7,
     kTrackLearn: days(learnTs) / 7,
-    kTrackAlgorithms: days([
-          for (final a in attempts)
-            if (a.source == 'algo') a.occurredAt
-        ]) /
-        7,
-    kTrackSystemDesign: days([
-          for (final a in attempts)
-            if (a.source == 'sd-practice') a.occurredAt
-        ]) /
-        7,
+    for (final a in gated)
+      if (!isRecall(a.track))
+        a.track: switch (flowByType[a.track]?.attemptSource) {
+          final s? => days([
+                for (final at in attempts)
+                  if (at.source == s) at.occurredAt
+              ]) /
+              7,
+          _ => 0.0,
+        },
   };
 
   // Reserved: review is a daily non-negotiable; a mock track (system design,
@@ -193,7 +203,12 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     });
   }
 
-  if (anyMockDue(kTrackSystemDesign)) reserved.add(kTrackSystemDesign);
+  for (final a in gated) {
+    if (flowByType[a.track]?.scheduling == SchedulingModel.mock &&
+        anyMockDue(a.track)) {
+      reserved.add(a.track);
+    }
+  }
 
   return buildDailyPlan(
     availabilities: gated,

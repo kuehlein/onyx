@@ -22,7 +22,7 @@ target:
   fallback: {level: b1, context: exam, track: speaking}
 flows:
   - {cardType: flashcard, scheduling: recall, quizzability: blocklist}
-  - {cardType: conversation, scheduling: mock, quizzability: noSections}
+  - {cardType: conversation, scheduling: mock, quizzability: noSections, weightDomain: grammar, attemptSource: convo}
 ''';
 
 void main() {
@@ -61,6 +61,16 @@ void main() {
       expect(cfg.flowForType('flashcard')?.quizzability,
           QuizzabilityPolicy.blocklist);
       expect(cfg.flowForType('conversation')?.scheduling, SchedulingModel.mock);
+    });
+
+    test('flow weightDomain/attemptSource parse (null when absent)', () {
+      final convo = cfg.flowForType('conversation');
+      expect(convo?.weightDomain, 'grammar');
+      expect(convo?.attemptSource, 'convo');
+      // The flashcard flow declares neither → both null.
+      final flash = cfg.flowForType('flashcard');
+      expect(flash?.weightDomain, isNull);
+      expect(flash?.attemptSource, isNull);
     });
 
     test('missing label falls back to id', () {

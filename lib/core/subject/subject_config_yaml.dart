@@ -110,6 +110,8 @@ FlowSpec _flow(Object? m) {
     iconKey: (map['iconKey'] as String?) ?? 'card',
     colorKey: (map['colorKey'] as String?) ?? 'default',
     skill: map['skill'] as String?,
+    weightDomain: map['weightDomain'] as String?,
+    attemptSource: map['attemptSource'] as String?,
   );
 }
 

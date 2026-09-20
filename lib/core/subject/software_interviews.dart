@@ -115,6 +115,8 @@ const softwareInterviewsConfig = SubjectConfig(
       label: 'Algorithm',
       iconKey: 'algorithm',
       colorKey: 'deepOrange',
+      weightDomain: 'ds-a',
+      attemptSource: 'algo',
     ),
     FlowSpec(
       cardType: kTypeSystemDesign,
@@ -123,6 +125,8 @@ const softwareInterviewsConfig = SubjectConfig(
       label: 'System design',
       iconKey: 'systemDesign',
       colorKey: 'purple',
+      weightDomain: 'system-design',
+      attemptSource: 'sd-practice',
     ),
     FlowSpec(
       cardType: kTypeBehavioral,

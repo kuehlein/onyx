@@ -44,6 +44,8 @@ class FlowSpec {
     this.iconKey = 'card',
     this.colorKey = 'default',
     this.skill,
+    this.weightDomain,
+    this.attemptSource,
   });
 
   /// The card `type:` frontmatter value this flow applies to.
@@ -64,6 +66,16 @@ class FlowSpec {
   /// Flutter types). Unknown keys fall back to a generic card icon/color.
   final String iconKey;
   final String colorKey;
+
+  /// For a practice track in the daily plan, the readiness domain whose target
+  /// weight drives its base priority (so the mix shifts with level/track).
+  /// Null → weight 1.0.
+  final String? weightDomain;
+
+  /// The applied-attempt `source` string used to gauge this track's
+  /// recent-practice load (for the variety down-weight). Null → no
+  /// attempt-based recency.
+  final String? attemptSource;
 
   /// The label, or a prettified [cardType] when none is configured.
   String get displayLabel => label.isNotEmpty
