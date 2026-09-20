@@ -140,18 +140,49 @@ class TargetSpec {
   }
 }
 
+/// Per-subject assessment **terminology** (task #30, G3) — so shared engine copy
+/// reads right for each subject instead of a hardcoded SWE voice (a Korean
+/// learner shouldn't be told to "answer the interviewer"). The coach *voice* is
+/// the vault coach-skill lever; this is the orthogonal *noun* lever. Small on
+/// purpose: only the grading persona's agent noun today, since that's the one
+/// shared site with a consumer — it grows (assessment noun, verb, whether it has
+/// rounds) when a consumer needs it, not before.
+class Vocabulary {
+  const Vocabulary({this.examinerNoun = 'examiner'});
+
+  /// What the mock grading persona is CALLED in shared UI. The SWE reference
+  /// overrides to "interviewer"; the neutral default ("examiner", matching the
+  /// coach's own foundation prompt) suits any subject. Lowercase — display sites
+  /// that need title case use [examinerNounTitle].
+  final String examinerNoun;
+
+  /// [examinerNoun] in title case (e.g. "Interviewer") for headings/labels.
+  String get examinerNounTitle => examinerNoun.isEmpty
+      ? examinerNoun
+      : examinerNoun[0].toUpperCase() + examinerNoun.substring(1);
+
+  /// Neutral, subject-agnostic terminology — the default when a subject sets none
+  /// (e.g. a config loaded from a vault YAML that declares no vocabulary).
+  static const neutral = Vocabulary();
+}
+
 /// A configured study subject. Grows across the #30 phases; currently [id],
-/// [target] (Phase 0/2), and [flows] (Phase 3).
+/// [target] (Phase 0/2), [flows] (Phase 3), and [vocabulary] (G3).
 class SubjectConfig {
   const SubjectConfig({
     required this.id,
     required this.target,
     this.flows = const [],
     this.coachSkill,
+    this.vocabulary = Vocabulary.neutral,
   });
 
   final String id;
   final TargetSpec target;
+
+  /// Assessment terminology for shared engine copy. Neutral by default; the SWE
+  /// reference sets "interviewer" so its UI is unchanged.
+  final Vocabulary vocabulary;
 
   /// One flow per card `type:`. See [flowForType].
   final List<FlowSpec> flows;

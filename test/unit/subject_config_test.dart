@@ -143,4 +143,38 @@ void main() {
       expect(softwareInterviewsConfig.flowForType('nonexistent'), isNull);
     });
   });
+
+  group('vocabulary (G3) → per-subject assessment terminology', () {
+    test('SWE reference keeps "interviewer" so its shared copy is unchanged',
+        () {
+      final v = softwareInterviewsConfig.vocabulary;
+      expect(v.examinerNoun, 'interviewer');
+      expect(v.examinerNounTitle, 'Interviewer');
+    });
+
+    test('a subject that declares no vocabulary gets the neutral default', () {
+      const bare = SubjectConfig(id: 'x', target: _emptyTarget);
+      expect(bare.vocabulary, same(Vocabulary.neutral));
+      expect(bare.vocabulary.examinerNoun, 'examiner');
+      expect(bare.vocabulary.examinerNounTitle, 'Examiner');
+    });
+
+    test('title-casing is safe for an empty noun', () {
+      expect(const Vocabulary(examinerNoun: '').examinerNounTitle, '');
+    });
+  });
 }
+
+/// A minimal target for constructing a bare [SubjectConfig] in the vocabulary
+/// default test — its values are irrelevant there.
+const _emptyTarget = TargetSpec(
+  levels: [
+    LevelValue(id: 'l', label: 'L', tierCurve: [1.0])
+  ],
+  contexts: [ContextValue(id: 'c', label: 'C', stabilityTargetDays: 90)],
+  tracks: [TrackValue(id: 't', label: 'T')],
+  families: [],
+  fallbackLevelId: 'l',
+  fallbackContextId: 'c',
+  fallbackTrackId: 't',
+);

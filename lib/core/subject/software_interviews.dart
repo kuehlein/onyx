@@ -24,6 +24,9 @@ const softwareInterviewsConfig = SubjectConfig(
   // (read via readMeta, parsed by coachSkillFromMarkdown); absent → the
   // learning-science foundation stands alone.
   coachSkill: 'coach.md',
+  // SWE's mock grading persona is the "interviewer" — so shared coach copy reads
+  // exactly as before for this subject; other subjects fall back to "examiner".
+  vocabulary: Vocabulary(examinerNoun: 'interviewer'),
   target: TargetSpec(
     // level → tier-depth curve (was _tierRelevanceByLevel in target.dart).
     levels: [

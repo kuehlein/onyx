@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../core/ai/coach.dart';
+import '../../core/subject/active_subject.dart';
 import '../design/onyx_design.dart';
 import '../models/card.dart';
 import '../providers/ai.dart';
@@ -320,7 +321,10 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(grading ? 'Interviewer' : 'Coach',
+                Text(
+                    grading
+                        ? activeSubject.vocabulary.examinerNounTitle
+                        : 'Coach',
                     style: theme.textTheme.titleMedium),
                 Text(
                   subtitle,
@@ -654,8 +658,9 @@ class _InputBar extends StatelessWidget {
                 textInputAction: TextInputAction.send,
                 onSubmitted: busy ? null : (_) => onSend(),
                 decoration: InputDecoration(
-                  hintText:
-                      grading ? 'Answer the interviewer…' : 'Ask the coach…',
+                  hintText: grading
+                      ? 'Answer the ${activeSubject.vocabulary.examinerNoun}…'
+                      : 'Ask the coach…',
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   isDense: true,
