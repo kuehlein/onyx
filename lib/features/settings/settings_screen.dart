@@ -20,9 +20,11 @@ import '../../shared/providers/interview.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/registry.dart';
 import '../../shared/providers/settings.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/destructive_row.dart';
+import '../browse/publish_deck_sheet.dart';
 import '../home/goal_editor_sheet.dart';
 import '../onboarding/folder_source_sheet.dart';
 import 'api_key_sheet.dart';
@@ -82,6 +84,21 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showHowCardsAreReadSheet(context),
           ),
+          // SHARING is capability-gated: rendered ONLY when a sharing-capable
+          // backend is reachable (registry-and-sync.md §1.2). In the account-free
+          // solo core it's absent, never a disabled row.
+          if (ref.watch(sharingReachableProvider)) ...[
+            const _SectionHeader('Sharing'),
+            ListTile(
+              leading: const Icon(Icons.upload_outlined),
+              title: const Text('Publish a deck'),
+              subtitle: const Text(
+                  'Share a folder of your cards. Only content travels — never '
+                  'your review progress.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showPublishDeckSheet(context),
+            ),
+          ],
           const _SectionHeader('Learning'),
           ListTile(
             leading: const Icon(Icons.flag_outlined),
