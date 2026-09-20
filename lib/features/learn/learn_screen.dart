@@ -59,6 +59,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
         title: const Text('Learn'),
         leading: IconButton(
           icon: const Icon(Icons.close),
+          tooltip: 'Close',
           onPressed: () {
             // Refresh the daily new-card allowance so Home / the quiz empty
             // state reflect what was just learned (these providers are kept

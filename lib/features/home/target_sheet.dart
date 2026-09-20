@@ -519,10 +519,6 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
   // Height of a single day cell (also used for the leading/trailing blanks).
   static const _cellHeight = 50.0;
 
-  // Month-navigation arrow buttons: a compact fixed tap target.
-  static const _navButtonWidth = 40.0;
-  static const _navButtonHeight = 34.0;
-
   late DateTime _month;
 
   @override
@@ -621,8 +617,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               iconSize: Dim.iconMd,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(
-                  width: _navButtonWidth, height: _navButtonHeight),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               tooltip: 'Previous month',
               onPressed: canPrev
                   ? () => setState(
@@ -641,8 +636,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               iconSize: Dim.iconMd,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(
-                  width: _navButtonWidth, height: _navButtonHeight),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               tooltip: 'Next month',
               onPressed: () => setState(
                   () => _month = DateTime(_month.year, _month.month + 1)),

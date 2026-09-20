@@ -69,6 +69,7 @@ class SettingsScreen extends ConsumerWidget {
             )),
             trailing: IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: 'Rescan study folder',
               onPressed: () => ref.invalidate(vaultIndexProvider),
             ),
           ),

@@ -220,7 +220,12 @@ class _Headline extends StatelessWidget {
               borderRadius: Dim.brChip,
               onTap: () => showTargetSheet(context),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(9, 5, 7, 5),
+                // ≥48dp tap target (a11y); left-aligned so it reads as a
+                // tappable form field rather than a centered chip.
+                alignment: Alignment.centerLeft,
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Dim.space3, vertical: Dim.space1),
                 decoration: BoxDecoration(
                   borderRadius: Dim.brChip,
                   border: Border.all(color: theme.colorScheme.outlineVariant),

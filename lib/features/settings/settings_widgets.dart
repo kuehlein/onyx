@@ -296,7 +296,7 @@ class _Stepper extends StatelessWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.remove_circle_outline),
-          visualDensity: VisualDensity.compact,
+          tooltip: 'Decrease',
           onPressed: value > min ? () => onChanged(value - step) : null,
         ),
         SizedBox(
@@ -307,7 +307,7 @@ class _Stepper extends StatelessWidget {
         ),
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
-          visualDensity: VisualDensity.compact,
+          tooltip: 'Increase',
           onPressed: value < max ? () => onChanged(value + step) : null,
         ),
       ],

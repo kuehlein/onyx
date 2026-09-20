@@ -64,6 +64,7 @@ class _DraftReviewScreenState extends ConsumerState<DraftReviewScreen> {
         title: const Text('Review drafts'),
         leading: IconButton(
           icon: const Icon(Icons.close),
+          tooltip: 'Close',
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         bottom: showProgress
