@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/practice_plan.dart';
+import '../../core/subject/active_subject.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
+import '../browse/browse_screen.dart' show flowIcon;
 
 /// Today's flows as a priority-ordered action stack (task #57 / Home redesign).
 /// The plan decides the order; emphasis follows Material 3's button hierarchy —
@@ -112,7 +114,7 @@ class _FlowButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final meta = _trackMeta(track.track);
+    final meta = _metaFor(track);
     final n = track.units.length;
     final detail = StringBuffer('$n ${_plural(meta.noun, n)} · '
         '~${track.estMinutes.round()}m');
@@ -214,5 +216,23 @@ const _trackMetaById = <String, _TrackMeta>{
       push: true),
 };
 
-_TrackMeta _trackMeta(String t) =>
-    _trackMetaById[t] ?? _trackMetaById[kTrackReview]!;
+/// Resolve a planned track's icon/route/noun. The four built-in SWE tracks keep
+/// their fixed [_trackMetaById] entries exactly as before. A track that ISN'T one
+/// of those but IS a **config practice flow** (a vault-authored flow in
+/// `activeSubject.flows` with an AI `skill`) routes to the generic FlowRunner,
+/// pushed full-screen at its first unit. Everything else falls back to review.
+_TrackMeta _metaFor(PlannedTrack track) {
+  final builtin = _trackMetaById[track.track];
+  if (builtin != null) return builtin;
+
+  final flow = activeSubject.flowForType(track.track);
+  if (flow != null && flow.skill != null && track.units.isNotEmpty) {
+    return _TrackMeta(
+      flowIcon(flow.iconKey),
+      '/flow/${track.track}/${track.units.first.id}',
+      'session',
+      push: true,
+    );
+  }
+  return _trackMetaById[kTrackReview]!;
+}

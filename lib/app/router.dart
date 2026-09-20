@@ -18,6 +18,7 @@ import '../features/interview/interview_prep_screen.dart';
 import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
+import '../features/practice/flow_runner_screen.dart';
 import '../features/practice/practice_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/reader/reader_screen.dart';
@@ -69,6 +70,16 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
             problemId: state.pathParameters['id']!,
             levelName: state.uri.queryParameters['level'],
             supportName: state.uri.queryParameters['support'],
+          ),
+        ),
+        // A config-driven practice flow for one card (a vault-authored flow, e.g.
+        // a Korean `conversation`). Full-screen, pushed from Home like the SD/algo
+        // sessions; `:type` is the card type / practice-track id, `:id` the card.
+        GoRoute(
+          path: '/flow/:type/:id',
+          builder: (_, state) => FlowRunnerScreen(
+            flowType: state.pathParameters['type']!,
+            cardId: state.pathParameters['id']!,
           ),
         ),
         // The interview-prep hub: target + scheduled interviews + behavioral.
