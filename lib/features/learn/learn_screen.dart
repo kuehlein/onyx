@@ -74,7 +74,8 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
             padding: const EdgeInsets.only(right: Dim.space1),
             child: TextButton.icon(
               onPressed: () => showStudyTipsSheet(context),
-              icon: const Icon(Icons.tips_and_updates_outlined, size: 20),
+              icon:
+                  const Icon(Icons.tips_and_updates_outlined, size: Dim.iconMd),
               label: const Text('Tips'),
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.primary,
@@ -214,7 +215,8 @@ class _LearnView extends StatelessWidget {
                           child: TextButton.icon(
                             onPressed: () =>
                                 context.push('/card/${item.card.id}'),
-                            icon: const Icon(Icons.article_outlined, size: 18),
+                            icon: const Icon(Icons.article_outlined,
+                                size: Dim.iconMd),
                             label: const Text('View full card'),
                           ),
                         ),
@@ -337,7 +339,7 @@ class _CompleteState extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.school_outlined,
-                size: 48, color: theme.colorScheme.primary),
+                size: Dim.iconLg, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text('Nice work', style: theme.textTheme.titleLarge),
             const SizedBox(height: Dim.space2),

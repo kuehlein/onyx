@@ -67,7 +67,7 @@ class _ExtraPractice extends ConsumerWidget {
               Dim.space4, Dim.space4, Dim.space4, Dim.space4),
           child: Row(
             children: [
-              Icon(Icons.bolt_outlined, size: 22, color: cs.primary),
+              Icon(Icons.bolt_outlined, size: Dim.iconMd, color: cs.primary),
               const SizedBox(width: Dim.space4),
               Expanded(
                 child: Column(
@@ -134,7 +134,7 @@ class _FlowButton extends StatelessWidget {
           EdgeInsets.symmetric(vertical: isPrimary ? Dim.space2 : Dim.space1),
       child: Row(
         children: [
-          Icon(meta.icon, size: 20, color: fg),
+          Icon(meta.icon, size: Dim.iconMd, color: fg),
           const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(track.track.label,
@@ -179,7 +179,7 @@ class _LockedRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.lock_outline,
-              size: 16, color: theme.colorScheme.onSurfaceVariant),
+              size: Dim.iconSm, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(

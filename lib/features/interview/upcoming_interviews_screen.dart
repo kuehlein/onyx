@@ -120,7 +120,8 @@ class _PastSectionState extends State<_PastSection> {
             child: Row(
               children: [
                 Icon(_open ? Icons.expand_more : Icons.chevron_right,
-                    size: 20, color: theme.colorScheme.onSurfaceVariant),
+                    size: Dim.iconMd,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: Dim.space2),
                 Text('Past interviews (${widget.past.length})',
                     style: theme.textTheme.labelLarge
@@ -150,7 +151,7 @@ class _Explainer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.info_outline,
-              size: 16, color: theme.colorScheme.onSurfaceVariant),
+              size: Dim.iconSm, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(
@@ -179,7 +180,7 @@ class _Empty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.event_note_outlined,
-                size: 44, color: theme.colorScheme.primary),
+                size: Dim.iconLg, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space4),
             Text('No interviews planned yet',
                 style: theme.textTheme.titleMedium,

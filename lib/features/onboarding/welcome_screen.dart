@@ -34,7 +34,7 @@ class WelcomeScreen extends ConsumerWidget {
                 children: [
                   Icon(
                     Icons.hexagon_outlined,
-                    size: 44,
+                    size: Dim.iconLg,
                     color: context.colors.primary,
                   ),
                   SizedBox(height: t.space4),

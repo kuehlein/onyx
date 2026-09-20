@@ -87,7 +87,7 @@ class _NeedsKey extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.auto_awesome_outlined,
-              size: 40, color: theme.colorScheme.primary),
+              size: Dim.iconLg, color: theme.colorScheme.primary),
           const SizedBox(height: Dim.space4),
           Text('Add your Anthropic API key to generate a report.',
               textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
@@ -139,7 +139,7 @@ class _Intro extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.insights_outlined,
-              size: 40, color: theme.colorScheme.primary),
+              size: Dim.iconLg, color: theme.colorScheme.primary),
           const SizedBox(height: Dim.space4),
           Text('AI readiness report',
               style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
@@ -245,7 +245,7 @@ class _AskHint extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.forum_outlined,
-              size: 18, color: theme.colorScheme.primary),
+              size: Dim.iconMd, color: theme.colorScheme.primary),
           const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(

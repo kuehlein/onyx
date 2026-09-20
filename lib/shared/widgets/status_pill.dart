@@ -66,6 +66,12 @@ class StatusPill extends StatelessWidget {
   /// setting summary that opens an adjust sheet) and is announced as a button.
   final VoidCallback? onTap;
 
+  // Inline status glyph — paired with the label text, so it tracks the pill's
+  // density (like the fontSize below) and sits *below* the Dim icon scale rather
+  // than on it. Named for clarity, but deliberately off-scale.
+  static const double _glyphSize = 14; // normal
+  static const double _glyphSizeDense = 12; // dense
+
   Color _color(BuildContext c) => switch (tone) {
         StatusTone.good => c.onyx.good,
         StatusTone.warn => c.onyx.warn,
@@ -88,7 +94,7 @@ class StatusPill extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: dense ? 12 : 14, color: color),
+          Icon(icon, size: dense ? _glyphSizeDense : _glyphSize, color: color),
           SizedBox(width: t.space1),
         ],
         Text(
@@ -101,7 +107,8 @@ class StatusPill extends StatelessWidget {
         ),
         if (trailingIcon != null) ...[
           SizedBox(width: t.space1),
-          Icon(trailingIcon, size: dense ? 12 : 14, color: color),
+          Icon(trailingIcon,
+              size: dense ? _glyphSizeDense : _glyphSize, color: color),
         ],
       ],
     );

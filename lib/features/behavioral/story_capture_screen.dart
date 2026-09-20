@@ -112,7 +112,7 @@ class _CoverageStrip extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.checklist_rtl_outlined,
-                size: 18, color: theme.colorScheme.primary),
+                size: Dim.iconMd, color: theme.colorScheme.primary),
             const SizedBox(width: Dim.space3),
             Text('$covered of $total competencies covered',
                 style: theme.textTheme.bodyMedium
@@ -137,7 +137,7 @@ class _Opener extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.auto_stories_outlined,
-              size: 36, color: theme.colorScheme.primary),
+              size: Dim.iconLg, color: theme.colorScheme.primary),
           const SizedBox(height: Dim.space3),
           Text(
             'Tell me about your career and I\'ll help you turn it into strong '
@@ -218,7 +218,8 @@ class _DraftCard extends StatelessWidget {
             Row(
               children: [
                 Icon(Icons.info_outline,
-                    size: 15, color: theme.colorScheme.onSurfaceVariant),
+                    size: Dim.iconSm,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(
@@ -235,7 +236,7 @@ class _DraftCard extends StatelessWidget {
             children: [
               FilledButton.icon(
                 onPressed: onSave,
-                icon: const Icon(Icons.save_outlined, size: 18),
+                icon: const Icon(Icons.save_outlined, size: Dim.iconMd),
                 label: const Text('Save to story bank'),
               ),
               const SizedBox(width: Dim.space2),

@@ -195,7 +195,7 @@ class _ReaderError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.article_outlined,
-                size: 44, color: theme.colorScheme.onSurfaceVariant),
+                size: Dim.iconLg, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: Dim.space3),
             Text(message,
                 textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),

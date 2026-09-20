@@ -127,7 +127,7 @@ class _Opener extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.event_note_outlined,
-              size: 40, color: theme.colorScheme.primary),
+              size: Dim.iconLg, color: theme.colorScheme.primary),
           const SizedBox(height: Dim.space3),
           Text('Describe your interview',
               style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
@@ -210,7 +210,7 @@ class _PlanCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline, size: 16, color: _amber),
+                const Icon(Icons.info_outline, size: Dim.iconSm, color: _amber),
                 const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(

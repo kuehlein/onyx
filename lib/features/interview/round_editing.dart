@@ -126,10 +126,10 @@ class _RoundDialogState extends State<_RoundDialog> {
                 decoration: InputDecoration(
                   labelText: 'Date',
                   border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.event, size: 20),
+                  prefixIcon: const Icon(Icons.event, size: Dim.iconMd),
                   suffixIcon: dated
                       ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
+                          icon: const Icon(Icons.clear, size: Dim.iconMd),
                           tooltip: 'Clear date',
                           onPressed: () => setState(() => _date = null),
                         )

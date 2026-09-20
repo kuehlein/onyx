@@ -248,14 +248,16 @@ class _ActionBar extends StatelessWidget {
                       Expanded(
                         child: TextButton.icon(
                           onPressed: onEdit,
-                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          icon:
+                              const Icon(Icons.edit_outlined, size: Dim.iconMd),
                           label: const Text('Edit'),
                         ),
                       ),
                       Expanded(
                         child: TextButton.icon(
                           onPressed: onDiscard,
-                          icon: const Icon(Icons.delete_outline, size: 18),
+                          icon: const Icon(Icons.delete_outline,
+                              size: Dim.iconMd),
                           label: const Text('Discard'),
                           style: TextButton.styleFrom(
                             foregroundColor: theme.colorScheme.error,
@@ -316,7 +318,7 @@ class _CompleteState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.check_circle_outline,
-                  size: 44, color: theme.colorScheme.primary),
+                  size: Dim.iconLg, color: theme.colorScheme.primary),
               const SizedBox(height: Dim.space3),
               Text('Review complete',
                   textAlign: TextAlign.center,

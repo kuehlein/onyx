@@ -112,7 +112,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _record(o.feel),
-              icon: Icon(o.icon, size: 20),
+              icon: Icon(o.icon, size: Dim.iconMd),
               label: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(o.label),
@@ -176,7 +176,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
           width: double.infinity,
           child: FilledButton.icon(
             onPressed: () => _adjust(delta),
-            icon: const Icon(Icons.check, size: 18),
+            icon: const Icon(Icons.check, size: Dim.iconMd),
             label: Text(applyLabel),
           ),
         ),

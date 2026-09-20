@@ -14,6 +14,9 @@ Future<void> showHowCardsAreReadSheet(BuildContext context) {
   return showOnyxSheet<void>(context, builder: (_) => const _HowCardsAreRead());
 }
 
+// list-marker bullet — deliberately sub-icon-scale
+const double _bulletSize = 12;
+
 /// The future parse-profile options (docs/settings-ux.md §4), shown inert. Labels
 /// are the final ones; [editor] marks the row whose future form opens an editor
 /// (the dim trailing chevron).
@@ -123,7 +126,8 @@ class _NowRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: Dim.space2),
       child: Row(
         children: [
-          Icon(Icons.circle, size: 12, color: theme.colorScheme.primary),
+          Icon(Icons.circle,
+              size: _bulletSize, color: theme.colorScheme.primary),
           const SizedBox(width: Dim.space4),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           const SizedBox(width: Dim.space3),
@@ -154,12 +158,12 @@ class _LaterRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: Dim.space2),
         child: Row(
           children: [
-            Icon(Icons.circle_outlined, size: 12, color: dim),
+            Icon(Icons.circle_outlined, size: _bulletSize, color: dim),
             const SizedBox(width: Dim.space4),
             Expanded(
                 child: Text(label,
                     style: theme.textTheme.bodyMedium?.copyWith(color: dim))),
-            if (editor) Icon(Icons.chevron_right, size: 18, color: dim),
+            if (editor) Icon(Icons.chevron_right, size: Dim.iconMd, color: dim),
           ],
         ),
       ),

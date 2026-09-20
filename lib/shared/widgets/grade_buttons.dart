@@ -68,7 +68,7 @@ class GradeButtons extends StatelessWidget {
         : FilledButton.icon(
             onPressed: b.onTap,
             style: style,
-            icon: Icon(b.icon, size: 16),
+            icon: Icon(b.icon, size: Dim.iconSm),
             label: label);
   }
 }

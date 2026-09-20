@@ -132,13 +132,14 @@ class _GoalLane extends ConsumerWidget {
               ],
               IconButton(
                 tooltip: 'Pause',
-                icon: const Icon(Icons.pause_circle_outline, size: 22),
+                icon: const Icon(Icons.pause_circle_outline, size: Dim.iconMd),
                 color: cs.onSurfaceVariant,
                 onPressed: () => ref
                     .read(studyGoalsProvider.notifier)
                     .upsert(goal.copyWith(state: GoalState.paused)),
               ),
-              Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+              Icon(Icons.chevron_right,
+                  size: Dim.iconMd, color: cs.onSurfaceVariant),
             ],
           ),
         ),
@@ -160,7 +161,8 @@ class _PausedRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: Dim.space1),
       child: Row(
         children: [
-          Icon(Icons.pause_circle_filled, size: 18, color: cs.onSurfaceVariant),
+          Icon(Icons.pause_circle_filled,
+              size: Dim.iconMd, color: cs.onSurfaceVariant),
           const SizedBox(width: Dim.space3),
           Expanded(
             child: Text('${goal.name} · paused',

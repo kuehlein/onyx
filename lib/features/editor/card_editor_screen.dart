@@ -223,7 +223,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
                   child: Row(
                     children: [
                       Icon(Icons.delete_outline,
-                          size: 20, color: theme.colorScheme.error),
+                          size: Dim.iconMd, color: theme.colorScheme.error),
                       const SizedBox(width: Dim.space3),
                       Text('Delete',
                           style: TextStyle(color: theme.colorScheme.error)),
@@ -296,7 +296,8 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.info_outline,
-                    size: 18, color: theme.colorScheme.onSurfaceVariant),
+                    size: Dim.iconMd,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(

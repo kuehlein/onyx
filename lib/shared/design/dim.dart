@@ -58,4 +58,11 @@ abstract final class Dim {
   static const double maxNarrowWidth = 480; // home + compact screens & sheets
   static const double maxCompactWidth =
       440; // centered complete / welcome cards
+
+  // Icon sizes — a 3-tier scale (replaces an ad-hoc 13–48 spread). One-line
+  // reversible: change a value here and every icon at that tier follows.
+  static const double iconSm = 16; // inline / meta / dense rows
+  static const double iconMd = 20; // default — actions, list leading, headers
+  static const double iconLg =
+      44; // feature / hero — empty states, large status
 }

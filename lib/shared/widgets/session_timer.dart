@@ -188,7 +188,7 @@ class _SessionTimerState extends State<SessionTimer> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: color),
+              Icon(icon, size: Dim.iconMd, color: color),
               const SizedBox(width: Dim.space2),
               Text(label,
                   style: theme.textTheme.titleSmall?.copyWith(

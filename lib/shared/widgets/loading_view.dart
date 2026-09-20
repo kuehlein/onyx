@@ -29,7 +29,7 @@ class LoadingView extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.hourglass_empty, size: 16, color: muted),
+          Icon(Icons.hourglass_empty, size: Dim.iconSm, color: muted),
           const SizedBox(width: Dim.space2),
           Text(label, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
         ],

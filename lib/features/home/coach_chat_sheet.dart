@@ -160,7 +160,7 @@ class _ProposalCard extends StatelessWidget {
             children: [
               FilledButton.icon(
                 onPressed: onApply,
-                icon: const Icon(Icons.check, size: 18),
+                icon: const Icon(Icons.check, size: Dim.iconMd),
                 label: const Text('Apply'),
               ),
               const SizedBox(width: Dim.space2),

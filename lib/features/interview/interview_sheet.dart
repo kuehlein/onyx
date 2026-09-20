@@ -128,7 +128,7 @@ class _InterviewSheet extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => save(reopenInterview(aim)),
-                      icon: const Icon(Icons.refresh, size: 18),
+                      icon: const Icon(Icons.refresh, size: Dim.iconMd),
                       label: const Text('Reopen — still in progress'),
                     ),
                   )
@@ -147,7 +147,7 @@ class _InterviewSheet extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: reschedule,
-                      icon: const Icon(Icons.event_repeat, size: 18),
+                      icon: const Icon(Icons.event_repeat, size: Dim.iconMd),
                       label: const Text('It was rescheduled'),
                     ),
                   ),
@@ -156,7 +156,7 @@ class _InterviewSheet extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: reschedule,
-                      icon: const Icon(Icons.event, size: 18),
+                      icon: const Icon(Icons.event, size: Dim.iconMd),
                       label: Text(cur.date == null
                           ? 'Set the date'
                           : 'Reschedule this round'),
@@ -228,7 +228,7 @@ class _InterviewSheet extends ConsumerWidget {
           context.push('/practice/$top'
               '?for=${Uri.encodeComponent(forLabel)}');
         },
-        icon: const Icon(Icons.psychology_outlined, size: 18),
+        icon: const Icon(Icons.psychology_outlined, size: Dim.iconMd),
         label: const Text('Practice for this interview'),
       ),
     );
@@ -353,7 +353,7 @@ class _EndedBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: Dim.iconMd, color: color),
           const SizedBox(width: Dim.space2),
           Text(status.label,
               style: theme.textTheme.titleSmall
@@ -428,7 +428,7 @@ class _Timeline extends StatelessWidget {
           : null,
       child: Row(
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: Dim.iconSm, color: color),
           const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(

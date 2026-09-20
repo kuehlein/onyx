@@ -59,7 +59,7 @@ class CoachButton extends StatelessWidget {
       padding: const EdgeInsets.only(right: Dim.space1),
       child: TextButton.icon(
         onPressed: onPressed,
-        icon: const Icon(Icons.psychology_outlined, size: 20),
+        icon: const Icon(Icons.psychology_outlined, size: Dim.iconMd),
         label: const Text('Coach'),
         style: TextButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.primary,
@@ -441,7 +441,7 @@ class _NoKeyPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.vpn_key_outlined,
-                size: 40, color: theme.colorScheme.onSurfaceVariant),
+                size: Dim.iconLg, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: Dim.space3),
             Text(
               'The coach needs an Anthropic API key',
@@ -581,7 +581,7 @@ class _Thinking extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.more_horiz, size: 16, color: muted),
+          Icon(Icons.more_horiz, size: Dim.iconSm, color: muted),
           const SizedBox(width: Dim.space2),
           Text('Thinking…', style: TextStyle(color: muted)),
         ],

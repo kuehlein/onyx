@@ -71,7 +71,7 @@ class ReadinessPanel extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Icon(Icons.insights_outlined,
-                      size: 22, color: theme.colorScheme.primary),
+                      size: Dim.iconMd, color: theme.colorScheme.primary),
                 ),
               const SizedBox(width: Dim.space3),
               Expanded(
@@ -166,7 +166,7 @@ class _DomainListState extends State<_DomainList> {
               child: Row(
                 children: [
                   Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 16, color: theme.colorScheme.primary),
+                      size: Dim.iconSm, color: theme.colorScheme.primary),
                   const SizedBox(width: Dim.space1),
                   Text(
                     _expanded ? 'Show fewer' : 'Show all ${all.length} domains',
@@ -229,7 +229,7 @@ class _Headline extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.flag_outlined,
-                        size: 14, color: theme.colorScheme.primary),
+                        size: Dim.iconSm, color: theme.colorScheme.primary),
                     const SizedBox(width: Dim.space2),
                     Flexible(
                       child: Text(unset ? 'Set your target' : target!.label,
@@ -240,7 +240,7 @@ class _Headline extends StatelessWidget {
                               color: unset ? theme.colorScheme.primary : null)),
                     ),
                     const SizedBox(width: Dim.space2),
-                    Icon(Icons.tune, size: 14, color: muted),
+                    Icon(Icons.tune, size: Dim.iconSm, color: muted),
                   ],
                 ),
               ),
@@ -397,7 +397,7 @@ class _PaceRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: color),
+        Icon(icon, size: Dim.iconSm, color: color),
         const SizedBox(width: Dim.space2),
         Expanded(
           child: Text(text,
@@ -528,7 +528,7 @@ class _OverallBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (status.ready) ...[
-              Icon(Icons.check_circle, size: 13, color: status.color),
+              Icon(Icons.check_circle, size: Dim.iconSm, color: status.color),
               const SizedBox(width: Dim.space1),
             ],
             Text(status.label,
@@ -661,6 +661,10 @@ class _TickedBar extends StatelessWidget {
 
   static const _barHeight = 6.0;
   static const _flagZone = 16.0; // clear space above the bar for the flag
+  // Goal-marker flag glyph height. Layout-coupled: the connector tick starts at
+  // the flag's foot (top) and its length subtracts this same height. Sub-scale
+  // decorative glyph, deliberately off the icon scale.
+  static const double _goalFlagSize = 11;
 
   @override
   Widget build(BuildContext context) {
@@ -722,14 +726,14 @@ class _TickedBar extends StatelessWidget {
                 Positioned(
                   left: (goalX - 5).clamp(0.0, w - 10),
                   top: 0,
-                  child: Icon(Icons.flag, size: 11, color: muted),
+                  child: Icon(Icons.flag, size: _goalFlagSize, color: muted),
                 ),
                 Positioned(
                   left: (goalX - 0.75).clamp(0.0, w - 1.5),
-                  top: 11,
+                  top: _goalFlagSize,
                   child: Container(
                       width: 1.5,
-                      height: _flagZone + _barHeight - 11,
+                      height: _flagZone + _barHeight - _goalFlagSize,
                       color: muted.withValues(alpha: Dim.emphasisMed)),
                 ),
               ],
@@ -838,7 +842,7 @@ class _DomainRow extends ConsumerWidget {
                       if (focus) ...[
                         const SizedBox(width: Dim.space2),
                         Icon(Icons.my_location,
-                            size: 13, color: theme.colorScheme.primary),
+                            size: Dim.iconSm, color: theme.colorScheme.primary),
                       ],
                     ],
                   ),

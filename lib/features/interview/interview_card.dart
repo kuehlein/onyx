@@ -82,7 +82,7 @@ class InterviewCard extends ConsumerWidget {
           theme.colorScheme.outline
         ),
     };
-    return Icon(icon, size: 16, color: color);
+    return Icon(icon, size: Dim.iconSm, color: color);
   }
 
   Widget _titleBlock(BuildContext context, WidgetRef ref, bool ended,

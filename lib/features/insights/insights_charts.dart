@@ -79,7 +79,8 @@ class _Tile extends StatelessWidget {
                   if (kpi.onTap != null) ...[
                     const SizedBox(width: Dim.space1),
                     Icon(Icons.chevron_right,
-                        size: 14, color: theme.colorScheme.onSurfaceVariant),
+                        size: Dim.iconSm,
+                        color: theme.colorScheme.onSurfaceVariant),
                   ],
                 ],
               ),
@@ -138,7 +139,8 @@ class _GroupState extends State<_Group> {
             padding: const EdgeInsets.symmetric(vertical: Dim.space3),
             child: Row(
               children: [
-                Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
+                Icon(widget.icon,
+                    size: Dim.iconMd, color: theme.colorScheme.primary),
                 const SizedBox(width: Dim.space3),
                 Text(widget.title,
                     style: theme.textTheme.titleMedium
@@ -155,7 +157,7 @@ class _GroupState extends State<_Group> {
                   ),
                 const SizedBox(width: Dim.space2),
                 Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                    size: 20, color: muted),
+                    size: Dim.iconMd, color: muted),
               ],
             ),
           ),

@@ -163,7 +163,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                             ?.copyWith(color: muted)),
                                     const Spacer(),
                                     Icon(Icons.expand_less,
-                                        size: 20, color: muted),
+                                        size: Dim.iconMd, color: muted),
                                   ]),
                                 ),
                               ),
@@ -212,7 +212,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                               child: Row(
                                 children: [
                                   Icon(Icons.flag_outlined,
-                                      size: 18,
+                                      size: Dim.iconMd,
                                       color: theme.colorScheme.primary),
                                   const SizedBox(width: Dim.space3),
                                   Expanded(
@@ -233,7 +233,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                     ),
                                   ),
                                   Icon(Icons.expand_more,
-                                      size: 20, color: muted),
+                                      size: Dim.iconMd, color: muted),
                                 ],
                               ),
                             ),
@@ -480,7 +480,7 @@ class _ForecastBlock extends ConsumerWidget {
   Widget _note(IconData icon, String text, Color color, ThemeData theme) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 15, color: color),
+          Icon(icon, size: Dim.iconSm, color: color),
           const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(text,
@@ -618,7 +618,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
-              iconSize: 22,
+              iconSize: Dim.iconMd,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(
@@ -638,7 +638,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
-              iconSize: 22,
+              iconSize: Dim.iconMd,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(
@@ -894,7 +894,7 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
             const Spacer(),
             TextButton.icon(
               onPressed: widget.onAdd,
-              icon: const Icon(Icons.add, size: 18),
+              icon: const Icon(Icons.add, size: Dim.iconMd),
               label: const Text('Add'),
               style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,

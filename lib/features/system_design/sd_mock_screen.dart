@@ -130,7 +130,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
                         support: support)
                     : () => Navigator.of(context).maybePop(),
                 icon: Icon(answered ? Icons.flag_outlined : Icons.close,
-                    size: 18),
+                    size: Dim.iconMd),
                 label: Text(answered ? 'End & grade' : 'Cancel'),
               ),
             ),
@@ -139,7 +139,7 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
               padding: const EdgeInsets.symmetric(horizontal: Dim.space2),
               child: TextButton.icon(
                 onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.check, size: 18),
+                icon: const Icon(Icons.check, size: Dim.iconMd),
                 label: const Text('Done'),
               ),
             ),
@@ -328,7 +328,8 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                 Row(
                   children: [
                     Icon(Icons.info_outline,
-                        size: 15, color: theme.colorScheme.onSurfaceVariant),
+                        size: Dim.iconSm,
+                        color: theme.colorScheme.onSurfaceVariant),
                     const SizedBox(width: Dim.space2),
                     Expanded(
                       child: Text(

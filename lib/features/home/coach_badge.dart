@@ -83,7 +83,7 @@ class CoachBadge extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Icon(_icon(update.kind), size: 20, color: color),
+              Icon(_icon(update.kind), size: Dim.iconMd, color: color),
               const SizedBox(width: Dim.space3),
               Expanded(
                 child: Text(
@@ -96,7 +96,7 @@ class CoachBadge extends ConsumerWidget {
               ),
               const SizedBox(width: Dim.space2),
               Icon(Icons.expand_more,
-                  size: 18, color: theme.colorScheme.onSurfaceVariant),
+                  size: Dim.iconMd, color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -156,7 +156,7 @@ class CoachBadge extends ConsumerWidget {
                             Navigator.pop(ctx);
                             _applyProposal(context, ref, u.proposal!);
                           },
-                          icon: const Icon(Icons.check, size: 18),
+                          icon: const Icon(Icons.check, size: Dim.iconMd),
                           label: Text(u.proposal!.applyLabel),
                         ),
                       )
@@ -191,7 +191,8 @@ class CoachBadge extends ConsumerWidget {
                             todayPlan: todayPlan,
                           );
                         },
-                        icon: const Icon(Icons.forum_outlined, size: 18),
+                        icon:
+                            const Icon(Icons.forum_outlined, size: Dim.iconMd),
                         label: const Text('Talk about it'),
                       ),
                     ),
@@ -205,7 +206,8 @@ class CoachBadge extends ConsumerWidget {
                           Navigator.pop(ctx);
                           context.push('/report');
                         },
-                        icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                        icon: const Icon(Icons.auto_awesome_outlined,
+                            size: Dim.iconMd),
                         label: const Text('Full readiness report'),
                       ),
                     ),

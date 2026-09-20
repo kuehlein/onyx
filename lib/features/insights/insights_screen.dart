@@ -192,7 +192,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => context.push('/report'),
-                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                  icon:
+                      const Icon(Icons.auto_awesome_outlined, size: Dim.iconMd),
                   label: const Text('Full AI readiness report'),
                 ),
               ),

@@ -105,7 +105,7 @@ class _CoverageRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(covered ? Icons.check_circle : Icons.circle_outlined,
-              size: 18,
+              size: Dim.iconMd,
               color: covered
                   ? StatusColor.good
                   : theme.colorScheme.onSurfaceVariant),

@@ -260,7 +260,7 @@ class _SectionPanel extends StatelessWidget {
                           Tooltip(
                             message: 'Scheduled for review',
                             child: Icon(Icons.check_circle_outline,
-                                size: 18, color: scheme.primary),
+                                size: Dim.iconMd, color: scheme.primary),
                           ),
                       ],
                     ),

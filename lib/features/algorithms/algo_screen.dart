@@ -254,7 +254,7 @@ class _AltButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 18),
+        icon: Icon(icon, size: Dim.iconMd),
         label: Text(label),
       );
 }
@@ -412,7 +412,7 @@ class _Complete extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline,
-                size: 48, color: theme.colorScheme.primary),
+                size: Dim.iconLg, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text(done == 0 ? 'All done for today' : 'Nice work',
                 style: theme.textTheme.titleLarge),

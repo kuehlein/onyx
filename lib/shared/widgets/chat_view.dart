@@ -229,7 +229,7 @@ class _Thinking extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.more_horiz, size: 16, color: muted),
+          Icon(Icons.more_horiz, size: Dim.iconSm, color: muted),
           const SizedBox(width: Dim.space2),
           Text('Thinking…', style: TextStyle(color: muted)),
         ],

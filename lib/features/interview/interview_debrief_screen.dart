@@ -80,7 +80,7 @@ class _Opener extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.rate_review_outlined,
-              size: 40, color: theme.colorScheme.primary),
+              size: Dim.iconLg, color: theme.colorScheme.primary),
           const SizedBox(height: Dim.space3),
           Text('How did it go?',
               style: theme.textTheme.titleMedium, textAlign: TextAlign.center),

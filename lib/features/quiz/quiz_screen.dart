@@ -237,7 +237,8 @@ class _ReviewView extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
                             onPressed: () => openExternalUrl(card.practiceUrl!),
-                            icon: const Icon(Icons.open_in_new, size: 18),
+                            icon:
+                                const Icon(Icons.open_in_new, size: Dim.iconMd),
                             label: const Text('Solve the problem'),
                           ),
                         ),
@@ -249,7 +250,8 @@ class _ReviewView extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
                             onPressed: () => context.push('/card/${card.id}'),
-                            icon: const Icon(Icons.article_outlined, size: 18),
+                            icon: const Icon(Icons.article_outlined,
+                                size: Dim.iconMd),
                             label: const Text('View full card'),
                           ),
                         ),
@@ -512,7 +514,7 @@ class _CompleteState extends ConsumerWidget {
           padding: const EdgeInsets.all(Dim.space6),
           children: [
             Icon(Icons.check_circle_outline,
-                size: 44, color: theme.colorScheme.primary),
+                size: Dim.iconLg, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text('Session complete',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
@@ -608,7 +610,7 @@ class _ProgressDelta extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.trending_up,
-                  size: 16, color: theme.colorScheme.primary),
+                  size: Dim.iconSm, color: theme.colorScheme.primary),
               const SizedBox(width: Dim.space2),
               Expanded(
                 child: Text(
@@ -670,7 +672,7 @@ class _DeltaLine extends StatelessWidget {
           ),
           if (!steady)
             Icon(p > 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 13, color: color),
+                size: Dim.iconSm, color: color),
           const SizedBox(width: Dim.space1),
           Text(text,
               style: theme.textTheme.bodyMedium

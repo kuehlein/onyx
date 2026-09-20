@@ -378,7 +378,7 @@ class _StrugglingSection extends ConsumerWidget {
                   child: Row(
                     children: [
                       Icon(Icons.error_outline,
-                          size: 16, color: theme.colorScheme.error),
+                          size: Dim.iconSm, color: theme.colorScheme.error),
                       const SizedBox(width: Dim.space2),
                       Expanded(
                         child: Text(c.title,

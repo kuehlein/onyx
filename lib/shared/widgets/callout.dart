@@ -102,7 +102,7 @@ class Callout extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(icon, size: 18, color: color),
+                        Icon(icon, size: Dim.iconMd, color: color),
                         const SizedBox(width: Dim.space2),
                         Flexible(
                           child: Text(

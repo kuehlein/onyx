@@ -271,7 +271,7 @@ class _PracticeDone extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline,
-                size: 44, color: theme.colorScheme.primary),
+                size: Dim.iconLg, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text('Nice — $count practiced',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
@@ -310,7 +310,7 @@ class _EmptyPractice extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.inbox_outlined,
-                size: 44, color: theme.colorScheme.onSurfaceVariant),
+                size: Dim.iconLg, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: Dim.space3),
             Text('No practice material in ${prettyDomain(domain)} yet',
                 textAlign: TextAlign.center,

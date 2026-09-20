@@ -62,7 +62,7 @@ class _TipRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: Dim.space1),
           child: Icon(Icons.check_circle_outline,
-              size: 18, color: theme.colorScheme.primary),
+              size: Dim.iconMd, color: theme.colorScheme.primary),
         ),
         const SizedBox(width: Dim.space3),
         Expanded(
@@ -113,7 +113,7 @@ class StudyTipIntro extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Icon(Icons.tips_and_updates_outlined,
-                  size: 40, color: theme.colorScheme.primary),
+                  size: Dim.iconLg, color: theme.colorScheme.primary),
               const SizedBox(height: Dim.space5),
               Text('Before you start',
                   textAlign: TextAlign.center,

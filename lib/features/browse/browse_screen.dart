@@ -364,7 +364,7 @@ class _CardTile extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: Dim.fill),
-        child: Icon(flowIcon(flow?.iconKey), size: 20, color: color),
+        child: Icon(flowIcon(flow?.iconKey), size: Dim.iconMd, color: color),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       // Lead with the type label so same-titled cards are unambiguous even when

@@ -226,7 +226,7 @@ class _TargetCard extends ConsumerWidget {
               horizontal: Dim.space4, vertical: Dim.space3),
           child: Row(
             children: [
-              Icon(Icons.flag_outlined, size: 20, color: cs.primary),
+              Icon(Icons.flag_outlined, size: Dim.iconMd, color: cs.primary),
               const SizedBox(width: Dim.space3),
               Expanded(
                 child: Column(
@@ -251,7 +251,8 @@ class _TargetCard extends ConsumerWidget {
                         color: cs.primary, fontWeight: FontWeight.w700)),
               ],
               const SizedBox(width: Dim.space1),
-              Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+              Icon(Icons.chevron_right,
+                  size: Dim.iconMd, color: cs.onSurfaceVariant),
             ],
           ),
         ),
@@ -287,7 +288,7 @@ class _DraftReviewPrompt extends ConsumerWidget {
             child: Row(
               children: [
                 Icon(Icons.inbox_outlined,
-                    size: 18, color: cs.onSurfaceVariant),
+                    size: Dim.iconMd, color: cs.onSurfaceVariant),
                 const SizedBox(width: Dim.space3),
                 Expanded(
                   child: Text(
@@ -296,7 +297,8 @@ class _DraftReviewPrompt extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: Dim.space2),
-                Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+                Icon(Icons.chevron_right,
+                    size: Dim.iconMd, color: cs.onSurfaceVariant),
               ],
             ),
           ),
@@ -407,7 +409,7 @@ class _ReadinessChip extends ConsumerWidget {
       child: ActionChip(
         onPressed: () => context.go('/insights?focus=readiness'),
         avatar: Icon(Icons.flag_outlined,
-            size: 18, color: theme.colorScheme.primary),
+            size: Dim.iconMd, color: theme.colorScheme.primary),
         label: Text('Ready $pct%'),
         visualDensity: VisualDensity.compact,
       ),
