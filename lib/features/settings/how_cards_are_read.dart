@@ -53,7 +53,7 @@ class _HowCardsAreRead extends StatelessWidget {
               ),
               const SizedBox(height: Dim.space5),
               const _SectionLabel('Now'),
-              for (final r in cardParsingRules) _NowRow(r.label, r.value),
+              for (final r in cardParsingRules()) _NowRow(r.label, r.value),
               const SizedBox(height: Dim.space5),
               const _SectionLabel('Later', tagged: true),
               for (final l in _later) _LaterRow(l.label, editor: l.editor),

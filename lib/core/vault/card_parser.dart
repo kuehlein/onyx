@@ -4,17 +4,21 @@ import '../../shared/models/card.dart';
 import '../subject/active_subject.dart';
 import '../subject/subject_config.dart';
 
-/// The current (fixed) card-parsing rules, surfaced read-only by the "How cards
-/// are read" settings sheet (docs/settings-ux.md §4). Co-located with the parser
-/// so a rule change updates the shown fact here in the same place. Parsing isn't
-/// user-configurable yet — the sheet's "Later" rows reserve that. Facts:
-///  * sections split on H2 (`_h2` below); a note is a card when it has a
-///    recognized `type:` (the parser returns null otherwise); files are `.md`.
-const List<({String label, String value})> cardParsingRules = [
-  (label: 'Sections split on', value: 'Headings (H2)'),
-  (label: 'Reads files', value: '.md'),
-  (label: 'A note is a card when it has', value: 'type:'),
-];
+/// The live card-parsing facts for the ACTIVE subject's [ParseProfile], surfaced
+/// by the "How cards are read" settings sheet (docs/settings-ux.md §4). Derived
+/// from the profile (never restated), so it always reflects the real rules — a
+/// subject that customizes its section level or file types shows its own facts.
+List<({String label, String value})> cardParsingRules() {
+  final p = activeSubject.parseProfile;
+  return [
+    (label: 'Sections split on', value: 'Headings (H${p.sectionHeadingLevel})'),
+    (
+      label: 'Reads files',
+      value: p.fileExtensions.map((e) => '.$e').join(', '),
+    ),
+    (label: 'A note is a card when it has', value: 'type:'),
+  ];
+}
 
 /// Parses a single Obsidian markdown file into a [Card].
 ///
@@ -34,8 +38,18 @@ class CardParser {
   static final RegExp _frontmatter =
       RegExp(r'^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n?(.*)$', dotAll: true);
   static final RegExp _h1 = RegExp(r'^#[ \t]+(.+?)[ \t]*$');
+
+  /// The default section marker (H2). A subject with a different
+  /// [ParseProfile.sectionHeadingLevel] gets a level-specific regex from
+  /// [_sectionRegex]; kept as a field so the common level-2 case allocates none.
   static final RegExp _h2 = RegExp(r'^##[ \t]+(.+?)[ \t]*$');
   static final RegExp _fence = RegExp(r'^[ \t]*(```|~~~)');
+
+  /// The heading regex that splits sections at [level] (2 → [_h2]). Requires
+  /// EXACTLY [level] `#`s then whitespace, so a deeper heading (an extra `#`) or a
+  /// shallower one (e.g. the H1 title) is treated as content rather than a split.
+  static RegExp _sectionRegex(int level) =>
+      level == 2 ? _h2 : RegExp('^#{$level}[ \\t]+(.+?)[ \\t]*\$');
 
   /// `[[target]]`, `[[target|alias]]`, `[[target#heading]]`. Group 1 is the
   /// target filename (without `.md`), excluding any `#` anchor or `|` alias.
@@ -107,8 +121,10 @@ class CardParser {
       throw MissingCardIdException(filePath);
     }
 
+    final profile = subject.parseProfile;
     final body = match.group(2) ?? '';
-    final (title, overview, rawSections) = _splitBody(body);
+    final (title, overview, rawSections) =
+        _splitBody(body, _sectionRegex(profile.sectionHeadingLevel));
     if (title == null) {
       throw MalformedCardException(filePath, 'missing H1 title');
     }
@@ -128,7 +144,7 @@ class CardParser {
       tags: _stringList(frontmatter['tags']) ?? const [],
       tiers: _intMap(frontmatter['tiers']),
       sections: sections,
-      wikilinks: _extractWikilinks(body),
+      wikilinks: profile.wikilinks ? _extractWikilinks(body) : const [],
       filePath: filePath,
       created: _parseDate(frontmatter['created']),
       confidence: Confidence.fromString(frontmatter['confidence'] as String?),
@@ -183,8 +199,10 @@ class CardParser {
         // Interview questions default to quizzing only the Approach section.
         QuizzabilityPolicy.approachOnly => slug == 'approach',
         // Concept cards: everything but the shared reference/blocklist headings.
+        // A subject may override the never-quizzed set via its parse profile.
         QuizzabilityPolicy.blocklist =>
-          !_blocklist.contains(heading.trim().toLowerCase()),
+          !(subject.parseProfile.neverQuizzed ?? _blocklist)
+              .contains(heading.trim().toLowerCase()),
       };
     }
     return CardSection(
@@ -197,7 +215,8 @@ class CardParser {
 
   /// Splits a card body into (H1 title, pre-H2 overview, H2 sections), ignoring
   /// `#`/`##` lines that fall inside fenced code blocks.
-  (String?, String, List<_RawSection>) _splitBody(String body) {
+  (String?, String, List<_RawSection>) _splitBody(
+      String body, RegExp sectionRe) {
     String? title;
     final overview = <String>[];
     final sections = <_RawSection>[];
@@ -220,7 +239,7 @@ class CardParser {
       }
 
       if (!inFence) {
-        final h2 = _h2.firstMatch(line);
+        final h2 = sectionRe.firstMatch(line);
         if (h2 != null) {
           flush();
           currentHeading = h2.group(1)!.trim();

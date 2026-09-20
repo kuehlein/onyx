@@ -166,8 +166,46 @@ class Vocabulary {
   static const neutral = Vocabulary();
 }
 
+/// How a subject's notes become cards — the **parse profile** (task #30, G4). The
+/// engine reads these rules instead of hardcoding them, so a subject can declare
+/// its own conventions (H3 sections, extra file types, no wikilinks, a different
+/// never-quizzed set) in `onyx-subject.yaml`. The [standard] defaults reproduce
+/// Onyx's built-in parser EXACTLY, so a subject that declares nothing (SWE,
+/// Korean) parses identically. Custom section markers (`---` / start-end) and the
+/// frontmatter field-map are the "advanced" tier — added when a consumer needs
+/// them, not speculatively (docs/settings-ux.md §4).
+class ParseProfile {
+  const ParseProfile({
+    this.sectionHeadingLevel = 2,
+    this.fileExtensions = const {'md'},
+    this.wikilinks = true,
+    this.neverQuizzed,
+  });
+
+  /// Sections split on Markdown headings at this level (2 = `##`, 3 = `###`); the
+  /// H1 stays the card title.
+  final int sectionHeadingLevel;
+
+  /// File extensions (lowercase, no dot) the file walk reads as candidate cards;
+  /// card-ness is still decided per file by `type:`.
+  final Set<String> fileExtensions;
+
+  /// Whether `[[wikilinks]]` are extracted from card bodies.
+  final bool wikilinks;
+
+  /// Headings never scheduled for review (lowercased) — overrides the engine's
+  /// built-in blocklist. Null = use that default (the common case); a non-null set
+  /// (even empty) replaces it wholesale. Nullable rather than defaulted so the
+  /// authoritative blocklist can live next to the parser without an import cycle.
+  final Set<String>? neverQuizzed;
+
+  /// Onyx's built-in parsing rules — the default when a subject declares none.
+  static const standard = ParseProfile();
+}
+
 /// A configured study subject. Grows across the #30 phases; currently [id],
-/// [target] (Phase 0/2), [flows] (Phase 3), and [vocabulary] (G3).
+/// [target] (Phase 0/2), [flows] (Phase 3), [vocabulary] (G3), and
+/// [parseProfile] (G4).
 class SubjectConfig {
   const SubjectConfig({
     required this.id,
@@ -175,6 +213,7 @@ class SubjectConfig {
     this.flows = const [],
     this.coachSkill,
     this.vocabulary = Vocabulary.neutral,
+    this.parseProfile = ParseProfile.standard,
   });
 
   final String id;
@@ -183,6 +222,10 @@ class SubjectConfig {
   /// Assessment terminology for shared engine copy. Neutral by default; the SWE
   /// reference sets "interviewer" so its UI is unchanged.
   final Vocabulary vocabulary;
+
+  /// How this subject's notes become cards (task #30, G4). Defaults reproduce
+  /// Onyx's built-in parser exactly.
+  final ParseProfile parseProfile;
 
   /// One flow per card `type:`. See [flowForType].
   final List<FlowSpec> flows;

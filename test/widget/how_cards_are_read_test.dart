@@ -6,7 +6,7 @@ import 'package:onyx/features/settings/how_cards_are_read.dart';
 
 void main() {
   test('cardParsingRules exposes the current parser facts', () {
-    final byLabel = {for (final r in cardParsingRules) r.label: r.value};
+    final byLabel = {for (final r in cardParsingRules()) r.label: r.value};
     expect(byLabel['Sections split on'], 'Headings (H2)');
     expect(byLabel['Reads files'], '.md');
     expect(byLabel.containsKey('A note is a card when it has'), isTrue);

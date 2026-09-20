@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../subject/active_subject.dart';
 import 'vault_source.dart';
 
 /// A [VaultSource] backed by a plain filesystem directory.
@@ -28,9 +29,15 @@ class DesktopVaultSource implements VaultSource {
     final root = Directory(rootPath);
     if (!root.existsSync()) return const [];
 
+    // Which file types are cards is the active subject's parse profile (task #30,
+    // G4); the default {md} keeps this a `.md`-only walk. Case-insensitive on the
+    // extension; card-ness is still decided per file by `type:` in the parser.
+    final extensions = activeSubject.parseProfile.fileExtensions;
     final paths = <String>[];
     await for (final entity in root.list(recursive: true, followLinks: false)) {
-      if (entity is! File || !entity.path.endsWith('.md')) continue;
+      if (entity is! File) continue;
+      final ext = p.extension(entity.path).toLowerCase().replaceFirst('.', '');
+      if (!extensions.contains(ext)) continue;
       final relative = p.relative(entity.path, from: rootPath);
       if (_excluded(relative)) continue;
       // Normalize to POSIX separators so stored paths are platform-independent.

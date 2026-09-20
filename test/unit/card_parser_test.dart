@@ -1,6 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/subject/active_subject.dart';
+import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/subject/subject_registry.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/shared/models/card.dart';
 
@@ -459,6 +463,72 @@ a
       expect(parse('est_minutes: 0\n').estMinutes, isNull);
       expect(parse('est_minutes: -5\n').estMinutes, isNull);
       expect(parse('est_minutes: soon\n').estMinutes, isNull);
+    });
+  });
+
+  group('parse profile (G4) drives section marker, wikilinks, blocklist', () {
+    // Reuses the SWE target + flows (so `type: flashcard` is a card with the
+    // blocklist quizzability policy) but customizes only the parse profile. The
+    // existing groups above run under the DEFAULT profile — the SWE-identity net.
+    final custom = SubjectConfig(
+      id: 'custom-parse',
+      target: softwareInterviewsConfig.target,
+      flows: softwareInterviewsConfig.flows,
+      parseProfile: const ParseProfile(
+        sectionHeadingLevel: 3,
+        wikilinks: false,
+        neverQuizzed: {'skip me'},
+      ),
+    );
+
+    setUp(() {
+      activeRegistry = SubjectRegistry.single(custom);
+      activeSubject = custom;
+    });
+    tearDown(() {
+      activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
+      activeSubject = softwareInterviewsConfig;
+    });
+
+    const card = '''
+---
+id: 22222222-2222-4222-8222-222222222222
+type: flashcard
+---
+
+# Title
+
+Overview line with a [[wikilink]].
+
+## Not A Section
+
+This H2 is body text under the H3 profile, not a section.
+
+### First
+
+Real section content.
+
+### Skip Me
+
+Reference-only.
+''';
+
+    test('sections split on H3 (the H2 folds into the body)', () {
+      final c = const CardParser().parse(card, filePath: 'x.md')!;
+      expect(c.title, 'Title');
+      expect(c.sections.map((s) => s.heading), ['First', 'Skip Me']);
+    });
+
+    test('the custom never-quizzed set replaces the default blocklist', () {
+      final c = const CardParser().parse(card, filePath: 'x.md')!;
+      final byHeading = {for (final s in c.sections) s.heading: s.quizzable};
+      expect(byHeading['First'], isTrue);
+      expect(byHeading['Skip Me'], isFalse); // in the custom set
+    });
+
+    test('wikilinks off → none extracted', () {
+      final c = const CardParser().parse(card, filePath: 'x.md')!;
+      expect(c.wikilinks, isEmpty);
     });
   });
 }

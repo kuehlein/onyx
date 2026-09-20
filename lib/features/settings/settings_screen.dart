@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Card parsing'),
             // Derived from the live parser facts (sections marker · file type).
             subtitle: Text(
-                '${cardParsingRules[0].value} · ${cardParsingRules[1].value}'),
+                '${cardParsingRules()[0].value} · ${cardParsingRules()[1].value}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showHowCardsAreReadSheet(context),
           ),

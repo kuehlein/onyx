@@ -163,6 +163,26 @@ void main() {
       expect(const Vocabulary(examinerNoun: '').examinerNounTitle, '');
     });
   });
+
+  group('parse profile (G4) → default reproduces the built-in parser', () {
+    test('SWE reference uses the standard profile (parses identically)', () {
+      expect(
+          softwareInterviewsConfig.parseProfile, same(ParseProfile.standard));
+    });
+
+    test('standard defaults: H2 · .md · wikilinks on · default blocklist', () {
+      const p = ParseProfile.standard;
+      expect(p.sectionHeadingLevel, 2);
+      expect(p.fileExtensions, {'md'});
+      expect(p.wikilinks, isTrue);
+      expect(p.neverQuizzed, isNull); // null → engine's built-in blocklist
+    });
+
+    test('a bare subject gets the standard profile', () {
+      const bare = SubjectConfig(id: 'x', target: _emptyTarget);
+      expect(bare.parseProfile, same(ParseProfile.standard));
+    });
+  });
 }
 
 /// A minimal target for constructing a bare [SubjectConfig] in the vocabulary
