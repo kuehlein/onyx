@@ -19,6 +19,8 @@ class _FakeSource implements VaultSource {
   @override
   Future<List<String>> listCardPaths() async => const [];
   @override
+  Future<List<String>> listAllPaths() => listCardPaths();
+  @override
   Future<List<String>> listConfigPaths() async => const [];
   @override
   Future<String> readCard(String path) async => '';

@@ -41,6 +41,22 @@ class DesktopVaultSource implements VaultSource {
   }
 
   @override
+  Future<List<String>> listAllPaths() async {
+    final root = Directory(rootPath);
+    if (!root.existsSync()) return const [];
+
+    final paths = <String>[];
+    await for (final entity in root.list(recursive: true, followLinks: false)) {
+      if (entity is! File) continue; // any extension, not just `.md`
+      final relative = p.relative(entity.path, from: rootPath);
+      if (_excluded(relative)) continue;
+      paths.add(p.posix.joinAll(p.split(relative)));
+    }
+    paths.sort();
+    return paths;
+  }
+
+  @override
   Future<List<String>> listConfigPaths() async {
     final root = Directory(rootPath);
     if (!root.existsSync()) return const [];

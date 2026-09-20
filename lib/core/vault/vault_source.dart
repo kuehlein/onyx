@@ -13,6 +13,14 @@ abstract class VaultSource {
   /// hidden (`.`-prefixed) folder such as `.obsidian/`. Sorted for determinism.
   Future<List<String>> listCardPaths();
 
+  /// Relative POSIX paths of EVERY file under the root (any extension), with the
+  /// same `_meta/` + hidden-folder exclusions as [listCardPaths]. Used to resolve
+  /// `[[wikilinks]]`: a link is only "dangling" when no file of ANY type shares
+  /// its name, so resolution follows file-type support instead of assuming `.md`.
+  /// Defaults to [listCardPaths] (the `.md`-only set) for sources that don't yet
+  /// enumerate other files.
+  Future<List<String>> listAllPaths() => listCardPaths();
+
   /// Reads the UTF-8 content of the card at [relativePath].
   Future<String> readCard(String relativePath);
 

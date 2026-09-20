@@ -9,6 +9,7 @@ import '../features/behavioral/story_bank_screen.dart';
 import '../features/behavioral/story_capture_screen.dart';
 import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
+import '../features/browse/unresolved_links_screen.dart';
 import '../features/drafts/draft_review_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
@@ -153,6 +154,10 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
                     path: 'card/:id',
                     builder: (_, state) =>
                         CardDetailScreen(cardId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'unresolved-links',
+                    builder: (_, __) => const UnresolvedLinksScreen(),
                   ),
                 ],
               ),

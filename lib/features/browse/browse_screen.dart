@@ -64,6 +64,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider);
     final states = ref.watch(srsStatesProvider).asData?.value;
+    // Distinct dangling `[[link]]` targets — the action shows only when there
+    // are some to fix (task #20), staying out of the way when the graph is tidy.
+    final unresolvedTargets = index.asData?.value.unresolvedLinks
+            .map((l) => l.target)
+            .toSet()
+            .length ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,6 +91,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             tooltip: 'Import a deck',
             onPressed: () => showImportDeckSheet(context),
           ),
+          if (unresolvedTargets > 0)
+            IconButton(
+              icon: Badge(
+                label: Text('$unresolvedTargets'),
+                child: const Icon(Icons.link_off),
+              ),
+              tooltip: 'Unresolved links',
+              onPressed: () => context.push('/browse/unresolved-links'),
+            ),
         ],
       ),
       body: index.when(

@@ -134,3 +134,26 @@ Future<IndexResult> vaultIndex(Ref ref) async {
   }
   return VaultIndexer(source, db, registry: registry).reindex();
 }
+
+/// Dangling `[[wikilinks]]` grouped by their missing target (task #20), most-
+/// referenced first (ties broken alphabetically). Grouping by target is the
+/// actionable unit: one note/file created with that name resolves every link to
+/// it at the next re-index.
+@riverpod
+Future<List<({String target, List<UnresolvedLink> refs})>> unresolvedLinks(
+  Ref ref,
+) async {
+  final index = await ref.watch(vaultIndexProvider.future);
+  final byTarget = <String, List<UnresolvedLink>>{};
+  for (final link in index.unresolvedLinks) {
+    (byTarget[link.target] ??= []).add(link);
+  }
+  final groups = [
+    for (final e in byTarget.entries) (target: e.key, refs: e.value),
+  ];
+  groups.sort((a, b) {
+    final byCount = b.refs.length.compareTo(a.refs.length);
+    return byCount != 0 ? byCount : a.target.compareTo(b.target);
+  });
+  return groups;
+}
