@@ -7,6 +7,7 @@ import 'package:onyx/core/subject/active_subject.dart';
 import 'package:onyx/core/subject/software_interviews.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/providers/database.dart';
+import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/practice_plan.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
@@ -70,6 +71,23 @@ void main() {
       expect(unit.track, 'conversation');
       expect(unit.label, 'Order water at a café');
       expect(unit.estMinutes, kMockMinutes);
+    });
+
+    test('the conversation flow gates in the daily plan on its depends-on',
+        () async {
+      final c = container();
+      addTearDown(c.dispose);
+      c.listen(dailyPlanProvider, (_, __) {});
+
+      final plan = await c.read(dailyPlanProvider.future);
+
+      // Fresh state: the conversation's vocabulary prerequisites (its
+      // `depends-on`) aren't comfortable, so the config practice flow is LOCKED
+      // in the plan — parity with SWE system-design/algorithms. Proves the
+      // general depends-on field now drives daily-plan gating, not just the
+      // FlowRunner's screen-entry soft gate (task #30, G6).
+      expect(plan.locked.map((t) => t.track), contains('conversation'));
+      expect(plan.tracks.map((t) => t.track), isNot(contains('conversation')));
     });
   },
       skip: _sqliteAvailable

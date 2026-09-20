@@ -123,16 +123,28 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     conceptLabel[c.id] = c.title;
   }
 
-  // Prerequisites: algorithm groups (static, keyed by concept card id) +
-  // system-design problems (their `## Related` links, each resolved
-  // filename→card id and kept only if we can gauge its comfort).
+  // Prerequisites, from three sources, each resolved to a concept whose comfort
+  // we can gauge: algorithm groups (static, keyed by concept card id),
+  // system-design problems (their `## Related` links), and the general
+  // `depends-on` field any card may declare (the config-subject path, e.g. a
+  // Korean `conversation` gating on its vocabulary). No SWE card uses
+  // `depends-on`, so that branch is additive for the SWE deck.
   final prereqs = <String, List<String>>{...algoGroupPrereqs};
   for (final c in index.cards) {
-    if (c.type != kTypeSystemDesign) continue;
-    prereqs[c.id] = [
-      for (final w in c.wikilinks)
-        if (conceptIdByFile[w] case final id? when comfort.containsKey(id)) id,
-    ];
+    if (c.type == kTypeSystemDesign) {
+      prereqs[c.id] = [
+        for (final w in c.wikilinks)
+          if (conceptIdByFile[w] case final id? when comfort.containsKey(id))
+            id,
+      ];
+    } else if (c.dependsOn.isNotEmpty) {
+      prereqs[c.id] = [
+        for (final dep in c.dependsOn)
+          if ((conceptIdByFile[dep] ?? dep) case final id
+              when comfort.containsKey(id))
+            id,
+      ];
+    }
   }
 
   final gated = gatePracticeAvailabilities(
