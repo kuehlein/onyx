@@ -139,7 +139,7 @@ class _FolderSourceBodyState extends ConsumerState<FolderSourceBody> {
         final controller = ref.read(vaultRefControllerProvider.notifier);
         final r = await picker.createManaged();
         final src = resolveVaultSource(r);
-        await seedStarterDeck(src);
+        await scaffoldStudyFolder(src);
         await controller.choose(r);
         _leave();
       });

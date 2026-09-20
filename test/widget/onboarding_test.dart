@@ -124,13 +124,13 @@ void main() {
     expect(find.text('How do you want to start?'), findsNothing);
   });
 
-  // The create path does real file + DB I/O (seedStarterDeck writes .md files;
-  // choose persists the ref through the DB). That I/O does not complete inside a
-  // `testWidgets` fake-async zone driven by `tester.pump`, so the widget-level
-  // "tap Create" would hang. Exercise the exact same code path the button runs
-  // at the provider level instead (real `await`, real I/O), which is the honest
-  // unit under test: fake picker → createManaged → resolveVaultSource →
-  // seedStarterDeck → choose.
+  // The create path does real file + DB I/O (scaffoldStudyFolder writes the vault
+  // skeleton; choose persists the ref through the DB). That I/O does not complete
+  // inside a `testWidgets` fake-async zone driven by `tester.pump`, so the
+  // widget-level "tap Create" would hang. Exercise the exact same code path the
+  // button runs at the provider level instead (real `await`, real I/O), which is
+  // the honest unit under test: fake picker → createManaged → resolveVaultSource →
+  // scaffoldStudyFolder → choose.
   test('create path: createManaged + seed + choose sets ref and writes cards',
       () async {
     final dir = await Directory.systemTemp.createTemp('onyx_onboarding_');
@@ -148,7 +148,7 @@ void main() {
     final picker = container.read(folderPickerProvider);
     final r = await picker.createManaged();
     final src = resolveVaultSource(r);
-    await seedStarterDeck(src);
+    await scaffoldStudyFolder(src);
     await container.read(vaultRefControllerProvider.notifier).choose(r);
 
     // The controller now holds the chosen ref…
@@ -162,20 +162,27 @@ void main() {
     ).load();
     expect(reloaded, chosen);
 
-    // …and the folder now holds real, parseable starter cards (so first-run
-    // lands on cards, not the empty state).
-    final mdFiles = dir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.md'))
-        .toList();
-    expect(mdFiles, isNotEmpty);
+    // …and the folder now holds the scaffolded skeleton: an orientation
+    // CLAUDE.md, a subject config under _meta/, and real parseable starter cards
+    // (so first-run lands on cards, not the empty state).
+    expect(File('${dir.path}/CLAUDE.md').existsSync(), isTrue,
+        reason: 'scaffold writes a CLAUDE.md orientation');
+    expect(File('${dir.path}/_meta/onyx-subject.yaml').existsSync(), isTrue,
+        reason: 'scaffold writes a subject config');
     const parser = CardParser();
-    for (final f in mdFiles) {
-      final card = parser.parse(f.readAsStringSync(), filePath: f.path);
-      expect(card, isNotNull, reason: '${f.path} should parse as a card');
-      expect(card!.sections.any((s) => s.quizzable), isTrue,
-          reason: '${f.path} should have a quizzable section');
+    final cards = [
+      for (final f in dir.listSync().whereType<File>())
+        if (f.path.endsWith('.md'))
+          if (parser.parse(f.readAsStringSync(), filePath: f.path)
+              case final c?)
+            c,
+    ];
+    // CLAUDE.md is a root .md but not a card (no frontmatter) → skipped.
+    expect(cards.length, greaterThanOrEqualTo(3),
+        reason: 'starter cards should parse');
+    for (final c in cards) {
+      expect(c.sections.any((s) => s.quizzable), isTrue,
+          reason: '${c.id} should have a quizzable section');
     }
   });
 
