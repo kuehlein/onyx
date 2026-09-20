@@ -1,49 +1,80 @@
-import '../../shared/models/card.dart';
+import 'dart:convert';
+
+import '../vault/vault_source.dart';
 import 'deck.dart';
 
-/// Builds a content-only [DeckManifest] from local [cards] for publishing — the
-/// inverse of `importDeck` (docs/registry-and-sync.md §4). Each card contributes
-/// only its content (id / type / title / tags / reconstructed body); the local
-/// lifecycle (`status`, `deck`) and all SRS/review state are dropped. Because
-/// [DeckManifest]/[DeckCard] have no schedule fields, **"scheduling never
-/// travels" holds by construction** — a subscriber who pulls this back gets fresh
-/// drafts, never the maintainer's progress.
+/// Builds a content-only [DeckManifest] from local card files for publishing —
+/// the inverse of `importDeck` (docs/registry-and-sync.md §4). Reads each
+/// selected card's RAW file verbatim and keeps its path relative to [rootPrefix],
+/// so the exporter's folder STRUCTURE travels intact.
 ///
-/// Pure (no I/O): the caller supplies the parsed cards that make up the deck.
-DeckManifest buildDeckManifest({
+/// v1 callers pass the files of a directory/subtree (the folder lens); a
+/// cross-cutting query-lens export is a later advanced option and will preserve
+/// paths the same way. Content-only: SRS is never in files, and the importer
+/// re-stamps `status: draft`, so scheduling never travels.
+Future<DeckManifest> buildDeckManifest({
+  required VaultSource source,
   required String deckId,
   required String name,
   required String author,
-  required List<Card> cards,
+  required List<String> cardPaths,
   String? license,
-}) =>
-    DeckManifest(
-      deckId: deckId,
-      name: name,
-      author: author,
-      license: license,
-      cards: [for (final c in cards) _toDeckCard(c)],
-    );
-
-/// Reconstructs a [DeckCard] from a parsed [Card]: the body is the pre-section
-/// overview followed by each `## ` section, mirroring the on-disk shape the
-/// parser produced (and that `importDeck` writes back after the H1).
-DeckCard _toDeckCard(Card card) {
-  final b = StringBuffer();
-  if (card.overview.trim().isNotEmpty) b.write(card.overview.trim());
-  for (final s in card.sections) {
-    if (b.isNotEmpty) b.write('\n\n');
-    b
-      ..write('## ')
-      ..write(s.heading)
-      ..write('\n\n')
-      ..write(s.content.trim());
+  String rootPrefix = '',
+}) async {
+  final files = <DeckFile>[];
+  for (final path in cardPaths) {
+    files.add(DeckFile(
+      path: _relativize(path, rootPrefix),
+      content: await source.readCard(path),
+    ));
   }
-  return DeckCard(
-    id: card.id,
-    type: card.type,
-    title: card.title,
-    tags: card.tags,
-    body: b.toString(),
+  return DeckManifest(
+    deckId: deckId,
+    name: name,
+    author: author,
+    license: license,
+    files: files,
   );
 }
+
+/// Strips [rootPrefix] (a folder being exported) from [path] so the deck's paths
+/// are relative to it — exporting `people/` yields `caesar.md`, not
+/// `people/caesar.md`, so the deck arrives cleanly under its own folder.
+String _relativize(String path, String rootPrefix) {
+  if (rootPrefix.isEmpty) return path;
+  final prefix = rootPrefix.endsWith('/') ? rootPrefix : '$rootPrefix/';
+  return path.startsWith(prefix) ? path.substring(prefix.length) : path;
+}
+
+// ── abuse guard (push boundary) ──────────────────────────────────────────────
+// Reserved to keep malicious / illegal / huge content out of the registry
+// (user requirement). Limits are deliberately generous and TBD — tightened when
+// the real server lands; UTF-8 validity is guaranteed upstream by the text read.
+
+/// Max size of a single file in a published deck (TBD).
+const kMaxDeckFileBytes = 256 * 1024;
+
+/// Max total size of a published deck (TBD).
+const kMaxDeckTotalBytes = 8 * 1024 * 1024;
+
+/// Returns a human-readable reason the [manifest] can't be published (a file or
+/// the whole deck exceeds the size caps), or null when it's acceptable. Checked
+/// at the push boundary before handing off to [RegistryClient.publishDeck].
+String? deckPayloadIssue(DeckManifest manifest) {
+  var total = 0;
+  for (final f in manifest.files) {
+    final bytes = utf8.encode(f.content).length;
+    if (bytes > kMaxDeckFileBytes) {
+      return '"${f.path}" is too large '
+          '(${_kib(bytes)} KiB; max ${_kib(kMaxDeckFileBytes)} KiB).';
+    }
+    total += bytes;
+  }
+  if (total > kMaxDeckTotalBytes) {
+    return 'This deck is too large '
+        '(${_kib(total)} KiB; max ${_kib(kMaxDeckTotalBytes)} KiB).';
+  }
+  return null;
+}
+
+int _kib(int bytes) => (bytes / 1024).ceil();

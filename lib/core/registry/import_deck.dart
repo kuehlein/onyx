@@ -1,73 +1,76 @@
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
-/// Writes a pulled [DeckManifest]'s cards into the study folder as **drafts**.
+/// Writes a pulled [DeckManifest]'s files into the study folder as **drafts**,
+/// preserving the deck's internal structure (docs/registry-and-sync.md §3.4/§4.3).
 ///
-/// This is the content half of a registry pull (docs/registry-and-sync.md §3.4 /
-/// §4.3). Every card is written under `<deckSlug>/<cardSlug>.md` with:
+/// Each file lands at `<deckSlug>/<file.path>` — so the deck arrives as one
+/// directory in the vault root, with the exporter's `people/`, `places/`,
+/// `battles/` layout intact — and each **card** file is stamped:
 ///
-///  * `deck: <manifest.deckId>` — so its future FSRS state is namespaced by deck
-///    (`(deckId, cardId, sectionSlug)`) and can't collide with a local card;
-///  * `status: draft` — so it enters excluded from scheduling AND every readiness
-///    denominator (it reads as FRESH; scheduling never travels). The manifest has
-///    no SRS/review data to carry in the first place — that's structural.
+///  * `deck: <manifest.deckId>` — namespacing its future FSRS state by deck
+///    (`(deckId, cardId, sectionSlug)`) so it can't collide with a local card;
+///  * `status: draft` — excluded from scheduling AND every readiness denominator
+///    (it reads FRESH; scheduling never travels). SRS was never in the file.
 ///
-/// Drafts are shown in Browse (marked "Draft") but are NOT studiable yet: there
-/// is no promote gate built. Returns the number of cards written.
+/// A file with no frontmatter (not a card — a note/asset) is copied verbatim.
+/// Returns the number of files written.
 ///
-/// Pure-ish: takes a [VaultSource] and no provider/Riverpod deps, so it's
-/// unit-testable against a temp desktop source.
+/// Pure-ish: takes a [VaultSource] and no provider deps, so it's unit-testable
+/// against a temp desktop source.
 Future<int> importDeck(VaultSource source, DeckManifest manifest) async {
   final deckSlug = _slugify(manifest.deckId);
   var written = 0;
-  for (final card in manifest.cards) {
-    final path = '$deckSlug/${_slugify(card.id)}.md';
-    await source.writeFile(path, _cardMarkdown(manifest.deckId, card));
+  for (final file in manifest.files) {
+    final path = '$deckSlug/${_normalizeRel(file.path)}';
+    await source.writeFile(
+        path, _stampedForImport(manifest.deckId, file.content));
     written++;
   }
   return written;
 }
 
-/// The exact on-disk shape of an imported card. Mirrors an existing card's shape
-/// (a `---` frontmatter block with `id`/`type`, an H1, then `## ` sections) so
-/// `CardParser` reads it back; adds `deck:` and `status: draft`.
-String _cardMarkdown(String deckId, DeckCard card) {
-  final buffer = StringBuffer()
-    ..writeln('---')
-    ..writeln('id: ${_scalar(card.id)}')
-    ..writeln('type: ${_scalar(card.type)}')
-    ..writeln('deck: ${_scalar(deckId)}')
-    ..writeln('status: draft')
-    ..writeln('tags: ${_flowList(card.tags)}')
-    ..writeln('---')
-    ..writeln()
-    ..writeln('# ${_oneLine(card.title)}')
-    ..writeln();
-  buffer.write(card.body);
-  if (!card.body.endsWith('\n')) buffer.writeln();
-  return buffer.toString();
+/// Frontmatter block: a leading `---` line, YAML, closing `---`. Group 1 is the
+/// YAML, group 2 the body. (Same shape `CardParser` recognizes.)
+final _frontmatter =
+    RegExp(r'^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n?(.*)$', dotAll: true);
+
+/// Top-level `deck:`/`status:` frontmatter lines (no leading indent), which the
+/// importer owns and must set — any incoming values are dropped.
+final _deckOrStatus = RegExp(r'^(deck|status):');
+
+/// Forces the two import invariants into a card file's frontmatter — the deck
+/// namespace + `status: draft` — while preserving every other line and the whole
+/// body verbatim. A file without frontmatter is returned unchanged (it's not a
+/// card; it rides along as a note/asset).
+String _stampedForImport(String deckId, String content) {
+  final normalized = content.replaceAll('\r\n', '\n');
+  final m = _frontmatter.firstMatch(normalized);
+  if (m == null) return content; // not a card — copy verbatim
+  final body = m.group(2) ?? '';
+  final kept = m.group(1)!.split('\n').where((l) => !_deckOrStatus.hasMatch(l));
+  final frontmatter =
+      ['deck: ${_scalar(deckId)}', 'status: draft', ...kept].join('\n');
+  return '---\n$frontmatter\n---\n$body';
 }
 
-/// A YAML flow-sequence the parser accepts (`_stringList` reads a `YamlList`),
-/// e.g. `["geography", "capitals"]`, or `[]` when empty.
-String _flowList(List<String> tags) => '[${tags.map(_scalar).join(', ')}]';
-
-/// Collapses internal line breaks (and surrounding whitespace) to a single space
-/// so a card title written into a one-line `#` markdown heading can't split the
-/// line and corrupt the card on re-parse (the H1 regex is single-line).
-String _oneLine(String value) =>
-    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
-
-/// A double-quoted YAML scalar for a frontmatter value, so a string carrying
-/// YAML-special characters (`#`, `:`, leading `-`, etc.) round-trips intact
-/// rather than being truncated or reinterpreted. Real registry ids are
-/// deck-prefixed slugs (already safe); quoting defends against messier inputs.
+/// A double-quoted YAML scalar for a frontmatter value, so a value with
+/// YAML-special characters round-trips intact. Registry deck ids are slugs
+/// (already safe); quoting defends against messier inputs.
 String _scalar(String value) =>
     '"${value.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
 
-/// Lowercases and collapses every run of non-alphanumerics to a single hyphen,
-/// trimming leading/trailing hyphens — a filesystem-safe slug for the deck folder
-/// and card filename. (Matches `CardParser.slugify`'s rule.)
+/// Normalizes a deck-relative path to safe POSIX: forward slashes, no leading
+/// slash, and no `..` segments (a pulled deck can only ever write *inside* its
+/// own `<deckSlug>/` folder — never escape the vault).
+String _normalizeRel(String path) => path
+    .replaceAll(r'\', '/')
+    .split('/')
+    .where((seg) => seg.isNotEmpty && seg != '.' && seg != '..')
+    .join('/');
+
+/// Lowercases and collapses non-alphanumerics to single hyphens (trimming ends)
+/// — a filesystem-safe slug for the deck folder. (Matches `CardParser.slugify`.)
 String _slugify(String value) => value
     .toLowerCase()
     .replaceAll(RegExp(r'[^a-z0-9]+'), '-')

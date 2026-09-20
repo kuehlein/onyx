@@ -26,26 +26,27 @@ final bool _sqliteAvailable = () {
 
 const _parser = CardParser();
 
-const _manifest = DeckManifest(
+String _capital(String id, String title, String capital, {String? status}) =>
+    '---\nid: $id\ntype: flashcard\ntags: [geography, capitals]\n'
+    '${status == null ? '' : 'status: $status\n'}---\n\n'
+    '# $title\n\n## Capital\n\n$capital\n';
+
+/// A deck as a file tree with NESTED paths — so the round-trip proves the
+/// exporter's folder structure survives the transfer. `japan.md` carries a
+/// `status: active` that import must override to `draft`.
+final _manifest = DeckManifest(
   deckId: 'world-capitals',
   name: 'World Capitals',
   author: 'Onyx Samples',
   license: 'CC0-1.0',
-  cards: [
-    DeckCard(
-      id: 'capitals-france',
-      type: 'flashcard',
-      title: 'France',
-      tags: ['geography', 'capitals'],
-      body: '## Capital\n\nParis.',
-    ),
-    DeckCard(
-      id: 'capitals-japan',
-      type: 'flashcard',
-      title: 'Japan',
-      tags: ['geography', 'capitals'],
-      body: '## Capital\n\nTokyo.',
-    ),
+  files: [
+    DeckFile(
+        path: 'europe/france.md',
+        content: _capital('capitals-france', 'France', 'Paris.')),
+    DeckFile(
+        path: 'asia/japan.md',
+        content:
+            _capital('capitals-japan', 'Japan', 'Tokyo.', status: 'active')),
   ],
 );
 
@@ -61,134 +62,109 @@ void main() {
 
     tearDown(() => root.deleteSync(recursive: true));
 
-    test('writes one file per card under <deckSlug>/', () async {
+    test('writes the file tree under <deckSlug>/, preserving structure',
+        () async {
       final count = await importDeck(source, _manifest);
       expect(count, 2);
-
-      expect(
-        File('${root.path}/world-capitals/capitals-france.md').existsSync(),
-        isTrue,
-      );
-      expect(
-        File('${root.path}/world-capitals/capitals-japan.md').existsSync(),
-        isTrue,
-      );
+      // Nested paths survive — the deck arrives as one directory with its layout.
+      expect(File('${root.path}/world-capitals/europe/france.md').existsSync(),
+          isTrue);
+      expect(File('${root.path}/world-capitals/asia/japan.md').existsSync(),
+          isTrue);
     });
 
-    test('each written file parses as a draft with the deckId set', () async {
+    test('every card enters as a draft with the deckId set (status forced)',
+        () async {
       await importDeck(source, _manifest);
-
       for (final path in await source.listCardPaths()) {
         final card = _parser.parse(await source.readCard(path), filePath: path);
         expect(card, isNotNull, reason: '$path should parse as a card');
         expect(card!.isDraft, isTrue,
-            reason:
-                'imported cards enter as drafts (scheduling never travels)');
+            reason: 'scheduling never travels — even japan.md said active');
         expect(card.status, CardStatus.draft);
         expect(card.deckId, 'world-capitals');
       }
     });
 
-    test('preserves title, tags and body sections', () async {
+    test('preserves content verbatim (title, tags, section body)', () async {
       await importDeck(source, _manifest);
-      final france = _parser.parse(
-        await source.readCard('world-capitals/capitals-france.md'),
-        filePath: 'world-capitals/capitals-france.md',
-      )!;
+      const p = 'world-capitals/europe/france.md';
+      final france = _parser.parse(await source.readCard(p), filePath: p)!;
       expect(france.id, 'capitals-france');
-      expect(france.type, 'flashcard');
       expect(france.title, 'France');
       expect(france.tags, ['geography', 'capitals']);
-      expect(france.sections.map((s) => s.heading), contains('Capital'));
+      expect(france.sections.single.heading, 'Capital');
       expect(france.sections.single.content, 'Paris.');
     });
 
-    test('slugifies non-filesystem-safe ids into safe paths', () async {
-      const messy = DeckManifest(
+    test('slugifies the deck folder but keeps original id/deck in frontmatter',
+        () async {
+      final messy = DeckManifest(
         deckId: 'Fancy Deck! v2',
         name: 'Fancy',
         author: 'x',
-        cards: [
-          DeckCard(
-            id: 'Card #1 (Intro)',
-            type: 'flashcard',
-            title: 'Intro',
-            body: '## A\n\nb.',
-          ),
+        files: [
+          DeckFile(
+              path: 'intro.md', content: _capital('intro-card', 'Intro', 'x.'))
         ],
       );
       await importDeck(source, messy);
-      // deckId + cardId slugified: lowercase, non-alnum → single hyphen, trimmed.
       final path = (await source.listCardPaths()).single;
-      expect(path, 'fancy-deck-v2/card-1-intro.md');
-      // …but the frontmatter `id`/`deck` keep the ORIGINAL values.
+      expect(path, 'fancy-deck-v2/intro.md'); // deck folder slugified
       final card = _parser.parse(await source.readCard(path), filePath: path)!;
-      expect(card.id, 'Card #1 (Intro)');
-      expect(card.deckId, 'Fancy Deck! v2');
+      expect(card.id, 'intro-card'); // original id (from content) preserved
+      expect(card.deckId, 'Fancy Deck! v2'); // original deck value preserved
     });
 
-    test('handles empty tags', () async {
-      const noTags = DeckManifest(
-        deckId: 'd',
-        name: 'D',
-        author: 'x',
-        cards: [
-          DeckCard(id: 'c', type: 'flashcard', title: 'C', body: '## A\n\nb.'),
-        ],
-      );
-      await importDeck(source, noTags);
-      final card = _parser.parse(
-        await source.readCard('d/c.md'),
-        filePath: 'd/c.md',
-      )!;
-      expect(card.tags, isEmpty);
-    });
-
-    test('flattens a newline in a card title so the H1 stays one line',
+    test('a path-escaping segment (..) cannot write outside the deck folder',
         () async {
-      const messy = DeckManifest(
+      final evil = DeckManifest(
         deckId: 'd',
         name: 'D',
         author: 'x',
-        cards: [
-          DeckCard(
-            id: 'c',
-            type: 'flashcard',
-            title: 'Title with\na newline',
-            body: '## A\n\nb.',
-          ),
+        files: [
+          DeckFile(path: '../../escape.md', content: _capital('e', 'E', 'x.')),
         ],
       );
-      await importDeck(source, messy);
-      final card = _parser.parse(
-        await source.readCard('d/c.md'),
-        filePath: 'd/c.md',
-      )!;
-      expect(card.title, 'Title with a newline');
-      expect(card.sections.map((s) => s.heading), contains('A'));
+      await importDeck(source, evil);
+      expect(File('${root.path}/escape.md').existsSync(), isFalse);
+      expect((await source.listCardPaths()).single, 'd/escape.md');
+    });
+
+    test('a file without frontmatter rides along verbatim (a note, not a card)',
+        () async {
+      const note = 'Just a plain note. No frontmatter, so not a card.\n';
+      const withNote = DeckManifest(
+        deckId: 'd',
+        name: 'D',
+        author: 'x',
+        files: [DeckFile(path: 'notes/readme.md', content: note)],
+      );
+      await importDeck(source, withNote);
+      final onDisk = File('${root.path}/d/notes/readme.md');
+      expect(onDisk.existsSync(), isTrue);
+      expect(onDisk.readAsStringSync(), note); // copied verbatim, un-stamped
     });
   });
 
-  group('DeckManifest / DeckCard (scheduling never travels)', () {
+  group('DeckManifest / DeckFile (scheduling never travels)', () {
     test('the payload types carry no SRS/review data — structural', () {
-      // A pulled manifest can only surface content. There is deliberately no
-      // srs_state / reviews field to travel in (invariant S8 / T4).
       final json = _manifest.toJson();
       expect(json.containsKey('srs_state'), isFalse);
       expect(json.containsKey('reviews'), isFalse);
-      final cardJson = _manifest.cards.first.toJson();
-      expect(cardJson.containsKey('srs_state'), isFalse);
-      expect(cardJson.containsKey('reviews'), isFalse);
-      // Round-trips through JSON without losing content.
+      final fileJson = _manifest.files.first.toJson();
+      expect(fileJson.keys, unorderedEquals(['path', 'content']));
+      // Round-trips through JSON without losing content or structure.
       final back = DeckManifest.fromJson(json);
       expect(back.deckId, _manifest.deckId);
-      expect(back.cards.length, _manifest.cards.length);
-      expect(back.cards.first.body, _manifest.cards.first.body);
+      expect(back.files.length, _manifest.files.length);
+      expect(back.files.first.path, _manifest.files.first.path);
+      expect(back.files.first.content, _manifest.files.first.content);
     });
   });
 
   group('FakeRegistryClient', () {
-    test('listDecks returns two decks; getDeck round-trips with parsing cards',
+    test('listDecks returns two decks; getDeck files parse once imported',
         () async {
       final client = FakeRegistryClient();
       final summaries = await client.listDecks();
@@ -197,24 +173,13 @@ void main() {
       for (final summary in summaries) {
         final manifest = await client.getDeck(summary.deckId);
         expect(manifest.deckId, summary.deckId);
-        expect(manifest.cards, isNotEmpty);
-        expect(manifest.cards.length, summary.cardCount);
-        // Every fake card must be a body that CardParser accepts once imported.
-        for (final card in manifest.cards) {
-          final md = '''
----
-id: ${card.id}
-type: ${card.type}
-deck: ${manifest.deckId}
-status: draft
----
-
-# ${card.title}
-
-${card.body}
-''';
-          final parsed = _parser.parse(md, filePath: '${card.id}.md');
-          expect(parsed, isNotNull, reason: '${card.id} must parse');
+        expect(manifest.files, isNotEmpty);
+        expect(manifest.files.length, summary.cardCount);
+        // Each fake file must parse as a draft once stamped by import.
+        for (final f in manifest.files) {
+          final parsed = _parser.parse(_stamp(manifest.deckId, f.content),
+              filePath: f.path);
+          expect(parsed, isNotNull, reason: '${f.path} must parse');
           expect(parsed!.isDraft, isTrue);
         }
       }
@@ -240,12 +205,8 @@ ${card.body}
     test('cards includes the drafts; studyCards EXCLUDES them', () async {
       final written = await importDeck(source, _manifest);
       final result = await VaultIndexer(source, db).reindex();
-
-      // All imported cards are present in the full index (Browse reads this)…
       expect(result.cards.length, written);
       expect(result.cards.every((c) => c.isDraft), isTrue);
-      // …but none are studiable: scheduling never travels, so they're excluded
-      // from the study set (schedulers + readiness read studyCards).
       expect(result.studyCards, isEmpty);
     });
   },
@@ -253,3 +214,7 @@ ${card.body}
           ? false
           : 'libsqlite3 unavailable — run inside the nix dev shell');
 }
+
+/// Mirrors importDeck's frontmatter stamp for the parse-check above.
+String _stamp(String deckId, String content) =>
+    content.replaceFirst('---\n', '---\ndeck: "$deckId"\nstatus: draft\n');

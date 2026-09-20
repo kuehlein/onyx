@@ -45,7 +45,7 @@ class FakeRegistryClient implements RegistryClient {
             deckId: deck.deckId,
             name: deck.name,
             author: deck.author,
-            cardCount: deck.cards.length,
+            cardCount: deck.files.length,
             description: _descriptions[deck.deckId],
           ),
       ];
@@ -64,91 +64,49 @@ class FakeRegistryClient implements RegistryClient {
   };
 
   static final List<DeckManifest> _samples = [
-    const DeckManifest(
+    DeckManifest(
       deckId: 'world-capitals',
       name: 'World Capitals',
       author: 'Onyx Samples',
       license: 'CC0-1.0',
-      cards: [
-        DeckCard(
-          id: 'capitals-france',
-          type: 'flashcard',
-          title: 'France',
-          tags: ['geography', 'capitals'],
-          body: '## Capital\n\nParis.',
-        ),
-        DeckCard(
-          id: 'capitals-japan',
-          type: 'flashcard',
-          title: 'Japan',
-          tags: ['geography', 'capitals'],
-          body: '## Capital\n\nTokyo.',
-        ),
-        DeckCard(
-          id: 'capitals-brazil',
-          type: 'flashcard',
-          title: 'Brazil',
-          tags: ['geography', 'capitals'],
-          body: '## Capital\n\nBrasília.',
-        ),
-        DeckCard(
-          id: 'capitals-egypt',
-          type: 'flashcard',
-          title: 'Egypt',
-          tags: ['geography', 'capitals'],
-          body: '## Capital\n\nCairo.',
-        ),
-        DeckCard(
-          id: 'capitals-australia',
-          type: 'flashcard',
-          title: 'Australia',
-          tags: ['geography', 'capitals'],
-          body: '## Capital\n\nCanberra (not Sydney).',
-        ),
+      files: [
+        DeckFile(
+            path: 'france.md',
+            content: _capital('capitals-france', 'France', 'Paris.')),
+        DeckFile(
+            path: 'japan.md',
+            content: _capital('capitals-japan', 'Japan', 'Tokyo.')),
+        DeckFile(
+            path: 'brazil.md',
+            content: _capital('capitals-brazil', 'Brazil', 'Brasília.')),
       ],
     ),
-    const DeckManifest(
+    DeckManifest(
       deckId: 'spanish-everyday-phrases',
       name: 'Spanish — Everyday Phrases',
       author: 'Onyx Samples',
       license: 'CC0-1.0',
-      cards: [
-        DeckCard(
-          id: 'phrase-hello',
-          type: 'flashcard',
-          title: 'Hello',
-          tags: ['spanish', 'phrases'],
-          body: '## In Spanish\n\nHola.',
-        ),
-        DeckCard(
-          id: 'phrase-thank-you',
-          type: 'flashcard',
-          title: 'Thank you',
-          tags: ['spanish', 'phrases'],
-          body: '## In Spanish\n\nGracias.',
-        ),
-        DeckCard(
-          id: 'phrase-please',
-          type: 'flashcard',
-          title: 'Please',
-          tags: ['spanish', 'phrases'],
-          body: '## In Spanish\n\nPor favor.',
-        ),
-        DeckCard(
-          id: 'phrase-good-morning',
-          type: 'flashcard',
-          title: 'Good morning',
-          tags: ['spanish', 'phrases'],
-          body: '## In Spanish\n\nBuenos días.',
-        ),
-        DeckCard(
-          id: 'phrase-goodbye',
-          type: 'flashcard',
-          title: 'Goodbye',
-          tags: ['spanish', 'phrases'],
-          body: '## In Spanish\n\nAdiós.',
-        ),
+      files: [
+        DeckFile(
+            path: 'hello.md',
+            content: _phrase('phrase-hello', 'Hello', 'Hola.')),
+        DeckFile(
+            path: 'thank-you.md',
+            content: _phrase('phrase-thank-you', 'Thank you', 'Gracias.')),
+        DeckFile(
+            path: 'please.md',
+            content: _phrase('phrase-please', 'Please', 'Por favor.')),
       ],
     ),
   ];
+
+  /// A sample concept card as raw `.md` text (frontmatter + H1 + one section) —
+  /// the verbatim file shape the file-tree payload carries.
+  static String _capital(String id, String title, String capital) =>
+      '---\nid: $id\ntype: flashcard\ntags: [geography, capitals]\n---\n\n'
+      '# $title\n\n## Capital\n\n$capital\n';
+
+  static String _phrase(String id, String title, String spanish) =>
+      '---\nid: $id\ntype: flashcard\ntags: [spanish, phrases]\n---\n\n'
+      '# $title\n\n## In Spanish\n\n$spanish\n';
 }
