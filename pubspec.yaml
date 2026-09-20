@@ -71,6 +71,11 @@ dev_dependencies:
   # Custom lint runner (required by riverpod_lint)
   custom_lint: ^0.8.1
 
+  # Internal design-token drift guards (icon-size / hardcoded-color rules) —
+  # see tools/onyx_lints. Discovered by the custom_lint runner, enforced on push.
+  onyx_lints:
+    path: tools/onyx_lints
+
   # Test utilities
   mocktail: ^1.0.4
 

@@ -69,6 +69,14 @@ abstract final class PaletteColor {
   static const subjectPurple = Color(0xFFCE93D8);
   static const subjectGreen = Color(0xFFA5D6A7);
   static const subjectSlate = Color(0xFFB0BEC5);
+
+  // Non-status chrome constants (surfaced via StatusColor so raw hex stays here).
+  // Modal / overlay scrim — black at ~0.45 (design-system §4.9).
+  static const scrim = Color(0x73000000);
+  // Admonition-only callout accents — deliberately outside the one-accent-hue
+  // rule (a later design call); kept here so no widget hardcodes the hex.
+  static const calloutViolet = Color(0xFFB39DFF);
+  static const calloutCyan = Color(0xFF56C7D4);
 }
 
 /// DTCG `$type: dimension` — the 8pt grid (4pt half-step) + the radius scale, in

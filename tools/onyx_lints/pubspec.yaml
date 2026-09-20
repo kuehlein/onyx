@@ -1,0 +1,15 @@
+name: onyx_lints
+description: Internal custom_lint rules that enforce Onyx's design tokens.
+publish_to: none
+version: 0.1.0
+
+# A local custom_lint plugin, consumed by the app as a path dev-dependency and
+# discovered automatically by the `custom_lint` runner (alongside riverpod_lint).
+# Pinned to the app's locked analyzer (8.4.0) / custom_lint (0.8.1) so the shared
+# resolution stays stable.
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  analyzer: ^8.0.0
+  custom_lint_builder: ^0.8.0

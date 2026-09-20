@@ -15,14 +15,14 @@ class CalloutSpec {
 // Muted, dark-surface-friendly accents. A small vocabulary: color maps to
 // meaning (info/positive/attention/danger), aliases share a color + icon. The
 // status-typed ones source from the design-system status ramp (§7 Step 1); the
-// admonition-only `_violet`/`_cyan` stay local (reconciling them with the
-// one-accent-hue rule is a later design call).
+// admonition-only `_violet`/`_cyan` also source from the palette (via
+// StatusColor), still outside the one-accent-hue rule (a later design call).
 const _info = StatusColor.info;
 const _tip = StatusColor.good;
 const _amber = StatusColor.warn;
 const _red = StatusColor.bad;
-const _violet = Color(0xFFB39DFF);
-const _cyan = Color(0xFF56C7D4);
+const _violet = StatusColor.calloutViolet;
+const _cyan = StatusColor.calloutCyan;
 
 const Map<String, CalloutSpec> _specs = {
   'note': CalloutSpec(_info, Icons.edit_outlined, 'Note'),

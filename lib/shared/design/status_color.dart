@@ -32,4 +32,13 @@ abstract final class StatusColor {
 
   /// Muted / not-enough-data (grey).
   static const Color muted = PaletteColor.muted;
+
+  /// Modal / overlay scrim — black at ~0.45 (design-system §4.9). A chrome
+  /// constant, not a status; here so no widget hardcodes the hex.
+  static const Color scrim = PaletteColor.scrim;
+
+  /// Admonition-only callout accents (violet / cyan) — outside the
+  /// one-accent-hue rule pending a design call. Not statuses.
+  static const Color calloutViolet = PaletteColor.calloutViolet;
+  static const Color calloutCyan = PaletteColor.calloutCyan;
 }

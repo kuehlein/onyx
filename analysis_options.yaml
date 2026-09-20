@@ -10,6 +10,7 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - build/**
+    - tools/** # the onyx_lints plugin is its own package (checked via custom_lint)
     - android/**
     - ios/**
     - web/**

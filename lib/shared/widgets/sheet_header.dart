@@ -30,7 +30,7 @@ Future<T?> showOnyxSheet<T>(
   bool isDismissible = true,
   bool enableDrag = true,
   bool useSafeArea = false,
-  Color barrierColor = const Color(0x73000000), // black @ ~0.45 (§4.9)
+  Color barrierColor = StatusColor.scrim, // black @ ~0.45 (§4.9)
   BoxConstraints? constraints,
 }) {
   return showModalBottomSheet<T>(
