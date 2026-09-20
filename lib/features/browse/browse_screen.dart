@@ -289,7 +289,9 @@ class _ActiveFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: _stripHeight,
+      // Grow with the OS text scale so the chips never clip vertically at large
+      // text (a horizontal ListView forces a bounded child height).
+      height: MediaQuery.textScalerOf(context).scale(_stripHeight),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Dim.space3),
