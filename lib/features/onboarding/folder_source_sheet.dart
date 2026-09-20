@@ -86,16 +86,55 @@ class _FolderSourceBodyState extends ConsumerState<FolderSourceBody> {
     }
   }
 
+  /// A real switch (a source is already set) is gated by a plain confirm —
+  /// nothing is deleted (the outgoing folder keeps its progress in its own
+  /// snapshot), so a confirm, not a DestructiveRow (docs/settings-ux.md §3).
+  /// Returns true to proceed. Never shown on `/welcome` (no source yet).
+  Future<bool> _confirmSwitch() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Switch study folder?'),
+        content: const Text(
+          'Your reviews and schedule stay with the current folder. Pointing at '
+          'a different folder starts fresh there — your progress here isn’t '
+          'deleted.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Switch')),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
   Future<void> _choose() => _run(() async {
         // The button is only shown where pickExisting works (canPickExisting), so
         // a null here means the user cancelled the chooser — stay put, silently.
         final ref0 = await ref.read(folderPickerProvider).pickExisting();
         if (ref0 == null) return;
+        if (!mounted) return;
+        // Re-picking a *different* folder while one is already set is a switch —
+        // gate it (§3); re-picking the same folder is a silent no-op.
+        final current = ref.read(vaultRefControllerProvider);
+        if (current != null && current.encode() != ref0.encode()) {
+          if (!await _confirmSwitch()) return;
+        }
         await ref.read(vaultRefControllerProvider.notifier).choose(ref0);
         _leave();
       });
 
   Future<void> _create() => _run(() async {
+        // Creating a new folder while one is set is a switch — confirm before we
+        // scaffold, so a cancel leaves no orphan folder behind.
+        if (ref.read(vaultRefControllerProvider) != null) {
+          if (!await _confirmSwitch()) return;
+        }
         final picker = ref.read(folderPickerProvider);
         final controller = ref.read(vaultRefControllerProvider.notifier);
         final r = await picker.createManaged();

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/backup/snapshot.dart';
 import '../../core/vault/desktop_vault_source.dart';
 import '../../core/vault/folder_picker.dart';
 import '../../core/vault/vault_indexer.dart';
@@ -28,13 +29,57 @@ class VaultRefController extends _$VaultRefController {
   /// write it via [VaultRefStore] and invalidate [vaultIndexProvider].
   void set(VaultRef? ref) => state = ref;
 
-  /// Persist [source] as the content root, activate it, and re-index. This is
-  /// the one-call path used by onboarding + the Settings folder picker (write
-  /// through [VaultRefStore], flip the in-memory state, drop the stale index).
+  /// Persist [source] as the content root, activate it, and re-index — the
+  /// one-call path used by onboarding + the Settings folder picker.
+  ///
+  /// Switching folders is data-safe: the local DB is a derived cache of ONE
+  /// folder at a time (ADR-0001/0002 — each folder's `_meta` snapshot is its
+  /// durable copy). So on a real switch we (1) export the outgoing folder's
+  /// progress to its own snapshot, (2) clear the cache, then (3) restore the
+  /// incoming folder's snapshot — the incoming folder resumes its own progress
+  /// and nothing in the outgoing folder is lost.
   Future<void> choose(VaultRef source) async {
+    final db = ref.read(appDatabaseProvider);
+    final prev = state;
+    final isSwitch = prev != null && prev.encode() != source.encode();
+
+    if (isSwitch) {
+      final prevSource = _tryResolve(prev);
+      if (prevSource != null) {
+        try {
+          await SnapshotService(db, prevSource).export();
+        } catch (_) {
+          // Best-effort: an unwritable/missing old folder must not block the swap.
+        }
+      }
+      await SnapshotService.clearProgress(db);
+    }
+
     await VaultRefStore(ref.read(preferencesRepositoryProvider)).save(source);
     state = source;
+
+    // Restore the incoming folder's snapshot into the (now-scoped) cache so its
+    // schedule is live immediately, not only after the next launch. A missing or
+    // malformed snapshot just means "start fresh here".
+    final newSource = _tryResolve(source);
+    if (newSource != null) {
+      try {
+        await SnapshotService(db, newSource).restore();
+      } catch (_) {}
+    }
+
     ref.invalidate(vaultIndexProvider);
+  }
+
+  /// Resolve a ref to a source, tolerating the not-yet-implemented mobile kinds
+  /// (iosBookmark / androidTree throw [UnsupportedError]) so a swap still
+  /// proceeds on those platforms once native picking is wired.
+  VaultSource? _tryResolve(VaultRef r) {
+    try {
+      return resolveVaultSource(r);
+    } on UnsupportedError {
+      return null;
+    }
   }
 }
 

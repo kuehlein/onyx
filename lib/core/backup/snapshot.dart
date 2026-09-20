@@ -92,6 +92,20 @@ class SnapshotService {
     return (merged['srsStates'] as List).length;
   }
 
+  /// Wipe the local progress tables (the derived cache) — used when SWITCHING
+  /// content folders, *after* the outgoing folder's snapshot has been exported.
+  /// Each folder's `_meta` snapshot stays the durable copy (ADR-0001/0002), so
+  /// switching away and back loses nothing. Table set kept in sync with
+  /// [_applyPayload].
+  static Future<void> clearProgress(AppDatabase db) async {
+    await db.transaction(() async {
+      await db.delete(db.srsStates).go();
+      await db.delete(db.reviews).go();
+      await db.delete(db.appliedAttempts).go();
+      await db.delete(db.recognitionStates).go();
+    });
+  }
+
   /// Replace the DB tables with [data] (the merged union). Private: callers must
   /// pass a payload that already folds in the local rows (see [restore]).
   Future<void> _applyPayload(Map<String, dynamic> data) async {
