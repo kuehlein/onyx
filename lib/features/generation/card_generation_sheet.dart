@@ -96,7 +96,8 @@ class _CardGenerationSheetState extends ConsumerState<_CardGenerationSheet> {
             icon: Icons.auto_awesome_outlined,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space1, Dim.space5, Dim.space5),
             child: !hasKey
                 ? const _NoKey()
                 : !hasFolder

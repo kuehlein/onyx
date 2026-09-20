@@ -75,7 +75,8 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
     final theme = Theme.of(context);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space5, Dim.space1, Dim.space5, Dim.space5),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +91,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
         Row(
           children: [
             Icon(Icons.favorite_outline, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
+            const SizedBox(width: Dim.space3),
             Expanded(
               child: Text("How's the study load feeling this week?",
                   style: theme.textTheme.titleMedium
@@ -98,7 +99,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Text(
           'Only you know if it’s sustainable. I’ll factor your answer into what '
           'I suggest next.',
@@ -118,7 +119,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: Dim.space4, vertical: 14),
+                    horizontal: Dim.space4, vertical: Dim.space4),
               ),
             ),
           ),
@@ -169,7 +170,7 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
       Text(body,
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurface, height: 1.4)),
-      const SizedBox(height: 20),
+      const SizedBox(height: Dim.space5),
       if (applyLabel != null)
         SizedBox(
           width: double.infinity,

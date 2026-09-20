@@ -79,7 +79,8 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     final code = content.replaceFirst(RegExp(r'\n$'), '');
     const background = onyxCodePanel;
     const foreground = onyxCodeInk;
-    const padding = EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3);
+    const padding =
+        EdgeInsets.symmetric(horizontal: Dim.space4, vertical: Dim.space3);
 
     // Soft-wrap rather than scroll horizontally: on a phone, panning long lines
     // is a real irritant while studying. Both HighlightView's RichText and the

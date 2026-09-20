@@ -67,7 +67,8 @@ class SheetScrollBody extends StatelessWidget {
   const SheetScrollBody({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.fromLTRB(20, 0, 20, 20),
+    this.padding =
+        const EdgeInsets.fromLTRB(Dim.space5, 0, Dim.space5, Dim.space5),
     this.color,
   });
 
@@ -127,12 +128,12 @@ class SheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final header = Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, Dim.space2, Dim.space2),
+      padding: const EdgeInsets.fromLTRB(Dim.space5, 0, Dim.space2, Dim.space2),
       child: Row(
         children: [
           if (icon != null) ...[
             Icon(icon, color: iconColor ?? theme.colorScheme.primary),
-            const SizedBox(width: 10),
+            const SizedBox(width: Dim.space3),
           ],
           Expanded(
             child: Column(

@@ -215,7 +215,7 @@ class _SectionPanel extends StatelessWidget {
     final accent = section.quizzable ? scheme.primary : scheme.outlineVariant;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: Dim.space4),
       // Material (not a bare colored Container) so the ExpansionTile's inner
       // ListTile has a Material ancestor to paint its background/ink onto.
       child: Material(
@@ -241,7 +241,7 @@ class _SectionPanel extends StatelessWidget {
                     tilePadding: const EdgeInsets.fromLTRB(
                         Dim.space4, Dim.space1, Dim.space4, Dim.space1),
                     childrenPadding: const EdgeInsets.fromLTRB(
-                        Dim.space4, 0, Dim.space4, 18),
+                        Dim.space4, 0, Dim.space4, Dim.space4),
                     expandedCrossAxisAlignment: CrossAxisAlignment.start,
                     title: Row(
                       children: [

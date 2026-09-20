@@ -55,7 +55,7 @@ class LanesHub extends ConsumerWidget {
             const SizedBox(height: Dim.space4),
             for (final g in active) ...[
               _GoalLane(goal: g, onEnter: onEnter),
-              const SizedBox(height: 10),
+              const SizedBox(height: Dim.space3),
             ],
             for (final g in paused) ...[
               _PausedRow(goal: g),
@@ -96,13 +96,14 @@ class _GoalLane extends ConsumerWidget {
 
     return Material(
       color: cs.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: Dim.brCard,
       child: InkWell(
         onTap: () => onEnter(goal.id),
         onLongPress: () => showGoalEditor(context, goal: goal),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space2, 14),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space4, Dim.space4, Dim.space2, Dim.space4),
           child: Row(
             children: [
               Expanded(
@@ -115,7 +116,7 @@ class _GoalLane extends ConsumerWidget {
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600)),
                     if (subParts.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: Dim.space1),
                       Text(subParts.join('  ·  '),
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: cs.onSurfaceVariant)),
@@ -160,7 +161,7 @@ class _PausedRow extends ConsumerWidget {
       child: Row(
         children: [
           Icon(Icons.pause_circle_filled, size: 18, color: cs.onSurfaceVariant),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Text('${goal.name} · paused',
                 maxLines: 1,

@@ -138,7 +138,8 @@ class _ProposalCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(
           Dim.space3, Dim.space1, Dim.space3, Dim.space3),
-      padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space3, Dim.space4, Dim.space3),
       decoration: BoxDecoration(
         color:
             theme.colorScheme.primaryContainer.withValues(alpha: Dim.hairline),
@@ -180,14 +181,14 @@ class _Opener extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         children: [
           Text('"$seed"',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(fontStyle: FontStyle.italic)),
-          const SizedBox(height: 10),
+          const SizedBox(height: Dim.space3),
           Text(
             'Ask how to act on this — cutting your load, catching up, a plan for '
             'today, whatever’s on your mind.',

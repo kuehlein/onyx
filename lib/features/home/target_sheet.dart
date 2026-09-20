@@ -146,8 +146,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                               InkWell(
                                 onTap: () => setState(() => _showDims = false),
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      14, 10, 10, Dim.space1),
+                                  padding: const EdgeInsets.fromLTRB(Dim.space4,
+                                      Dim.space3, Dim.space3, Dim.space1),
                                   child: Row(children: [
                                     Text('Target',
                                         style: theme.textTheme.labelLarge
@@ -159,8 +159,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                 ),
                               ),
                               Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                                padding: const EdgeInsets.fromLTRB(
+                                    Dim.space4, 0, Dim.space4, Dim.space2),
                                 child: Column(
                                   children: [
                                     _ChipGroup<LevelValue>(
@@ -198,14 +198,14 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                         : InkWell(
                             onTap: () => setState(() => _showDims = true),
                             child: Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                              padding: const EdgeInsets.fromLTRB(Dim.space4,
+                                  Dim.space3, Dim.space3, Dim.space3),
                               child: Row(
                                 children: [
                                   Icon(Icons.flag_outlined,
                                       size: 18,
                                       color: theme.colorScheme.primary),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: Dim.space3),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -234,7 +234,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 const SizedBox(height: Dim.space3),
                 // Forecast readout ABOVE the calendar (the headline outcome).
                 _ForecastBlock(chosenDate: date, dims: dims),
-                const SizedBox(height: 14),
+                const SizedBox(height: Dim.space4),
                 Row(
                   children: [
                     Text('Interview date (optional)',
@@ -259,7 +259,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 ),
                 const SizedBox(height: Dim.space2),
                 const _CalendarLegend(),
-                const SizedBox(height: 10),
+                const SizedBox(height: Dim.space3),
                 // Scheduled interviews (flagged above) + the entry to plan one.
                 if (goal != null)
                   _ScheduledSection(
@@ -334,8 +334,8 @@ class _ChipGroup<T> extends StatelessWidget {
           ),
           Expanded(
             child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: Dim.space2,
+              runSpacing: Dim.space2,
               children: [
                 for (final v in values)
                   ChoiceChip(
@@ -376,7 +376,7 @@ class _ForecastBlock extends ConsumerWidget {
           padding: const EdgeInsets.all(Dim.space3),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: Dim.brCard,
           ),
           child: child,
         );
@@ -469,7 +469,7 @@ class _ForecastBlock extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 15, color: color),
-          const SizedBox(width: 6),
+          const SizedBox(width: Dim.space2),
           Expanded(
             child: Text(text,
                 style: theme.textTheme.bodySmall?.copyWith(color: color)),
@@ -641,12 +641,13 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Table(
           border: TableBorder.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+            color: theme.colorScheme.outlineVariant
+                .withValues(alpha: Dim.emphasisMed),
             width: 0.8,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: Dim.brCard,
           ),
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: weeks,
@@ -686,7 +687,7 @@ class _DayCell extends StatelessWidget {
     final cellBg = selected
         ? theme.colorScheme.primary
         : showZone
-            ? zoneColor!.withValues(alpha: 0.22)
+            ? zoneColor!.withValues(alpha: Dim.fill)
             : null;
     final numberColor = past
         ? theme.colorScheme.onSurfaceVariant.withValues(alpha: Dim.hairline)
@@ -716,9 +717,9 @@ class _DayCell extends StatelessWidget {
             // bottom of the cell, clearly distinct from the zone background.
             if (hasInterview)
               Positioned(
-                left: 7,
-                right: 7,
-                bottom: 5,
+                left: Dim.space2,
+                right: Dim.space2,
+                bottom: Dim.space1,
                 child: Container(
                   height: 3,
                   decoration: BoxDecoration(
@@ -758,9 +759,9 @@ class _CalendarLegend extends StatelessWidget {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                    color: c.withValues(alpha: 0.55),
+                    color: c.withValues(alpha: Dim.emphasisMed),
                     borderRadius: BorderRadius.circular(3))),
-            const SizedBox(width: 5),
+            const SizedBox(width: Dim.space1),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
           ],
@@ -781,7 +782,7 @@ class _CalendarLegend extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(2))),
-            const SizedBox(width: 5),
+            const SizedBox(width: Dim.space1),
             Text('interview',
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
           ],
@@ -872,7 +873,7 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
         ),
         if (interviews.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 2),
+            padding: const EdgeInsets.only(top: Dim.space1, bottom: Dim.space1),
             child: Text('None scheduled — add one to flag it on the calendar.',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ),

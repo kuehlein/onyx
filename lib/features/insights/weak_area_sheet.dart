@@ -126,7 +126,8 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space3, vertical: Dim.space2),
       decoration: BoxDecoration(
         color: context.colors.surfaceContainerHighest,
         borderRadius: Dim.brChip,

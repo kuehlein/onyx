@@ -48,7 +48,7 @@ class EmptyState extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(dense ? 20 : Dim.space6),
+        padding: EdgeInsets.all(dense ? Dim.space5 : Dim.space6),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: Column(
@@ -56,7 +56,7 @@ class EmptyState extends StatelessWidget {
             children: [
               if (icon != null) ...[
                 Icon(icon, size: 44, color: theme.colorScheme.primary),
-                const SizedBox(height: 14),
+                const SizedBox(height: Dim.space4),
               ],
               Text(
                 title,
@@ -64,7 +64,7 @@ class EmptyState extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
               ),
               if (message != null) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 Text(
                   message!,
                   textAlign: TextAlign.center,
@@ -72,7 +72,7 @@ class EmptyState extends StatelessWidget {
                 ),
               ],
               if (action != null) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: Dim.space5),
                 action!,
               ],
             ],

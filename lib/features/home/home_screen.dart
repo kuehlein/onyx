@@ -113,8 +113,8 @@ class _GoalHomeBody extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(20, Dim.space4, 20, Dim.space5),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space5, Dim.space4, Dim.space5, Dim.space5),
                 // mainAxisSize.min → the column sizes to its real content
                 // (clamped up to the viewport by the ConstrainedBox), so
                 // spaceBetween spreads the slack when there's room and it
@@ -142,7 +142,7 @@ class _GoalHomeBody extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Center(child: _TodayHero()),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: Dim.space6),
                         if (noVault)
                           _Prompt(
                             icon: Icons.folder_open_outlined,
@@ -217,13 +217,13 @@ class _TargetCard extends ConsumerWidget {
 
     return Material(
       color: cs.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: Dim.brCard,
       child: InkWell(
         onTap: () => context.push('/interview-prep'),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Dim.space4, vertical: Dim.space3),
           child: Row(
             children: [
               Icon(Icons.flag_outlined, size: 20, color: cs.primary),
@@ -245,7 +245,7 @@ class _TargetCard extends ConsumerWidget {
                 ),
               ),
               if (countdown != null) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: Dim.space3),
                 Text(countdown,
                     style: theme.textTheme.labelMedium?.copyWith(
                         color: cs.primary, fontWeight: FontWeight.w700)),
@@ -277,12 +277,13 @@ class _DraftReviewPrompt extends ConsumerWidget {
       padding: const EdgeInsets.only(top: Dim.space2),
       child: Material(
         color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         child: InkWell(
           onTap: () => context.push('/draft-review'),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: Dim.brCard,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: Dim.space4, vertical: Dim.space3),
             child: Row(
               children: [
                 Icon(Icons.inbox_outlined,

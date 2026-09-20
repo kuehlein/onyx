@@ -107,12 +107,13 @@ class _CoverageStrip extends StatelessWidget {
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(Dim.space4, 10, Dim.space4, 10),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space3, Dim.space4, Dim.space3),
         child: Row(
           children: [
             Icon(Icons.checklist_rtl_outlined,
                 size: 18, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
+            const SizedBox(width: Dim.space3),
             Text('$covered of $total competencies covered',
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(fontWeight: FontWeight.w600)),
@@ -132,7 +133,7 @@ class _Opener extends StatelessWidget {
     final theme = Theme.of(context);
     final missing = gaps.take(3).map(competencyLabel).join(', ');
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         children: [
           Icon(Icons.auto_stories_outlined,
@@ -147,7 +148,7 @@ class _Opener extends StatelessWidget {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           if (gaps.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Dim.space3),
             Text('Let\'s start with what you\'re missing: $missing.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall
@@ -178,7 +179,8 @@ class _DraftCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(
           Dim.space3, Dim.space1, Dim.space3, Dim.space3),
-      padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space3, Dim.space4, Dim.space3),
       decoration: BoxDecoration(
         color:
             theme.colorScheme.primaryContainer.withValues(alpha: Dim.hairline),
@@ -192,15 +194,15 @@ class _DraftCard extends StatelessWidget {
           Text('Draft story',
               style: theme.textTheme.labelSmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 2),
+          const SizedBox(height: Dim.space1),
           Text(draft.title,
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w700)),
           if (draft.competencies.isNotEmpty) ...[
             const SizedBox(height: Dim.space2),
             Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: Dim.space2,
+              runSpacing: Dim.space2,
               children: [
                 for (final c in draft.competencies)
                   Chip(
@@ -217,7 +219,7 @@ class _DraftCard extends StatelessWidget {
               children: [
                 Icon(Icons.info_outline,
                     size: 15, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
+                const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(
                     'No number in the result yet — a metric makes it much stronger.',
@@ -228,7 +230,7 @@ class _DraftCard extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 10),
+          const SizedBox(height: Dim.space3),
           Row(
             children: [
               FilledButton.icon(

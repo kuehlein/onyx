@@ -181,7 +181,7 @@ class _PaceLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 5),
+            padding: const EdgeInsets.only(top: Dim.space1),
             child: Container(
               width: 8,
               height: 8,
@@ -320,8 +320,8 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding:
-          const EdgeInsets.fromLTRB(Dim.space4, 20, Dim.space4, Dim.space2),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space5, Dim.space4, Dim.space2),
       child: Text(
         title.toUpperCase(),
         style: theme.textTheme.labelMedium?.copyWith(

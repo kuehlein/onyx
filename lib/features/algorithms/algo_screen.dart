@@ -203,7 +203,7 @@ class _ActionArea extends StatelessWidget {
     if (mode == AlgoMode.explain) {
       children = [
         _ExplainCta(prominent: true, onExplain: onExplain),
-        const SizedBox(height: 10),
+        const SizedBox(height: Dim.space3),
         if (showSolve)
           _SolveBlock(note: note, onLog: onLog)
         else
@@ -330,13 +330,13 @@ class _ExplainCta extends StatelessWidget {
         Text('Due to explain — no computer needed.',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         FilledButton.icon(
           onPressed: onExplain,
           icon: const Icon(Icons.record_voice_over_outlined),
           label: const Text('Explain to the coach'),
           style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: Dim.space4),
           ),
         ),
       ],
@@ -355,10 +355,11 @@ class _ReasonChip extends StatelessWidget {
     final color =
         mode == AlgoMode.explain ? StatusColor.warn : StatusColor.good;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space2, vertical: Dim.space1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: Dim.fill),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: Dim.brChip,
       ),
       child: Text(reason,
           style: Theme.of(context)
@@ -415,7 +416,7 @@ class _Complete extends StatelessWidget {
             const SizedBox(height: Dim.space3),
             Text(done == 0 ? 'All done for today' : 'Nice work',
                 style: theme.textTheme.titleLarge),
-            const SizedBox(height: 6),
+            const SizedBox(height: Dim.space2),
             Text(
               done == 0
                   ? 'No algorithms due right now — come back tomorrow.'

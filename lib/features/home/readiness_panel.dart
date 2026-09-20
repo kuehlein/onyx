@@ -48,11 +48,11 @@ class ReadinessPanel extends ConsumerWidget {
     final showConsistency = last7.any((c) => c > 0);
 
     return Container(
-      padding:
-          const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, Dim.space4),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space4, Dim.space4, Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +73,7 @@ class ReadinessPanel extends ConsumerWidget {
                   child: Icon(Icons.insights_outlined,
                       size: 22, color: theme.colorScheme.primary),
                 ),
-              const SizedBox(width: 10),
+              const SizedBox(width: Dim.space3),
               Expanded(
                 child: _Headline(
                     target: target,
@@ -159,7 +159,7 @@ class _DomainListState extends State<_DomainList> {
           ),
         if (capped)
           InkWell(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: Dim.brChip,
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: Dim.space1),
@@ -230,7 +230,7 @@ class _Headline extends StatelessWidget {
                   children: [
                     Icon(Icons.flag_outlined,
                         size: 14, color: theme.colorScheme.primary),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Dim.space2),
                     Flexible(
                       child: Text(unset ? 'Set your target' : target!.label,
                           maxLines: 1,
@@ -239,7 +239,7 @@ class _Headline extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: unset ? theme.colorScheme.primary : null)),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Dim.space2),
                     Icon(Icons.tune, size: 14, color: muted),
                   ],
                 ),
@@ -247,9 +247,9 @@ class _Headline extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: Dim.space1),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: Dim.space1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -299,15 +299,14 @@ class _LoadingPanel extends StatelessWidget {
     Widget block(double? w, double h) => Container(
           width: w,
           height: h,
-          decoration:
-              BoxDecoration(color: bar, borderRadius: BorderRadius.circular(6)),
+          decoration: BoxDecoration(color: bar, borderRadius: Dim.brChip),
         );
     return Container(
-      padding:
-          const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, Dim.space4),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space4, Dim.space4, Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +320,7 @@ class _LoadingPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     block(130, 14),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: Dim.space2),
                     block(170, 10),
                   ],
                 ),
@@ -521,13 +520,13 @@ class _OverallBar extends StatelessWidget {
           color: _bandColor(r.overall),
           goal: _readyLine,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: Dim.space1),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (status.ready) ...[
               Icon(Icons.check_circle, size: 13, color: status.color),
-              const SizedBox(width: 3),
+              const SizedBox(width: Dim.space1),
             ],
             Text(status.label,
                 style: theme.textTheme.labelSmall?.copyWith(
@@ -563,10 +562,10 @@ class _MilestoneChips extends StatelessWidget {
       children: [
         Text('Ladder standing',
             style: theme.textTheme.labelSmall?.copyWith(color: muted)),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: Dim.space2,
+          runSpacing: Dim.space2,
           children: [
             for (var i = 0; i < _levels.length; i++)
               _LevelChip(
@@ -579,7 +578,7 @@ class _MilestoneChips extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Text(_caption(goalLabel),
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurface)),
@@ -699,7 +698,7 @@ class _TickedBar extends StatelessWidget {
                     child: Container(
                         height: _barHeight,
                         width: ceiling * w,
-                        color: color.withValues(alpha: 0.32)),
+                        color: color.withValues(alpha: Dim.emphasisLow)),
                   ),
                 ),
               // Proven fill (darker).
@@ -728,7 +727,7 @@ class _TickedBar extends StatelessWidget {
                   child: Container(
                       width: 1.5,
                       height: _flagZone + _barHeight - 11,
-                      color: muted.withValues(alpha: 0.55)),
+                      color: muted.withValues(alpha: Dim.emphasisMed)),
                 ),
               ],
             ],
@@ -761,12 +760,12 @@ class _BarLegend extends StatelessWidget {
     return Row(
       children: [
         swatch(0.85),
-        const SizedBox(width: 5),
+        const SizedBox(width: Dim.space1),
         Text('proven in mocks',
             style: theme.textTheme.labelSmall?.copyWith(color: muted)),
         const SizedBox(width: Dim.space3),
         swatch(0.28),
-        const SizedBox(width: 5),
+        const SizedBox(width: Dim.space1),
         Flexible(
           child: Text('recall to prove',
               maxLines: 1,
@@ -810,7 +809,7 @@ class _DomainRow extends ConsumerWidget {
       onTap: () => showWeakAreaSheet(context, ref,
           domain: d.domain, prettyName: prettyDomain(d.domain)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(vertical: Dim.space1),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -831,7 +830,7 @@ class _DomainRow extends ConsumerWidget {
                                 ?.copyWith(fontWeight: FontWeight.w600)),
                       ),
                       if (focus) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: Dim.space2),
                         Icon(Icons.my_location,
                             size: 13, color: theme.colorScheme.primary),
                       ],
@@ -844,7 +843,7 @@ class _DomainRow extends ConsumerWidget {
                         ?.copyWith(color: color, fontWeight: FontWeight.w700)),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: Dim.space1),
             // Goal flag at the "Strong" line (0.75) — the target for this domain.
             // In interview mode the lighter portion is recall, the darker is what
             // mocks have actually proven.
@@ -856,7 +855,7 @@ class _DomainRow extends ConsumerWidget {
             // Evidence caption (interview mode only): mock count + contested flag.
             if (meta != null)
               Padding(
-                padding: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.only(top: Dim.space1),
                 child: Text(meta,
                     style: theme.textTheme.labelSmall?.copyWith(color: muted)),
               ),

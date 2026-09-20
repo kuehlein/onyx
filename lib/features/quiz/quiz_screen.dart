@@ -205,7 +205,7 @@ class _ReviewView extends StatelessWidget {
                           style: theme.textTheme.titleMedium
                               ?.copyWith(color: theme.colorScheme.primary)),
                     if (!revealed) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: Dim.space5),
                       Text(
                         !coachEnabled
                             ? (isInterview
@@ -229,7 +229,7 @@ class _ReviewView extends StatelessWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.primary)),
-                      if (isInterview) const SizedBox(height: 6),
+                      if (isInterview) const SizedBox(height: Dim.space2),
                       CardMarkdown(item.section.content),
                       if (isInterview && card.practiceUrl != null) ...[
                         const SizedBox(height: Dim.space3),
@@ -346,7 +346,8 @@ class _ActionBar extends StatelessWidget {
                             icon: const Icon(Icons.visibility_outlined),
                             label: const Text('Reveal'),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: Dim.space4),
                             ),
                           )
                         : FilledButton.icon(
@@ -475,7 +476,7 @@ class _PracticeSuggestion extends ConsumerWidget {
           label: Text(
               'Practice ${prettyDomain(domain)} · $n problem${n == 1 ? '' : 's'}'),
           style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14)),
+              padding: const EdgeInsets.symmetric(vertical: Dim.space4)),
         ),
       ],
     );
@@ -508,20 +509,20 @@ class _CompleteState extends ConsumerWidget {
         constraints: const BoxConstraints(maxWidth: 440),
         child: ListView(
           shrinkWrap: true,
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(Dim.space6),
           children: [
             Icon(Icons.check_circle_outline,
                 size: 44, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text('Session complete',
                 textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 6),
+            const SizedBox(height: Dim.space2),
             Text('$reviewed section${reviewed == 1 ? '' : 's'} reviewed',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             if (session.grades.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               _GradeBreakdown(session.grades),
             ],
             if (delta != null) ...[
@@ -532,7 +533,7 @@ class _CompleteState extends ConsumerWidget {
               const SizedBox(height: Dim.space5),
               _PracticeSuggestion(after!.weakestDomain!),
             ],
-            const SizedBox(height: 28),
+            const SizedBox(height: Dim.space6),
             FilledButton(
               onPressed: () {
                 ref.read(backupProvider.notifier).flush();
@@ -566,9 +567,10 @@ class _GradeBreakdown extends StatelessWidget {
         for (final (:value, :label, :color) in studyGrades)
           if (grades.where((g) => g == value).length case final n when n > 0)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Dim.space3, vertical: Dim.space1),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withValues(alpha: Dim.fill),
                 borderRadius: Dim.brChip,
               ),
               child: Text('$label $n',
@@ -594,10 +596,11 @@ class _ProgressDelta extends StatelessWidget {
     final touched = delta.touched;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, 14),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space4, Dim.space4, Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,7 +620,7 @@ class _ProgressDelta extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Dim.space3),
           _DeltaLine(label: 'Overall', change: delta.overallChange, bold: true),
           for (final d in touched)
             _DeltaLine(label: prettyDomain(d.domain), change: d.change),
@@ -657,7 +660,7 @@ class _DeltaLine extends StatelessWidget {
         : '${p > 0 ? '+' : '−'}${p.abs().toStringAsFixed(1)}%';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Dim.space1),
       child: Row(
         children: [
           Expanded(
@@ -668,7 +671,7 @@ class _DeltaLine extends StatelessWidget {
           if (!steady)
             Icon(p > 0 ? Icons.arrow_upward : Icons.arrow_downward,
                 size: 13, color: color),
-          const SizedBox(width: 2),
+          const SizedBox(width: Dim.space1),
           Text(text,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: color, fontWeight: FontWeight.w600)),

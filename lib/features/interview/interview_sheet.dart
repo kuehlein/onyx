@@ -142,7 +142,7 @@ class _InterviewSheet extends ConsumerWidget {
                     onOffer: () => end(InterviewStatus.offer),
                     onRejected: () => end(InterviewStatus.rejected),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Dim.space3),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -165,7 +165,7 @@ class _InterviewSheet extends ConsumerWidget {
                 if (!ended) ...[
                   const SizedBox(height: Dim.space2),
                   _practiceButton(context, aim, target),
-                  const Divider(height: 28),
+                  const Divider(height: Dim.space6),
                   _StudyToggle(
                     value: aim.active,
                     onChanged: (v) => save(aim.copyWith(active: v)),
@@ -282,7 +282,7 @@ class _OutcomeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GradeButtons(
-      verticalPadding: 12,
+      verticalPadding: Dim.space3,
       buttons: [
         GradeButton(
             label: 'Passed',
@@ -345,10 +345,11 @@ class _EndedBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: Dim.space1),
-      padding: const EdgeInsets.symmetric(horizontal: Dim.space3, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space3, vertical: Dim.space3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: Dim.fill),
+        borderRadius: Dim.brCard,
       ),
       child: Row(
         children: [
@@ -409,20 +410,22 @@ class _Timeline extends StatelessWidget {
         ? 'No date yet'
         : '${_fmtDate(d)}${current ? ' · ${_daysAway(d)}' : ''}';
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: Dim.space2),
+      margin: const EdgeInsets.symmetric(vertical: Dim.space1),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space3, vertical: Dim.space2),
       decoration: current
           ? BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.06),
               borderRadius: Dim.brChip,
               border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3)),
+                  color: theme.colorScheme.primary
+                      .withValues(alpha: Dim.emphasisLow)),
             )
           : null,
       child: Row(
         children: [
           Icon(icon, size: 16, color: color),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(
               current ? 'Up next · ${r.type.label}' : r.type.label,

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/vault/starter_deck.dart';
 import '../../core/vault/vault_ref.dart';
-import '../../shared/design/context_x.dart';
+import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/sheet_header.dart';
 
@@ -24,7 +24,7 @@ Future<void> showFolderSourceSheet(BuildContext context, WidgetRef ref) {
       children: [
         SheetHeader(title: 'Study folder', icon: Icons.folder_outlined),
         Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+          padding: EdgeInsets.fromLTRB(Dim.space5, 0, Dim.space5, Dim.space5),
           child: FolderSourceBody(),
         ),
       ],

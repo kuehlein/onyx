@@ -123,8 +123,8 @@ class _GradeBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding:
-            const EdgeInsets.fromLTRB(Dim.space4, 10, Dim.space4, Dim.space3),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space4, Dim.space3, Dim.space4, Dim.space3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +139,7 @@ class _GradeBar extends StatelessWidget {
             ),
             const SizedBox(height: Dim.space2),
             GradeButtons(
-              verticalPadding: 12,
+              verticalPadding: Dim.space3,
               buttons: [
                 for (final g in _grades)
                   GradeButton(

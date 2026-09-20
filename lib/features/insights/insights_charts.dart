@@ -28,7 +28,7 @@ class _SummaryStrip extends StatelessWidget {
     if (kpis.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(
       builder: (context, c) {
-        const gap = 12.0;
+        const gap = Dim.space3;
         // Two per row so numbers stay large and legible.
         final w = (c.maxWidth - gap) / 2;
         return Wrap(
@@ -48,7 +48,7 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final radius = BorderRadius.circular(14);
+    const radius = Dim.brCard;
     return Material(
       color: theme.colorScheme.surfaceContainerHigh,
       borderRadius: radius,
@@ -56,7 +56,8 @@ class _Tile extends StatelessWidget {
         onTap: kpi.onTap,
         borderRadius: radius,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space4, Dim.space3, Dim.space4, Dim.space3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -76,7 +77,7 @@ class _Tile extends StatelessWidget {
                             color: theme.colorScheme.onSurfaceVariant)),
                   ),
                   if (kpi.onTap != null) ...[
-                    const SizedBox(width: 2),
+                    const SizedBox(width: Dim.space1),
                     Icon(Icons.chevron_right,
                         size: 14, color: theme.colorScheme.onSurfaceVariant),
                   ],
@@ -131,14 +132,14 @@ class _GroupState extends State<_Group> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: Dim.brCard,
           onTap: () => setState(() => _expanded = !_expanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: Dim.space3),
             child: Row(
               children: [
                 Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
+                const SizedBox(width: Dim.space3),
                 Text(widget.title,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
@@ -152,7 +153,7 @@ class _GroupState extends State<_Group> {
                         style:
                             theme.textTheme.bodySmall?.copyWith(color: muted)),
                   ),
-                const SizedBox(width: 6),
+                const SizedBox(width: Dim.space2),
                 Icon(_expanded ? Icons.expand_less : Icons.expand_more,
                     size: 20, color: muted),
               ],
@@ -185,7 +186,7 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 26),
+      padding: const EdgeInsets.only(bottom: Dim.space5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -193,12 +194,12 @@ class _Section extends StatelessWidget {
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w700)),
           if (subtitle != null) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: Dim.space1),
             Text(subtitle!,
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: Dim.space4),
           child,
         ],
       ),
@@ -262,7 +263,7 @@ class _StatBar extends StatelessWidget {
             ],
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 5),
+            const SizedBox(height: Dim.space1),
             Text(subtitle!,
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -344,7 +345,7 @@ class _StripAxis extends StatelessWidget {
         .labelSmall
         ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: Dim.space2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [Text(left, style: s), Text(right, style: s)],

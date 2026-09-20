@@ -66,7 +66,7 @@ class DestructiveRow extends StatelessWidget {
         onPressed: enabled ? () => _confirm(context) : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.error,
-          side: BorderSide(color: scheme.error.withValues(alpha: 0.5)),
+          side: BorderSide(color: scheme.error.withValues(alpha: Dim.hairline)),
         ),
         child: Text(actionLabel),
       ),

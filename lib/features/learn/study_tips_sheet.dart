@@ -60,7 +60,7 @@ class _TipRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: const EdgeInsets.only(top: Dim.space1),
           child: Icon(Icons.check_circle_outline,
               size: 18, color: theme.colorScheme.primary),
         ),
@@ -72,7 +72,7 @@ class _TipRow extends StatelessWidget {
               Text(tip.title,
                   style: theme.textTheme.titleSmall
                       ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 3),
+              const SizedBox(height: Dim.space1),
               Text(tip.body,
                   style: theme.textTheme.bodyMedium?.copyWith(
                       height: 1.4, color: theme.colorScheme.onSurfaceVariant)),
@@ -107,14 +107,14 @@ class StudyTipIntro extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(Dim.space6),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Icon(Icons.tips_and_updates_outlined,
                   size: 40, color: theme.colorScheme.primary),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               Text('Before you start',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge
@@ -124,12 +124,12 @@ class StudyTipIntro extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge
                       ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 10),
+              const SizedBox(height: Dim.space3),
               Text(tip.body,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                       height: 1.45, color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 28),
+              const SizedBox(height: Dim.space6),
               FilledButton(
                 onPressed: onStart,
                 style: FilledButton.styleFrom(

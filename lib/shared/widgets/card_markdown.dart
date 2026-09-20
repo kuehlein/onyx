@@ -176,7 +176,8 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
                   color: theme.colorScheme.surfaceContainerHigh,
                   borderRadius: Dim.brCard,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, Dim.space3, 14, 14),
+                    padding: const EdgeInsets.fromLTRB(
+                        Dim.space4, Dim.space3, Dim.space4, Dim.space4),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -186,7 +187,7 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
                               style: theme.textTheme.titleSmall?.copyWith(
                                   color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: Dim.space2),
                           Text(definition,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                   height: 1.4,
@@ -248,13 +249,13 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
           : const EdgeInsets.only(top: 13, bottom: 0),
       blockSpacing: widget.compact ? 8 : 4,
       h1: heading(text.headlineSmall!),
-      h1Padding: const EdgeInsets.only(top: 14),
+      h1Padding: const EdgeInsets.only(top: Dim.space4),
       h2: heading(text.titleLarge!),
-      h2Padding: const EdgeInsets.only(top: 14),
+      h2Padding: const EdgeInsets.only(top: Dim.space4),
       h3: heading(text.titleMedium!).copyWith(color: scheme.primary),
-      h3Padding: const EdgeInsets.only(top: 14),
+      h3Padding: const EdgeInsets.only(top: Dim.space4),
       h4: heading(text.titleSmall!).copyWith(color: scheme.primary),
-      h4Padding: const EdgeInsets.only(top: 14),
+      h4Padding: const EdgeInsets.only(top: Dim.space4),
       // Emphasis pops via full brightness + weight (opacity-tier signaling).
       strong: body.copyWith(
         color: scheme.onSurface,
@@ -281,12 +282,13 @@ class _CardMarkdownState extends ConsumerState<CardMarkdown> {
       codeblockPadding: EdgeInsets.zero,
       codeblockDecoration: const BoxDecoration(),
       blockquote: body.copyWith(color: scheme.onSurfaceVariant),
-      blockquotePadding:
-          const EdgeInsets.fromLTRB(14, Dim.space2, 14, Dim.space2),
+      blockquotePadding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space2, Dim.space4, Dim.space2),
       blockquoteDecoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         border: Border(left: BorderSide(color: scheme.primary, width: 3)),
-        borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
+        borderRadius: const BorderRadius.horizontal(
+            right: Radius.circular(Dim.radiusChip)),
       ),
       // Tables: a real grid — visible cell borders, roomy padding, and a bold,
       // tinted header row so the structure reads at a glance. Columns flex to

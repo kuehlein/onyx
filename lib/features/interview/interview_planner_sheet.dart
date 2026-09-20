@@ -123,7 +123,7 @@ class _Opener extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         children: [
           Icon(Icons.event_note_outlined,
@@ -168,7 +168,7 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.all(Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         border: Border.all(
             color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
@@ -206,12 +206,12 @@ class _PlanCard extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(color: muted)),
           ],
           if (plan.appGaps.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Dim.space3),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.info_outline, size: 16, color: _amber),
-                const SizedBox(width: 6),
+                const SizedBox(width: Dim.space2),
                 Expanded(
                   child: Text(
                       'Onyx doesn’t cover: '
@@ -226,7 +226,7 @@ class _PlanCard extends StatelessWidget {
             const SizedBox(height: Dim.space2),
             CardMarkdown(plan.summary, compact: true),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: Dim.space4),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -261,10 +261,10 @@ class _ChipRow extends StatelessWidget {
         Text(label,
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: Dim.space2,
+          runSpacing: Dim.space2,
           children: [
             for (final it in items)
               StatusPill(tone: tone, label: prettyDomain(it), dense: true),

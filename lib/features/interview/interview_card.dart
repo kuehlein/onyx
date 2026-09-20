@@ -37,14 +37,14 @@ class InterviewCard extends ConsumerWidget {
 
     final row = InkWell(
       onTap: () => showInterviewSheet(context, aim.id),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: Dim.brCard,
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: Dim.space1, vertical: Dim.space2),
         child: Row(
           children: [
             _leadingIcon(theme, ended),
-            const SizedBox(width: 10),
+            const SizedBox(width: Dim.space3),
             Expanded(child: _titleBlock(context, ref, ended, target)),
             const SizedBox(width: Dim.space2),
             _trailing(context, ref, ended, target),
@@ -159,8 +159,8 @@ class InterviewCard extends ConsumerWidget {
     return Tooltip(
       message: 'Judged for $role',
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 3),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Dim.space2, vertical: Dim.space1),
         decoration: BoxDecoration(
           color: color.withValues(alpha: Dim.fill),
           borderRadius: Dim.brSheet,
@@ -190,10 +190,9 @@ class InterviewCard extends ConsumerWidget {
           );
     return Container(
       alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.only(right: Dim.space5),
+      margin: const EdgeInsets.symmetric(vertical: Dim.space1),
+      decoration: BoxDecoration(color: bg, borderRadius: Dim.brCard),
       child: Icon(icon, color: fg),
     );
   }

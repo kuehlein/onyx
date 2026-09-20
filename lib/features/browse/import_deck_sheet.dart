@@ -78,7 +78,8 @@ class _ImportDeckSheetState extends ConsumerState<_ImportDeckSheet> {
           icon: Icons.download_outlined,
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, Dim.space3),
+          padding:
+              const EdgeInsets.fromLTRB(Dim.space5, 0, Dim.space5, Dim.space3),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -113,11 +114,13 @@ class _DeckList extends ConsumerWidget {
     final decksAsync = ref.watch(deckListProvider);
     return decksAsync.when(
       loading: () => const Padding(
-        padding: EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
+        padding:
+            EdgeInsets.fromLTRB(Dim.space5, Dim.space2, Dim.space5, Dim.space5),
         child: LoadingView(label: 'Loading decks…'),
       ),
       error: (e, _) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space5, Dim.space2, Dim.space5, Dim.space5),
         child: Text(
           "Couldn't reach the deck registry: $e",
           style: context.text.bodyMedium?.copyWith(color: context.colors.error),
@@ -126,7 +129,8 @@ class _DeckList extends ConsumerWidget {
       data: (decks) {
         if (decks.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space2, Dim.space5, Dim.space5),
             child: Text(
               'No decks are available to import yet.',
               style: context.text.bodyMedium

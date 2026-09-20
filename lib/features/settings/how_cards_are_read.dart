@@ -38,7 +38,8 @@ class _HowCardsAreRead extends StatelessWidget {
         const SheetHeader(title: 'How cards are read', divider: true),
         Flexible(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space3, Dim.space5, Dim.space6),
             shrinkWrap: true,
             children: [
               Text(
@@ -47,10 +48,10 @@ class _HowCardsAreRead extends StatelessWidget {
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: cs.onSurfaceVariant, height: 1.4),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               const _SectionLabel('Now'),
               for (final r in cardParsingRules) _NowRow(r.label, r.value),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               const _SectionLabel('Later', tagged: true),
               for (final l in _later) _LaterRow(l.label, editor: l.editor),
               const SizedBox(height: Dim.space4),
@@ -93,7 +94,7 @@ class _SectionLabel extends StatelessWidget {
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: Dim.space2, vertical: 2),
+                  horizontal: Dim.space2, vertical: Dim.space1),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
                 borderRadius: Dim.brFull,
@@ -123,7 +124,7 @@ class _NowRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.circle, size: 12, color: theme.colorScheme.primary),
-          const SizedBox(width: 14),
+          const SizedBox(width: Dim.space4),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           const SizedBox(width: Dim.space3),
           Text(value,
@@ -154,7 +155,7 @@ class _LaterRow extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.circle_outlined, size: 12, color: dim),
-            const SizedBox(width: 14),
+            const SizedBox(width: Dim.space4),
             Expanded(
                 child: Text(label,
                     style: theme.textTheme.bodyMedium?.copyWith(color: dim))),

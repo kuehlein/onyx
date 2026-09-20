@@ -270,7 +270,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                   width: double.infinity,
                   color: theme.colorScheme.errorContainer,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: Dim.space4, vertical: 10),
+                      horizontal: Dim.space4, vertical: Dim.space3),
                   child: Text(
                     state.error!,
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
@@ -309,7 +309,7 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.psychology_outlined, color: theme.colorScheme.primary),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +383,8 @@ class _PromptContext extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, Dim.space3),
+      padding: const EdgeInsets.fromLTRB(
+          Dim.space4, Dim.space3, Dim.space4, Dim.space3),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: Dim.brCard,
@@ -399,7 +400,7 @@ class _PromptContext extends StatelessWidget {
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
           if (section != null) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: Dim.space1),
             Text(section!.heading,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.primary)),
@@ -442,7 +443,7 @@ class _NoKeyPanel extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: Dim.space2),
             Text(
               onLinuxDesktop
                   ? 'This Linux desktop has no system keychain, so launch the '
@@ -456,7 +457,7 @@ class _NoKeyPanel extends StatelessWidget {
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             if (!onLinuxDesktop) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: Dim.space4),
               FilledButton.icon(
                 icon: const Icon(Icons.settings_outlined),
                 label: const Text('Open Settings'),
@@ -487,12 +488,13 @@ class _Bubble extends StatelessWidget {
 
     final bubble = Container(
       margin: const EdgeInsets.only(bottom: Dim.space3),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space4, vertical: Dim.space3),
       decoration: BoxDecoration(
         color: isUser
             ? theme.colorScheme.primaryContainer
             : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
       ),
       // Both sides render at the same 16px body size; the coach's is Markdown
       // (code, emphasis) via the card renderer in compact mode so it doesn't
@@ -546,11 +548,12 @@ class _GradeSuggestion extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = studyGrades.firstWhere((g) => g.value == grade);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space3, vertical: Dim.space1),
       decoration: BoxDecoration(
-        color: spec.color.withValues(alpha: 0.15),
+        color: spec.color.withValues(alpha: Dim.fill),
         borderRadius: Dim.brChip,
-        border: Border.all(color: spec.color.withValues(alpha: 0.5)),
+        border: Border.all(color: spec.color.withValues(alpha: Dim.hairline)),
       ),
       child: Text(
         'Coach suggests: ${spec.label} — your call',
@@ -617,8 +620,8 @@ class _InputBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding:
-            const EdgeInsets.fromLTRB(Dim.space3, Dim.space2, Dim.space3, 18),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space3, Dim.space2, Dim.space3, Dim.space4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -652,8 +655,8 @@ class _InputBar extends StatelessWidget {
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: Dim.space4, vertical: Dim.space3),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  border: const OutlineInputBorder(
+                    borderRadius: Dim.brSheet,
                     borderSide: BorderSide.none,
                   ),
                 ),

@@ -140,7 +140,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            Dim.space5, Dim.space3, Dim.space5, Dim.space6),
         children: [
           _SummaryStrip(kpis: [
             if (anyStudied)
@@ -172,7 +173,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 onTap: () => _reveal(_habitsKey),
               ),
           ]),
-          const SizedBox(height: 22),
+          const SizedBox(height: Dim.space5),
           // Lead group, expanded: the full readiness breakdown (reuses the rich
           // panel that Home dropped in its ring-hero redesign), plus a link out
           // to the heavier AI narrative report.

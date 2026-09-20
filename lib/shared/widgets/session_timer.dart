@@ -176,11 +176,11 @@ class _SessionTimerState extends State<SessionTimer> {
 
     return Material(
       color: _done
-          ? green.withValues(alpha: 0.15)
+          ? green.withValues(alpha: Dim.fill)
           : scheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: Dim.brCard,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: Dim.brCard,
         onTap: _onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(

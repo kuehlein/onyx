@@ -98,7 +98,8 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
           children: [
             SheetHeader(title: 'Log a solve', subtitle: widget.card.title),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, Dim.space4),
+              padding: const EdgeInsets.fromLTRB(
+                  Dim.space5, 0, Dim.space5, Dim.space4),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +135,7 @@ class _LogSolveSheetState extends ConsumerState<_LogSolveSheet> {
                           backgroundColor: o.color.withValues(alpha: Dim.fill),
                           foregroundColor: o.color,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: Dim.space4, vertical: 14),
+                              horizontal: Dim.space4, vertical: Dim.space4),
                         ),
                         child: Text(o.label,
                             style:

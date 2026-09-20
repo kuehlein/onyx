@@ -94,8 +94,8 @@ class _RoundDialogState extends State<_RoundDialog> {
       // Roomier than the default content-sized dialog, which felt cramped.
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Dim.space6, vertical: Dim.space5),
-      contentPadding:
-          const EdgeInsets.fromLTRB(Dim.space5, 20, Dim.space5, Dim.space2),
+      contentPadding: const EdgeInsets.fromLTRB(
+          Dim.space5, Dim.space5, Dim.space5, Dim.space2),
       title: Text(widget.title ?? 'Round ${widget.existing.number}'),
       content: SizedBox(
         width: double.maxFinite,
@@ -121,7 +121,7 @@ class _RoundDialogState extends State<_RoundDialog> {
             // Date — a matching bordered field that opens the picker on tap.
             InkWell(
               onTap: _pickDate,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: Dim.brChip,
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: 'Date',

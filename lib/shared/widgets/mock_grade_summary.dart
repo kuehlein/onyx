@@ -38,10 +38,10 @@ class MockGradeSummary extends StatelessWidget {
           Dim.space4, Dim.space3, Dim.space4, Dim.space1),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: v.color.withValues(alpha: 0.35)),
+        borderRadius: Dim.brSheet,
+        border: Border.all(color: v.color.withValues(alpha: Dim.emphasisLow)),
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(Dim.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -108,7 +108,7 @@ class _ScoreDisc extends StatelessWidget {
             child: CircularProgressIndicator(
               value: score / 100,
               strokeWidth: 5,
-              backgroundColor: color.withValues(alpha: 0.15),
+              backgroundColor: color.withValues(alpha: Dim.fill),
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),
@@ -152,12 +152,12 @@ class _RubricRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (i < 5) const SizedBox(width: 3),
+                  if (i < 5) const SizedBox(width: Dim.space1),
                 ],
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Text('$value/5', style: theme.textTheme.bodySmall),
         ],
       ),

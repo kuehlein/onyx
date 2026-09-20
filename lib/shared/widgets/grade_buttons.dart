@@ -33,7 +33,7 @@ class GradeButtons extends StatelessWidget {
   const GradeButtons({
     super.key,
     required this.buttons,
-    this.verticalPadding = 14,
+    this.verticalPadding = Dim.space4,
   });
 
   final List<GradeButton> buttons;

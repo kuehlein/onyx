@@ -301,7 +301,7 @@ class _ActiveFilters extends StatelessWidget {
           for (final m in filter.mastery)
             _chip(context, m.label, () => onRemoveMastery(m)),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: Dim.space2),
             child: TextButton(onPressed: onClear, child: const Text('Clear')),
           ),
         ],
@@ -360,7 +360,7 @@ class _CardTile extends StatelessWidget {
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.24),
+        backgroundColor: color.withValues(alpha: Dim.fill),
         child: Icon(flowIcon(flow?.iconKey), size: 20, color: color),
       ),
       title: Text(card.title, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -372,7 +372,7 @@ class _CardTile extends StatelessWidget {
         children: [
           if (card.isDraft) ...[
             const _DraftPill(),
-            const SizedBox(width: 6),
+            const SizedBox(width: Dim.space2),
           ],
           Expanded(
             child: Text(

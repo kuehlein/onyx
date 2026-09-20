@@ -156,7 +156,7 @@ class _ReaderLoadingState extends State<_ReaderLoading> {
             const LoadingView(compact: true),
             // Still attempting; this just offers a shortcut once it drags.
             if (_slow) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               Text('Still loading — this one is taking a while.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium
@@ -195,7 +195,7 @@ class _ReaderError extends StatelessWidget {
             const SizedBox(height: Dim.space3),
             Text(message,
                 textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 18),
+            const SizedBox(height: Dim.space4),
             FilledButton.icon(
               icon: const Icon(Icons.open_in_new),
               label: const Text('Open in browser'),

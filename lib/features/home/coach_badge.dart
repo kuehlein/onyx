@@ -67,7 +67,7 @@ class CoachBadge extends ConsumerWidget {
     final theme = Theme.of(context);
     final color = _toneColor(update.tone, theme);
     return Material(
-      color: color.withValues(alpha: 0.12),
+      color: color.withValues(alpha: Dim.fill),
       borderRadius: Dim.brCard,
       child: InkWell(
         borderRadius: Dim.brCard,
@@ -75,16 +75,16 @@ class CoachBadge extends ConsumerWidget {
             ? showLoadCheckInSheet(context, ref)
             : _showDetail(context, ref, update, color, seed, load, todayPlan),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Dim.space4, vertical: Dim.space3),
           decoration: BoxDecoration(
             borderRadius: Dim.brCard,
-            border: Border.all(color: color.withValues(alpha: 0.35)),
+            border: Border.all(color: color.withValues(alpha: Dim.emphasisLow)),
           ),
           child: Row(
             children: [
               Icon(_icon(update.kind), size: 20, color: color),
-              const SizedBox(width: 10),
+              const SizedBox(width: Dim.space3),
               Expanded(
                 child: Text(
                   update.headline,
@@ -94,7 +94,7 @@ class CoachBadge extends ConsumerWidget {
                       ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: Dim.space2),
               Icon(Icons.expand_more,
                   size: 18, color: theme.colorScheme.onSurfaceVariant),
             ],
@@ -138,7 +138,8 @@ class CoachBadge extends ConsumerWidget {
               SheetHeader(
                   icon: _icon(u.kind), iconColor: color, title: u.headline),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space5, 0, Dim.space5, Dim.space5),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +147,7 @@ class CoachBadge extends ConsumerWidget {
                     Text(u.why,
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface, height: 1.4)),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: Dim.space5),
                     if (u.proposal != null)
                       SizedBox(
                         width: double.infinity,

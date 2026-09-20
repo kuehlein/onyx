@@ -214,7 +214,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                   onChanged: (_) => setState(() {}),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.event_outlined),

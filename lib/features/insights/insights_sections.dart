@@ -36,7 +36,7 @@ class _MockSkillsSection extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               for (final k in keys)
                 _StatBar(
                   label: rubricLabel(k),
@@ -86,7 +86,7 @@ class _SystemDesignSection extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               for (final k in keys)
                 _StatBar(
                   label: rubricLabel(k),
@@ -136,7 +136,7 @@ class _BehavioralSection extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               for (final k in keys)
                 _StatBar(
                   label: rubricLabel(k),
@@ -185,7 +185,7 @@ class _AlgoSection extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               _StatBar(
                 label: 'Clean-solve rate',
                 fraction: a.cleanRate,
@@ -240,7 +240,7 @@ class _PatternsSection extends ConsumerWidget {
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: Dim.space4),
               for (final p in patterns) _patternBar(context, p),
             ],
           );
@@ -338,7 +338,7 @@ class _DueForecastSection extends ConsumerWidget {
             children: [
               _BarStrip(values: counts),
               const _StripAxis('Due now', '+2 weeks'),
-              const SizedBox(height: 6),
+              const SizedBox(height: Dim.space2),
               Text('${counts.first} due now · $total over the next 2 weeks',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -374,7 +374,7 @@ class _StrugglingSection extends ConsumerWidget {
             children: [
               for (final c in cards)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: Dim.space3),
                   child: Row(
                     children: [
                       Icon(Icons.error_outline,
@@ -430,7 +430,7 @@ class _ConsistencySection extends ConsumerWidget {
             children: [
               _BarStrip(values: counts, height: 48),
               const _StripAxis('4 weeks ago', 'Today'),
-              const SizedBox(height: 6),
+              const SizedBox(height: Dim.space2),
               Text('Studied $activeDays of the last ${counts.length} days',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),

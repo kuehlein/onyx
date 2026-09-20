@@ -65,7 +65,8 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, 0, Dim.space5, Dim.space5),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +136,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   ) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: Dim.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -189,7 +190,8 @@ class _SearchHelpSheet extends StatelessWidget {
             SheetHeader(title: 'Searching & filtering', divider: true),
             Flexible(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, Dim.space3, 20, Dim.space5),
+                padding: EdgeInsets.fromLTRB(
+                    Dim.space5, Dim.space3, Dim.space5, Dim.space5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -207,7 +209,7 @@ class _SearchHelpSheet extends StatelessWidget {
                         'Interview questions (or type:flashcard)'),
                     _Op('tier:1', 'Cards at this tier (1 = most foundational)'),
                     _Op('is:due', 'Study state: is:new · is:due · is:strong'),
-                    SizedBox(height: 10),
+                    SizedBox(height: Dim.space3),
                     _Example('trees tag:ds-a is:due'),
                     SizedBox(height: Dim.space4),
                     _Heading('Filter button'),
@@ -264,15 +266,15 @@ class _Op extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Dim.space1),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Code(code),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 3),
+              padding: const EdgeInsets.only(top: Dim.space1),
               child: Text(desc, style: theme.textTheme.bodyMedium),
             ),
           ),
@@ -301,7 +303,7 @@ class _Code extends StatelessWidget {
           horizontal: Dim.space2, vertical: Dim.space1),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: Dim.brChip,
       ),
       child: Text(text,
           style: theme.textTheme.bodySmall?.copyWith(

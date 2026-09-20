@@ -191,12 +191,12 @@ class _LearnView extends StatelessWidget {
                     ),
                     const SizedBox(height: Dim.space3),
                     Text(item.card.title, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: Dim.space2),
                     Text(section.heading,
                         style: theme.textTheme.titleMedium
                             ?.copyWith(color: theme.colorScheme.primary)),
                     if (!revealed) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: Dim.space5),
                       Text(
                         'New to you. Take a guess at what this covers, then reveal.',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -261,7 +261,7 @@ class _ActionBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.only(bottom: Dim.space2),
                     child: Text(
                       'Good adds it to your review schedule.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -276,10 +276,12 @@ class _ActionBar extends StatelessWidget {
                           child: FilledButton(
                             onPressed: () => onGrade(learnGrades[i].value),
                             style: FilledButton.styleFrom(
-                              backgroundColor:
-                                  learnGrades[i].color.withValues(alpha: 0.18),
+                              backgroundColor: learnGrades[i]
+                                  .color
+                                  .withValues(alpha: Dim.fill),
                               foregroundColor: learnGrades[i].color,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: Dim.space4),
                             ),
                             child: Text(learnGrades[i].label),
                           ),
@@ -338,7 +340,7 @@ class _CompleteState extends ConsumerWidget {
                 size: 48, color: theme.colorScheme.primary),
             const SizedBox(height: Dim.space3),
             Text('Nice work', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 6),
+            const SizedBox(height: Dim.space2),
             Text(
                 '$learned section${learned == 1 ? '' : 's'} added to your review schedule',
                 textAlign: TextAlign.center,

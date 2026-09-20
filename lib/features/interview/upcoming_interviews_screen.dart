@@ -121,7 +121,7 @@ class _PastSectionState extends State<_PastSection> {
               children: [
                 Icon(_open ? Icons.expand_more : Icons.chevron_right,
                     size: 20, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
+                const SizedBox(width: Dim.space2),
                 Text('Past interviews (${widget.past.length})',
                     style: theme.textTheme.labelLarge
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -180,11 +180,11 @@ class _Empty extends StatelessWidget {
           children: [
             Icon(Icons.event_note_outlined,
                 size: 44, color: theme.colorScheme.primary),
-            const SizedBox(height: 14),
+            const SizedBox(height: Dim.space4),
             Text('No interviews planned yet',
                 style: theme.textTheme.titleMedium,
                 textAlign: TextAlign.center),
-            const SizedBox(height: 6),
+            const SizedBox(height: Dim.space2),
             Text(
               'Plan one and Onyx will prioritize your study for it — and flag '
               'what to prep elsewhere.',

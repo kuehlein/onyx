@@ -67,7 +67,8 @@ class _ApiKeySheetState extends ConsumerState<_ApiKeySheet> {
             icon: Icons.key_outlined,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space1, 20, 20),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space1, Dim.space5, Dim.space5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -89,7 +90,7 @@ class _ApiKeySheetState extends ConsumerState<_ApiKeySheet> {
                   'console.anthropic.com.',
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: Dim.space5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [

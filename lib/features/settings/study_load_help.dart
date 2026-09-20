@@ -33,7 +33,8 @@ class _StudyLoadHelp extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
+              padding: const EdgeInsets.fromLTRB(
+                  Dim.space5, Dim.space3, Dim.space5, Dim.space6),
               children: [
                 const _H('The five activities'),
                 _P(
@@ -56,13 +57,13 @@ class _StudyLoadHelp extends StatelessWidget {
                     'these yourself.'),
                 const _Bullet(
                     'Interview prep — set a target/date so the rest aims at it.'),
-                const SizedBox(height: 20),
+                const SizedBox(height: Dim.space5),
                 const _H('A start-slow ramp'),
                 _P('Only step up when the week felt fine (see the guardrail below).',
                     muted),
                 const SizedBox(height: Dim.space3),
                 const _RampTable(),
-                const SizedBox(height: 20),
+                const SizedBox(height: Dim.space5),
                 const _H('The one guardrail'),
                 _P(
                     'Let recent review success be your gauge. Aim for ~90%. If it '

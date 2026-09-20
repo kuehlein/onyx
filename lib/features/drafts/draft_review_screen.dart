@@ -149,7 +149,7 @@ class _ReviewView extends StatelessWidget {
                     // The CUE: the card title. Recall what's on it, then reveal.
                     Text(card.title, style: theme.textTheme.headlineSmall),
                     if (!revealed) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: Dim.space5),
                       Text(
                         "Recall what's on this card, then reveal to check.",
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -169,7 +169,7 @@ class _ReviewView extends StatelessWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.primary)),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: Dim.space2),
                         CardMarkdown(section.content),
                         const SizedBox(height: Dim.space3),
                       ],
@@ -311,7 +311,7 @@ class _CompleteState extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(Dim.space6),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -331,7 +331,7 @@ class _CompleteState extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               if (session.skipped > 0) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 Text(
                   'Skipped drafts stay in Browse to review later.',
                   textAlign: TextAlign.center,
@@ -339,7 +339,7 @@ class _CompleteState extends StatelessWidget {
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
-              const SizedBox(height: 28),
+              const SizedBox(height: Dim.space6),
               FilledButton(
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/'),

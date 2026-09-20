@@ -251,14 +251,15 @@ class _AdjustSheetState extends State<_AdjustSheet> {
             divider: true,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space2, Dim.space5, Dim.space5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Interview level',
                     style: theme.textTheme.labelMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 DropdownButton<SeniorityLevel>(
                   value: _level,
                   isExpanded: true,
@@ -273,11 +274,11 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                       DropdownMenuItem(value: l, child: Text(l.label)),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: Dim.space5),
                 Text('Support',
                     style: theme.textTheme.labelMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<String>(
@@ -309,21 +310,21 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                       '${widget.autoSupport.name}.',
                   theme,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 _Explain(
                   'Coaching',
                   'the interviewer notices when you\'re stuck and steps in with '
                       'a hint — good while you\'re learning.',
                   theme,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Dim.space2),
                 _Explain(
                   'Realistic',
                   'hands-off, like the real thing; ask explicitly if you want a '
                       'hint.',
                   theme,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: Dim.space4),
                 Row(
                   children: [
                     Icon(Icons.info_outline,

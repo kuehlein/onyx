@@ -85,8 +85,8 @@ class Callout extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: Dim.fill),
+        borderRadius: Dim.brCard,
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -95,8 +95,8 @@ class Callout extends StatelessWidget {
             Container(width: 4, color: color),
             Expanded(
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(14, Dim.space3, 14, Dim.space3),
+                padding: const EdgeInsets.fromLTRB(
+                    Dim.space4, Dim.space3, Dim.space4, Dim.space3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,7 +119,7 @@ class Callout extends StatelessWidget {
                       ],
                     ),
                     if (body != null) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: Dim.space2),
                       body!,
                     ],
                   ],

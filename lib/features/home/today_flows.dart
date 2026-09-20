@@ -24,11 +24,11 @@ class TodayFlows extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < plan.tracks.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
+          if (i > 0) const SizedBox(height: Dim.space3),
           _FlowButton(track: plan.tracks[i], emphasis: i),
         ],
         for (final locked in plan.locked) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: Dim.space3),
           _LockedRow(track: locked),
         ],
         // Nothing required left today → offer the optional extra-practice run
@@ -57,17 +57,18 @@ class _ExtraPractice extends ConsumerWidget {
 
     return Material(
       color: cs.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: Dim.brCard,
       child: InkWell(
         onTap:
             weakest == null ? null : () => context.push('/practice/$weakest'),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(Dim.space4, 14, Dim.space4, 14),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space4, Dim.space4, Dim.space4, Dim.space4),
           child: Row(
             children: [
               Icon(Icons.bolt_outlined, size: 22, color: cs.primary),
-              const SizedBox(width: 14),
+              const SizedBox(width: Dim.space4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,7 +76,7 @@ class _ExtraPractice extends ConsumerWidget {
                     Text("You're clear for today",
                         style: theme.textTheme.titleSmall
                             ?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: Dim.space1),
                     Text(
                       weakest == null
                           ? 'Extra practice unlocks once you have some studied '
@@ -129,7 +130,8 @@ class _FlowButton extends StatelessWidget {
     };
 
     final child = Padding(
-      padding: EdgeInsets.symmetric(vertical: isPrimary ? 6 : 2),
+      padding:
+          EdgeInsets.symmetric(vertical: isPrimary ? Dim.space2 : Dim.space1),
       child: Row(
         children: [
           Icon(meta.icon, size: 20, color: fg),
@@ -172,12 +174,13 @@ class _LockedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Dim.space2, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space2, vertical: Dim.space1),
       child: Row(
         children: [
           Icon(Icons.lock_outline,
               size: 16, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 10),
+          const SizedBox(width: Dim.space3),
           Expanded(
             child: Text(
               track.gateReason ?? '${track.track.label} locked',

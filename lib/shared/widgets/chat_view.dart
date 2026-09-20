@@ -150,7 +150,7 @@ class _ChatViewState extends State<ChatView> {
             width: double.infinity,
             color: theme.colorScheme.errorContainer,
             padding: const EdgeInsets.symmetric(
-                horizontal: Dim.space4, vertical: 10),
+                horizontal: Dim.space4, vertical: Dim.space3),
             child: Text(
               widget.error!,
               style: TextStyle(color: theme.colorScheme.onErrorContainer),
@@ -187,12 +187,13 @@ class _Bubble extends StatelessWidget {
             ),
             child: Container(
               margin: const EdgeInsets.only(bottom: Dim.space3),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Dim.space4, vertical: Dim.space3),
               decoration: BoxDecoration(
                 color: turn.isUser
                     ? theme.colorScheme.primaryContainer
                     : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: Dim.brCard,
               ),
               child: turn.isUser
                   ? Text(
@@ -277,8 +278,8 @@ class _Composer extends StatelessWidget {
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: Dim.space4, vertical: Dim.space3),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  border: const OutlineInputBorder(
+                    borderRadius: Dim.brSheet,
                     borderSide: BorderSide.none,
                   ),
                 ),

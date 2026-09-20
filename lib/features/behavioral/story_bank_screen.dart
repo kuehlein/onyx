@@ -44,7 +44,8 @@ class _Body extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
+          padding: const EdgeInsets.fromLTRB(
+              Dim.space5, Dim.space3, Dim.space5, Dim.space6),
           children: [
             Text('Coverage', style: theme.textTheme.titleSmall),
             const SizedBox(height: Dim.space1),
@@ -99,7 +100,8 @@ class _CoverageRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space4, vertical: Dim.space3),
       child: Row(
         children: [
           Icon(covered ? Icons.check_circle : Icons.circle_outlined,
@@ -169,14 +171,14 @@ class _StorySheet extends StatelessWidget {
     Widget section(String heading, String body) {
       if (body.trim().isEmpty) return const SizedBox.shrink();
       return Padding(
-        padding: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.only(bottom: Dim.space4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(heading,
                 style: theme.textTheme.labelMedium
                     ?.copyWith(color: theme.colorScheme.primary)),
-            const SizedBox(height: 2),
+            const SizedBox(height: Dim.space1),
             Text(body.trim(), style: theme.textTheme.bodyMedium),
           ],
         ),
@@ -193,15 +195,15 @@ class _StorySheet extends StatelessWidget {
               divider: true),
           Expanded(
             child: ListView(
-              padding:
-                  const EdgeInsets.fromLTRB(20, Dim.space2, 20, Dim.space5),
+              padding: const EdgeInsets.fromLTRB(
+                  Dim.space5, Dim.space2, Dim.space5, Dim.space5),
               children: [
                 if (story.competencies.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.only(bottom: Dim.space4),
                     child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
+                      spacing: Dim.space2,
+                      runSpacing: Dim.space2,
                       children: [
                         for (final c in story.competencies)
                           Chip(

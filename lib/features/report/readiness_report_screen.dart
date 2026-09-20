@@ -99,7 +99,7 @@ class _NeedsKey extends StatelessWidget {
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Dim.space5),
           FilledButton.tonal(
             onPressed: () => context.go('/settings'),
             child: const Text('Open Settings'),
@@ -143,7 +143,7 @@ class _Intro extends ConsumerWidget {
           const SizedBox(height: Dim.space4),
           Text('AI readiness report',
               style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-          const SizedBox(height: 10),
+          const SizedBox(height: Dim.space3),
           Text(
             'Reads your progress and the topics in your deck, then assesses how '
             'ready you are for your target — including likely scope gaps the '
@@ -207,7 +207,7 @@ class _ReportHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CardMarkdown(report.text!),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Text(
           _footer(ref, report),
           style: theme.textTheme.labelSmall

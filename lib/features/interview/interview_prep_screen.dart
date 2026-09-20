@@ -41,7 +41,8 @@ class InterviewPrepScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, Dim.space3, 20, 28),
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space5, Dim.space3, Dim.space5, Dim.space6),
             children: [
               const _SectionHeader('Your target'),
               Card(
@@ -57,7 +58,7 @@ class InterviewPrepScreen extends ConsumerWidget {
                   onTap: () => showTargetSheet(context),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               const _SectionHeader('Scheduled interviews'),
               Card(
                 margin: EdgeInsets.zero,
@@ -72,7 +73,7 @@ class InterviewPrepScreen extends ConsumerWidget {
                   onTap: () => context.push('/interviews'),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dim.space5),
               const _SectionHeader('Behavioral practice'),
               Text(
                 'Best in the last stretch before you interview — build your '
@@ -131,7 +132,8 @@ class _BehavioralReadinessBanner extends ConsumerWidget {
     final r = ref.watch(behavioralReadinessProvider).asData?.value;
     if (r == null) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: Dim.space3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Dim.space4, vertical: Dim.space3),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: Dim.brCard,
@@ -147,7 +149,7 @@ class _BehavioralReadinessBanner extends ConsumerWidget {
                 Text(r.stage.label,
                     style: theme.textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
+                const SizedBox(height: Dim.space1),
                 Text(r.stage.hint,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),

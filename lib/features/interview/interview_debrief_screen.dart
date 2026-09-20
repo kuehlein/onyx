@@ -76,7 +76,7 @@ class _Opener extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(Dim.space5),
       child: Column(
         children: [
           Icon(Icons.rate_review_outlined,
@@ -121,7 +121,7 @@ class _DebriefCard extends StatelessWidget {
       padding: const EdgeInsets.all(Dim.space4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: Dim.brCard,
         border: Border.all(
             color: theme.colorScheme.primary.withValues(alpha: Dim.hairline)),
       ),
@@ -153,10 +153,10 @@ class _DebriefCard extends StatelessWidget {
                 label: 'Concepts', items: concepts, tone: StatusTone.muted),
           ],
           if (result.summary.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Dim.space3),
             CardMarkdown(result.summary, compact: true),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: Dim.space4),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -188,10 +188,10 @@ class _ChipRow extends StatelessWidget {
         Text(label,
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
+        const SizedBox(height: Dim.space2),
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: Dim.space2,
+          runSpacing: Dim.space2,
           children: [
             for (final it in items)
               StatusPill(tone: tone, label: prettyDomain(it), dense: true),
