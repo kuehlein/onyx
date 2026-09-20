@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../design/onyx_design.dart';
+
 /// Wraps a scrollable and overlays a soft fade at the top/bottom edge whenever
 /// there is more content in that direction. The fade makes it obvious that a
 /// view scrolls — and stops a table (or any block) sitting at the viewport edge
@@ -89,7 +91,7 @@ class _FadingScrollEdgesState extends State<FadingScrollEdges> {
       right: 0,
       child: IgnorePointer(
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
+          duration: context.motionFast,
           opacity: visible ? 1 : 0,
           child: Container(
             height: widget.extent,

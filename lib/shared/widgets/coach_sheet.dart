@@ -188,11 +188,12 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
 
   void _scrollToEnd() {
     // After the frame that adds the new message, pin to the bottom.
+    final duration = context.motionBase; // instant under reduce-motion
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
           _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
+          duration: duration,
           curve: Curves.easeOut,
         );
       }

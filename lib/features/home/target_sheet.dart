@@ -145,7 +145,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
+                    duration: context.motionBase,
                     curve: Curves.easeInOut,
                     alignment: Alignment.topCenter,
                     child: showDims

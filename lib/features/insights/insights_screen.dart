@@ -82,13 +82,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   /// Expand a group and scroll it into view (after the expansion lays out).
   void _reveal(GlobalKey<_GroupState> key) {
     key.currentState?.expand();
+    final duration = context.motionSlow; // instant under reduce-motion
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = key.currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(ctx,
-            duration: const Duration(milliseconds: 300),
-            alignment: 0.02,
-            curve: Curves.easeInOut);
+            duration: duration, alignment: 0.02, curve: Curves.easeInOut);
       }
     });
   }

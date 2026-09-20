@@ -153,7 +153,7 @@ class _FolderSourceBodyState extends ConsumerState<FolderSourceBody> {
         // A slim progress line while an action runs, so a slow create/index is
         // visibly working (buttons are already disabled above).
         AnimatedSize(
-          duration: t.motionFast,
+          duration: context.motionFast,
           curve: t.easeStandard,
           child: _busy
               ? Padding(
@@ -204,7 +204,7 @@ class _Expander extends StatelessWidget {
           ),
         ),
         AnimatedSize(
-          duration: t.motionFast,
+          duration: context.motionFast,
           curve: t.easeStandard,
           alignment: Alignment.topCenter,
           child: expanded
