@@ -17,6 +17,12 @@ import 'subject_config.dart';
 ///   families:[{id: grammar, exact: [grammar], contains: [grammar]}, ...]
 ///   fallback: {level: a1, context: casual, track: speaking}   # optional
 /// flows:     [{cardType: flashcard, scheduling: recall, quizzability: blocklist}, ...]
+/// vocabulary: {examinerNoun: interviewer}          # optional (G3); else neutral
+/// parse:                                           # optional (G4); else built-in
+///   sectionHeadingLevel: 2        # 2 = `##`, 3 = `###`
+///   fileExtensions: [md]          # lowercase, dot optional
+///   wikilinks: true
+///   neverQuizzed: [related, references, ...]  # omit → engine's default blocklist
 /// ```
 SubjectConfig subjectConfigFromYaml(String yaml) {
   final root = loadYaml(yaml);
@@ -28,6 +34,38 @@ SubjectConfig subjectConfigFromYaml(String yaml) {
     target: _target(root['target']),
     flows: _list(root['flows']).map(_flow).toList(),
     coachSkill: root['coachSkill'] as String?,
+    vocabulary: _vocabulary(root['vocabulary']),
+    parseProfile: _parseProfile(root['parse']),
+  );
+}
+
+/// The optional `vocabulary:` block (task #30, G3). Absent/blank → neutral.
+Vocabulary _vocabulary(Object? node) {
+  if (node is! Map) return Vocabulary.neutral;
+  final examiner = node['examinerNoun'];
+  return (examiner is String && examiner.trim().isNotEmpty)
+      ? Vocabulary(examinerNoun: examiner.trim())
+      : Vocabulary.neutral;
+}
+
+/// The optional `parse:` block (task #30, G4). Any field absent → its built-in
+/// default, so an absent block (the common case) is [ParseProfile.standard].
+/// `sectionHeadingLevel` is clamped to a sane heading range; `neverQuizzed` is
+/// null (engine default) unless the key is present as a list.
+ParseProfile _parseProfile(Object? node) {
+  if (node is! Map) return ParseProfile.standard;
+  final level = node['sectionHeadingLevel'];
+  final exts = _list(node['fileExtensions'])
+      .map((e) => '$e'.toLowerCase().replaceFirst('.', ''))
+      .where((e) => e.isNotEmpty)
+      .toSet();
+  final wl = node['wikilinks'];
+  final nq = node['neverQuizzed'];
+  return ParseProfile(
+    sectionHeadingLevel: (level is int && level >= 2 && level <= 6) ? level : 2,
+    fileExtensions: exts.isEmpty ? const {'md'} : exts,
+    wikilinks: wl is bool ? wl : true,
+    neverQuizzed: nq is List ? {for (final e in nq) '$e'.toLowerCase()} : null,
   );
 }
 

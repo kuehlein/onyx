@@ -107,4 +107,50 @@ target:
       );
     });
   });
+
+  group('vocabulary + parse profile (G3/G4)', () {
+    test('absent blocks → neutral vocabulary + standard parse profile', () {
+      final cfg = subjectConfigFromYaml(_demoYaml);
+      expect(cfg.vocabulary, same(Vocabulary.neutral));
+      expect(cfg.parseProfile, same(ParseProfile.standard));
+    });
+
+    test('declared vocabulary + parse block parse into the config', () {
+      final cfg = subjectConfigFromYaml('''
+id: x
+target:
+  levels: [{id: only}]
+  contexts: [{id: c}]
+  tracks: [{id: tr}]
+vocabulary: {examinerNoun: proctor}
+parse:
+  sectionHeadingLevel: 3
+  fileExtensions: ['.md', TXT]
+  wikilinks: false
+  neverQuizzed: [Related, References]
+''');
+      expect(cfg.vocabulary.examinerNoun, 'proctor');
+      final p = cfg.parseProfile;
+      expect(p.sectionHeadingLevel, 3);
+      expect(p.fileExtensions, {'md', 'txt'}); // dot stripped, lowercased
+      expect(p.wikilinks, isFalse);
+      expect(p.neverQuizzed, {'related', 'references'}); // lowercased
+    });
+
+    test('out-of-range level + empty extensions fall back to defaults', () {
+      final cfg = subjectConfigFromYaml('''
+id: x
+target:
+  levels: [{id: only}]
+  contexts: [{id: c}]
+  tracks: [{id: tr}]
+parse: {sectionHeadingLevel: 9, fileExtensions: []}
+''');
+      final p = cfg.parseProfile;
+      expect(p.sectionHeadingLevel, 2); // 9 out of range → default
+      expect(p.fileExtensions, {'md'}); // empty → default
+      expect(p.wikilinks, isTrue); // absent → default
+      expect(p.neverQuizzed, isNull); // absent → engine's built-in blocklist
+    });
+  });
 }
