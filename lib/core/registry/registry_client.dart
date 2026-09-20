@@ -12,6 +12,11 @@ abstract class RegistryClient {
 
   /// The full content manifest for [deckId] (cards + metadata, no SRS state).
   Future<DeckManifest> getDeck(String deckId);
+
+  /// Publish (push) a content-only [manifest] to the registry — the maintainer
+  /// role (docs/registry-and-sync.md §4). The in-dev fake stores it in memory; a
+  /// real client POSTs it. Idempotent by `deckId` (re-publishing replaces).
+  Future<void> publishDeck(DeckManifest manifest);
 }
 
 /// An in-memory registry with a couple of small, deliberately GENERIC sample
@@ -22,11 +27,20 @@ abstract class RegistryClient {
 /// never collide with a user's own card ids, and each card's body is a real
 /// `## ` section that parses cleanly via `CardParser`.
 class FakeRegistryClient implements RegistryClient {
-  const FakeRegistryClient();
+  FakeRegistryClient();
+
+  /// Decks published this session via [publishDeck], keyed by `deckId` so a
+  /// re-publish replaces. In-memory only — a real server persists; this is the
+  /// dev seam, and it lets a publish→pull round-trip run end-to-end offline.
+  final Map<String, DeckManifest> _published = {};
+
+  /// Sample decks plus anything published this session (published wins on id).
+  Iterable<DeckManifest> get _all =>
+      {for (final d in _samples) d.deckId: d, ..._published}.values;
 
   @override
   Future<List<DeckSummary>> listDecks() async => [
-        for (final deck in _decks)
+        for (final deck in _all)
           DeckSummary(
             deckId: deck.deckId,
             name: deck.name,
@@ -38,14 +52,18 @@ class FakeRegistryClient implements RegistryClient {
 
   @override
   Future<DeckManifest> getDeck(String deckId) async =>
-      _decks.firstWhere((d) => d.deckId == deckId);
+      _published[deckId] ?? _samples.firstWhere((d) => d.deckId == deckId);
+
+  @override
+  Future<void> publishDeck(DeckManifest manifest) async =>
+      _published[manifest.deckId] = manifest;
 
   static const _descriptions = <String, String>{
     'world-capitals': 'A handful of country → capital pairs.',
     'spanish-everyday-phrases': 'Common phrases for everyday conversation.',
   };
 
-  static final List<DeckManifest> _decks = [
+  static final List<DeckManifest> _samples = [
     const DeckManifest(
       deckId: 'world-capitals',
       name: 'World Capitals',

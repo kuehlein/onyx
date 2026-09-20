@@ -10,7 +10,7 @@ part 'registry.g.dart';
 /// docs/registry-and-sync.md §7.1); a real HTTP client drops in here later.
 /// Overridable in tests (`overrideWith`).
 @riverpod
-RegistryClient registryClient(Ref ref) => const FakeRegistryClient();
+RegistryClient registryClient(Ref ref) => FakeRegistryClient();
 
 /// The available decks to import, from the active [registryClient]. The import
 /// sheet watches this; `getDeck` (the full pull) is called imperatively on tap.

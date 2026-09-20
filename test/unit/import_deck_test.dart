@@ -190,7 +190,7 @@ void main() {
   group('FakeRegistryClient', () {
     test('listDecks returns two decks; getDeck round-trips with parsing cards',
         () async {
-      const client = FakeRegistryClient();
+      final client = FakeRegistryClient();
       final summaries = await client.listDecks();
       expect(summaries.length, 2);
 
