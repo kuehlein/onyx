@@ -85,6 +85,18 @@ const systemDesignRubricDimensions = <String>[
   'communication',
 ];
 
+/// The generic, subject-agnostic rubric dimensions for any config-driven
+/// produce→grade flow (task #30, "G2b"): a vault-authored practice flow (e.g. a
+/// language conversation) whose grader isn't one of the in-code SWE flows uses
+/// these. Deliberately minimal and neutral — no SWE terms — so any subject can
+/// reuse them; the vault skill supplies the task's specifics. One holistic
+/// [AppliedAssessment.appliedScore] still drives readiness; these power insights.
+const flowRubricDimensions = <String>[
+  'taskCompletion',
+  'accuracy',
+  'communication',
+];
+
 /// The behavioral mock-interview rubric dimensions (flow 4). STAR+L structure plus
 /// the highest-signal behavioral dimensions from the research (ownership, quantified
 /// result, competency/leadership signal, level-appropriate scope, reflection) and
@@ -122,5 +134,8 @@ String rubricLabel(String key) => switch (key) {
       'signal' => 'Competency signal',
       'scope' => 'Scope vs level',
       'reflection' => 'Reflection & learning',
+      // Generic config-flow dimensions.
+      'taskCompletion' => 'Task completion',
+      'accuracy' => 'Accuracy',
       _ => key,
     };
