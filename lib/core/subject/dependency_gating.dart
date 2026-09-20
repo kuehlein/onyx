@@ -9,7 +9,8 @@
 library;
 
 /// A gated flow/card unlocks once at least this fraction of its dependencies
-/// clear the competence bar. Mirrors `plan/gating.dart` kPrereqFraction.
+/// clear the bar. The single unlock fraction for BOTH gates — the daily plan's
+/// comfort gate (`plan/gating.dart`) delegates to [evaluateGate] too.
 const double kDefaultPrereqFraction = 0.6;
 
 /// The result of evaluating one flow/card's dependency gate.

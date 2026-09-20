@@ -17,15 +17,18 @@
 /// [algoGroupPrereqs]).
 library;
 
+import '../subject/dependency_gating.dart';
 import 'practice_plan.dart';
 
 /// A prerequisite concept card is "comfortable" once at least this fraction of
-/// its sections have been studied.
+/// its sections have been studied. This is the daily plan's *coverage* signal —
+/// deliberately distinct from the flow-runner's *competence* (FSRS-durability)
+/// signal (the coverage-vs-forecast two-clock split), even though both now feed
+/// the one shared gating engine, [evaluateGate].
 const double kConceptComfortBar = 0.5;
 
-/// A gated card unlocks once at least this fraction of its prerequisites are
-/// comfortable.
-const double kPrereqFraction = 0.6;
+// The unlock fraction (≥60% of prerequisites clear the bar) is the single shared
+// gating parameter [kDefaultPrereqFraction] — one gate engine, two signals.
 
 /// Algorithm group → prerequisite concept-card slugs. Empty = ungated (available
 /// day one). Advanced groups gate on the concept they apply.
@@ -63,13 +66,15 @@ String cardIdOf(String unitId) {
   return i < 0 ? unitId : unitId.substring(0, i);
 }
 
-/// Whether [prereqs] are satisfied given per-concept [comfort] (0..1).
-bool prereqsMet(List<String> prereqs, Map<String, double> comfort) {
-  if (prereqs.isEmpty) return true;
-  final ok =
-      prereqs.where((c) => (comfort[c] ?? 0) >= kConceptComfortBar).length;
-  return ok / prereqs.length >= kPrereqFraction - 1e-9;
-}
+/// Whether [prereqs] are satisfied given per-concept [comfort] (0..1). A thin
+/// alias over the shared [evaluateGate] engine, fed the daily plan's comfort
+/// signal (bar [kConceptComfortBar]) — kept as the plan's named predicate.
+bool prereqsMet(List<String> prereqs, Map<String, double> comfort) =>
+    evaluateGate(
+      dependsOn: prereqs,
+      competenceOf: (c) => comfort[c] ?? 0,
+      competenceBar: kConceptComfortBar,
+    ).unlocked;
 
 /// Applies prerequisite gating to [availabilities]: drops locked units; a track
 /// left with no units becomes `unlocked: false` with a [TrackAvailability.gateReason].
@@ -101,12 +106,16 @@ TrackAvailability _gateTrack(
   final blockedConcepts = <String>{};
   for (final u in a.units) {
     final prereqs = prereqsByCard[cardIdOf(u.id)] ?? const [];
-    if (prereqsMet(prereqs, comfort)) {
+    final gate = evaluateGate(
+      dependsOn: prereqs,
+      competenceOf: (c) => comfort[c] ?? 0,
+      competenceBar: kConceptComfortBar,
+    );
+    if (gate.unlocked) {
       kept.add(u);
     } else {
-      for (final c in prereqs) {
-        if ((comfort[c] ?? 0) < kConceptComfortBar) blockedConcepts.add(c);
-      }
+      // `weak` is exactly the prereqs below the comfort bar.
+      blockedConcepts.addAll(gate.weak);
     }
   }
   if (kept.length == a.units.length) return a;
