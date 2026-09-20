@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../shared/models/card.dart';
+import '../goal/membership_query.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
@@ -34,6 +36,49 @@ Future<DeckManifest> buildDeckManifest({
     author: author,
     license: license,
     files: files,
+  );
+}
+
+/// The distinct folders (at any depth) that hold at least one card — the pickable
+/// export subtrees for the publish flow. Root-level cards contribute no folder;
+/// offer "whole study folder" (an empty prefix, [buildFolderDeck] with `''`)
+/// alongside these.
+List<String> publishableFolders(Iterable<Card> cards) {
+  final dirs = <String>{};
+  for (final c in cards) {
+    final segs = c.filePath.split('/');
+    for (var i = 1; i < segs.length; i++) {
+      dirs.add(segs.take(i).join('/'));
+    }
+  }
+  return dirs.toList()..sort();
+}
+
+/// Builds a deck from the cards under [folder] — the **folder lens** (v1 export
+/// unit; a cross-cutting query lens is a later advanced option). Paths are made
+/// relative to [folder] so the deck arrives cleanly under its own directory. An
+/// empty [folder] exports the whole vault.
+Future<DeckManifest> buildFolderDeck({
+  required VaultSource source,
+  required Iterable<Card> cards,
+  required String folder,
+  required String deckId,
+  required String name,
+  required String author,
+  String? license,
+}) {
+  final lens = FolderMembership(folder);
+  return buildDeckManifest(
+    source: source,
+    deckId: deckId,
+    name: name,
+    author: author,
+    license: license,
+    cardPaths: [
+      for (final c in cards)
+        if (lens.matches(c)) c.filePath
+    ],
+    rootPrefix: folder,
   );
 }
 

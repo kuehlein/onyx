@@ -7,6 +7,7 @@ import 'package:onyx/core/registry/publish_deck.dart';
 import 'package:onyx/core/registry/registry_client.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
+import 'package:onyx/shared/models/card.dart';
 
 /// The publish (push) side of the registry (task #30 / registry-and-sync.md §4),
 /// client-side against the fake. `buildDeckManifest` is the inverse of
@@ -121,6 +122,68 @@ void main() {
       files: [DeckFile(path: 'big.md', content: 'x' * (kMaxDeckFileBytes + 1))],
     );
     expect(deckPayloadIssue(big), contains('too large'));
+  });
+
+  group('folder selector (v1 export unit)', () {
+    String card(String id) =>
+        '---\nid: $id\ntype: flashcard\ntags: [x]\n---\n\n# $id\n\n## S\n\nb.\n';
+
+    Future<(DesktopVaultSource, List<Card>)> vault() async {
+      final dir = await Directory.systemTemp.createTemp('onyx_folders_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final s = DesktopVaultSource(dir.path);
+      for (final p in const [
+        'people/caesar.md',
+        'people/ancient/augustus.md',
+        'places/rome.md',
+        'root.md',
+      ]) {
+        await s.writeFile(p, card(p.split('/').last.replaceAll('.md', '')));
+      }
+      final cards = [
+        for (final p in await s.listCardPaths())
+          if (const CardParser().parse(await s.readCard(p), filePath: p)
+              case final c?)
+            c,
+      ];
+      return (s, cards);
+    }
+
+    test('publishableFolders lists every card-bearing subtree (root excluded)',
+        () async {
+      final (_, cards) = await vault();
+      expect(publishableFolders(cards),
+          ['people', 'people/ancient', 'places']); // sorted; root.md → none
+    });
+
+    test('buildFolderDeck exports only the subtree, paths relative to it',
+        () async {
+      final (source, cards) = await vault();
+      final m = await buildFolderDeck(
+        source: source,
+        cards: cards,
+        folder: 'people',
+        deckId: 'romans',
+        name: 'Romans',
+        author: 'Me',
+      );
+      // Only the two cards under people/, with the prefix stripped.
+      expect(m.files.map((f) => f.path).toSet(),
+          {'caesar.md', 'ancient/augustus.md'});
+    });
+
+    test('an empty folder exports the whole vault', () async {
+      final (source, cards) = await vault();
+      final m = await buildFolderDeck(
+        source: source,
+        cards: cards,
+        folder: '',
+        deckId: 'all',
+        name: 'All',
+        author: 'Me',
+      );
+      expect(m.files.length, 4);
+    });
   });
 
   test('FakeRegistryClient: publish then pull sees the deck', () async {
