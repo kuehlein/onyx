@@ -283,10 +283,13 @@ class _ActiveFilters extends StatelessWidget {
   final void Function(MasteryFilter) onRemoveMastery;
   final VoidCallback onClear;
 
+  // Height of the horizontal active-filter chip strip.
+  static const _stripHeight = 44.0;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: _stripHeight,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Dim.space3),

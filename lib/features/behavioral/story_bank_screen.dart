@@ -42,7 +42,7 @@ class _Body extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: const BoxConstraints(maxWidth: Dim.maxNarrowWidth),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
               Dim.space5, Dim.space3, Dim.space5, Dim.space6),

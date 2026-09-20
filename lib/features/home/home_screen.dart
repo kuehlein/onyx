@@ -59,7 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         appBar: AppBar(title: const Text('Onyx')),
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: Dim.maxNarrowWidth),
             child: LanesHub(onEnter: _enter),
           ),
         ),
@@ -104,7 +104,7 @@ class _GoalHomeBody extends ConsumerWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: const BoxConstraints(maxWidth: Dim.maxNarrowWidth),
         // Distribute the (short) content down the viewport so it breathes
         // instead of clustering at the top, while still scrolling on small
         // screens (minHeight = viewport; see the column note below).
@@ -350,17 +350,21 @@ class _DateHeader extends StatelessWidget {
 class _TodayHero extends ConsumerWidget {
   const _TodayHero();
 
+  // Diameter of the today-completion ring hero (matches TodayRing's own size),
+  // reserved during load/error so the layout doesn't jump when data lands.
+  static const _ringDiameter = 168.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(todayProgressProvider);
     return async.when(
       loading: () => const SizedBox(
-        height: 168,
-        width: 168,
+        height: _ringDiameter,
+        width: _ringDiameter,
         child: LoadingView(),
       ),
       error: (_, __) => const SizedBox(
-        height: 168,
+        height: _ringDiameter,
         child: Center(child: Text('—')),
       ),
       data: (p) {

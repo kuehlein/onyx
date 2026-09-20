@@ -285,6 +285,10 @@ class _Stepper extends StatelessWidget {
   final int max;
   final int step;
 
+  // Fixed width of the centered value column so the +/- buttons don't shift as
+  // the number's digit count changes.
+  static const _valueWidth = 34.0;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -296,7 +300,7 @@ class _Stepper extends StatelessWidget {
           onPressed: value > min ? () => onChanged(value - step) : null,
         ),
         SizedBox(
-          width: 34,
+          width: _valueWidth,
           child: Text('$value',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium),

@@ -21,6 +21,10 @@ import '../../shared/widgets/fading_scroll_edges.dart';
 class ReaderScreen extends ConsumerWidget {
   const ReaderScreen({super.key, required this.url});
 
+  // Article reading-measure cap — a touch wider than the session body so long-form
+  // prose keeps a comfortable line length without running full-bleed.
+  static const _articleMaxWidth = 720.0;
+
   final String url;
 
   @override
@@ -64,7 +68,7 @@ class ReaderScreen extends ConsumerWidget {
         ),
         data: (article) => Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: _articleMaxWidth),
             child: FadingScrollEdges(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(

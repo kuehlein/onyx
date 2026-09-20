@@ -373,6 +373,9 @@ class _Timeline extends StatelessWidget {
   final StudyGoal goal;
   final DateTime today;
 
+  // Faint primary wash marking the current round's row.
+  static const _currentRowFillAlpha = 0.06;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -415,7 +418,8 @@ class _Timeline extends StatelessWidget {
           horizontal: Dim.space3, vertical: Dim.space2),
       decoration: current
           ? BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.06),
+              color: theme.colorScheme.primary
+                  .withValues(alpha: _currentRowFillAlpha),
               borderRadius: Dim.brChip,
               border: Border.all(
                   color: theme.colorScheme.primary

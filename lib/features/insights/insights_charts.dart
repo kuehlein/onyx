@@ -237,6 +237,9 @@ class _StatBar extends StatelessWidget {
   final Color color;
   final String? subtitle;
 
+  // Fixed width of the right-aligned value column so bars align across rows.
+  static const _valueWidth = 42.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -254,7 +257,7 @@ class _StatBar extends StatelessWidget {
               Expanded(child: _Track(fraction: fraction, color: color)),
               const SizedBox(width: Dim.space3),
               SizedBox(
-                width: 42,
+                width: _valueWidth,
                 child: Text(value,
                     textAlign: TextAlign.right,
                     style: theme.textTheme.labelLarge
@@ -279,13 +282,16 @@ class _Track extends StatelessWidget {
   final double? fraction;
   final Color color;
 
+  static const _trackHeight = 10.0; // bar thickness
+  static const _barRadius = 5.0; // fully rounded (== half the height → pill)
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(5),
+      borderRadius: BorderRadius.circular(_barRadius),
       child: Container(
-        height: 10,
+        height: _trackHeight,
         color: cs.surfaceContainerHighest,
         alignment: Alignment.centerLeft,
         child: fraction == null
@@ -305,6 +311,8 @@ class _BarStrip extends StatelessWidget {
   final List<int> values;
   final double height;
 
+  static const _barRadius = 2.0; // subtle rounding on the histogram bars
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -323,7 +331,7 @@ class _BarStrip extends StatelessWidget {
                   height: max == 0 ? 2 : 2 + (height - 2) * (v / max),
                   decoration: BoxDecoration(
                     color: v == 0 ? cs.surfaceContainerHighest : c,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(_barRadius),
                   ),
                 ),
               ),

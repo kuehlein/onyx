@@ -123,7 +123,7 @@ class _CardDetail extends ConsumerWidget {
       body: Center(
         child: ConstrainedBox(
           // Cap the measure for readable line length on wide screens.
-          constraints: const BoxConstraints(maxWidth: 640),
+          constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
           child: FadingScrollEdges(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(

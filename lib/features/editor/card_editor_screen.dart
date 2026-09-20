@@ -237,7 +237,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
+            constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
             child: _preview ? _buildPreview(theme) : _buildForm(theme),
           ),
         ),

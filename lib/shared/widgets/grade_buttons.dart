@@ -53,7 +53,7 @@ class GradeButtons extends StatelessWidget {
 
   Widget _button(GradeButton b) {
     final style = FilledButton.styleFrom(
-      backgroundColor: b.color.withValues(alpha: 0.18),
+      backgroundColor: b.color.withValues(alpha: Dim.fill),
       foregroundColor: b.color,
       padding: EdgeInsets.symmetric(
           horizontal: Dim.space2, vertical: verticalPadding),

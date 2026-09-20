@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../shared/design/context_x.dart';
+import '../../shared/design/onyx_design.dart';
 import 'folder_source_sheet.dart';
 
 /// The first-run gate (docs/settings-ux.md §3, docs/product-direction.md §5): a
@@ -27,7 +27,7 @@ class WelcomeScreen extends ConsumerWidget {
             padding:
                 EdgeInsets.symmetric(horizontal: t.space5, vertical: t.space6),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: Dim.maxCompactWidth),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,

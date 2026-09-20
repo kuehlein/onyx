@@ -179,11 +179,15 @@ Future<void> showSearchHelp(BuildContext context) => showOnyxSheet<void>(
 class _SearchHelpSheet extends StatelessWidget {
   const _SearchHelpSheet();
 
+  // Measure cap for this help sheet's prose (wider than a form, narrower than
+  // the reading body).
+  static const _sheetMaxWidth = 560.0;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+        constraints: const BoxConstraints(maxWidth: _sheetMaxWidth),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [

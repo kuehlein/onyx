@@ -93,18 +93,21 @@ class _ScoreDisc extends StatelessWidget {
   final int score;
   final Color color;
 
+  // Diameter of the circular score gauge in the summary header.
+  static const _discSize = 60.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      width: 60,
-      height: 60,
+      width: _discSize,
+      height: _discSize,
       child: Stack(
         alignment: Alignment.center,
         children: [
           SizedBox(
-            width: 60,
-            height: 60,
+            width: _discSize,
+            height: _discSize,
             child: CircularProgressIndicator(
               value: score / 100,
               strokeWidth: 5,
@@ -126,6 +129,12 @@ class _RubricRow extends StatelessWidget {
   final String label;
   final int value; // 1..5
 
+  // Fixed label column so the 1–5 rubric bars align across rows.
+  static const _labelWidth = 132.0;
+
+  // Subtle rounding on the thin rubric segment bars.
+  static const _barRadius = 3.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -134,7 +143,7 @@ class _RubricRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 132,
+            width: _labelWidth,
             child: Text(label, style: theme.textTheme.bodySmall),
           ),
           Expanded(
@@ -148,7 +157,7 @@ class _RubricRow extends StatelessWidget {
                         color: i <= value
                             ? theme.colorScheme.primary
                             : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: BorderRadius.circular(_barRadius),
                       ),
                     ),
                   ),

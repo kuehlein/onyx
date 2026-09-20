@@ -105,7 +105,7 @@ class StudyTipIntro extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: const BoxConstraints(maxWidth: Dim.maxNarrowWidth),
         child: Padding(
           padding: const EdgeInsets.all(Dim.space6),
           child: Column(

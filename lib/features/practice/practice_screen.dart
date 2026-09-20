@@ -126,7 +126,7 @@ class _PracticeCard extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
         child: Column(
           children: [
             Expanded(

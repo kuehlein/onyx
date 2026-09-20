@@ -47,4 +47,15 @@ abstract final class Dim {
   static const double emphasisHigh = PaletteOpacity.emphasisHigh; // 0.87
   static const double emphasisMed = PaletteOpacity.emphasisMed; // 0.60
   static const double emphasisLow = PaletteOpacity.emphasisLow; // 0.38
+
+  // Content column max-widths — the reading "measure". Long-form text and forms
+  // are capped rather than run full-bleed so lines stay readable on wide screens
+  // (design-system: the measure is a first-class layout constraint). These are
+  // Dim-only (fixed layout caps, not theme-swappable), so they have no
+  // OnyxTokens twin.
+  static const double maxContentWidth =
+      640; // full-screen session / reading body
+  static const double maxNarrowWidth = 480; // home + compact screens & sheets
+  static const double maxCompactWidth =
+      440; // centered complete / welcome cards
 }

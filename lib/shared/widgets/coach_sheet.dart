@@ -102,6 +102,11 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
   bool _sttAvailable = false;
   bool _listening = false;
 
+  // Slim custom drag handle (replaces the framework one): a short, thin pill.
+  static const _handleWidth = 32.0;
+  static const _handleHeight = 4.0;
+  static const _handleRadius = 2.0; // subtle rounding on the drag-handle pill
+
   ({String cardId, String? sectionSlug}) get _scope =>
       (cardId: widget.card.id, sectionSlug: widget.section?.slug);
 
@@ -216,12 +221,12 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
             Container(
               margin:
                   const EdgeInsets.only(top: Dim.space2, bottom: Dim.space1),
-              width: 32,
-              height: 4,
+              width: _handleWidth,
+              height: _handleHeight,
               decoration: BoxDecoration(
                 color: theme.colorScheme.onSurfaceVariant
                     .withValues(alpha: Dim.hairline),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(_handleRadius),
               ),
             ),
             _Header(

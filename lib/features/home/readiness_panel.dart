@@ -292,10 +292,13 @@ class _Headline extends StatelessWidget {
 class _LoadingPanel extends StatelessWidget {
   const _LoadingPanel();
 
+  // Faint fill for the skeleton placeholder blocks (design-system hairline).
+  static const _skeletonAlpha = 0.06;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bar = theme.colorScheme.onSurface.withValues(alpha: 0.06);
+    final bar = theme.colorScheme.onSurface.withValues(alpha: _skeletonAlpha);
     Widget block(double? w, double h) => Container(
           width: w,
           height: h,
@@ -744,6 +747,9 @@ class _TickedBar extends StatelessWidget {
 class _BarLegend extends StatelessWidget {
   const _BarLegend();
 
+  // Subtle rounding on the small legend swatch bars.
+  static const _swatchRadius = 3.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -754,7 +760,7 @@ class _BarLegend extends StatelessWidget {
           height: 6,
           decoration: BoxDecoration(
             color: ink.withValues(alpha: alpha),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(_swatchRadius),
           ),
         );
     return Row(

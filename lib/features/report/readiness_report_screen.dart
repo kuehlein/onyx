@@ -61,7 +61,7 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
+          constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
           child: !hasKey
               ? _NeedsKey(theme)
               : report.busy

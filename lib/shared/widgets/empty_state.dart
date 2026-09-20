@@ -42,6 +42,10 @@ class EmptyState extends StatelessWidget {
   /// Tighter padding for inline/nested use (e.g. inside a card or a tab body).
   final bool dense;
 
+  // Caps the copy measure (~360dp) so it stays readable instead of sprawling
+  // across a tablet width.
+  static const _measureWidth = 360.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -50,7 +54,7 @@ class EmptyState extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(dense ? Dim.space5 : Dim.space6),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: _measureWidth),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

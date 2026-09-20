@@ -14,6 +14,14 @@ import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
 import '../interview/interview_planner_sheet.dart';
 
+// Max width of the target sheet — a touch wider than the chat sheets since it
+// holds a calendar, but no wider than it needs to be.
+const _sheetMaxWidth = 560.0;
+
+// Horizontal inset kept from the screen edges so the sheet reads as a layered
+// card rather than a full-width page on a narrow window.
+const _sheetEdgeInset = 80.0;
+
 /// Opens the target-selection sheet. Lets the user pick the interview they're
 /// aiming at (level × company × track) and an optional date; both re-shape the
 /// readiness roll-up and drive the pace readout.
@@ -25,11 +33,12 @@ Future<void> showTargetSheet(BuildContext context) {
     // clipped below the fold; the body scrolls within if it's still taller.
     // Inset from the edges so it reads as a layered card (like the shorter
     // sheets), not a full-width page — and capped so it doesn't balloon on a
-    // wide (desktop) window. It's a touch wider than the chat sheets because it
-    // holds a calendar, but no wider than it needs to be.
+    // wide (desktop) window.
     constraints: BoxConstraints(
       maxHeight: size.height * 0.92,
-      maxWidth: size.width - 80 < 560 ? size.width - 80 : 560,
+      maxWidth: size.width - _sheetEdgeInset < _sheetMaxWidth
+          ? size.width - _sheetEdgeInset
+          : _sheetMaxWidth,
     ),
     builder: (_) => const _TargetSheet(),
   );
@@ -315,6 +324,9 @@ class _ChipGroup<T> extends StatelessWidget {
   final String Function(T) labelOf;
   final ValueChanged<T> onSelected;
 
+  // Fixed label column so the Level/Company/Track chip rows align.
+  static const _labelWidth = 66.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -324,7 +336,7 @@ class _ChipGroup<T> extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 66,
+            width: _labelWidth,
             child: Padding(
               padding: const EdgeInsets.only(top: 9),
               child: Text(label,
@@ -504,6 +516,13 @@ class _ZoneCalendar extends StatefulWidget {
 }
 
 class _ZoneCalendarState extends State<_ZoneCalendar> {
+  // Height of a single day cell (also used for the leading/trailing blanks).
+  static const _cellHeight = 50.0;
+
+  // Month-navigation arrow buttons: a compact fixed tap target.
+  static const _navButtonWidth = 40.0;
+  static const _navButtonHeight = 34.0;
+
   late DateTime _month;
 
   @override
@@ -565,7 +584,7 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
     final grid = monthGrid(_month.year, _month.month, firstDayOfWeek: firstDow);
     final canPrev = _month.isAfter(DateTime(today.year, today.month));
 
-    const blank = SizedBox(height: 50);
+    const blank = SizedBox(height: _cellHeight);
     final cells = <Widget>[
       for (var i = 0; i < grid.leading; i++) blank,
       for (var day = 1; day <= grid.days; day++)
@@ -602,7 +621,8 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               iconSize: 22,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 40, height: 34),
+              constraints: const BoxConstraints.tightFor(
+                  width: _navButtonWidth, height: _navButtonHeight),
               tooltip: 'Previous month',
               onPressed: canPrev
                   ? () => setState(
@@ -621,7 +641,8 @@ class _ZoneCalendarState extends State<_ZoneCalendar> {
               iconSize: 22,
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 40, height: 34),
+              constraints: const BoxConstraints.tightFor(
+                  width: _navButtonWidth, height: _navButtonHeight),
               tooltip: 'Next month',
               onPressed: () => setState(
                   () => _month = DateTime(_month.year, _month.month + 1)),
@@ -677,6 +698,12 @@ class _DayCell extends StatelessWidget {
   final List<String> roundLabels;
   final VoidCallback? onTap;
 
+  // Day-cell height (matches the calendar's blank cells).
+  static const _cellHeight = 50.0;
+
+  // Subtle rounding on the accent interview bar along the cell's bottom.
+  static const _interviewBarRadius = 2.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -699,7 +726,7 @@ class _DayCell extends StatelessWidget {
       canRequestFocus: false,
       focusColor: Colors.transparent,
       child: SizedBox(
-        height: 50,
+        height: _cellHeight,
         child: Stack(
           children: [
             Positioned.fill(
@@ -726,7 +753,7 @@ class _DayCell extends StatelessWidget {
                     color: selected
                         ? theme.colorScheme.onPrimary
                         : theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(_interviewBarRadius),
                   ),
                 ),
               ),
@@ -748,6 +775,10 @@ class _DayCell extends StatelessWidget {
 class _CalendarLegend extends StatelessWidget {
   const _CalendarLegend();
 
+  // Subtle rounding on the small legend swatches (zone squares + interview bar).
+  static const _swatchRadius = 3.0;
+  static const _barRadius = 2.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -760,7 +791,7 @@ class _CalendarLegend extends StatelessWidget {
                 height: 12,
                 decoration: BoxDecoration(
                     color: c.withValues(alpha: Dim.emphasisMed),
-                    borderRadius: BorderRadius.circular(3))),
+                    borderRadius: BorderRadius.circular(_swatchRadius))),
             const SizedBox(width: Dim.space1),
             Text(label,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),
@@ -781,7 +812,7 @@ class _CalendarLegend extends StatelessWidget {
                 height: 3,
                 decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2))),
+                    borderRadius: BorderRadius.circular(_barRadius))),
             const SizedBox(width: Dim.space1),
             Text('interview',
                 style: theme.textTheme.labelSmall?.copyWith(color: muted)),

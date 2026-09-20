@@ -39,7 +39,7 @@ class InterviewPrepScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Interview prep')),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: Dim.maxNarrowWidth),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
                 Dim.space5, Dim.space3, Dim.space5, Dim.space6),

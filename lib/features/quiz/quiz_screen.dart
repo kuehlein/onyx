@@ -169,7 +169,7 @@ class _ReviewView extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
         child: Column(
           children: [
             Expanded(
@@ -506,7 +506,7 @@ class _CompleteState extends ConsumerWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: const BoxConstraints(maxWidth: Dim.maxCompactWidth),
         child: ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(Dim.space6),
