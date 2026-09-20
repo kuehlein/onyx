@@ -9,6 +9,7 @@ import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/practice_plan.dart';
+import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -88,6 +89,27 @@ void main() {
       // FlowRunner's screen-entry soft gate (task #30, G6).
       expect(plan.locked.map((t) => t.track), contains('conversation'));
       expect(plan.tracks.map((t) => t.track), isNot(contains('conversation')));
+    });
+
+    test('readiness computes config-only over the Korean deck domains',
+        () async {
+      final c = container();
+      addTearDown(c.dispose);
+      c.listen(readinessProvider, (_, __) {});
+
+      final r = await c.read(readinessProvider.future);
+
+      // Readiness resolves for the config subject over ITS domains (drawn from
+      // the Korean cards' tags), and never assumes SWE domains — the readiness
+      // math is fully config-driven (task #30, G6 acceptance).
+      final domains = r.domains.map((d) => d.domain).toSet();
+      expect(domains, isNotEmpty);
+      expect(
+          domains,
+          everyElement(
+              isIn(<String>{'hangul', 'vocabulary', 'grammar', 'culture'})));
+      expect(domains, isNot(contains('ds-a')));
+      expect(domains, isNot(contains('system-design')));
     });
   },
       skip: _sqliteAvailable
