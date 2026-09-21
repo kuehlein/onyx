@@ -39,8 +39,10 @@ Future<List<Card>> behavioralCompetencies(Ref ref) async {
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(recognitionRepositoryProvider).loadStates();
   final now = (await ref.watch(clockProvider.future)).now();
+  // Read studyCards (not cards) so status:draft competencies are excluded from
+  // the practice list — the ADR-0003 invariant the sibling tracks already honor.
   final cards = [
-    for (final c in index.cards)
+    for (final c in index.studyCards)
       if (c.type == kTypeBehavioral) c,
   ];
   DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
