@@ -36,7 +36,16 @@ SubjectConfig subjectConfigFromYaml(String yaml) {
     coachSkill: root['coachSkill'] as String?,
     vocabulary: _vocabulary(root['vocabulary']),
     parseProfile: _parseProfile(root['parse']),
+    domainLabels: _domainLabels(root['domainLabels']),
   );
+}
+
+/// The optional `domainLabels:` map (domain tag → pretty label). Absent → empty
+/// (generic title-casing). Lets a vault subject set its own labels, not just the
+/// built-in SWE reference.
+Map<String, String> _domainLabels(Object? node) {
+  if (node is! Map) return const {};
+  return {for (final e in node.entries) '${e.key}': '${e.value}'};
 }
 
 /// The optional `vocabulary:` block (task #30, G3). Absent/blank → neutral.

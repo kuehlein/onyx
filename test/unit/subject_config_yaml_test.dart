@@ -123,6 +123,7 @@ target:
   contexts: [{id: c}]
   tracks: [{id: tr}]
 vocabulary: {examinerNoun: proctor}
+domainLabels: {grammar: Grammar & syntax, verbs: Verb forms}
 parse:
   sectionHeadingLevel: 3
   fileExtensions: ['.md', TXT]
@@ -130,6 +131,8 @@ parse:
   neverQuizzed: [Related, References]
 ''');
       expect(cfg.vocabulary.examinerNoun, 'proctor');
+      expect(cfg.domainLabels,
+          {'grammar': 'Grammar & syntax', 'verbs': 'Verb forms'});
       final p = cfg.parseProfile;
       expect(p.sectionHeadingLevel, 3);
       expect(p.fileExtensions, {'md', 'txt'}); // dot stripped, lowercased
