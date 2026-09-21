@@ -16,11 +16,16 @@ part 'registry.g.dart';
 @riverpod
 bool sharingReachable(Ref ref) => kDebugMode;
 
-/// The active [RegistryClient] used by the "Import a deck" flow. In-dev this is
+/// The active [RegistryClient] used by the import + publish flows. In-dev this is
 /// the [FakeRegistryClient] (in-memory sample decks, no server — the seam per
 /// docs/registry-and-sync.md §7.1); a real HTTP client drops in here later.
 /// Overridable in tests (`overrideWith`).
-@riverpod
+///
+/// **keepAlive** so the fake's in-memory published-deck store survives across the
+/// publish sheet closing and the import sheet opening — otherwise an auto-dispose
+/// would drop what you just published (a real server persists this, so the flag
+/// only matters for the dev fake; it's harmless for a stateless HTTP client).
+@Riverpod(keepAlive: true)
 RegistryClient registryClient(Ref ref) => FakeRegistryClient();
 
 /// The available decks to import, from the active [registryClient]. The import

@@ -26,13 +26,16 @@ Future<CardNeighborhood> cardNeighborhood(Ref ref, String cardId) async {
     return title == null ? null : LinkedCard(id, title);
   }
 
+  // Skip self-links (a card that [[links]] to itself) so it never lists itself.
   final outbound = [
     for (final id in await repo.outbound(cardId))
-      if (resolve(id) case final l?) l,
+      if (id != cardId)
+        if (resolve(id) case final l?) l,
   ];
   final backlinks = [
     for (final id in await repo.backlinks(cardId))
-      if (resolve(id) case final l?) l,
+      if (id != cardId)
+        if (resolve(id) case final l?) l,
   ];
   return CardNeighborhood(outbound: outbound, backlinks: backlinks);
 }
