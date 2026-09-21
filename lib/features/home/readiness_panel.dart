@@ -7,8 +7,11 @@ import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
+import '../../core/subject/active_subject.dart';
+import '../../core/subject/subject_config.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
+import '../../shared/providers/subject.dart';
 import '../insights/weak_area_sheet.dart';
 import 'target_sheet.dart';
 
@@ -37,6 +40,10 @@ class ReadinessPanel extends ConsumerWidget {
     final consistency = ref.watch(studyConsistencyProvider).asData?.value;
     final appliedSummary =
         ref.watch(appliedSummaryProvider).asData?.value ?? const {};
+    // The active goal's assessment vocabulary (fall back to the primary while it
+    // loads) so a non-SWE goal never reads "interview" copy (G7).
+    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
     final anyStudied = r.domains.any((d) => d.studied > 0);
     // A no-loss "last 7 days" activity indicator (never a streak/guilt cue —
     // design-system §4.10, readiness-dashboard §6). Shown once there's activity.
@@ -79,7 +86,8 @@ class ReadinessPanel extends ConsumerWidget {
                     target: target,
                     isSet: isSet,
                     readiness: r,
-                    anyStudied: anyStudied),
+                    anyStudied: anyStudied,
+                    vocab: vocab),
               ),
               if (showConsistency) ...[
                 const SizedBox(width: Dim.space2),
@@ -97,12 +105,12 @@ class ReadinessPanel extends ConsumerWidget {
           else ...[
             if (pace != null) ...[
               const SizedBox(height: Dim.space2),
-              _PaceRow(pace),
+              _PaceRow(pace, vocab),
             ],
             // The single progress bar — its fill IS the headline % toward the
             // goal, so the number and the bar always agree.
             const SizedBox(height: Dim.space3),
-            _OverallBar(r),
+            _OverallBar(r, vocab),
             // Ladder standing shown as discrete milestone chips (levels
             // unlocked), NOT a rival fill bar — see the goal flag on the target.
             if (ladder != null) ...[
@@ -191,12 +199,14 @@ class _Headline extends StatelessWidget {
     required this.isSet,
     required this.readiness,
     required this.anyStudied,
+    required this.vocab,
   });
 
   final ReadinessTarget? target;
   final bool isSet;
   final Readiness readiness;
   final bool anyStudied;
+  final Vocabulary vocab;
 
   @override
   Widget build(BuildContext context) {
@@ -261,12 +271,8 @@ class _Headline extends StatelessWidget {
             children: [
               if (anyStudied)
                 Tooltip(
-                  message: readiness.interview
-                      ? 'Interview readiness: recall gated by your mock-interview '
-                          'performance. The band narrows as you do more mocks.'
-                      : 'Recall readiness. Do mock interviews to prove you can '
-                          'apply it — that graduates this to interview-tested and '
-                          'narrows the band.',
+                  message:
+                      readinessTooltip(vocab, interview: readiness.interview),
                   child: Text.rich(TextSpan(children: [
                     TextSpan(
                       text: '${(readiness.low * 100).round()}'
@@ -274,9 +280,8 @@ class _Headline extends StatelessWidget {
                       style: theme.textTheme.labelSmall?.copyWith(color: muted),
                     ),
                     TextSpan(
-                      text: readiness.interview
-                          ? 'interview-tested'
-                          : 'recall only',
+                      text: readinessStateWord(vocab,
+                          interview: readiness.interview),
                       style: theme.textTheme.labelSmall?.copyWith(
                           color: readiness.interview ? green : muted,
                           fontWeight: FontWeight.w600),
@@ -391,9 +396,10 @@ class _ConsistencyChip extends StatelessWidget {
 /// *coverage* ("cover your material"), never "interview-ready" — Phase A can't
 /// measure the latter.
 class _PaceRow extends StatelessWidget {
-  const _PaceRow(this.pace);
+  const _PaceRow(this.pace, this.vocab);
 
   final PaceEstimate pace;
+  final Vocabulary vocab;
 
   @override
   Widget build(BuildContext context) {
@@ -417,6 +423,9 @@ class _PaceRow extends StatelessWidget {
     final days = pace.daysLeft;
     final inDays =
         days == 0 ? 'today' : 'in $days ${days == 1 ? 'day' : 'days'}';
+    // SWE: "interview"/"Interview"; a neutral subject: "target"/"Target" (G7).
+    final noun = vocab.assessmentNoun ?? 'target';
+    final nounTitle = vocab.assessmentNounTitle ?? 'Target';
     const green = StatusColor.good;
     const amber = StatusColor.warn;
     const red = StatusColor.bad;
@@ -431,7 +440,7 @@ class _PaceRow extends StatelessWidget {
         return (
           Icons.trending_up,
           green,
-          'On pace to cover your material — interview $inDays, at '
+          'On pace to cover your material — $noun $inDays, at '
               '~${_rate(pace.recentPerDay)}/day.'
         );
       case PaceStatus.slightlyBehind:
@@ -452,7 +461,7 @@ class _PaceRow extends StatelessWidget {
         return (
           Icons.flag_outlined,
           amber,
-          'Interview $inDays — ~${_rate(pace.requiredPerDay)}/day to cover '
+          '$nounTitle $inDays — ~${_rate(pace.requiredPerDay)}/day to cover '
               'your material.'
         );
     }
@@ -463,6 +472,45 @@ class _PaceRow extends StatelessWidget {
     final s = v.toStringAsFixed(1);
     return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
   }
+}
+
+// ── G7: assessment-noun phrasing ────────────────────────────────────────────
+// The SWE reference (`assessmentNoun: 'interview'`) reproduces the original copy
+// byte-identically; a subject with no assessment reads neutral "applied"/"Applied"
+// phrasing instead (task #88 / G7d). Pure → unit-tested. NOTE (G7d-tail, deferred):
+// the "mock" wording (bar legend, domain evidence caption) and the SWE seniority
+// ladder labels (New-grad/Mid/Senior/Staff in `_MilestoneChips`) are tied to the
+// applied-evidence + ladder models — a later generalization, not this pass.
+
+/// The recall/applied state word under the headline — SWE: "interview-tested" /
+/// "recall only".
+@visibleForTesting
+String readinessStateWord(Vocabulary v, {required bool interview}) =>
+    interview ? '${v.assessmentNoun ?? 'applied'}-tested' : 'recall only';
+
+/// The calibrated "ready" status label — SWE: "Interview-ready".
+@visibleForTesting
+String readyStatusLabel(Vocabulary v) =>
+    '${v.assessmentNounTitle ?? 'Applied'}-ready';
+
+/// The headline evidence-band tooltip — SWE reproduces the original two strings
+/// exactly; a neutral subject gets applied/practice phrasing.
+@visibleForTesting
+String readinessTooltip(Vocabulary v, {required bool interview}) {
+  final title = v.assessmentNounTitle;
+  final noun = v.assessmentNoun;
+  if (interview) {
+    return title == null
+        ? 'Applied readiness: recall gated by your practice performance. The '
+            'band narrows as you practise more.'
+        : '$title readiness: recall gated by your mock-$noun performance. The '
+            'band narrows as you do more mocks.';
+  }
+  return title == null
+      ? 'Recall readiness. Practise to prove you can apply it — that graduates '
+          'this to applied-tested and narrows the band.'
+      : 'Recall readiness. Do mock ${noun}s to prove you can apply it — that '
+          'graduates this to $noun-tested and narrows the band.';
 }
 
 /// Band color for a readiness score: red (needs work) → amber (developing) →
@@ -481,7 +529,8 @@ const _readyLine = 0.75;
 /// A calibrated readiness status derived from the score + evidence. Honest by
 /// construction: "Interview-ready" needs mock evidence AND even the pessimistic
 /// band bound clearing the line — recall alone can never claim it.
-({String label, Color color, bool ready}) _readyStatus(Readiness r) {
+({String label, Color color, bool ready}) _readyStatus(
+    Readiness r, Vocabulary vocab) {
   const green = StatusColor.good;
   const amber = StatusColor.warn;
   const red = StatusColor.bad;
@@ -496,7 +545,7 @@ const _readyLine = 0.75;
     return (label: 'Getting started', color: red, ready: false);
   }
   if (r.low >= _readyLine) {
-    return (label: 'Interview-ready', color: green, ready: true);
+    return (label: readyStatusLabel(vocab), color: green, ready: true);
   }
   if (r.overall >= _readyLine) {
     return (label: 'Almost ready', color: green, ready: false);
@@ -512,14 +561,15 @@ const _readyLine = 0.75;
 /// interview-ready line and a status word under the bar naming where you stand
 /// (Building → Developing → Interview-ready).
 class _OverallBar extends StatelessWidget {
-  const _OverallBar(this.r);
+  const _OverallBar(this.r, this.vocab);
 
   final Readiness r;
+  final Vocabulary vocab;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final status = _readyStatus(r);
+    final status = _readyStatus(r, vocab);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
