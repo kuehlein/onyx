@@ -40,6 +40,21 @@ SubjectConfig subjectConfigFromYaml(String yaml) {
   );
 }
 
+/// Cheaply reads just the `id:` from a subject-config YAML without a full parse —
+/// so the loader can resolve a built-in template (e.g. `id: software-interviews`)
+/// by id before attempting to parse the rest. Returns null on any parse failure or
+/// a missing/blank id.
+String? subjectIdFromYaml(String yaml) {
+  try {
+    final root = loadYaml(yaml);
+    if (root is! Map) return null;
+    final id = root['id'];
+    return (id is String && id.trim().isNotEmpty) ? id.trim() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// The optional `domainLabels:` map (domain tag → pretty label). Absent → empty
 /// (generic title-casing). Lets a vault subject set its own labels, not just the
 /// built-in SWE reference.

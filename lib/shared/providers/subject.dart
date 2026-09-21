@@ -1,9 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/subject/active_subject.dart';
+import '../../core/subject/builtin_subjects.dart';
 import '../../core/subject/software_interviews.dart';
 import '../../core/subject/subject_config.dart';
-import '../../core/subject/subject_config_yaml.dart';
 import '../../core/subject/subject_registry.dart';
 import '../../core/vault/vault_source.dart';
 import 'study_goals.dart';
@@ -56,12 +56,11 @@ Future<SubjectRegistry> _discover(VaultSource source) async {
   for (final path in await source.listConfigPaths()) {
     final raw = await source.readCard(path);
     if (raw.trim().isEmpty) continue;
-    try {
-      discovered.add((path, subjectConfigFromYaml(raw)));
-    } catch (_) {
-      // Malformed config → skip it (as before, a lone bad config falls back to
-      // the built-in default via SubjectRegistry.fromConfigs).
-    }
+    // A config may name a built-in template by id (e.g. `id: software-interviews`)
+    // to opt in without re-specifying it; else it's a full custom config. A
+    // malformed config resolves to null and is skipped (falls back below).
+    final config = resolveSubjectConfig(raw);
+    if (config != null) discovered.add((path, config));
   }
   return SubjectRegistry.fromConfigs(
     discovered,
