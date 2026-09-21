@@ -112,6 +112,7 @@ class CoachSignals {
     this.daysToInterview,
     this.daysToReady,
     this.behavioralStage,
+    this.hasAssessment = true,
   });
 
   /// Any section studied at all (else the deck is untouched).
@@ -159,6 +160,13 @@ class CoachSignals {
   /// Behavioral delivery readiness stage, or null when behavioral isn't relevant
   /// (no stories/mocks and no interview). Drives the behavioral nudge's copy.
   final BehavioralStage? behavioralStage;
+
+  /// Whether the subject frames study around an assessment event (an interview /
+  /// exam / mock) at all — from its `Vocabulary.hasAssessment`. Gates the
+  /// "prove it with a mock" nudge so a subject with no assessment concept is
+  /// never told to do one (task #88 / G7e). Defaults true (the SWE assumption);
+  /// the provider sets it from the active goal's vocabulary.
+  final bool hasAssessment;
 
   /// Within this many days of a scheduled interview, behavioral practice is worth
   /// surfacing regardless of the readiness forecast (imminent — no time to wait).
@@ -463,7 +471,11 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
   }
 
   // Covered but never mock-tested — recall isn't the interview bar; a mock is.
-  if (!s.interviewTested) {
+  // Only for subjects that HAVE an assessment (mock) concept — a subject with no
+  // assessment can't "prove it with a mock", so this nudge stays silent for it
+  // (G7e). The "mock interview" copy + /practice route are still SWE-specific;
+  // generalizing them per applied-flow is the deeper flow-routing work (#92).
+  if (!s.interviewTested && s.hasAssessment) {
     final hasDomain = s.weakestDomain != null;
     return CoachUpdate(
       kind: CoachInsightKind.unproven,

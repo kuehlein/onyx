@@ -11,6 +11,7 @@ import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
 import 'study_goals.dart';
+import 'subject.dart';
 
 part 'coach_update.g.dart';
 
@@ -23,6 +24,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   // Register synchronously (before the first await) so a mid-flight goal edit
   // rebuilding studyGoals can't leave us using a disposed ref after the gap.
   final goalF = ref.watch(activeStudyGoalProvider.future);
+  final subjectF = ref.watch(activeGoalSubjectProvider.future);
   final readiness = await ref.watch(readinessProvider.future);
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 
@@ -57,6 +59,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   // Days to the nearest upcoming interview (nearest non-ended active-interview
   // round on the active goal, Phase B) — gates the last-mile behavioral nudge.
   final goal = await goalF;
+  final subject = await subjectF;
   final interviews = [
     for (final iv in goal.interviews)
       if (iv.active) iv
@@ -110,6 +113,9 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     daysToInterview: daysToInterview,
     daysToReady: daysToReady,
     behavioralStage: behavioral.stage,
+    // A neutral subject (no assessment noun) suppresses the "prove it with a
+    // mock" nudge — it has no mock/interview to prove it with (G7e).
+    hasAssessment: subject.vocabulary.hasAssessment,
   );
   return buildCoachUpdate(signals);
 }

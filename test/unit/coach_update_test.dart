@@ -28,6 +28,7 @@ CoachSignals sig({
   int? daysToInterview,
   int? daysToReady,
   BehavioralStage? behavioralStage,
+  bool hasAssessment = true,
 }) =>
     CoachSignals(
       anyStudied: anyStudied,
@@ -53,6 +54,7 @@ CoachSignals sig({
       daysToInterview: daysToInterview,
       daysToReady: daysToReady,
       behavioralStage: behavioralStage,
+      hasAssessment: hasAssessment,
     );
 
 void main() {
@@ -175,6 +177,17 @@ void main() {
       expect(u.kind, CoachInsightKind.unproven);
       expect(u.actionLabel, 'Mock System design');
       expect(u.actionRoute, '/practice/system-design');
+    });
+
+    test('a subject with no assessment never gets the mock nudge (G7e)', () {
+      // Same signals, but the subject declares no assessment → the "prove it
+      // with a mock" nudge is silent (nothing to prove it with); it falls
+      // through to a generic on-track nudge with no "mock" copy.
+      final u =
+          buildCoachUpdate(sig(interviewTested: false, hasAssessment: false))!;
+      expect(u.kind, isNot(CoachInsightKind.unproven));
+      expect(u.kind, CoachInsightKind.onTrack);
+      expect(u.why.toLowerCase(), isNot(contains('mock')));
     });
 
     test('unproven with no weakest domain → no action, still surfaces', () {
