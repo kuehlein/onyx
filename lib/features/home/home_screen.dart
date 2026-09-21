@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
+import '../../core/subject/active_subject.dart';
+import '../../core/subject/subject_config.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
@@ -11,9 +13,11 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/drafts.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/subject.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
+import 'goal_editor_sheet.dart';
 import 'lanes_hub.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
@@ -182,9 +186,40 @@ class _GoalHomeBody extends ConsumerWidget {
   }
 }
 
-/// The interview target as a contained, tappable card — the goal the readiness
-/// ring is measured against. Taps open the "Your target" sheet (its only route in
-/// now that the old readiness panel is gone). Shows a set-it prompt when unset.
+/// The Home target-card copy for a subject's [vocab]. The SWE reference
+/// (`assessmentNoun: 'interview'`) reads byte-identically to before ("Set your
+/// interview target" / "interview is today"); a neutral subject (no
+/// `assessmentNoun`) gets neutral wording and never says "interview" (task #88 /
+/// G7). Pure so it's unit-tested directly. [daysToGo] null = no date; [setLabel]
+/// is the chosen target's label when set.
+@visibleForTesting
+({String title, String? countdown}) targetCardCopy({
+  required Vocabulary vocab,
+  required bool unset,
+  required String setLabel,
+  required int? daysToGo,
+}) {
+  final a = vocab.assessmentNoun;
+  if (unset) {
+    return (
+      title: a == null ? 'Set your target' : 'Set your $a target',
+      countdown: null,
+    );
+  }
+  String? countdown;
+  if (daysToGo != null) {
+    countdown = daysToGo <= 0
+        ? (a == null ? 'target is today' : '$a is today')
+        : '$daysToGo day${daysToGo == 1 ? '' : 's'} to go';
+  }
+  return (title: setLabel, countdown: countdown);
+}
+
+/// The target as a contained, tappable card — the aim the readiness ring is
+/// measured against. A subject with an assessment (SWE) opens the prep hub and
+/// its label names that assessment; a neutral subject opens the goal editor and
+/// reads a plain "Set your target" — no SWE interview chrome for a subject that
+/// has none (task #88 / G7). Shows a set-it prompt when unset.
 class _TargetCard extends ConsumerWidget {
   const _TargetCard();
 
@@ -194,32 +229,40 @@ class _TargetCard extends ConsumerWidget {
     final cs = theme.colorScheme;
     final target = ref.watch(activeTargetProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
+    // Read the ACTIVE GOAL's template vocabulary (fall back to the primary while
+    // it loads) so a non-SWE goal is never told to "set your interview target".
+    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
+    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
     // "Unset" = the goal has no explicitly-chosen target (activeTarget always
     // fills template fallbacks, so it can't be the signal).
     final unset = target == null ||
         ref.watch(activeTargetIsSetProvider).asData?.value != true;
 
-    final String title;
-    String? countdown;
-    if (unset) {
-      title = 'Set your interview target';
-    } else {
-      title = target.label;
-      final d = target.interviewDate;
-      if (d != null && clock != null) {
-        final days =
-            DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
-        countdown = days <= 0
-            ? 'interview is today'
-            : '$days day${days == 1 ? '' : 's'} to go';
-      }
+    int? daysToGo;
+    final d = target?.interviewDate;
+    if (!unset && d != null && clock != null) {
+      daysToGo =
+          DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
     }
+    final copy = targetCardCopy(
+      vocab: vocab,
+      unset: unset,
+      setLabel: target?.label ?? '',
+      daysToGo: daysToGo,
+    );
+
+    // Assessment subjects (SWE) open the prep hub; a neutral subject edits its
+    // goal instead — no SWE interview-prep chrome for a subject that has none.
+    final VoidCallback? onTap = vocab.hasAssessment
+        ? () => context.push('/interview-prep')
+        : (goal == null ? null : () => showGoalEditor(context, goal: goal));
 
     return Material(
       color: cs.surfaceContainerHigh,
       borderRadius: Dim.brCard,
       child: InkWell(
-        onTap: () => context.push('/interview-prep'),
+        onTap: onTap,
         borderRadius: Dim.brCard,
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -236,7 +279,7 @@ class _TargetCard extends ConsumerWidget {
                         style: theme.textTheme.labelSmall
                             ?.copyWith(color: cs.onSurfaceVariant)),
                     const SizedBox(height: 1),
-                    Text(title,
+                    Text(copy.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleSmall
@@ -244,9 +287,9 @@ class _TargetCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (countdown != null) ...[
+              if (copy.countdown != null) ...[
                 const SizedBox(width: Dim.space3),
-                Text(countdown,
+                Text(copy.countdown!,
                     style: theme.textTheme.labelMedium?.copyWith(
                         color: cs.primary, fontWeight: FontWeight.w700)),
               ],

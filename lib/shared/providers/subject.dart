@@ -6,6 +6,7 @@ import '../../core/subject/subject_config.dart';
 import '../../core/subject/subject_config_yaml.dart';
 import '../../core/subject/subject_registry.dart';
 import '../../core/vault/vault_source.dart';
+import 'study_goals.dart';
 import 'vault.dart';
 
 part 'subject.g.dart';
@@ -38,6 +39,17 @@ Future<SubjectRegistry> subjectRegistry(Ref ref) async {
 @riverpod
 Future<SubjectConfig> activeSubjectConfig(Ref ref) async =>
     (await ref.watch(subjectRegistryProvider.future)).primary;
+
+/// The [SubjectConfig] backing the ACTIVE study goal (its template), or the
+/// primary subject when the goal names no known template. Per-goal so shared UI
+/// (the Home target card, readiness/coach copy — G7) reads the RIGHT subject's
+/// vocabulary/target under multi-subject, not the process-global primary.
+@riverpod
+Future<SubjectConfig> activeGoalSubject(Ref ref) async {
+  final goal = await ref.watch(activeStudyGoalProvider.future);
+  final registry = await ref.watch(subjectRegistryProvider.future);
+  return registry.byId(goal.templateId) ?? registry.primary;
+}
 
 Future<SubjectRegistry> _discover(VaultSource source) async {
   final discovered = <(String, SubjectConfig)>[];
