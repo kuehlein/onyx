@@ -38,7 +38,9 @@ authoritative over everything).
 - **[multi-subject-plan.md](multi-subject-plan.md)** — the query-lens study-goal model (#30d, done).
 
 ## Working notes & roadmap
-- **[roadmap.md](roadmap.md)** — the two-track (client / cloud) phasing.
+- **[roadmap.md](roadmap.md)** — the **authoritative build-state** (what's done / next /
+  deferred) + the two-track (client / cloud) phasing. When any design doc disagrees about
+  what is built, this + the code win.
 - **[ux-rework-stage1.md](ux-rework-stage1.md)** — the critique + architecture behind the
   2026-09-17 reframe (the reasoning; product-direction is the conclusion).
 
