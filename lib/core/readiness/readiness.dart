@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../../shared/models/card.dart';
 import '../interview/transfer.dart';
+import '../subject/active_subject.dart';
 import 'target.dart';
 
 /// Phase A of the readiness model (see docs/readiness-dashboard.md): the honest
@@ -310,16 +311,13 @@ ReadinessDelta diffReadiness(Readiness before, Readiness after) {
   );
 }
 
-/// A display label for a domain tag, e.g. `ds-a` → "DS & A".
-String prettyDomain(String domain) {
-  switch (domain) {
-    case 'ds-a':
-      return 'DS & A';
-    case 'system-design':
-      return 'System design';
-  }
-  return domain
-      .split(RegExp(r'[-_]'))
-      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-      .join(' ');
-}
+/// A display label for a domain tag, e.g. `ds-a` → "DS & A". Subject-specific
+/// labels come from the active subject's [SubjectConfig.domainLabels] (the SWE
+/// reference supplies its own); anything else is generically title-cased, so a
+/// config subject's domains read right without a hardcoded map here.
+String prettyDomain(String domain) =>
+    activeSubject.domainLabels[domain] ??
+    domain
+        .split(RegExp(r'[-_]'))
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');

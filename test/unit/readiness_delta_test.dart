@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/subject/active_subject.dart';
+import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/subject/subject_config.dart';
 import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, String domain, List<String> slugs) => Card(
@@ -80,11 +83,24 @@ void main() {
   });
 
   group('prettyDomain', () {
-    test('maps known domains and title-cases the rest', () {
+    tearDown(() => activeSubject = softwareInterviewsConfig);
+
+    test('uses the active subject domain labels, title-casing the rest', () {
+      // SWE (the default active subject) supplies its own labels…
       expect(prettyDomain('ds-a'), 'DS & A');
       expect(prettyDomain('system-design'), 'System design');
+      // …everything else is generically title-cased.
       expect(prettyDomain('databases'), 'Databases');
       expect(prettyDomain('web_dev'), 'Web Dev');
+    });
+
+    test('a subject with no domain labels falls back to generic title-casing',
+        () {
+      // Proves the labels are config-driven now, not hardcoded in prettyDomain.
+      activeSubject =
+          SubjectConfig(id: 'x', target: softwareInterviewsConfig.target);
+      expect(prettyDomain('ds-a'), 'Ds A');
+      expect(prettyDomain('system-design'), 'System Design');
     });
   });
 }

@@ -214,6 +214,7 @@ class SubjectConfig {
     this.coachSkill,
     this.vocabulary = Vocabulary.neutral,
     this.parseProfile = ParseProfile.standard,
+    this.domainLabels = const {},
   });
 
   final String id;
@@ -226,6 +227,11 @@ class SubjectConfig {
   /// How this subject's notes become cards (task #30, G4). Defaults reproduce
   /// Onyx's built-in parser exactly.
   final ParseProfile parseProfile;
+
+  /// Pretty display labels for domain tags (e.g. `ds-a` → "DS & A"), so shared
+  /// readiness/insights copy reads right per subject rather than a hardcoded SWE
+  /// map. A domain with no entry falls back to generic title-casing.
+  final Map<String, String> domainLabels;
 
   /// One flow per card `type:`. See [flowForType].
   final List<FlowSpec> flows;

@@ -1,3 +1,10 @@
+> **This is the software-interviews example profile's card templates** — one
+> subject's specifics, not the universal rules. Read `authoring-method.md` first
+> (the domain-agnostic method + learning-science quality bar that governs every
+> Onyx vault); this file only adds SWE-specific card TYPES (concept /
+> interview-question / language-framework) and the SWE tag taxonomy. A different
+> subject swaps this file out; the method doesn't move.
+
 You are a card author for the Onyx flashcard app, used for SWE interview
 preparation at the senior backend / crypto engineer level.
 
