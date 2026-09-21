@@ -150,6 +150,11 @@ void main() {
       final v = softwareInterviewsConfig.vocabulary;
       expect(v.examinerNoun, 'interviewer');
       expect(v.examinerNounTitle, 'Interviewer');
+      // G7: SWE also declares the assessment event so Home/readiness copy is
+      // byte-identical ("interview target", "Interview readiness", …).
+      expect(v.assessmentNoun, 'interview');
+      expect(v.assessmentNounTitle, 'Interview');
+      expect(v.hasAssessment, isTrue);
     });
 
     test('a subject that declares no vocabulary gets the neutral default', () {
@@ -157,6 +162,10 @@ void main() {
       expect(bare.vocabulary, same(Vocabulary.neutral));
       expect(bare.vocabulary.examinerNoun, 'examiner');
       expect(bare.vocabulary.examinerNounTitle, 'Examiner');
+      // G7: neutral subject has no assessment framing → gate stays off.
+      expect(bare.vocabulary.assessmentNoun, isNull);
+      expect(bare.vocabulary.assessmentNounTitle, isNull);
+      expect(bare.vocabulary.hasAssessment, isFalse);
     });
 
     test('title-casing is safe for an empty noun', () {

@@ -148,7 +148,7 @@ class TargetSpec {
 /// shared site with a consumer — it grows (assessment noun, verb, whether it has
 /// rounds) when a consumer needs it, not before.
 class Vocabulary {
-  const Vocabulary({this.examinerNoun = 'examiner'});
+  const Vocabulary({this.examinerNoun = 'examiner', this.assessmentNoun});
 
   /// What the mock grading persona is CALLED in shared UI. The SWE reference
   /// overrides to "interviewer"; the neutral default ("examiner", matching the
@@ -156,10 +156,27 @@ class Vocabulary {
   /// that need title case use [examinerNounTitle].
   final String examinerNoun;
 
+  /// What the ASSESSMENT EVENT is called in shared UI — "interview" (SWE), "exam",
+  /// "recital", … — or null for a subject with no dated-assessment framing. When
+  /// null ([hasAssessment] false) the surface shows neutral "target"/"goal" copy
+  /// and hides assessment-only chrome (the interview-prep hub, mock rounds); when
+  /// set, it reads e.g. "$assessmentNoun target" and routes to the assessment hub.
+  /// The gate lever for task #88 / G7. Lowercase — see [assessmentNounTitle].
+  final String? assessmentNoun;
+
+  /// Whether this subject frames study around a named assessment event at all —
+  /// the gate for assessment-specific surfaces (G7).
+  bool get hasAssessment => assessmentNoun != null;
+
   /// [examinerNoun] in title case (e.g. "Interviewer") for headings/labels.
-  String get examinerNounTitle => examinerNoun.isEmpty
-      ? examinerNoun
-      : examinerNoun[0].toUpperCase() + examinerNoun.substring(1);
+  String get examinerNounTitle => _titleCase(examinerNoun);
+
+  /// [assessmentNoun] in title case (e.g. "Interview"), or null when unset.
+  String? get assessmentNounTitle =>
+      assessmentNoun == null ? null : _titleCase(assessmentNoun!);
+
+  static String _titleCase(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
   /// Neutral, subject-agnostic terminology — the default when a subject sets none
   /// (e.g. a config loaded from a vault YAML that declares no vocabulary).

@@ -17,7 +17,7 @@ import 'subject_config.dart';
 ///   families:[{id: grammar, exact: [grammar], contains: [grammar]}, ...]
 ///   fallback: {level: a1, context: casual, track: speaking}   # optional
 /// flows:     [{cardType: flashcard, scheduling: recall, quizzability: blocklist}, ...]
-/// vocabulary: {examinerNoun: interviewer}          # optional (G3); else neutral
+/// vocabulary: {examinerNoun: interviewer, assessmentNoun: interview}  # optional (G3/G7)
 /// parse:                                           # optional (G4); else built-in
 ///   sectionHeadingLevel: 2        # 2 = `##`, 3 = `###`
 ///   fileExtensions: [md]          # lowercase, dot optional
@@ -48,13 +48,20 @@ Map<String, String> _domainLabels(Object? node) {
   return {for (final e in node.entries) '${e.key}': '${e.value}'};
 }
 
-/// The optional `vocabulary:` block (task #30, G3). Absent/blank → neutral.
+/// The optional `vocabulary:` block (task #30, G3 + G7). Absent/blank → neutral.
+/// `examinerNoun` = the grading persona's noun; `assessmentNoun` = the dated
+/// assessment event ("interview"/"exam"/…, G7) or absent for no assessment.
 Vocabulary _vocabulary(Object? node) {
   if (node is! Map) return Vocabulary.neutral;
-  final examiner = node['examinerNoun'];
-  return (examiner is String && examiner.trim().isNotEmpty)
-      ? Vocabulary(examinerNoun: examiner.trim())
-      : Vocabulary.neutral;
+  String? str(Object? v) =>
+      (v is String && v.trim().isNotEmpty) ? v.trim() : null;
+  final examiner = str(node['examinerNoun']);
+  final assessment = str(node['assessmentNoun']);
+  if (examiner == null && assessment == null) return Vocabulary.neutral;
+  return Vocabulary(
+    examinerNoun: examiner ?? 'examiner',
+    assessmentNoun: assessment,
+  );
 }
 
 /// The optional `parse:` block (task #30, G4). Any field absent → its built-in

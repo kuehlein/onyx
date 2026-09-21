@@ -122,7 +122,7 @@ target:
   levels: [{id: only}]
   contexts: [{id: c}]
   tracks: [{id: tr}]
-vocabulary: {examinerNoun: proctor}
+vocabulary: {examinerNoun: proctor, assessmentNoun: exam}
 domainLabels: {grammar: Grammar & syntax, verbs: Verb forms}
 parse:
   sectionHeadingLevel: 3
@@ -131,6 +131,9 @@ parse:
   neverQuizzed: [Related, References]
 ''');
       expect(cfg.vocabulary.examinerNoun, 'proctor');
+      expect(cfg.vocabulary.assessmentNoun, 'exam'); // G7 noun parsed
+      expect(cfg.vocabulary.assessmentNounTitle, 'Exam');
+      expect(cfg.vocabulary.hasAssessment, isTrue);
       expect(cfg.domainLabels,
           {'grammar': 'Grammar & syntax', 'verbs': 'Verb forms'});
       final p = cfg.parseProfile;

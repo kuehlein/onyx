@@ -24,9 +24,11 @@ const softwareInterviewsConfig = SubjectConfig(
   // (read via readMeta, parsed by coachSkillFromMarkdown); absent → the
   // learning-science foundation stands alone.
   coachSkill: 'coach.md',
-  // SWE's mock grading persona is the "interviewer" — so shared coach copy reads
-  // exactly as before for this subject; other subjects fall back to "examiner".
-  vocabulary: Vocabulary(examinerNoun: 'interviewer'),
+  // SWE's mock grading persona is the "interviewer" and its assessment event is
+  // the "interview" — so shared coach/Home/readiness copy reads exactly as before
+  // for this subject; other subjects fall back to "examiner" / no assessment (G7).
+  vocabulary:
+      Vocabulary(examinerNoun: 'interviewer', assessmentNoun: 'interview'),
   // Pretty domain labels the generic title-caser can't produce (SWE-specific);
   // shared readiness/insights copy reads these instead of a hardcoded switch.
   domainLabels: {'ds-a': 'DS & A', 'system-design': 'System design'},
