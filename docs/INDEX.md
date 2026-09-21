@@ -41,6 +41,9 @@ authoritative over everything).
 - **[roadmap.md](roadmap.md)** — the **authoritative build-state** (what's done / next /
   deferred) + the two-track (client / cloud) phasing. When any design doc disagrees about
   what is built, this + the code win.
+- **[g7-surface-generalization.md](g7-surface-generalization.md)** — the scope/plan for #88
+  (G7): route the SWE-hardcoded UI surfaces through `SubjectConfig`/`Vocabulary` so the app is
+  honestly general, not just the engine. Phases, the gate model, decisions, the neutral-default risk.
 - **[ux-rework-stage1.md](ux-rework-stage1.md)** — the critique + architecture behind the
   2026-09-17 reframe (the reasoning; product-direction is the conclusion).
 
