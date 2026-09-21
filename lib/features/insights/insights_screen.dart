@@ -12,10 +12,18 @@ import '../../core/interview/assessment.dart'
         sweRubricDimensions,
         systemDesignRubricDimensions;
 import '../../core/readiness/readiness.dart' show prettyDomain;
+import '../../core/subject/active_subject.dart';
+import '../../shared/models/card.dart'
+    show
+        kTypeAlgorithm,
+        kTypeBehavioral,
+        kTypeInterviewQuestion,
+        kTypeSystemDesign;
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/subject.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/readiness_panel.dart';
 
@@ -124,6 +132,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     final recall = _recallAgg(retention);
     final mockAgg = _mockAgg([mocks, sd, behavioral]);
     final active7 = _active7(consistency);
+    // Applied-performance sections are the SWE profile's views; each renders only
+    // when the active subject declares its matching flow, so a non-SWE subject
+    // sees none (task #88 / G7d). SWE declares all five → the group is unchanged.
+    final subject =
+        ref.watch(activeGoalSubjectProvider).asData?.value ?? activeSubject;
+    final appliedKeys =
+        appliedSectionKeys({for (final f in subject.flows) f.cardType});
 
     // Apply a deep-link focus once the groups are built (only reached when not
     // bare, i.e. the groups below exist to be revealed).
@@ -212,24 +227,19 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               _StrugglingSection(),
             ],
           ),
-          _Group(
-            key: _appliedKey,
-            title: 'Applied performance',
-            icon: Icons.speed_outlined,
-            summary: mockAgg.count > 0
-                ? '${mockAgg.count} mock${mockAgg.count == 1 ? '' : 's'} · avg '
-                    '${mockAgg.avg.round()}'
-                : (algo != null && !algo.isEmpty
-                    ? '${(algo.cleanRate * 100).round()}% clean solves'
-                    : 'Not started'),
-            children: const [
-              _MockSkillsSection(),
-              _SystemDesignSection(),
-              _BehavioralSection(),
-              _AlgoSection(),
-              _PatternsSection(),
-            ],
-          ),
+          if (appliedKeys.isNotEmpty)
+            _Group(
+              key: _appliedKey,
+              title: 'Applied performance',
+              icon: Icons.speed_outlined,
+              summary: mockAgg.count > 0
+                  ? '${mockAgg.count} mock${mockAgg.count == 1 ? '' : 's'} · avg '
+                      '${mockAgg.avg.round()}'
+                  : (algo != null && !algo.isEmpty
+                      ? '${(algo.cleanRate * 100).round()}% clean solves'
+                      : 'Not started'),
+              children: [for (final k in appliedKeys) _appliedSection(k)],
+            ),
           _Group(
             key: _habitsKey,
             title: 'Habits',
@@ -282,6 +292,28 @@ int _active7(List<int>? consistency) {
       : consistency.sublist(consistency.length - 7);
   return last7.where((c) => c > 0).length;
 }
+
+/// The applied-performance section keys the active subject declares — each SWE
+/// applied view shows only when the subject declares its matching flow, so a
+/// non-SWE subject sees none (task #88 / G7d). SWE declares all five → unchanged.
+@visibleForTesting
+List<String> appliedSectionKeys(Set<String> flowTypes) => [
+      if (flowTypes.contains(kTypeInterviewQuestion)) 'mock',
+      if (flowTypes.contains(kTypeSystemDesign)) 'systemDesign',
+      if (flowTypes.contains(kTypeBehavioral)) 'behavioral',
+      if (flowTypes.contains(kTypeAlgorithm)) 'algo',
+      if (flowTypes.contains(kTypeAlgorithm)) 'patterns',
+    ];
+
+/// Maps an [appliedSectionKeys] key to its section widget.
+Widget _appliedSection(String key) => switch (key) {
+      'mock' => const _MockSkillsSection(),
+      'systemDesign' => const _SystemDesignSection(),
+      'behavioral' => const _BehavioralSection(),
+      'algo' => const _AlgoSection(),
+      'patterns' => const _PatternsSection(),
+      _ => const SizedBox.shrink(),
+    };
 
 Color _readinessColor(double v, ColorScheme cs) =>
     v >= 0.75 ? StatusColor.good : (v >= 0.45 ? StatusColor.warn : cs.error);
