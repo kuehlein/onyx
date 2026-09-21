@@ -105,6 +105,10 @@ The entry chooser is a `showOnyxSheet` with three tonal, co-equal choices
 (ordered by audience size, *not* priority): **Import a shared deck** ·
 **Generate from my material** · **From my folder** (+ light manual create/edit).
 
+> Naming note: product-direction §5 is canonical for the user-facing intent-gate
+> choices (material / class-code / folder); the list here names the on-ramp
+> *mechanisms* (generate / import / folder).
+
 ### 2.1 Import / pull a shared deck  `[v1]`
 
 The lightest on-ramp and the one that requires *zero* authoring or AI — the

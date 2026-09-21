@@ -1,5 +1,15 @@
 # Readiness Dashboard — Design (for sign-off)
 
+> **Build-state + scope note (2026-09-20).** The status line below is stale: the readiness
+> model is **built** and acceptance-tested, including on a non-SWE subject (see [roadmap.md](roadmap.md)).
+> Scope correction per principle #10 (no privileged subject): the four-dimension readiness
+> *math* is engine-general and config-driven, but **"level × company × track" and "Interview
+> readiness" are the SWE template's dimensions + vocabulary**, supplied per-`SubjectConfig` —
+> not the engine's (cf. [multi-subject-plan.md](multi-subject-plan.md), which lists SWE's
+> level·company·track as one row among Korean/Calculus/debate targets). NOTE: the *surface*
+> that renders this (Home target card, readiness panel) does not yet route its copy through
+> `Vocabulary` — tracked as surface-layer generalization in roadmap.md.
+
 Status: **proposed** — research synthesized, awaiting decisions before implementation.
 
 The dashboard is the app's *progress compass*: how ready you are, whether you're

@@ -153,8 +153,10 @@ as installer (see vault-structure.md); no symlinks/live-sync.
 ## Phased breakdown (each green + committable)
 
 1. **Study policy core** — `StudyPolicy` (3 axes) + `resolveStudyPolicy` +
-   cascade + clamps, wired to `SrsScheduler` (learningSteps/retention now
-   policy-driven) and the existing Priority mapping. SWE default == today. Golden.
+   cascade + clamps. **NOT yet wired to `SrsScheduler`** (learningSteps/retention
+   are not policy-driven; `resolveStudyPolicy` has no production caller today) and
+   the existing Priority mapping — this wiring is **deferred to #32** (matches the
+   Status line above). SWE default == today. Golden.
 2. **Competence gating engine** — generalize `## Related`/comfort to `depends-on` +
    durability-bar + fraction; one pure resolver; expose the covered-concept
    frontier. Keep SWE gating identical.

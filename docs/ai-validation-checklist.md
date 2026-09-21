@@ -1,5 +1,11 @@
 # AI validation checklist (on-device, real key)
 
+> **Scope note (2026-09-20).** Where this checklist expects the coach to "behave like an
+> interviewer," that is the **SWE reference config's** persona, not the engine default — the
+> coach voice + terminology are now per-`SubjectConfig` (`Vocabulary`) + the vault `CoachSkill`
+> (ux-vision §3.3, [roadmap.md](roadmap.md)). When validating a non-SWE subject, judge it
+> against ITS declared persona, not an interviewer.
+
 Every AI feature is unit-tested only against a mocked API. This is the one thing
 those tests can't cover: whether the actual generated **output quality and tone**
 are good. Work through this once with a real key; screenshot or paste anything

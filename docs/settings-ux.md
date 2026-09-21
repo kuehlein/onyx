@@ -24,7 +24,7 @@ The research heuristic guards against *clutter and displacement*. Onyx displaces
 
 ---
 
-## 2. Final Settings IA — 6 groups + collapsed Developer
+## 2. Final Settings IA — 6 base groups + 3 capability-gated cloud groups + collapsed Developer
 
 **Group set (this is the binding §3.7 refinement):**
 

@@ -1,5 +1,13 @@
 # AI Coach Personas — Design & Rationale
 
+> **Superseded framing (2026-09-20).** The two-personas-by-`grading`-flag model below,
+> and its SWE-interview prompt wording, are the **SWE reference config's** shape — not the
+> engine contract. The coach is now **de-privileged** (ux-vision §3.3, [roadmap.md](roadmap.md)):
+> a research-backed neutral foundation always applies, a vault `CoachSkill` (`_meta/coach.md`)
+> *augments* it, and persona/vocabulary come from the active `SubjectConfig` (`Vocabulary`),
+> never a baked-in "Interviewer". Read the Interviewer/Tutor split below as the SWE example,
+> not the canonical coach voice.
+
 The AI coach (`lib/core/ai/coach.dart`, `buildCoachSystem`) has **two personas**,
 selected by the `grading` flag. This split is deliberate and evidence-based:
 learning and testing are different cognitive events that need opposite kinds of

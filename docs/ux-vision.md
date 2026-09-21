@@ -224,7 +224,7 @@ small-multiples grid (identical scale)      [41%][62%][55][4/7]  summary strip
 - **One** stacked budget bar total across the app (Home hub, read-only). Insights uses small-multiples for cross-goal comparison — **no second stacked bar** there. `[Critique 2 §6, redundant ink]`
 - `ReadinessPanel` must be parameterized by goal (stop reading the legacy global controller) before reuse in the per-goal detail — hard dependency of §5's aim surgery. `[Seam C/A]`
 
-### 3.7 Settings — 6 calm groups
+### 3.7 Settings — 6 calm groups (6 base + capability-gated cloud groups; see settings-ux.md §2)
 
 Anything you tune to change *today* lives where you study; anything configured once lives here. Config that changes *what becomes a card* lives here (rare, app-wide, dangerous-if-wrong); config that changes *what you study today* lives where you study. **Full spec: `docs/settings-ux.md`** (placement, per-row copy, and the directory-agnostic source flow).
 
@@ -234,7 +234,7 @@ STUDY LOAD      Daily study time [−+]   New per day [−+]
                 Weekly check-in [ ● ]   ⓘ How much should I study? ›
 STUDY GOALS     Manage goals (3 active) ›   → per-goal template levers
 DATA & BACKUP   Back up now (2h ago) ›   Restore ›
-CLAUDE (AI)     API key (Saved on this device) ›   Test connection ›
+AI              API key (Saved on this device) ›   Test connection ›
 ABOUT           Version, licenses, privacy, restore-defaults ›
 ▸ Developer     (dev builds only, collapsed — the sole collapsed group)
 ```
@@ -371,7 +371,7 @@ What still holds: **do not ship a UI that *lies* about being general** — six s
 
 **Phase 3 — Onboarding + Settings IA**
 - `/welcome` gate + `IosVaultSource` (security-scoped bookmark) + `VaultRef` persistence. *(net-new: welcome_screen, ios_vault_source, vault ref; changes: router, vault provider)* — **BLOCKER: no on-device vault source exists today.**
-- Settings → 6 groups; move Pace planner to Insights; demote Algorithms/Gym to per-goal drill-downs. *(changes: settings_screen)*
+- Settings → 6 groups (6 base + capability-gated cloud groups; see settings-ux.md §2); move Pace planner to Insights; demote Algorithms/Gym to per-goal drill-downs. *(changes: settings_screen)*
 
 **Phase 4 — Aim storage unification (dedicated task)**
 - `PrepGoal`→`Interview` re-parented under `StudyGoal`; kill default-goal short-circuit; migrate `onyx-target.json`; delete `/interview-prep`; retire `target_sheet`; fold interviews into `targetingForGoal`. *(changes: prep_goal, readiness, study_goal, interview_prep_screen, target_sheet, daily_plan)*

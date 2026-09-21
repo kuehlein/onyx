@@ -204,7 +204,7 @@ backlog trend, per-domain competence gaps, streak/adherence, and the ramp state.
 Then it can converse about **load** ("you've hit your budget 5 days straight —
 want to ramp up?" / "reviews are piling up — cap new cards or add 15 min?"),
 **pace/readiness**, **weak areas**, and **adherence**. Reuse the existing
-coach-update machinery (`docs/coach-personas.md`, coach-feedback-design) — the plan
+coach-update machinery (ux-vision §3.3 + roadmap.md — coach de-privilege) — the plan
 just gives it richer, structured inputs. This is a first-class requirement, not a
 bolt-on.
 
