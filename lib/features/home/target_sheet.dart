@@ -9,6 +9,7 @@ import '../../core/subject/subject_config.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/subject.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
@@ -22,9 +23,17 @@ const _sheetMaxWidth = 560.0;
 // card rather than a full-width page on a narrow window.
 const _sheetEdgeInset = 80.0;
 
-/// Opens the target-selection sheet. Lets the user pick the interview they're
-/// aiming at (level × company × track) and an optional date; both re-shape the
-/// readiness roll-up and drive the pace readout.
+/// The date-field label for [vocab] — the SWE reference (`assessmentNoun:
+/// 'interview'`) reads "Interview date (optional)" byte-identically; a subject
+/// with no assessment reads "Target date (optional)". Pure → unit-tested (#88/G7c).
+@visibleForTesting
+String targetDateLabel(Vocabulary vocab) =>
+    '${vocab.assessmentNounTitle ?? 'Target'} date (optional)';
+
+/// Opens the target-selection sheet. Lets the user pick the target they're aiming
+/// at (level × context × track) and an optional date; both re-shape the readiness
+/// roll-up and drive the pace readout. Assessment subjects (SWE) additionally see
+/// the scheduled-interviews loop; all copy reads from the goal's [Vocabulary].
 Future<void> showTargetSheet(BuildContext context) {
   final size = MediaQuery.of(context).size;
   return showOnyxSheet<void>(
@@ -87,6 +96,10 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     // The active study goal owns the interviews (Phase B) + the level/track/
     // deadline slots the Save maps into.
     final goal = ref.watch(activeStudyGoalProvider).asData?.value;
+    // The active goal's assessment terminology — SWE reads "interview" (chrome
+    // shown); a neutral subject reads neutrally and hides the interview loop (G7).
+    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
     final interviews = goal?.interviews ?? const <InterviewAim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
@@ -181,6 +194,13 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                       onSelected: (v) =>
                                           _set(t.copyWith(levelId: v.id)),
                                     ),
+                                    // NOTE (G7 defer): the axis LABELS
+                                    // (Level/Company/Track) are still the SWE
+                                    // names — a non-SWE assessment subject would
+                                    // read "Company" for its context axis.
+                                    // Generalizing them needs per-axis labels on
+                                    // TargetSpec/Vocabulary (a later G7c-tail);
+                                    // the chip VALUES already come from config.
                                     _ChipGroup<ContextValue>(
                                       label: 'Company',
                                       values: activeSubject.target.contexts,
@@ -246,7 +266,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 const SizedBox(height: Dim.space4),
                 Row(
                   children: [
-                    Text('Interview date (optional)',
+                    Text(targetDateLabel(vocab),
                         style:
                             theme.textTheme.labelLarge?.copyWith(color: muted)),
                     const Spacer(),
@@ -267,10 +287,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                   onSelect: (d) => _set(t.copyWith(interviewDate: d)),
                 ),
                 const SizedBox(height: Dim.space2),
-                const _CalendarLegend(),
+                _CalendarLegend(assessmentNoun: vocab.assessmentNoun),
                 const SizedBox(height: Dim.space3),
-                // Scheduled interviews (flagged above) + the entry to plan one.
-                if (goal != null)
+                // Scheduled interviews (flagged above) + the entry to plan one —
+                // only for a subject that has the interview loop (G7).
+                if (goal != null && vocab.hasAssessment)
                   _ScheduledSection(
                     interviews: scheduled,
                     goal: goal,
@@ -767,7 +788,11 @@ class _DayCell extends StatelessWidget {
 
 /// Legend for the zone-colored calendar cells.
 class _CalendarLegend extends StatelessWidget {
-  const _CalendarLegend();
+  const _CalendarLegend({this.assessmentNoun});
+
+  /// The assessment-event noun (e.g. "interview") labelling the scheduled-round
+  /// swatch, or null to omit that swatch for a subject with no assessment (G7).
+  final String? assessmentNoun;
 
   // Subtle rounding on the small legend swatches (zone squares + interview bar).
   static const _swatchRadius = 3.0;
@@ -798,20 +823,21 @@ class _CalendarLegend extends StatelessWidget {
         item(StatusColor.good, 'Ready at your pace'),
         item(StatusColor.warn, 'Needs a faster pace'),
         item(StatusColor.bad, 'Too soon to be ready'),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-                width: 12,
-                height: 3,
-                decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(_barRadius))),
-            const SizedBox(width: Dim.space1),
-            Text('interview',
-                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
-          ],
-        ),
+        if (assessmentNoun != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                  width: 12,
+                  height: 3,
+                  decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(_barRadius))),
+              const SizedBox(width: Dim.space1),
+              Text(assessmentNoun!,
+                  style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+            ],
+          ),
       ],
     );
   }
