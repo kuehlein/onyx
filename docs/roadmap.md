@@ -1,80 +1,134 @@
 # Onyx — Roadmap (two tracks)
 
-> The phasing behind [product-direction.md](product-direction.md), from the UX rework
-> ([ux-rework-stage1.md](ux-rework-stage1.md) §9). The key reframe: the old docs equated
-> **`sync == server == accounts == deferred`** — broken apart here. The **client track**
-> ships a complete local-first product with **zero server**; the **cloud track** layers on
-> optional capabilities and is genuinely deferred (seams reserved now). `ux-vision.md` §9's
-> UI phasing stays valid for the client track; this doc is the two-track superset.
+> The phasing behind [product-direction.md](product-direction.md). The key reframe (from
+> the 2026-09-17 UX rework): the old docs equated **`sync == server == accounts == deferred`** —
+> broken apart here into a **client track** (a complete local-first product, *zero server*)
+> and a **cloud track** (optional capabilities, genuinely deferred; seams built against
+> client-side fakes). This doc is the living source of truth for *what is done vs next vs
+> deferred*; when a design doc disagrees about build-state, trust this + the code.
 
 ## Guiding rule
-Every phase keeps the app green (analyze clean + full suite) and is independently
-committable; single-goal degradation stays byte-identical; nothing ships a UI that *lies*
-about being general or about a capability that isn't reachable.
+Every phase keeps the app green (analyze clean + full suite + custom_lint) and is
+independently committable; single-goal / SWE behavior stays byte-identical when a seam is
+generalized; nothing ships a UI that *lies* about being general or about a capability that
+isn't reachable (capability-gated: absent, never a disabled row).
 
 ---
 
-## CLIENT TRACK (offline, no server — the shippable product)
+## Where we are now (status: 2026-09-20)
 
-### Phase 0 — Foundations & seams (the true critical path)
-- **The `focusedGoalProvider` spine** + `activeGoalCount` helper (currently unbuilt — the
-  "one spine" has zero code hits today).
-- **On-device `VaultSource` + `VaultRef` persistence** — the linchpin blocker: the app
-  cannot obtain a folder on a real iPhone today. A content-origin-agnostic writable card
-  store serving three producers (AI drafts, pulled decks, chosen folder).
-- **Reserve seams now** (cheap now, migration-nightmare later): `draft`/`active` card
-  status; `deckId` + the `(deckId, cardId, sectionSlug)` join key; duplicate-UUID detection
-  in the indexer; `ClaudeService(baseUrl, authHeader)` + `AiProvider{off, managed, byoKey}`;
-  deck `visibility`/`author`/`license` fields; one account concept + three capability flags.
-- **Real fixes:** merge-correct snapshot (retire the last-write-wins blob that corrupts
-  progress across devices) + fold goals into the synced payload; **delete the loss-aversion
-  streak** + `StreakInfo.best`; add `progressPolicy` + fix the `_Thinking` spinner.
-- **Docs:** product-direction + README + architecture stamp + this roadmap + INDEX (done).
+The **local-first client product is substantially built and shipped-quality** — analyze +
+custom_lint clean, ~918 tests green. The big arcs are done:
 
-### Phase 1 — Client/UX debt (offline, direction-neutral; much already planned)
-- Per-goal honesty: analytics providers → `goalId` `.family` + the overlapping-membership
-  helper (today only readiness is goal-scoped — the rest is a per-goal lie under multi-goal).
-- Goal-scoped Browse segment + "Referenced by" backlinks.
-- One `SharedBudgetBar` (read-only) + one adjust-mix sheet (the sole budget editor).
-- Home single-Filled plan-driven loop; caught-up = full stop.
-- Insights two-altitude (small-multiples overview + per-goal detail); parameterize `ReadinessPanel` by goal.
-- Settings 6-group IA (move pace planner to Insights; demote Algorithms/Gym to per-goal drill-downs).
-- Aim storage unification (`PrepGoal`→`Interview`/milestone under `StudyGoal`; retire `target_sheet`; kill the default-goal short-circuit).
-- **De-privilege the coach** (`buildCoachSystem` → `SubjectConfig` persona; no more "interviewer" mid-recall for a 7th-grader).
-- **Build the base design primitives** (`StatusPill`/`CoverageBar`/`CompletionRing`/`showOnyxSheet`/`SkeletonBlock`/`EmptyState`/the N-of-7 indicator) so every new surface is a config of them.
-
-### Phase 2 — Intent-gate onboarding + AI generation (BYO-key first, no account needed)
-- `/welcome` **intent-gate** (three co-equal paths) + the on-device folder create/choose.
-- The **content on-ramps**: import/pull (content half), AI-generate (Paste + Topic first),
-  light manual create-a-deck / edit-a-card.
-- The **Draft/Review gate** + full-screen `/draft-review` + **self-test-then-promote** (no bulk accept).
-- The **3-state AI affordance** + JIT choice at first AI use + `showApiKeySheet` tier chooser
-  (managed shown as an honest disabled "coming soon" row until the server lands).
-- Scheduling-never-travels invariant + the airplane-mode / single-goal CI invariants.
+- **The review core** — the daily loop (recall → reveal → self-grade), FSRS Learn/Review,
+  the quiz/learn/coach flows, readiness, insights, Home. *(the original product)*
+- **Generalization (#30, G1–G6 done)** — a subject is **config, not code**. `SubjectConfig`
+  (target · flows/`FlowSpec` · coachSkill · vocabulary · parseProfile · domainLabels) loads
+  from `_meta/onyx-subject.yaml`; the daily plan, prerequisite gating (one `evaluateGate`
+  engine over the general `depends-on` field), readiness, coach voice, terminology, and the
+  **card parser** (`ParseProfile`) are all config-driven. Config-authored practice flows run
+  end-to-end via the `FlowRunner`. The **Korean reference subject** (`korean-vault/`) is
+  acceptance-tested end-to-end (plan + readiness) with zero SWE code paths. Multi-subject
+  concurrent goals (query-lens membership) shipped (#30d/#64).
+- **Content on-ramps + the Draft/Review gate** — folder create/choose onboarding, import a
+  deck (against a fake registry), AI-generate (BYO-key), the `draft`/`active` lifecycle +
+  full-screen `/draft-review` self-test-then-promote, light in-app card create/edit (#28).
+  Scheduling-never-travels enforced.
+- **In-vault authoring kit** (#46/#63 *kit*) — `examples/vault/` reference vault: a
+  `CLAUDE.md` knowledge map + domain-agnostic `authoring-method.md` + loadable config +
+  exemplar; a scaffolder seeds a neutral vault on folder-create.
+- **Push/pull registry — CLIENT** (against a fake, per the develop-against-fakes strategy) —
+  structure-preserving **file-tree** deck payloads, import (draft-stamped, path-safe,
+  verbatim non-card files), **folder-lens publish** + `PublishSheet` + capability-gated
+  Settings→SHARING, and upstream-update reconciliation through the draft gate.
+- **Second-brain (#50) — S1** — the `card_links` graph surfaced as tappable Links/Backlinks
+  on the card detail.
+- **Practice tracks** (algorithms #33 · system-design #54 · behavioral #59), the cross-track
+  **study cadence / daily plan** (#57), **aim unification** (#68), the **design system +
+  accessibility + release-readiness** hardening (#51, #62, #72–#81, custom_lint drift guards).
 
 ---
 
-## CLOUD TRACK (optional, seamed-now / build-later — needs a server + legal/moderation work)
+## CLIENT TRACK (offline, no server) — remaining
 
-**Seamed-but-deferred** (seams reserved in Phase 0; built when audience + cost + legal justify it):
-- **Managed "Onyx AI" server** — proxy + per-account quota + billing + cost controls + the
-  `quota-exhausted` state + `CoverageBar` usage.
-- **Accounts + account-sync** — deferred *because* folder-sync + the merge-correct snapshot
-  already cover solo/power progress-sync; accounts arrive driven by managed-AI + restricted
-  deck pull (migration designed now, reversible; accounts carry progress+goals only, never content).
-- **Restricted / group deck registry** — maintainer/subscriber roles, class-code auth,
-  group ACL, draft-gated upstream updates. The classroom distribution MVP (needs accounts).
-- **Browse library / registry browser UI**.
+Phases 0–2 of the original client roadmap (foundations/seams, UX debt, onboarding + AI-gen +
+draft gate) are **done**. What's left on the client is feature depth + polish:
 
-**Defer-hard** (explicit gates):
-- **Public deck tier** — blocked on moderation / report / takedown. Restricted-only first
-  (teacher→known-students needs no open moderation).
-- **Managed AI for minors / direct child accounts** — blocked on a COPPA/FERPA stance + the
-  unresearched K-12 motivation pass. Teacher/guardian-provisioned only, if at all, at first.
-- AnkiHub-style suggestion-queue/merge/co-authoring; institution/admin (P6); the full
-  configurable parser; `FlowRunnerScreen`; second-brain #50; STT (#61).
+- **#50 second-brain (IN PROGRESS)** — S1 done. **S1b:** tappable `[[wikilinks]]` inside card
+  bodies. **S2:** notes as first-class graph nodes (index plain `.md` without a `type:`;
+  a note viewer; links/backlinks spanning cards + notes — builds on `listAllPaths` + the
+  parser's null-for-notes signal; needs note stems folded into the link graph). **S3:**
+  graph-aware discovery (related cards/notes during study; the note graph into the AI covered
+  frontier; maybe a local graph view — speculative/heavy).
+- **Small features** — #22 quiz session customization · #25 AI study suggestions · #26 reader
+  comprehension questions · #58 flesh out the extra-practice overflow.
+- **#32 FSRS tuning** — optimizer-from-history + Learn-mode Easy handling + the desired-
+  retention knob; **includes wiring `resolveStudyPolicy` (cram/schedule-profile) into
+  `SrsScheduler`** (built but unwired today — see Hygiene backlog).
+- **Settings-IA residual** (per settings-ux.md, partially applied) — header renames
+  (VAULT→SOURCE, DATA&PROGRESS→DATA&BACKUP, CLAUDE→AI), demote Pace-planner/Algorithms/Gym to
+  per-goal drill-downs. SHARING group + Source/Card-parsing/AI-tier rows already landed.
+- **Onboarding intent-gate reconciliation** — `/welcome` is folder-first today (Choose /
+  Create); the specs (product-direction §5, ux-vision §3.8, settings-ux §3, personas §3.2)
+  describe "three co-equal choices." Decide: update the specs to folder-first (acquisition at
+  Browse `+`), or build the three-way gate. *(a spec-vs-code consistency call, not a bug.)*
+
+### Hygiene backlog (from the 2026-09-20 alignment audit — latent, not urgent)
+- **Recall predicate leak:** `daily_plan.dart` + `flow_runner.dart` compute prereq comfort
+  over `type == 'flashcard'`; should be `scheduling == recall` (config-driven). Harmless
+  today (no interview-question cards ship; Korean uses `flashcard`) but a future config
+  subject with a differently-named recall type would silently un-gate. De-dup the two copied
+  comfort builders while fixing. *(needs a small "concept vs applied-recall" call — see #32.)*
+- **`CardCache` table** is rebuilt every reindex but read nowhere (the app reads the in-memory
+  index) — drop it (a drift migration) or re-label its docstring "reserved for".
+- **`flow_access.dart`** (taint-containment: a provisionally-opened flow must not satisfy
+  downstream prereqs) is tested but not wired into the live gate — wire it or delete it.
 
 ---
 
-*See [ux-rework-stage1.md](ux-rework-stage1.md) §9 for the full reasoning and the P0/P1
-fix list, and [registry-and-sync.md](registry-and-sync.md) for the cloud-track designs.*
+## CLOUD TRACK (optional; seams built against fakes, server deferred)
+
+The **client halves are built against a `FakeRegistryClient` / seamed AI transport**; what's
+deferred is the **server + accounts + legal/moderation** (build when there's an audience).
+
+- **Registry SERVER last-mile (#83)** — a real `HttpRegistryClient` behind the seam; the
+  update-**propagation** wire (maintainer push → subscriber "N updated" notice → draft gate;
+  the *content* reconciliation is built); restricted-tier **accounts + class-code** auth; the
+  §10.9 change-grading heuristic; flip `sharingReachable` onto a real account capability.
+- **Managed "Onyx AI"** — server proxy + per-account quota + billing + the `quota-exhausted`
+  state + `CoverageBar` usage (the `ClaudeService.managed` transport seam exists; honest
+  "coming soon" disabled row until then).
+- **Accounts + account-sync** — carry progress + goals only, never content; migration designed
+  now. *(folder-sync + the merge-correct snapshot cover solo/power sync first.)*
+- **Authoring-kit distribution (G5c, #63 remainder)** — the app bundles the universal kit as
+  assets + an "Update authoring tools" action that writes it into the vault + a version stamp
+  (no live-sync/symlinks; manual overwrite-in-place).
+- **In-app parse-profile editor + onboarding template-picker (G4c, #84)** — turn the read-only
+  "How cards are read" sheet into a preset editor that writes `onyx-subject.yaml`.
+
+**Defer-hard** (explicit gates): the **public deck tier** (blocked on moderation/report/
+takedown — restricted-first); **managed AI for minors** (COPPA/FERPA + the K-12 motivation
+research pass).
+
+---
+
+## Mac tail (needs macOS/Xcode — can't build or test on the Linux dev box)
+- **#82** iOS security-scoped bookmark + Android SAF (mobile folder picking).
+- **#61** speech-to-text for the mock + explain flows.
+- On-device UX pass of #30/#50; iOS build → TestFlight → release.
+
+---
+
+## Near-term order (suggested)
+1. Finish **#50** (S1b → S2 notes → S3 discovery) — the active thread; S2 is the real
+   second-brain leap and warrants a short design pass first.
+2. Opportunistic **small features** (#22/#26) + the **settings-IA residual** + the **hygiene
+   backlog** as palate-cleansers between larger pieces.
+3. **#32 FSRS tuning** (folds in the `resolveStudyPolicy` wiring + the recall-predicate call).
+4. **Cloud track** when an audience justifies the server (#83 first — restricted registry),
+   then managed AI; **Mac tail** on a Mac.
+
+*Cross-refs: [product-direction.md](product-direction.md) (what Onyx is), [ux-rework-stage1.md](ux-rework-stage1.md)
+(the reframe reasoning), [registry-and-sync.md](registry-and-sync.md) (cloud designs),
+[content-creation.md](content-creation.md) (on-ramps + draft gate), [multi-subject-plan.md](multi-subject-plan.md)
+(#30d). Task ids (#NN) are the persistent backlog.*

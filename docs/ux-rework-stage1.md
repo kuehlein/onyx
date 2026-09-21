@@ -5,6 +5,8 @@
 
 # Onyx UX Rework — Critique & Architecture (Stage 1)
 
+> **Snapshot note (2026-09-20):** the `[UNDESIGNED]`/`[specced]`/`[exists]` tags in the tables below are a **2026-09-17 planning snapshot**, not current status. Since then the CLIENT halves of the registry (file-tree import/publish, draft-stamped import, folder-lens publish, capability-gated SHARING), the **Draft status + /draft-review gate**, the honest AI-tier states, and the no-loss "7 of last 7 days" indicator have all been **built** (anything server-backed is built against fakes). For current build-state see [roadmap.md](roadmap.md); read the tags below as the original plan, not today's status.
+
 *Decision-ready synthesis for the human. Consolidates the grounding digest (5 sources) + 8 lens critiques against the authoritative 2026-09-17 product direction. This is the architecture and plan to review before authorizing the Stage-2 rewrite. It is NOT final per-surface design prose.*
 
 ---

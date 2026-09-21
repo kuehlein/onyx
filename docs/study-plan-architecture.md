@@ -1,6 +1,6 @@
 # Design: the unified Study Plan — daily queue, meta-scheduler & data model (task #57)
 
-**Status:** draft for discussion · **Date:** 2026-09-11 · builds on
+**Status:** built (task #57) · **Date:** 2026-09-11 · builds on
 `docs/study-cadence-design.md` (dosages/evidence) and reuses `docs/…` readiness.
 
 The vision (from the user, 2026-09-11): replace the row of "go to a flow" buttons

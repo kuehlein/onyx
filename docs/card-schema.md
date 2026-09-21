@@ -1,5 +1,7 @@
 # Card Schema
 
+> **Build-state note (2026-09-20):** the AI-prompt preamble shown here is the **SWE reference profile**, not the engine contract. Card extraction is now config-driven via `ParseProfile` on `SubjectConfig` (see [roadmap.md](roadmap.md) + `subject_config.dart`); a non-SWE subject supplies its own parse profile and prompt framing.
+
 Cards are standard Obsidian markdown files with YAML frontmatter. Each file
 represents one concept. The quiz engine treats each H2 section as an
 independently schedulable unit.

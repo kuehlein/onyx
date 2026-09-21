@@ -1,5 +1,7 @@
 # Onyx — Ideal UI/UX & App Layout (North-Star Spec)
 
+> **Build-state note (2026-09-20):** this doc predates parts of the implementation. For the authoritative what's-built-vs-next, see [roadmap.md](roadmap.md). Corrections: the coach de-privilege (§3.3) and the engine-generalization (§6 / "Phase 5") are DELIVERED — see #30 in roadmap.md.
+
 > Produced by the `onyx-ux-vision` research+design workflow (18 agents: internal
 > learning-science/dataviz/as-is mining + external learning/PKM UX research → 8
 > per-surface designs → adversarial coherence + calm/over-engineering critique →
@@ -131,6 +133,8 @@ Byte-identical to the pre-multi-goal Home when only one goal exists (`‹` back 
 - Flows render from the active goal's `SubjectConfig.flows`, not the hardcoded `TrackId` set. Non-declared tracks show dimmed "not scheduled," never hidden. `[A6; segment-always]` **Caveat: this is only honest once the engine is generalized — see §6 and §9.**
 
 ### 3.3 Study / session (Learn, Review, mocks)
+
+> **Delivered (2026-09-20):** research-backed coach foundation + vault CoachSkill augmentation; critic/report/nudge neutralized. See [roadmap.md](roadmap.md).
 
 Two archetypes only: the **card-turn loop** (cue → reveal → grade) and the **conversation loop** (turns → End → grade). Keep both current shapes; two changes now, one deferred.
 
@@ -309,6 +313,8 @@ Milestones (dated targets) live in **one** home: the goal editor's Milestones se
 ---
 
 ## 6. Engine generalization — the product thesis, first-class (reframed 2026-09-17)
+
+> **Delivered (2026-09-20):** #30 G1–G6 — SubjectConfig (from _meta/onyx-subject.yaml) drives the daily plan, prerequisite gating, readiness, coach voice, terminology, and the card parser; the Korean reference subject is acceptance-tested end-to-end.
 
 **Corrected stance (supersedes the earlier "keep SWE-default, generalize only when pulled" framing):** genuine generalization is *the product* — Onyx is general and education-first, and SWE-interview prep is one authored configuration, not a privileged default. The earlier YAGNI deferral was wrong on its own terms: the second caller **already exists** (a Korean vault today; theology/college/stats intended), so the abstraction is pulled, not built-on-spec. The engine-generalization workstream is therefore **near-term and first-class, not deferred behind a hypothetical second subject.**
 

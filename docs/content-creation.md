@@ -1,5 +1,7 @@
 # Onyx — Content Model & the Draft/Review Gate
 
+> **Build-state note (2026-09-20):** this doc predates parts of the implementation. For the authoritative what's-built-vs-next, see [roadmap.md](roadmap.md). Corrections: the Draft/Review lifecycle (draft status, exclusion from FSRS + all readiness/coverage denominators, and the /draft-review self-test-then-promote gate) is BUILT and shipped.
+
 > **Stage 2 of the UI/UX rework** — the cross-cutting doc that owns *how content
 > gets into Onyx* and the one primitive that makes every inflow honest: the
 > **Draft/Review gate**. Companion to `docs/product-direction.md` (which fixes the
@@ -51,8 +53,10 @@ Two consequences that govern every design choice in this doc:
    construction* is the **Draft/Review gate** (§3–§4) — the spine of this document.
 
 **The write-path already exists** (`VaultSource.writeFile`, proven by the story
-bank at `story_repository.dart:31`). What does **not** exist yet, in doc or code,
-is the `draft` status and the gate — this doc specifies both. `[Stage-1 P0-2]`
+bank at `story_repository.dart:31`). The `draft` status and the gate — which this
+doc specifies — are now **BUILT and shipped**: the `status: draft` frontmatter, the
+FSRS + readiness/coverage exclusion (ADR-0003), and the full-screen `/draft-review`
+gate (`lib/features/drafts/`) all exist. `[Stage-1 P0-2; see roadmap.md]`
 
 ---
 
@@ -394,14 +398,18 @@ explicit gate.
 
 **v1 (the foundation):**
 - The **`draft`/`active` status** on `Card`/schema + FSRS exclusion + readiness
-  exclusion + the Browse "not counted" marker. *(The seam is reserved in Phase 0
-  even ahead of the UIs that fill it.)* `[Stage-1 P0-2, Phase 0]`
+  exclusion + the Browse "not counted" marker. **BUILT** — the exclusion lives in
+  ADR-0003; drafts are excluded from FSRS + every readiness/coverage denominator.
+  `[Stage-1 P0-2, Phase 0; see roadmap.md]`
 - **Import / pull** a shared deck as an on-ramp (content half; wire in
-  `registry-and-sync.md` — restricted-first).
+  `registry-and-sync.md` — restricted-first). Imported cards are **draft-stamped on
+  landing** (`import_deck.dart`) — **BUILT**.
 - **AI-generate on BYO-key**, **Paste + Topic** inputs, conservative default counts.
+  Generated cards are **draft-stamped** (`generated_cards.dart`) — **BUILT**.
 - **Point-at / create a folder + light manual create-a-deck / edit-a-card.**
 - **The `/draft-review` full-screen session** + **self-test-then-promote** (no bulk
-  accept).
+  accept). **BUILT** (`lib/features/drafts/`); promotion **removes the status line**
+  (`card_promotion.dart`). `[see roadmap.md]`
 - The **scheduling-never-travels** invariant (§6) + its CI test.
 - Honest **`AiUnavailableState`** (`off` / `offline`) + the airplane-mode full-loop
   CI invariant.

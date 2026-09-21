@@ -1,6 +1,6 @@
 # Design: study load, cadence & the "Today" plan (task #57)
 
-**Status:** draft for discussion · **Date:** 2026-09-11
+**Status:** built — cross-track daily plan shipped (task #57) · **Date:** 2026-09-11 (built 2026-09-20)
 
 Onyx now has four practice modes — **learn** new concept cards, **review** them
 (FSRS-scheduled), the **algorithms** track (solve + explain), and **system-design

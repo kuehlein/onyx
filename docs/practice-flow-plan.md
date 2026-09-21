@@ -1,6 +1,6 @@
 # Practice-Flow Generalization + Study Policy (task #30c / Phase 7)
 
-**Status:** approved design, not yet built. The deferred "practice-flow half" of
+**Status:** built — practice-track flows ship via FlowRunner (algorithms #33, system-design #54, behavioral #59); the one deferred piece is Phase 1 (study-policy → SrsScheduler wiring), tracked in #32. See [roadmap.md](roadmap.md). The deferred "practice-flow half" of
 #30, un-deferred once we grounded it in a real abstraction (system design *is*
 the template for the language conversation flow). Companion to
 `docs/multi-subject-plan.md` and `docs/vault-structure.md`. Execute

@@ -97,6 +97,8 @@ decision 1]`
 
 ## 5. The three co-equal content on-ramps
 
+> **Reconciliation note (2026-09-20):** the running app's `/welcome` is folder-first (Choose / Create), not the "three co-equal choices" described below. This spec-vs-code gap is a tracked decision — see "Onboarding intent-gate reconciliation" in [roadmap.md](roadmap.md).
+
 None is "the hero." Onboarding is an **intent-gate** — "What do you want to do?" with three
 tonal choices, ordered by audience size but *co-equal*, never a folder-first gate:
 

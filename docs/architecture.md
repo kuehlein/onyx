@@ -1,5 +1,7 @@
 # Onyx — Architecture
 
+> **Historical / superseded (2026-09-20).** A point-in-time snapshot kept for rationale; some specifics no longer match the code. Current source of truth: [roadmap.md](roadmap.md) + [INDEX.md](INDEX.md). Superseded specifics: (1) **Card identity** is now slug-normalized (id derived from the file slug — see [card-schema.md](card-schema.md)), not the old UUID scheme. (2) **Card types** are config-driven via `FlowSpec` on `SubjectConfig` — any number of types, each declaring its own scheduling/quizzability — not a fixed "two card types".
+
 > **Scope stamp:** this doc describes the **v1 offline core only**. The optional
 > server/cloud layer — managed AI, sync, and the deck registry — is reserved and
 > layers on without ever being required; see `docs/product-direction.md` and
@@ -209,7 +211,7 @@ CREATE TABLE preferences (
 
 ## Card Types
 
-Onyx indexes two card types from the vault:
+Onyx indexes two card types from the vault: [superseded — card types are config-driven via FlowSpec; see banner]
 
 | `type` value | Purpose | Quiz behavior |
 |---|---|---|

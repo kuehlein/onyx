@@ -211,26 +211,29 @@ cleanly), plus the additions the review-focused framing surfaces (S11–S14). Ea
 tagged for build state and mapped to the persona + JTBD it serves, so a flow designer
 can name its owner.
 
-**Legend.** `[exists]` = built & direction-compatible · `[specced-only]` = designed
-in a doc, unbuilt · `[UNDESIGNED]` = no doc, no code (a genuine gap this rework must
-fill). "Owner" names the primary persona; "also serves" names secondaries.
+**Legend.** `[exists]` = built & direction-compatible · `[partial]` = client/core built,
+a server-backed or polish piece remains · `[specced-only]` = designed in a doc, unbuilt ·
+`[UNDESIGNED]` = no doc, no code. "Owner" names the primary persona; "also serves" names
+secondaries. **Build-state refreshed 2026-09-20** — many stories below shipped since the
+original snapshot; anything server-backed is built against a fake registry (task #83). See
+[roadmap.md](roadmap.md) for the authoritative build-state.
 
 | # | Story | Owner | State |
 |---|---|---|---|
-| **S1** | *Enter a class code → land on my teacher's cards → start today's review.* | P1 | **[UNDESIGNED]** |
-| **S2** | *Paste a PDF/notes/topic → AI generates a starter deck → I self-test each draft → it counts.* | P2 | **[UNDESIGNED]** (write-path exists; draft status + gate do not) |
-| **S3** | *Browse the library → preview a ready-made deck → import it → study.* | P3 | **[UNDESIGNED]** |
-| **S4** | *Point at my existing Obsidian folder and go.* | P4 | **[specced-only]** (no on-device `VaultSource` — cannot obtain a folder on iOS today) |
+| **S1** | *Enter a class code → land on my teacher's cards → start today's review.* | P1 | **[partial]** — deck import/pull built against the fake registry; the class-code *auth* is server-side (#83) |
+| **S2** | *Paste a PDF/notes/topic → AI generates a starter deck → I self-test each draft → it counts.* | P2 | **[exists]** — AI-generate (BYO-key) + `status: draft` + the `/draft-review` self-test-then-promote gate all built; managed tier deferred |
+| **S3** | *Browse the library → preview a ready-made deck → import it → study.* | P3 | **[exists]** against the fake registry (real server deferred — #83) |
+| **S4** | *Point at my existing Obsidian folder and go.* | P4 | **[exists]** on desktop (persisted `VaultRef`, ADR-0002); iOS/Android on-device folder-picking deferred (#82) |
 | **S5** | *Try the whole app with no sign-in and no AI key — the core just works.* | all | **[exists]** as a principle; must extend to **accounts** (render account UI only when a backend capability is reachable) |
-| **S6** | *Teacher/upstream updates the deck → I get the changes quietly, re-earned before they count.* | P1, P5 | **[UNDESIGNED]** (shares the Draft gate with S2) |
-| **S7** | *Publish my deck → choose restricted/public → authorize a class.* | P5 | **[UNDESIGNED]** (restricted-first; public deferred behind moderation) |
-| **S8** | *Import law: a "90%-mastered" deck shows MY readiness = fresh; scheduling never travels.* | P2, P3, P4 | **[UNDESIGNED]** — a must-enforce invariant |
-| **S9** | *Second device → my progress syncs, no card silently lost.* | P2, P4 | **[exists, BUGGY]** — LWW blob clobbers/diverges (present bug, Stage-1 P0-6) |
-| **S10** | *Offline / over AI quota / not authorized → an honest, non-scolding state that says the core still works.* | all | **[UNDESIGNED]** |
-| **S11** | *Create a deck and add/edit a card by hand — lightly, without a studio.* | P4, P5 | **[UNDESIGNED]** — the minimal manual on-ramp (principle #1: zero *manual* deck-building **friction**, not zero capability) |
-| **S12** | *Just-in-time at first AI use, choose: Onyx AI (coming soon) · my Anthropic key · not now — never at onboarding.* | P2, P4 | **[UNDESIGNED]** (BYO-key inline banner only today; managed tier is an honest disabled row until a server exists) |
-| **S13** | *A dated target ("milestone") on my open-ended-or-not goal drives an honest ready-by forecast — no SWE "Interview" chrome unless my config declares it.* | P2, P4 | **[specced-only]** (behavior generalized via `effectiveDeadline`; rename + progressive disclosure pending) |
-| **S14** | *Consistency without loss: an "N of last 7 days" indicator, never a consecutive-day streak I can break.* | all (esp. P1) | **[UNDESIGNED to build]** — decision settled; the live `_StreakChip` is a violation to delete `[settled 2026-09-17 #3]` |
+| **S6** | *Teacher/upstream updates the deck → I get the changes quietly, re-earned before they count.* | P1, P5 | **[exists]** — content reconciliation through the Draft gate (`reconcileDeckUpdate`/`applyDeckUpdate`); server *propagation* deferred (#83) |
+| **S7** | *Publish my deck → choose restricted/public → authorize a class.* | P5 | **[partial]** — folder-lens publish built against the fake; restricted/public tiers + class authorization are server (#83; public behind moderation) |
+| **S8** | *Import law: a "90%-mastered" deck shows MY readiness = fresh; scheduling never travels.* | P2, P3, P4 | **[exists]** — enforced by construction (deck payloads carry content only; import resets every card to `draft`) |
+| **S9** | *Second device → my progress syncs, no card silently lost.* | P2, P4 | **[exists, BUGGY]** — LWW blob clobbers/diverges (present bug, Stage-1 P0-6; still open) |
+| **S10** | *Offline / over AI quota / not authorized → an honest, non-scolding state that says the core still works.* | all | **[partial]** — keyless-core + capability-gated SHARING are honest today; quota-exhausted / not-authorized states land with the managed tier + server (#83) |
+| **S11** | *Create a deck and add/edit a card by hand — lightly, without a studio.* | P4, P5 | **[exists]** (#28 — light in-app create/edit; principle #1: zero *manual* deck-building **friction**, not zero capability) |
+| **S12** | *Just-in-time at first AI use, choose: Onyx AI (coming soon) · my Anthropic key · not now — never at onboarding.* | P2, P4 | **[partial]** — BYO-key inline built; the managed tier is an honest "coming soon" until a server exists (#83) |
+| **S13** | *A dated target ("milestone") on my open-ended-or-not goal drives an honest ready-by forecast — no SWE "Interview" chrome unless my config declares it.* | P2, P4 | **[exists]** — forecast generalized (`effectiveDeadline`); terminology is per-subject config (`Vocabulary`, #30); progressive-disclosure polish pending |
+| **S14** | *Consistency without loss: an "N of last 7 days" indicator, never a consecutive-day streak I can break.* | all (esp. P1) | **[exists]** — `_ConsistencyChip` ("N of last 7 days"); the loss-aversion `_StreakChip` was deleted `[settled 2026-09-17 #3]` |
 
 **Story clusters, by on-ramp** (so a designer sees which JTBD a flow feeds):
 

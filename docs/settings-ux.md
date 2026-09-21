@@ -2,6 +2,8 @@
 
 *Companion to `docs/ux-vision.md` (refines §3.7; touches §3.8, §1) and consistent with `docs/design-system.md` (§4.9). Serves the canonical `docs/product-direction.md` (§6 AI, §7 accounts/sync) and defers the optional-cloud-layer mechanics to `docs/registry-and-sync.md` (accounts/sync/registry/managed-AI) and `docs/content-creation.md` (the AI tier chooser). This spec is decisive: where the four design drafts disagreed, the choice is made here and the losing option is named so it doesn't get "helpfully" re-added.*
 
+> **Build-state note (2026-09-20):** most of this spec is now **built** — the shared folder-source sheet + persisted `VaultRef` (ADR-0002), the Source / Card-parsing / AI-tier / SHARING rows, `showApiKeySheet`, `DestructiveRow`, and the neutral-vault scaffolder. **Genuinely remaining:** the group-header renames + demoting Pace/Algorithms/Gym to per-goal drill-downs (task #85), and iOS/Android on-device folder-picking (#82). See [roadmap.md](roadmap.md).
+
 ---
 
 ## 1. Placement — Settings stays the 4th bottom-tab
@@ -175,7 +177,7 @@ The single **AI provider** row's subtitle is the live `AiProvider { off, managed
 
 ## 3. Directory-agnostic content source
 
-**One shared sheet body powers two flows: `/welcome` (renders it as the pre-shell page — the sole hard gate, sole full page) and the Settings Source row (renders it as a real `showOnyxSheet`).** No third surface, no wizard. This is the missing persisted-path wiring the `settings_screen.dart:30-32` doc-comment already promises but `vault.dart:18-25` never implemented (env-only today).
+**One shared sheet body powers two flows: `/welcome` (renders it as the pre-shell page — the sole hard gate, sole full page) and the Settings Source row (renders it as a real `showOnyxSheet`).** No third surface, no wizard. This persisted-path wiring is now **built** (`VaultRefController.choose` → `VaultRefStore`, resolving env → persisted `VaultRef` → null; ADR-0002) — it was the missing piece the `settings_screen.dart` doc-comment promised and `vault.dart` originally left env-only.
 
 **Naming:** the user-facing noun is **"study folder" / "folder,"** never "vault" ("vault" is Obsidian's word; the mandate is Obsidian-compatible, never required). The code layer keeps `VaultSource`/`vaultSourceProvider`/`ONYX_VAULT_PATH` (renaming the model is large and load-bearing — snapshot keys, providers, docs). A one-line comment at each source class should note the deliberate copy/code divergence so no one re-introduces "vault" into the UI.
 
@@ -287,8 +289,8 @@ The **Card parsing** row (SOURCE, §2) opens:
 
 **Build now (Phase 1 / Phase 3, mapped to code):**
 
-1. `lib/core/vault/ios_vault_source.dart` — security-scoped-bookmark source (Phase-1 blocker: no on-device source exists).
-2. `lib/shared/providers/vault.dart:18-25` — replace env-only resolution with **env → persisted `VaultRef` → null** (env still wins for dev). Persist path (desktop) / bookmark (iOS) in `preferences`; add a setter used by both the picker and Create. *This is net-new wiring, larger than Phase-3's "changes: settings_screen" note — flag as its own build item.*
+1. `lib/core/vault/ios_vault_source.dart` — security-scoped-bookmark source. **Deferred (#82):** desktop `DesktopVaultSource` is built; iOS/Android on-device picking still needs this.
+2. `lib/shared/providers/vault.dart` — **BUILT:** `VaultRefController` resolves env → persisted `VaultRef` → null (env still wins for dev); path (desktop) persisted in `preferences` via `VaultRefStore`; the `.choose()` setter (with snapshot swap, ADR-0002) is used by both the picker and Create. (iOS bookmark persistence rides with #82.)
 3. `lib/features/onboarding/folder_source_sheet.dart` — shared body + `showFolderSourceSheet(context, ref)` over `showOnyxSheet` (mirrors how `showApiKeySheet` is shared).
 4. `lib/features/onboarding/welcome_screen.dart` — renders the shared body as the pre-shell page; router redirect on `vaultSourceProvider == null`.
 5. `lib/features/settings/settings_screen.dart` — SOURCE row gains chevron + `onTap` (`:47-51`, ~2 lines); rename group labels VAULT→SOURCE, DATA&PROGRESS→DATA&BACKUP, **CLAUDE (AI)→AI**; add ABOUT group; add the **Card parsing** row + `how_cards_are_read.dart` explainer (mirror `study_load_help.dart`); wrap Developer in a collapsed `ExpansionTile`. **Render the capability-gated cloud groups (SYNC / SHARING / ACCOUNT) behind the reachable-backend guard — absent, not disabled, in the solo core** (schema + guard owned by `registry-and-sync.md` §§1–2, §4).

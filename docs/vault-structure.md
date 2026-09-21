@@ -1,5 +1,7 @@
 # Vault-Directory-Driven App Structure (target architecture for #30)
 
+> **Historical / superseded (2026-09-20).** Kept for rationale; the machine config home is now `_meta/onyx-subject.yaml` (YAML, parsed by `subject_config_yaml.dart`), not `_onyx/config.md`. Current source of truth: [roadmap.md](roadmap.md).
+
 > **Scope stamp:** this describes the **power-path (Obsidian/markdown) only**. As
 > the *universal* content model it is superseded by the folder-substrate + three
 > co-equal on-ramps (import / AI-generate / point-at-folder) framing in
@@ -46,7 +48,7 @@ subject, becomes **config + folders, not new code** — which is exactly task #3
 ```
 
 ### Config format
-`config.md` with **YAML frontmatter** for the machine-readable settings + a prose
+`config.md` [superseded → `_meta/onyx-subject.yaml`] with **YAML frontmatter** for the machine-readable settings + a prose
 body documenting the options. Rationale: Obsidian-native (frontmatter is what
 Obsidian already uses), user-editable as a normal note, and it reuses the
 existing markdown+frontmatter parser. Config files have no `type:` field, so the

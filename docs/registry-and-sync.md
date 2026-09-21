@@ -1,5 +1,7 @@
 # Onyx — Registry, Accounts & Sync (the optional cloud layer)
 
+> **Build-state note (2026-09-20):** this doc predates parts of the implementation. For the authoritative what's-built-vs-next, see [roadmap.md](roadmap.md). Corrections: the CLIENT halves are built against a FakeRegistryClient (file-tree import/publish, draft-stamped import, folder-lens publish, capability-gated Settings→SHARING, content-reconciliation of upstream updates); only the SERVER (real HttpRegistryClient, accounts, class-code auth, update *propagation*, public-tier moderation) is deferred — task #83.
+
 > **Stage 2 of the UI/UX rework** — the cross-cutting doc for the **optional cloud
 > layer**: accounts, sync, deck identity, the permissioned deck registry, and the
 > managed-AI infrastructure. Companion to `docs/product-direction.md` (§7 accounts,
@@ -30,8 +32,9 @@ important reframe in the cloud layer is that these are **three independent axes*
 - **Sync** is a *data-reconciliation* problem. Most of its value ships with **zero
   server** (over a folder the user already syncs — iCloud/Dropbox/git). `[P0-6]`
 - **A server** is *hosted infrastructure* (the managed-AI proxy; the deck registry
-  backend). It is the thing that does not exist yet and gates the honest "coming
-  soon" tiers.
+  backend). It is the **SERVER/BACKEND** that does not exist yet (task #83) and gates
+  the honest "coming soon" tiers — the *client* capability is already built against a
+  `FakeRegistryClient`; only the real hosted backend is deferred.
 - **Accounts** are an *identity* concept. They are driven by managed-AI + restricted-
   deck pull, **not by sync**, and are rendered only when a server capability is
   actually reachable. `[P0-3]`
@@ -160,7 +163,8 @@ the earlier one wholesale, or (if both started non-empty) they diverge forever a
 when the laptop's blob wins. **This violates honest-readiness right now** (readiness
 computed on clobbered history is a lie), and it is the true content of persona **S9**
 ("second device → my progress syncs, no card silently lost — *present bug*").
-`[P0-6; personas S9]`
+`[P0-6; personas S9]` **(The LWW-blob folder-sync correctness fix is still open as of
+2026-09-20.)**
 
 ### 2.2 The fix — a merge-correct snapshot (per-key LWW + append-merge + goals)
 
@@ -391,9 +395,13 @@ must never *require* a focus — protecting single-goal byte-identical degradati
 provenance seam is orthogonal to the focus seam. `[Stage-1 §5; product-direction §10]`
 
 **Mark:** role/group model + visibility enum + `deckId` provenance fields +
-class-code-as-credential + the Draft-gated update path + the no-vanity-metrics rule =
-**seamed-deferred** (reserve the *schema* and the *rules* now; build with the registry
-server + accounts). **Restricted** tier = first networked build; **public** tier +
+class-code-as-credential + the Draft-gated update path + the no-vanity-metrics rule.
+**Build-state (2026-09-20):** the **CLIENT** half is **BUILT against a
+`FakeRegistryClient`** — file-tree import/publish, draft-stamped import, folder-lens
+publish, capability-gated Settings→SHARING, and content-reconciliation of upstream
+updates all run locally now. Only the **SERVER** is **deferred (task #83)**: the real
+`HttpRegistryClient`, accounts, class-code *auth*, update *propagation*, and public-tier
+moderation. **Restricted** tier = first networked build; **public** tier +
 moderation/takedown = **defer-hard**; AnkiHub-style suggestion-queue/merge/co-author =
 **defer-hard**.
 
@@ -426,7 +434,10 @@ AiProvider { off, managed, byoKey }
 ```
 
 The just-in-time 3-way choice ("Onyx AI · coming soon" / "Use my Anthropic key" /
-"Not now") fires at **first AI use**, never at onboarding. Until the proxy exists, the
+"Not now") fires at **first AI use**, never at onboarding. **Build-state (2026-09-20):**
+the **client** seam (`ClaudeService(baseUrl, authHeaders)` + `AiProvider` + the 3-state
+affordance + BYO-key) is built; only the hosted **proxy/SERVER** is deferred. Until the
+proxy exists, the
 `managed` row renders as an **honest disabled "coming soon"** — the *same* reachable-
 capability guard as accounts (§1.1): never show "Onyx AI" as *available* until the
 backend is actually reachable. The fully key-less core always works (S5/S10).
@@ -524,10 +535,13 @@ build-timing mark.
   build deferred; the **scheduling-never-travels** invariant (§3.4).
 
 - **Seamed-deferred (schema + rules reserved now; build when audience + legal +
-  moderation justify a server):** the account **server** + real sign-in + account-sync
-  of **progress/goals** (§1.3/§2.3); the **restricted** deck registry — roles / group
-  permission / class-code / Draft-gated updates / `deckId` provenance + license/
-  attribution fields (§4); the **managed-AI server** — proxy + per-account quota +
+  moderation justify a server) — but note the CLIENT halves are already BUILT against a
+  `FakeRegistryClient` (2026-09-20; §4 Mark), so what remains deferred is the SERVER:**
+  the account **server** + real sign-in + account-sync
+  of **progress/goals** (§1.3/§2.3); the **restricted** deck registry **server** — real
+  `HttpRegistryClient`, class-code *auth*, and update *propagation* (the client-side
+  roles / group permission / Draft-gated update reconciliation / `deckId` provenance +
+  license/attribution fields (§4) already run against the fake); the **managed-AI server** — proxy + per-account quota +
   cost controls + data-disclosure copy (§5).
 
 - **Defer-hard (explicit gates):** the **public** deck tier (blocked on
@@ -590,8 +604,8 @@ develop against the fakes above.
 - `lib/core/database/tables.dart` — **confirms the join-key problem (T3/§3):**
   `SrsStates.primaryKey => {cardId, sectionSlug}` (no `deckId`); `Reviews` is an
   append-only log with an autoincrement `id` (the local artifact §2.2 says must *not*
-  be the merge key). `CardCache` has **no `draft`/status field** (the Draft-gate seam
-  is reserved in `content-creation.md` / `card-schema.md`).
+  be the merge key). *(As of 2026-09-20 the Draft gate is **BUILT** — draft status +
+  FSRS/readiness exclusion via ADR-0003; see `content-creation.md` / roadmap.md.)*
 - `lib/core/ai/claude_service.dart` — **confirms the trivial proxy seam (§5.1):**
   `ClaudeService({apiKey})` + hardcoded `_endpoint` + `x-api-key`/`anthropic-version`
   headers → parameterize to `{baseUrl, authHeaders}`.
