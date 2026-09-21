@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/subject/active_subject.dart';
 import '../../core/subject/builtin_subjects.dart';
-import '../../core/subject/software_interviews.dart';
+import '../../core/subject/neutral_subject.dart';
 import '../../core/subject/subject_config.dart';
 import '../../core/subject/subject_registry.dart';
 import '../../core/vault/vault_source.dart';
@@ -26,7 +26,7 @@ const subjectConfigFileName = 'onyx-subject.yaml';
 Future<SubjectRegistry> subjectRegistry(Ref ref) async {
   final source = ref.watch(vaultSourceProvider);
   final registry = source == null
-      ? SubjectRegistry.single(softwareInterviewsConfig)
+      ? SubjectRegistry.single(neutralSubjectConfig)
       : await _discover(source);
   activeSubject = registry.primary;
   activeRegistry = registry;
@@ -64,6 +64,6 @@ Future<SubjectRegistry> _discover(VaultSource source) async {
   }
   return SubjectRegistry.fromConfigs(
     discovered,
-    fallback: softwareInterviewsConfig,
+    fallback: neutralSubjectConfig,
   );
 }

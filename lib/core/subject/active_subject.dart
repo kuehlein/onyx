@@ -3,10 +3,15 @@ import 'subject_config.dart';
 import 'subject_registry.dart';
 
 /// The process-wide active subject config that pure core math (readiness target,
-/// ladder, projection) reads. Defaults to the built-in SWE reference; the vault
-/// loader (task #30 Phase 5) will set it once at startup from the vault, falling
-/// back to this default when no vault config is present. Treated as write-once
-/// app configuration — the app/provider layer is the only writer.
+/// ladder, projection) reads. This global is only a **pre-init / test placeholder**
+/// — at runtime `subjectRegistryProvider` sets it once at startup from the vault,
+/// BEFORE any card is parsed (vaultIndex awaits it). A vault that declares no
+/// config resolves to the built-in **neutral** subject (`neutralSubjectConfig`,
+/// G7f); a vault opts into a richer subject (e.g. the SWE reference) via its own
+/// config. The placeholder stays the SWE reference so the pure-core/widget test
+/// suite (which reads this global directly, bypassing the provider) keeps its SWE
+/// fixtures; it is never the runtime default. Write-once — the provider is the
+/// only runtime writer.
 ///
 /// This is the *primary* subject; multi-subject-aware code (per-card behavior)
 /// reads [activeRegistry] instead (task #30d, M2).
