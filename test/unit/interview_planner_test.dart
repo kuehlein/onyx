@@ -90,7 +90,18 @@ ClaudeService _replying(String text, {void Function(String body)? onBody}) =>
       }),
     );
 
-ProviderContainer _container(ClaudeService? claude, AppDatabase db) =>
+/// A fixed clock so a date-sensitive test doesn't depend on the wall-clock — a
+/// hardcoded plan date must stay in the future relative to "today", else the
+/// accept path treats it as a past deadline and drops it.
+class _FixedClock extends Clock {
+  _FixedClock(this._now);
+  final DateTime _now;
+  @override
+  DateTime now() => _now;
+}
+
+ProviderContainer _container(ClaudeService? claude, AppDatabase db,
+        {Clock? clock}) =>
     ProviderContainer(overrides: [
       claudeServiceProvider.overrideWithValue(claude),
       vaultIndexProvider.overrideWith((ref) async => _index),
@@ -98,7 +109,7 @@ ProviderContainer _container(ClaudeService? claude, AppDatabase db) =>
       // A real (in-memory) source so the default study goal persists the
       // accepted interview across the notifier's rebuild.
       vaultSourceProvider.overrideWithValue(_FakeSource()),
-      clockProvider.overrideWith((ref) async => Clock.real),
+      clockProvider.overrideWith((ref) async => clock ?? Clock.real),
     ]);
 
 void main() {
@@ -134,7 +145,10 @@ void main() {
         '"date":"2026-09-20","domainWeights":{"system-design":1.6},'
         '"conceptWeights":{"consistent-hashing":2.0},'
         '"appGaps":["behavioral"],"summary":"Focus system design."}</plan>';
-    final c = _container(_replying(reply), db);
+    // Pin "today" before the plan's date so the deadline isn't seen as past
+    // (keeps this assertion stable regardless of the wall-clock date).
+    final c = _container(_replying(reply), db,
+        clock: _FixedClock(DateTime(2026, 9, 1)));
     addTearDown(c.dispose);
 
     await c
