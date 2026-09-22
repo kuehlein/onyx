@@ -9,6 +9,7 @@ import '../../core/subject/active_subject.dart';
 import '../../core/subject/flow_spec.dart';
 import '../models/card.dart';
 import 'clock.dart';
+import 'concept_comfort.dart';
 import 'interview.dart';
 import 'practice_plan.dart';
 import 'readiness.dart';
@@ -103,25 +104,9 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     }
   }
 
-  // Per-concept comfort = fraction of a concept card's sections that are studied.
-  // Also index concept cards by filename slug, because `## Related` wikilinks
-  // resolve by FILENAME while comfort is keyed by card id — and the vault mixes
-  // id conventions (some slug, some UUID), so a filename→id hop is required for
-  // gating to see the prerequisite at all.
-  final comfort = <String, double>{};
-  final conceptLabel = <String, String>{};
-  final conceptIdByFile = <String, String>{};
-  for (final c in index.cards) {
-    if (c.type != kTypeFlashcard) continue;
-    final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
-    conceptIdByFile[slug] = c.id;
-    final q = c.quizzableSections.toList();
-    if (q.isEmpty) continue;
-    final studied =
-        q.where((s) => states.byKey.containsKey('${c.id}::${s.slug}')).length;
-    comfort[c.id] = studied / q.length;
-    conceptLabel[c.id] = c.title;
-  }
+  // Per-concept comfort for prerequisite gating — shared with the flow runner
+  // (was duplicated in both). See buildConceptComfort.
+  final cc = buildConceptComfort(index.cards, states.byKey.keys.toSet());
 
   // Prerequisites, from three sources, each resolved to a concept whose comfort
   // we can gauge: algorithm groups (static, keyed by concept card id),
@@ -134,14 +119,13 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     if (c.type == kTypeSystemDesign) {
       prereqs[c.id] = [
         for (final w in c.wikilinks)
-          if (conceptIdByFile[w] case final id? when comfort.containsKey(id))
-            id,
+          if (cc.idByFile[w] case final id? when cc.comfort.containsKey(id)) id,
       ];
     } else if (c.dependsOn.isNotEmpty) {
       prereqs[c.id] = [
         for (final dep in c.dependsOn)
-          if ((conceptIdByFile[dep] ?? dep) case final id
-              when comfort.containsKey(id))
+          if ((cc.idByFile[dep] ?? dep) case final id
+              when cc.comfort.containsKey(id))
             id,
       ];
     }
@@ -150,8 +134,8 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final gated = gatePracticeAvailabilities(
     availabilities: availRaw,
     prereqsByCard: prereqs,
-    comfortByConcept: comfort,
-    labelForConcept: (s) => conceptLabel[s] ?? s,
+    comfortByConcept: cc.comfort,
+    labelForConcept: (s) => cc.label[s] ?? s,
   );
 
   // Base weights: review/learn are high foundational constants; each practice

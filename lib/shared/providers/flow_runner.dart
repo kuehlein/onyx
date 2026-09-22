@@ -11,6 +11,7 @@ import '../../core/subject/flow_spec.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';
+import 'concept_comfort.dart';
 import 'interview.dart';
 import 'practice_plan.dart';
 import 'readiness.dart';
@@ -207,36 +208,17 @@ Future<FlowRunnerContext> flowRunnerContext(Ref ref, String cardId) async {
   final skill =
       source == null ? null : await loadFlowSkill(source.readCard, flow?.skill);
 
-  // Per-concept comfort = fraction of a concept card's quizzable sections that
-  // have SRS state (mirrors daily_plan.dart). Index concept cards by filename
-  // slug too, since `depends-on` may name a concept by its file, not its id.
-  final comfort = <String, double>{};
-  final label = <String, String>{};
-  final conceptIdByFile = <String, String>{};
-  for (final c in index.cards) {
-    if (c.type != kTypeFlashcard) continue;
-    final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
-    conceptIdByFile[slug] = c.id;
-    label[c.id] = c.title;
-    final q = c.quizzableSections.toList();
-    if (q.isEmpty) continue;
-    final studied =
-        q.where((s) => states.byKey.containsKey('${c.id}::${s.slug}')).length;
-    comfort[c.id] = studied / q.length;
-  }
-  double comfortOf(String dep) =>
-      comfort[dep] ?? comfort[conceptIdByFile[dep] ?? ''] ?? 0.0;
-  String labelOf(String dep) =>
-      label[dep] ?? label[conceptIdByFile[dep] ?? ''] ?? dep;
+  // Per-concept comfort — shared with the daily plan. See buildConceptComfort.
+  final cc = buildConceptComfort(index.cards, states.byKey.keys.toSet());
 
   final gate = evaluateGate(
     dependsOn: card.dependsOn,
-    competenceOf: comfortOf,
+    competenceOf: cc.of,
     competenceBar: kFlowGateBar,
   );
   final frontier = coveredFrontier(
     concepts: card.dependsOn,
-    competenceOf: comfortOf,
+    competenceOf: cc.of,
     competenceBar: kFlowGateBar,
   );
   return FlowRunnerContext(
@@ -245,6 +227,6 @@ Future<FlowRunnerContext> flowRunnerContext(Ref ref, String cardId) async {
     skill: skill,
     frontier: frontier,
     gate: gate,
-    weakLabels: {for (final d in gate.weak) d: labelOf(d)},
+    weakLabels: {for (final d in gate.weak) d: cc.labelOf(d)},
   );
 }
