@@ -34,12 +34,24 @@ enum QuizzabilityPolicy {
   blocklist,
 }
 
+/// Where a flow's cards declare their prerequisite concepts for daily-plan
+/// gating — config, so the daily plan dispatches on the flow instead of
+/// branching on card type (invariant #2).
+enum PrereqSource {
+  /// The card's `depends-on` frontmatter (the generic path). Default.
+  dependsOn,
+
+  /// The card's `## Related` wikilinks (system-design problems gate on these).
+  wikilinks,
+}
+
 /// The declarative description of one flow, keyed to a card `type:` value.
 class FlowSpec {
   const FlowSpec({
     required this.cardType,
     required this.scheduling,
     required this.quizzability,
+    this.prereqSource = PrereqSource.dependsOn,
     this.label = '',
     this.iconKey = 'card',
     this.colorKey = 'default',
@@ -52,6 +64,10 @@ class FlowSpec {
   final String cardType;
   final SchedulingModel scheduling;
   final QuizzabilityPolicy quizzability;
+
+  /// Where this flow's cards get their prerequisite concepts for daily-plan
+  /// gating (config, so the plan doesn't branch on card type — invariant #2).
+  final PrereqSource prereqSource;
 
   /// Vault path to this flow's AI skill file (the interviewer/interlocutor/grader
   /// prompt authored in the vault), or null for an in-code flow (the SWE flows).

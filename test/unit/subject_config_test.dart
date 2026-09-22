@@ -142,6 +142,21 @@ void main() {
     test('unknown card type has no flow (caller falls back)', () {
       expect(softwareInterviewsConfig.flowForType('nonexistent'), isNull);
     });
+
+    test('prereq source: SD gates on `## Related` wikilinks, others depends-on',
+        () {
+      // The daily plan dispatches prerequisite gating on this (not a `type ==`
+      // branch — invariant #2).
+      for (final cardType in expected.keys) {
+        expect(
+          softwareInterviewsConfig.flowForType(cardType)!.prereqSource,
+          cardType == 'system-design'
+              ? PrereqSource.wikilinks
+              : PrereqSource.dependsOn,
+          reason: cardType,
+        );
+      }
+    });
   });
 
   group('vocabulary (G3) → per-subject assessment terminology', () {

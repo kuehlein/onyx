@@ -130,6 +130,9 @@ const softwareInterviewsConfig = SubjectConfig(
       cardType: kTypeSystemDesign,
       scheduling: SchedulingModel.mock,
       quizzability: QuizzabilityPolicy.noSections,
+      // SD problems gate on their `## Related` concepts (was a `type ==` branch
+      // in the daily plan) rather than a `depends-on` field.
+      prereqSource: PrereqSource.wikilinks,
       label: 'System design',
       iconKey: 'systemDesign',
       colorKey: 'purple',

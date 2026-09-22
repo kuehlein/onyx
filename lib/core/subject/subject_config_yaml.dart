@@ -175,6 +175,8 @@ FlowSpec _flow(Object? m) {
         SchedulingModel.values, map['scheduling'], SchedulingModel.recall),
     quizzability: _enum(QuizzabilityPolicy.values, map['quizzability'],
         QuizzabilityPolicy.blocklist),
+    prereqSource:
+        _enum(PrereqSource.values, map['prereqSource'], PrereqSource.dependsOn),
     label: (map['label'] as String?) ?? '',
     iconKey: (map['iconKey'] as String?) ?? 'card',
     colorKey: (map['colorKey'] as String?) ?? 'default',

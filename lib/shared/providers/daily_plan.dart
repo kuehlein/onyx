@@ -7,7 +7,6 @@ import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
 import '../../core/subject/active_subject.dart';
 import '../../core/subject/flow_spec.dart';
-import '../models/card.dart';
 import 'clock.dart';
 import 'concept_comfort.dart';
 import 'interview.dart';
@@ -109,25 +108,32 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final cc = buildConceptComfort(index.cards, states.byKey.keys.toSet());
 
   // Prerequisites, from three sources, each resolved to a concept whose comfort
-  // we can gauge: algorithm groups (static, keyed by concept card id),
-  // system-design problems (their `## Related` links), and the general
-  // `depends-on` field any card may declare (the config-subject path, e.g. a
-  // Korean `conversation` gating on its vocabulary). No SWE card uses
-  // `depends-on`, so that branch is additive for the SWE deck.
+  // we can gauge: algorithm groups (static, keyed by concept card id), plus each
+  // card's own concepts — drawn from its `## Related` wikilinks or its
+  // `depends-on` field, chosen by the card's FLOW (config, not a `type ==`
+  // branch — invariant #2): SD problems gate on wikilinks, everything else on
+  // `depends-on` (e.g. a Korean `conversation` gating on its vocabulary). No SWE
+  // card declares `depends-on`, so that branch is additive for the SWE deck.
   final prereqs = <String, List<String>>{...algoGroupPrereqs};
   for (final c in index.cards) {
-    if (c.type == kTypeSystemDesign) {
-      prereqs[c.id] = [
-        for (final w in c.wikilinks)
-          if (cc.idByFile[w] case final id? when cc.comfort.containsKey(id)) id,
-      ];
-    } else if (c.dependsOn.isNotEmpty) {
-      prereqs[c.id] = [
-        for (final dep in c.dependsOn)
-          if ((cc.idByFile[dep] ?? dep) case final id
-              when cc.comfort.containsKey(id))
-            id,
-      ];
+    final source = subjectFor(c.subjectId).flowForType(c.type)?.prereqSource ??
+        PrereqSource.dependsOn;
+    switch (source) {
+      case PrereqSource.wikilinks:
+        prereqs[c.id] = [
+          for (final w in c.wikilinks)
+            if (cc.idByFile[w] case final id? when cc.comfort.containsKey(id))
+              id,
+        ];
+      case PrereqSource.dependsOn:
+        if (c.dependsOn.isNotEmpty) {
+          prereqs[c.id] = [
+            for (final dep in c.dependsOn)
+              if ((cc.idByFile[dep] ?? dep) case final id
+                  when cc.comfort.containsKey(id))
+                id,
+          ];
+        }
     }
   }
 
