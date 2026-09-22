@@ -26,9 +26,14 @@ apart from the code again. The **model** itself lives in
   a *set* of aims (e.g. a music deck: a composition test + an improv jury + open-ended fluency).
 - **DeckTemplate vs Deck.** The template is shared config (per vault subtree); the deck is your
   per-objective query + aims. N decks → 1 template.
-- **"target" — three unrelated uses.** (1) the **readiness target** = an aim's knobs
-  (`ReadinessTarget`; folds onto each `Aim` in S1); (2) the **daily-minutes target** (a study-time
-  budget); (3) a **wiki-link target**. Only (1) is the aim.
+- **"target" — being retired from user-facing copy (overloaded).** Three unrelated uses: (1) the
+  **readiness target** = an aim's knobs; (2) the **daily-minutes target** (a study-time budget);
+  (3) a **wiki-link target**. **Decision (2026-09-22):** user-facing copy drops bare "target" →
+  **"aim"** for the concept, or the deck's `Vocabulary` assessment noun (*interview* / *exam* / *test*)
+  for a dated aim (lands in S5; supersedes R4's interim "target" wording). Code: the `target*`
+  *providers* de-"target" during S5's writer-flip; the **type `ReadinessTarget`** stays (internally
+  precise — "what readiness scores against"; optional later rename to `AimTarget`). The daily-minutes
+  "target" gets a disambiguating rename (low priority); the wiki-link "target" stays (unambiguous).
 - **`goalLabel` / `goalLevel` / `goalFraction`** (readiness-ladder identifiers) mean *the aim you're
   pointing at*, **not** the deck — they resolve to *aim* vocabulary during the S-phase readiness
   rework, not to "deck".
