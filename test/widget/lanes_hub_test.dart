@@ -1,43 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/features/home/lanes_hub.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/readiness.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 
-class _FixedGoals extends StudyGoals {
+class _FixedGoals extends Decks {
   _FixedGoals(this._goals);
-  final List<StudyGoal> _goals;
+  final List<Deck> _goals;
   @override
-  Future<List<StudyGoal>> build() async => _goals;
+  Future<List<Deck>> build() async => _goals;
 }
 
 Readiness _emptyReadiness() =>
     computeReadiness(cards: const [], stabilityByKey: const {});
 
 void main() {
-  final korean = StudyGoal(
+  final korean = Deck(
     id: 'korean',
     name: 'Korean',
     templateId: 'korean',
     membership: TagMembership('korean'),
   );
-  const cs = StudyGoal(id: 'cs', name: 'CS interview', templateId: 'swe');
+  const cs = Deck(id: 'cs', name: 'CS interview', templateId: 'swe');
 
   ProviderScope harness({
-    required List<StudyGoal> goals,
+    required List<Deck> goals,
     required void Function(String) onEnter,
   }) =>
       ProviderScope(
         overrides: [
-          studyGoalsProvider.overrideWith(() => _FixedGoals(goals)),
-          goalBudgetsProvider
+          decksProvider.overrideWith(() => _FixedGoals(goals)),
+          deckBudgetsProvider
               .overrideWith((ref) async => {'korean': 60.0, 'cs': 40.0}),
           for (final g in goals)
-            goalReadinessProvider(g.id)
+            deckReadinessProvider(g.id)
                 .overrideWith((ref) async => _emptyReadiness()),
         ],
         child: MaterialApp(
@@ -67,7 +67,7 @@ void main() {
   });
 
   testWidgets('a paused goal shows a resume row, not a lane', (tester) async {
-    final pausedCs = cs.copyWith(state: GoalState.paused);
+    final pausedCs = cs.copyWith(state: DeckState.paused);
     await tester
         .pumpWidget(harness(goals: [korean, pausedCs], onEnter: (_) {}));
     await tester.pumpAndSettle();

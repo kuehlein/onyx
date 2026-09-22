@@ -22,7 +22,7 @@ import '../../shared/models/card.dart'
 import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/readiness_panel.dart';
@@ -136,7 +136,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     // when the active subject declares its matching flow, so a non-SWE subject
     // sees none (task #88 / G7d). SWE declares all five → the group is unchanged.
     final subject =
-        ref.watch(activeGoalTemplateProvider).asData?.value ?? activeTemplate;
+        ref.watch(activeDeckTemplateProvider).asData?.value ?? activeTemplate;
     final appliedKeys =
         appliedSectionKeys({for (final f in subject.flows) f.cardType});
 

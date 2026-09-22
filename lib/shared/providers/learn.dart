@@ -9,7 +9,7 @@ import 'database.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'learn.g.dart';
@@ -33,14 +33,14 @@ Future<int> dailyNewRemaining(Ref ref) async {
 /// wikilink family, foundational-first, capped by the remaining daily allowance.
 @riverpod
 Future<List<LearnItem>> learnQueue(Ref ref) async {
-  final goalF = ref.watch(activeStudyGoalProvider.future); // register first
+  final deckF = ref.watch(activeDeckProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
   final states = await repo.loadStates();
   final remaining = await ref.watch(dailyNewRemainingProvider.future);
   if (remaining <= 0) return const [];
   final targeting = await ref.watch(activeTargetingProvider.future);
-  final goal = await goalF;
+  final goal = await deckF;
   // Scope to the active goal's cards (task #30d, G5+) so a lane learns its own
   // material; the whole-vault default goal selects everything (unchanged).
   final scoped = goal.select(index.studyCards).toList();

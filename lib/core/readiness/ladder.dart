@@ -46,7 +46,7 @@ class LadderPosition {
     required this.rungScores,
     required this.clearedCount,
     required this.youFraction,
-    required this.goalIndex,
+    required this.deckIndex,
     required this.goalFraction,
     required this.goalLabel,
     required this.currentLabel,
@@ -62,7 +62,7 @@ class LadderPosition {
   /// The "you are here" pin, 0..1 across the ladder.
   final double youFraction;
 
-  final int goalIndex;
+  final int deckIndex;
 
   /// The goal pin, 0..1 across the ladder (the goal rung's upper boundary).
   final double goalFraction;
@@ -130,18 +130,18 @@ LadderPosition computeLadderPosition({
       cleared < n ? (scores[cleared] / threshold).clamp(0.0, 1.0) : 0.0;
   final youFraction = ((cleared + partial) / n).clamp(0.0, 1.0).toDouble();
 
-  final goalIndex = _rungIndex(ladder, target.levelId, target.contextId);
-  final goalFraction = ((goalIndex + 1) / n).clamp(0.0, 1.0).toDouble();
+  final deckIndex = _rungIndex(ladder, target.levelId, target.contextId);
+  final goalFraction = ((deckIndex + 1) / n).clamp(0.0, 1.0).toDouble();
 
   return LadderPosition(
     rungScores: scores,
     clearedCount: cleared,
     youFraction: youFraction,
-    goalIndex: goalIndex,
+    deckIndex: deckIndex,
     goalFraction: goalFraction,
-    goalLabel: ladder[goalIndex].label,
+    goalLabel: ladder[deckIndex].label,
     currentLabel: cleared == 0 ? null : ladder[cleared - 1].label,
-    rungsToGo: ((goalIndex + 1) - cleared).clamp(0, n),
+    rungsToGo: ((deckIndex + 1) - cleared).clamp(0, n),
   );
 }
 

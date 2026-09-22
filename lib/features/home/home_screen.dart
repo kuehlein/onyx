@@ -12,12 +12,12 @@ import '../../shared/providers/backup.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/drafts.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
-import 'goal_editor_sheet.dart';
+import 'deck_editor_sheet.dart';
 import 'lanes_hub.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
@@ -33,23 +33,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  void _enter(String goalId) =>
-      ref.read(focusedGoalProvider.notifier).focus(goalId);
+  void _enter(String deckId) =>
+      ref.read(focusedDeckProvider.notifier).focus(deckId);
 
-  void _backToHub() => ref.read(focusedGoalProvider.notifier).focus(null);
+  void _backToHub() => ref.read(focusedDeckProvider.notifier).focus(null);
 
   @override
   Widget build(BuildContext context) {
     // Kick off the one-time restore-from-vault-if-empty on app start.
     ref.watch(startupRestoreProvider);
-    final goals = ref.watch(studyGoalsProvider).asData?.value ?? const [];
+    final goals = ref.watch(decksProvider).asData?.value ?? const [];
     // Degradation is driven by ACTIVE goals only (paused/graduated excluded), so
     // "1 active + N paused" behaves like a single-goal app (ADR-0005).
     final activeGoals = [
       for (final g in goals)
         if (g.isActive) g,
     ];
-    final focusedRaw = ref.watch(focusedGoalProvider);
+    final focusedRaw = ref.watch(focusedDeckProvider);
     // Ignore a stale focus (the focused goal was paused/removed/graduated), so the
     // title and body never disagree with what's actually active.
     final focusedId =
@@ -88,15 +88,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text(focused?.name ?? 'Onyx'),
         actions: const [_ReadinessChip(), SizedBox(width: Dim.space2)],
       ),
-      body: const _GoalHomeBody(),
+      body: const _DeckHomeBody(),
     );
   }
 }
 
 /// The single-goal Home body: today's small wins first (the motivating metric),
 /// then the day's flows in priority order — detailed charts live on Insights.
-class _GoalHomeBody extends ConsumerWidget {
-  const _GoalHomeBody();
+class _DeckHomeBody extends ConsumerWidget {
+  const _DeckHomeBody();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -231,9 +231,9 @@ class _TargetCard extends ConsumerWidget {
     final clock = ref.watch(clockProvider).asData?.value;
     // Read the ACTIVE GOAL's template vocabulary (fall back to the primary while
     // it loads) so a non-SWE goal is never told to "set your interview target".
-    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
-    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
+    final deckTemplate = ref.watch(activeDeckTemplateProvider).asData?.value;
+    final vocab = deckTemplate?.vocabulary ?? activeTemplate.vocabulary;
+    final goal = ref.watch(activeDeckProvider).asData?.value;
     // "Unset" = the goal has no explicitly-chosen target (activeTarget always
     // fills template fallbacks, so it can't be the signal).
     final unset = target == null ||
@@ -256,7 +256,7 @@ class _TargetCard extends ConsumerWidget {
     // goal instead — no SWE interview-prep chrome for a subject that has none.
     final VoidCallback? onTap = vocab.hasAssessment
         ? () => context.push('/interview-prep')
-        : (goal == null ? null : () => showGoalEditor(context, goal: goal));
+        : (goal == null ? null : () => showDeckEditor(context, goal: goal));
 
     return Material(
       color: cs.surfaceContainerHigh,

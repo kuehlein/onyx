@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/aim.dart';
+import 'package:onyx/core/deck/aim.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/readiness/targeting.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -99,7 +99,7 @@ void main() {
       final t = Targeting(
         base: _base,
         interviews: [iv],
-        goalId: 'g',
+        deckId: 'g',
         deadline: DateTime(2026, 9, 15),
       );
       // No rounds → the goal's deadline seeds a synthetic round-1 date.

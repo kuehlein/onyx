@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
-import 'package:onyx/features/home/goal_editor_sheet.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/features/home/deck_editor_sheet.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/template.dart';
 
-class _CapturingGoals extends StudyGoals {
-  StudyGoal? upserted;
+class _CapturingGoals extends Decks {
+  Deck? upserted;
   @override
-  Future<List<StudyGoal>> build() async => const [];
+  Future<List<Deck>> build() async => const [];
   @override
-  Future<void> upsert(StudyGoal goal) async => upserted = goal;
+  Future<void> upsert(Deck goal) async => upserted = goal;
 }
 
 void main() {
@@ -22,7 +22,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          studyGoalsProvider.overrideWith(() => cap),
+          decksProvider.overrideWith(() => cap),
           templateRegistryProvider.overrideWith((ref) async =>
               TemplateRegistry.single(softwareInterviewsTemplate)),
         ],
@@ -30,7 +30,7 @@ void main() {
           home: Scaffold(
             body: Builder(
               builder: (ctx) => ElevatedButton(
-                onPressed: () => showGoalEditor(ctx),
+                onPressed: () => showDeckEditor(ctx),
                 child: const Text('open'),
               ),
             ),

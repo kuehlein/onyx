@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/goal_store.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck_store.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/template/active_template.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_source.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 class _FakeSource implements VaultSource {
@@ -51,7 +51,7 @@ void main() {
     });
 
     test('a full study goal survives JSON', () {
-      final goal = StudyGoal(
+      final goal = Deck(
         id: 'debate',
         name: 'Saints debate',
         templateId: 'orthodoxy',
@@ -59,20 +59,20 @@ void main() {
         levelId: 'deep',
         deadline: DateTime(2026, 3, 1),
         budgetWeight: 0.4,
-        state: GoalState.paused,
+        state: DeckState.paused,
       );
-      expect(StudyGoal.fromJson(goal.toJson()).toJson(), goal.toJson());
+      expect(Deck.fromJson(goal.toJson()).toJson(), goal.toJson());
     });
   });
 
-  group('GoalStore', () {
+  group('DeckStore', () {
     test('save then load round-trips; empty/malformed → none', () async {
       final src = _FakeSource();
-      final store = GoalStore(src);
+      final store = DeckStore(src);
       expect(await store.load(), isEmpty);
 
       final goals = [
-        StudyGoal(
+        Deck(
             id: 'korean',
             name: 'Korean',
             templateId: 'korean',
@@ -83,12 +83,12 @@ void main() {
       expect(back.single.id, 'korean');
       expect(back.single.membership, isA<FolderMembership>());
 
-      src.meta[GoalStore.fileName] = '{not json';
+      src.meta[DeckStore.fileName] = '{not json';
       expect(await store.load(), isEmpty);
     });
   });
 
-  group('studyGoalsProvider', () {
+  group('decksProvider', () {
     tearDown(() {
       activeTemplate = softwareInterviewsTemplate;
       activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
@@ -99,23 +99,23 @@ void main() {
         vaultSourceProvider.overrideWithValue(_FakeSource()),
       ]);
       addTearDown(c.dispose);
-      final goals = await c.read(studyGoalsProvider.future);
-      expect(goals.map((g) => g.id), [defaultGoalId]);
+      final goals = await c.read(decksProvider.future);
+      expect(goals.map((g) => g.id), [defaultDeckId]);
     });
 
     test('stored goals replace the default (which is only a fallback)',
         () async {
-      final stored = StudyGoal(
+      final stored = Deck(
         id: 'korean',
         name: 'Korean',
         templateId: 'korean',
         membership: FolderMembership('korean'),
       );
       final src = _FakeSource({
-        GoalStore.fileName: jsonEncode([
+        DeckStore.fileName: jsonEncode([
           stored.toJson(),
           // A stored goal colliding with the default id must be dropped.
-          {'id': defaultGoalId, 'name': 'x', 'templateId': 'y'},
+          {'id': defaultDeckId, 'name': 'x', 'templateId': 'y'},
         ]),
       });
       final c = ProviderContainer(
@@ -123,21 +123,21 @@ void main() {
       );
       addTearDown(c.dispose);
 
-      final goals = await c.read(studyGoalsProvider.future);
+      final goals = await c.read(decksProvider.future);
       // The whole-vault default steps aside once explicit goals exist.
       expect(goals.map((g) => g.id), ['korean']);
     });
 
     test('all-graduated stored goals fall back to the default', () async {
-      final grad = StudyGoal(
+      final grad = Deck(
         id: 'korean',
         name: 'Korean',
         templateId: 'korean',
         membership: FolderMembership('korean'),
-        state: GoalState.graduated,
+        state: DeckState.graduated,
       );
       final src = _FakeSource({
-        GoalStore.fileName: jsonEncode([grad.toJson()])
+        DeckStore.fileName: jsonEncode([grad.toJson()])
       });
       final c = ProviderContainer(
           overrides: [vaultSourceProvider.overrideWithValue(src)]);
@@ -145,8 +145,8 @@ void main() {
 
       // No non-graduated goal → degrade to the whole-vault default, not run off
       // an archived goal.
-      final goals = await c.read(studyGoalsProvider.future);
-      expect(goals.map((g) => g.id), [defaultGoalId]);
+      final goals = await c.read(decksProvider.future);
+      expect(goals.map((g) => g.id), [defaultDeckId]);
     });
   });
 }

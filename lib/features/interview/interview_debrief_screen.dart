@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/goal/aim.dart' show AimOutcome;
+import '../../core/deck/aim.dart' show AimOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/status_pill.dart';
@@ -17,9 +17,9 @@ import '../../shared/widgets/chat_view.dart';
 /// coach records the outcome + adjusts the plan toward what you were weak on
 /// (approve-then-apply). Reached from a goal in the upcoming-interviews list.
 class InterviewDebriefScreen extends ConsumerStatefulWidget {
-  const InterviewDebriefScreen({required this.goalId, super.key});
+  const InterviewDebriefScreen({required this.deckId, super.key});
 
-  final String goalId;
+  final String deckId;
 
   @override
   ConsumerState<InterviewDebriefScreen> createState() =>
@@ -31,7 +31,7 @@ class _InterviewDebriefScreenState
   Future<void> _apply() async {
     final messenger = ScaffoldMessenger.of(context);
     final aim = await ref
-        .read(interviewDebriefProvider(widget.goalId).notifier)
+        .read(interviewDebriefProvider(widget.deckId).notifier)
         .apply();
     if (aim == null) return;
     messenger.showSnackBar(
@@ -42,7 +42,7 @@ class _InterviewDebriefScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = ref.watch(interviewDebriefProvider(widget.goalId));
+    final state = ref.watch(interviewDebriefProvider(widget.deckId));
     final hasKey = ref.watch(claudeServiceProvider) != null;
 
     return Scaffold(
@@ -62,7 +62,7 @@ class _InterviewDebriefScreenState
                   ? _DebriefCard(state.result!, _apply)
                   : null,
               onSend: (t) => ref
-                  .read(interviewDebriefProvider(widget.goalId).notifier)
+                  .read(interviewDebriefProvider(widget.deckId).notifier)
                   .send(t),
             ),
     );

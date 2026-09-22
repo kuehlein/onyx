@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../core/goal/budget.dart';
-import '../../core/goal/aim.dart';
+import '../../core/deck/budget.dart';
+import '../../core/deck/aim.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
@@ -14,7 +14,7 @@ import 'practice_plan.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'daily_plan.g.dart';
@@ -44,11 +44,11 @@ Future<double> dailyBudgetMinutes(Ref ref) async {
 }
 
 /// The shared daily budget split across the active goals by weight, honoring
-/// pause (task #30d, G4): `goalId → minutes`. A single active goal gets the whole
+/// pause (task #30d, G4): `deckId → minutes`. A single active goal gets the whole
 /// budget, so single-goal behavior is unchanged.
 @riverpod
-Future<Map<String, double>> goalBudgets(Ref ref) async {
-  final goals = await ref.watch(studyGoalsProvider.future);
+Future<Map<String, double>> deckBudgets(Ref ref) async {
+  final goals = await ref.watch(decksProvider.future);
   final total = await ref.watch(dailyBudgetMinutesProvider.future);
   return allocateBudget(goals: goals, totalMinutes: total);
 }
@@ -60,15 +60,15 @@ Future<Map<String, double>> goalBudgets(Ref ref) async {
 @riverpod
 Future<DailyPlan> dailyPlan(Ref ref) async {
   // Register every dependency synchronously (before the first await) so a
-  // mid-flight invalidation (e.g. a goal edit rebuilding studyGoals) can't leave
+  // mid-flight invalidation (e.g. a goal edit rebuilding decks) can't leave
   // this using a disposed ref after the async gap.
   final availF = ref.watch(practiceAvailabilityProvider.future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
   final targetingF = ref.watch(activeTargetingProvider.future);
   final clockF = ref.watch(clockProvider.future);
-  final goalF = ref.watch(activeStudyGoalProvider.future);
-  final budgetsF = ref.watch(goalBudgetsProvider.future);
+  final deckF = ref.watch(activeDeckProvider.future);
+  final budgetsF = ref.watch(deckBudgetsProvider.future);
   final availRaw = await availF;
   final index = await indexF;
   final states = await statesF;
@@ -76,10 +76,10 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final clock = await clockF;
   final now = clock.now();
   // The active goal's slice of the shared budget. A single active goal owns the
-  // whole budget (goalBudgets → {id: total}); an inactive (paused/graduated)
+  // whole budget (deckBudgets → {id: total}); an inactive (paused/graduated)
   // selected goal isn't in the split, so it gets no plan budget (0), not the
   // whole day.
-  final goal = await goalF;
+  final goal = await deckF;
   final budgets = await budgetsF;
   final double budget = budgets[goal.id] ?? 0;
 

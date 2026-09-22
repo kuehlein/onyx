@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../core/template/active_template.dart';
 import '../../core/template/deck_template.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -95,11 +95,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final showDims = _showDims ?? unconfigured;
     // The active study goal owns the interviews (Phase B) + the level/track/
     // deadline slots the Save maps into.
-    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
+    final goal = ref.watch(activeDeckProvider).asData?.value;
     // The active goal's assessment terminology — SWE reads "interview" (chrome
     // shown); a neutral subject reads neutrally and hides the interview loop (G7).
-    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
+    final deckTemplate = ref.watch(activeDeckTemplateProvider).asData?.value;
+    final vocab = deckTemplate?.vocabulary ?? activeTemplate.vocabulary;
     final interviews = goal?.interviews ?? const <Aim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
@@ -308,7 +308,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                             // Map the draft target's slots onto the active goal
                             // (Phase B cutover — the goal persists to
                             // study-goals.json, bypassing the legacy bridge).
-                            await ref.read(studyGoalsProvider.notifier).upsert(
+                            await ref.read(decksProvider.notifier).upsert(
                                   goal.copyWith(
                                     levelId: t.levelId,
                                     contextId: t.contextId,
@@ -851,7 +851,7 @@ class _CalendarLegend extends StatelessWidget {
 /// rollover); no hand-rolled math.
 /// Whether [a] has any round on or after [today] — i.e. the loop isn't fully in
 /// the past. Fully-past interviews drop out of the sheet's list + calendar.
-bool _hasUpcomingRound(Aim a, StudyGoal goal, DateTime today) {
+bool _hasUpcomingRound(Aim a, Deck goal, DateTime today) {
   final dates = a.roundDates(goal.id, goal.deadline);
   if (dates.isEmpty) return false;
   final t = DateTime(today.year, today.month, today.day);
@@ -882,7 +882,7 @@ class _ScheduledSection extends ConsumerStatefulWidget {
   });
 
   final List<Aim> interviews; // sorted by soonest round first
-  final StudyGoal goal;
+  final Deck goal;
   final DateTime today;
   final VoidCallback onAdd;
 

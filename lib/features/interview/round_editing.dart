@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import '../../shared/design/onyx_design.dart';
 
 /// Shared interview-round editing used by both the target sheet and the

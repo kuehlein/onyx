@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';

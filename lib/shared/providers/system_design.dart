@@ -18,7 +18,7 @@ import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'system_design.g.dart';
@@ -42,11 +42,11 @@ ExplainOutcome scoreToRecurrence(int score) => score >= 70
 /// app (browse ALL problems in Browse; this is the scheduled queue).
 @riverpod
 Future<List<Card>> systemDesignProblems(Ref ref) async {
-  final goalF = ref.watch(activeStudyGoalProvider.future); // register first
+  final deckF = ref.watch(activeDeckProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(recognitionRepositoryProvider).loadStates();
   final now = (await ref.watch(clockProvider.future)).now();
-  final goal = await goalF;
+  final goal = await deckF;
   // Scope to the active goal's cards (task #30d, G5+); the whole-vault default
   // goal selects everything (unchanged).
   final problems = [

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/membership_query.dart';
+import 'package:onyx/core/deck/membership_query.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/shared/models/card.dart';
 

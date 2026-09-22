@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_plan.dart';
-import 'package:onyx/core/goal/aim.dart';
+import 'package:onyx/core/deck/aim.dart';
 import 'package:onyx/core/readiness/target.dart';
 
 final _base = ReadinessTarget.of(

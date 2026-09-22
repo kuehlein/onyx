@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/study_goals.dart';
-import 'goal_editor_sheet.dart';
+import '../../shared/providers/decks.dart';
+import 'deck_editor_sheet.dart';
 
 /// The "Today's mix" lanes hub (task #30d, G5): one lane per concurrent study
 /// goal, showing its share of today's shared budget, readiness, and deadline.
@@ -18,12 +18,12 @@ class LanesHub extends ConsumerWidget {
   const LanesHub({super.key, required this.onEnter});
 
   /// Called with a goal id when the user taps into a lane.
-  final void Function(String goalId) onEnter;
+  final void Function(String deckId) onEnter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final goalsAsync = ref.watch(studyGoalsProvider);
+    final goalsAsync = ref.watch(decksProvider);
 
     return goalsAsync.when(
       loading: () => const LoadingView(),
@@ -31,7 +31,7 @@ class LanesHub extends ConsumerWidget {
       data: (goals) {
         final live = [
           for (final g in goals)
-            if (g.state != GoalState.graduated) g,
+            if (g.state != DeckState.graduated) g,
         ];
         final active = [
           for (final g in live)
@@ -39,7 +39,7 @@ class LanesHub extends ConsumerWidget {
         ];
         final paused = [
           for (final g in live)
-            if (g.state == GoalState.paused) g,
+            if (g.state == DeckState.paused) g,
         ];
         return ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -54,7 +54,7 @@ class LanesHub extends ConsumerWidget {
             ),
             const SizedBox(height: Dim.space4),
             for (final g in active) ...[
-              _GoalLane(goal: g, onEnter: onEnter),
+              _DeckLane(goal: g, onEnter: onEnter),
               const SizedBox(height: Dim.space3),
             ],
             for (final g in paused) ...[
@@ -65,7 +65,7 @@ class LanesHub extends ConsumerWidget {
             OutlinedButton.icon(
               icon: const Icon(Icons.add),
               label: const Text('New goal'),
-              onPressed: () => showGoalEditor(context),
+              onPressed: () => showDeckEditor(context),
             ),
           ],
         );
@@ -74,18 +74,18 @@ class LanesHub extends ConsumerWidget {
   }
 }
 
-class _GoalLane extends ConsumerWidget {
-  const _GoalLane({required this.goal, required this.onEnter});
+class _DeckLane extends ConsumerWidget {
+  const _DeckLane({required this.goal, required this.onEnter});
 
-  final StudyGoal goal;
-  final void Function(String goalId) onEnter;
+  final Deck goal;
+  final void Function(String deckId) onEnter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final minutes = ref.watch(goalBudgetsProvider).asData?.value[goal.id];
-    final r = ref.watch(goalReadinessProvider(goal.id)).asData?.value;
+    final minutes = ref.watch(deckBudgetsProvider).asData?.value[goal.id];
+    final r = ref.watch(deckReadinessProvider(goal.id)).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
 
     final subParts = <String>[
@@ -99,7 +99,7 @@ class _GoalLane extends ConsumerWidget {
       borderRadius: Dim.brCard,
       child: InkWell(
         onTap: () => onEnter(goal.id),
-        onLongPress: () => showGoalEditor(context, goal: goal),
+        onLongPress: () => showDeckEditor(context, goal: goal),
         borderRadius: Dim.brCard,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -135,8 +135,8 @@ class _GoalLane extends ConsumerWidget {
                 icon: const Icon(Icons.pause_circle_outline, size: Dim.iconMd),
                 color: cs.onSurfaceVariant,
                 onPressed: () => ref
-                    .read(studyGoalsProvider.notifier)
-                    .upsert(goal.copyWith(state: GoalState.paused)),
+                    .read(decksProvider.notifier)
+                    .upsert(goal.copyWith(state: DeckState.paused)),
               ),
               Icon(Icons.chevron_right,
                   size: Dim.iconMd, color: cs.onSurfaceVariant),
@@ -151,7 +151,7 @@ class _GoalLane extends ConsumerWidget {
 class _PausedRow extends ConsumerWidget {
   const _PausedRow({required this.goal});
 
-  final StudyGoal goal;
+  final Deck goal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -173,8 +173,8 @@ class _PausedRow extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => ref
-                .read(studyGoalsProvider.notifier)
-                .upsert(goal.copyWith(state: GoalState.active)),
+                .read(decksProvider.notifier)
+                .upsert(goal.copyWith(state: DeckState.active)),
             child: const Text('Resume'),
           ),
         ],

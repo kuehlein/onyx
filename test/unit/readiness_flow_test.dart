@@ -2,7 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/template/software_interviews.dart';
@@ -13,7 +13,7 @@ import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/interview.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
@@ -45,11 +45,11 @@ Card _card(String id, String domain) => Card(
 
 /// A study-goals notifier pinned to a fixed list, so readiness doesn't scan the
 /// real dev vault to discover subjects/goals.
-class _FixedGoals extends StudyGoals {
+class _FixedGoals extends Decks {
   _FixedGoals(this._goals);
-  final List<StudyGoal> _goals;
+  final List<Deck> _goals;
   @override
-  Future<List<StudyGoal>> build() async => _goals;
+  Future<List<Deck>> build() async => _goals;
 }
 
 void main() {
@@ -75,7 +75,7 @@ void main() {
     'B::s1': srs('B', 5), // weak system design
   });
 
-  ProviderContainer make(AppDatabase db, {List<StudyGoal>? goals}) =>
+  ProviderContainer make(AppDatabase db, {List<Deck>? goals}) =>
       ProviderContainer(overrides: [
         appDatabaseProvider.overrideWithValue(db),
         vaultIndexProvider.overrideWith((ref) async => index),
@@ -86,11 +86,9 @@ void main() {
             (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
         // Pin the study goals (whole-vault default) so readiness doesn't scan the
         // real dev vault to discover subjects/goals (task #30d).
-        studyGoalsProvider.overrideWith(() => _FixedGoals(
+        decksProvider.overrideWith(() => _FixedGoals(
               goals ??
-                  const [
-                    StudyGoal(id: 'default', name: 'All', templateId: 'swe')
-                  ],
+                  const [Deck(id: 'default', name: 'All', templateId: 'swe')],
             )),
       ]);
 
@@ -101,11 +99,11 @@ void main() {
     addTearDown(() => db.close());
 
     // The default goal owns its own level/context/track now (Phase B — the aim
-    // moved off the legacy controller onto the StudyGoal), so drive the target
+    // moved off the legacy controller onto the Deck), so drive the target
     // through the goal's slots. A container per read keeps each goal pinned.
     Future<double> read(SeniorityLevel level, Track track) async {
       final c = make(db, goals: [
-        StudyGoal(
+        Deck(
           id: 'default',
           name: 'All',
           templateId: 'swe',
@@ -138,7 +136,7 @@ void main() {
     // A cross-cutting tag goal that selects only the DS&A card — system design is
     // a different lens and must drop out of this goal's readiness entirely.
     final c = make(db, goals: [
-      StudyGoal(
+      Deck(
         id: 'dsa',
         name: 'DSA',
         templateId: 'swe',
@@ -157,8 +155,8 @@ void main() {
     if (!_sqliteAvailable) return;
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     final c = make(db, goals: [
-      const StudyGoal(id: 'default', name: 'All', templateId: 'swe'),
-      StudyGoal(
+      const Deck(id: 'default', name: 'All', templateId: 'swe'),
+      Deck(
         id: 'dsa',
         name: 'DSA',
         templateId: 'swe',
@@ -167,7 +165,7 @@ void main() {
     ]);
     addTearDown(c.dispose);
     c.listen(readinessProvider, (_, __) {});
-    c.listen(activeStudyGoalProvider, (_, __) {});
+    c.listen(activeDeckProvider, (_, __) {});
 
     // Default goal selected → the whole vault (both domains).
     final r1 = await c.read(readinessProvider.future);
@@ -175,7 +173,7 @@ void main() {
         containsAll(['ds-a', 'system-design']));
 
     // Switch focus to the DS&A lens → readiness scopes to just it.
-    c.read(focusedGoalProvider.notifier).focus('dsa');
+    c.read(focusedDeckProvider.notifier).focus('dsa');
     final r2 = await c.read(readinessProvider.future);
     expect(r2.domains.map((d) => d.domain), ['ds-a']);
     await db.close();
@@ -223,14 +221,14 @@ void main() {
     // (Regression: activeTarget fills template fallbacks, so an identity check
     // against ReadinessTarget.fallback silently read as "already set".)
     final bare = make(db, goals: [
-      const StudyGoal(id: 'default', name: 'All', templateId: 'swe'),
+      const Deck(id: 'default', name: 'All', templateId: 'swe'),
     ]);
     addTearDown(bare.dispose);
     expect(await bare.read(activeTargetIsSetProvider.future), isFalse);
 
     // A goal with a chosen level → set.
     final chosen = make(db, goals: [
-      const StudyGoal(
+      const Deck(
           id: 'default', name: 'All', templateId: 'swe', levelId: 'senior'),
     ]);
     addTearDown(chosen.dispose);

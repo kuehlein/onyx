@@ -1,10 +1,10 @@
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import 'round_editing.dart';
 
 /// Pure lifecycle transitions for an interview ([Aim]) — the single
 /// place that mutates the current-round + status pipeline, so every surface
 /// behaves identically. UI calls these and persists the result via the study
-/// goals notifier ([StudyGoals.upsertInterview]).
+/// goals notifier ([Decks.upsertAim]).
 ///
 /// The model: an active interview has exactly one current round (the upcoming,
 /// pending round). You reschedule it, or log its result — passing schedules the

@@ -128,9 +128,9 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
             builder: (_, __) => const UpcomingInterviewsScreen()),
         // Post-interview debrief for one goal (`/debrief/goal-123`).
         GoRoute(
-          path: '/debrief/:goalId',
+          path: '/debrief/:deckId',
           builder: (_, state) =>
-              InterviewDebriefScreen(goalId: state.pathParameters['goalId']!),
+              InterviewDebriefScreen(deckId: state.pathParameters['deckId']!),
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),

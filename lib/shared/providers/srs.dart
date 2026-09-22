@@ -11,7 +11,7 @@ import 'clock.dart';
 import 'coach.dart';
 import 'database.dart';
 import 'readiness.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'srs.g.dart';
@@ -64,11 +64,11 @@ class ReviewQueueData {
 /// Assembles the current review queue from the indexed cards + scheduling state.
 @riverpod
 Future<ReviewQueueData> reviewQueue(Ref ref) async {
-  final goalF = ref.watch(activeStudyGoalProvider.future); // register first
+  final deckF = ref.watch(activeDeckProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
   final clock = await ref.watch(clockProvider.future);
-  final goal = await goalF;
+  final goal = await deckF;
   final states = await repo.loadStates();
   final dueByKey = {for (final e in states.entries) e.key: e.value.dueAt};
   final queue = buildReviewQueue(
@@ -142,7 +142,7 @@ class StudySession extends _$StudySession {
     try {
       final index = await ref.read(vaultIndexProvider.future);
       final targeting = await ref.read(activeTargetingProvider.future);
-      final goal = await ref.read(activeStudyGoalProvider.future);
+      final goal = await ref.read(activeDeckProvider.future);
       final applied = await ref.read(appliedTransferProvider.future);
       // Mirror readinessProvider exactly so the before/after delta on the
       // completion screen is honest: same active-goal card scope, practice-track

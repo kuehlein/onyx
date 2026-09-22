@@ -4,9 +4,9 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import 'ai.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'template.dart';
 import 'vault.dart';
 
@@ -54,14 +54,14 @@ class InterviewDebrief extends _$InterviewDebrief {
   static const _model = 'claude-sonnet-4-6';
 
   @override
-  InterviewDebriefState build(String goalId) => const InterviewDebriefState();
+  InterviewDebriefState build(String deckId) => const InterviewDebriefState();
 
   /// The interview being debriefed — looked up by id on the active study goal
-  /// (Phase B). [goalId] is the [Aim.id].
+  /// (Phase B). [deckId] is the [Aim.id].
   Future<Aim?> _aim() async {
-    final goal = await ref.read(activeStudyGoalProvider.future);
+    final goal = await ref.read(activeDeckProvider.future);
     for (final iv in goal.interviews) {
-      if (iv.id == goalId) return iv;
+      if (iv.id == deckId) return iv;
     }
     return null;
   }
@@ -88,7 +88,7 @@ class InterviewDebrief extends _$InterviewDebrief {
       final index = await ref.read(vaultIndexProvider.future);
       // Label the interview by its company (falling back to the goal's target
       // role) for the prompt's "debriefing for: …" line.
-      final goal = await ref.read(activeStudyGoalProvider.future);
+      final goal = await ref.read(activeDeckProvider.future);
       final registry = await ref.read(templateRegistryProvider.future);
       final role = goal
           .toTarget(registry.byId(goal.templateId) ?? registry.primary)
@@ -136,13 +136,11 @@ class InterviewDebrief extends _$InterviewDebrief {
   Future<Aim?> apply() async {
     final result = state.result;
     if (result == null) return null;
-    final goal = await ref.read(activeStudyGoalProvider.future);
+    final goal = await ref.read(activeDeckProvider.future);
     final aim = await _aim();
     if (aim == null) return null;
     final updated = result.applyTo(aim);
-    await ref
-        .read(studyGoalsProvider.notifier)
-        .upsertInterview(goal.id, updated);
+    await ref.read(decksProvider.notifier).upsertAim(goal.id, updated);
     return updated;
   }
 }

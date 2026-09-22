@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../../shared/models/card.dart';
-import '../goal/membership_query.dart';
+import '../deck/membership_query.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 

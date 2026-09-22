@@ -57,7 +57,7 @@ void main() {
       expect(pos.clearedCount, 0);
       expect(pos.currentLabel, isNull);
       expect(pos.youFraction, 0);
-      expect(pos.goalIndex, 3); // Mid · FAANG
+      expect(pos.deckIndex, 3); // Mid · FAANG
       expect(pos.goalFraction, closeTo(0.5, 1e-9));
     });
 

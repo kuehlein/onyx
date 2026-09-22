@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../vault/vault_source.dart';
-import 'study_goal.dart';
+import 'deck.dart';
 
 /// Persists the user's study goals as app-managed state in the vault's `_meta/`
 /// (task #30d) — the deadline, budget split, target selection, and membership
@@ -11,29 +11,28 @@ import 'study_goal.dart';
 /// The implicit default (whole-vault) goal is synthesized from the primary
 /// template, so an empty/absent file means "single default goal", identical to
 /// pre-#30d behavior. Once the user sets a target/interview on that default goal
-/// (Phase B), it persists here like any goal (keyed by [defaultGoalId]).
-class GoalStore {
-  GoalStore(this._source);
+/// (Phase B), it persists here like any goal (keyed by [defaultDeckId]).
+class DeckStore {
+  DeckStore(this._source);
 
   final VaultSource _source;
 
   static const fileName = 'study-goals.json';
 
-  Future<List<StudyGoal>> load() async {
+  Future<List<Deck>> load() async {
     final raw = await _source.readMeta(fileName);
     if (raw == null || raw.trim().isEmpty) return const [];
     try {
       final list = jsonDecode(raw) as List;
       return [
-        for (final e in list)
-          StudyGoal.fromJson((e as Map).cast<String, dynamic>()),
+        for (final e in list) Deck.fromJson((e as Map).cast<String, dynamic>()),
       ];
     } catch (_) {
       return const []; // malformed → fall back to the default goal
     }
   }
 
-  Future<void> save(List<StudyGoal> goals) => _source.writeMeta(
+  Future<void> save(List<Deck> goals) => _source.writeMeta(
         fileName,
         jsonEncode([for (final g in goals) g.toJson()]),
       );

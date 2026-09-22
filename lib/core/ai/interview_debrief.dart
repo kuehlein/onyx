@@ -16,7 +16,7 @@ library;
 import 'dart:convert';
 
 import '../../shared/models/card.dart';
-import '../goal/aim.dart';
+import '../deck/aim.dart';
 
 /// The hard ceiling on any debrief-proposed weight multiplier. Deliberately
 /// lower than the planner's (a full plan can weight ~2.0) — a single interview

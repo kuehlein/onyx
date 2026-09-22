@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
@@ -32,7 +32,7 @@ class _InterviewSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goal = ref.watch(activeStudyGoalProvider).asData?.value;
+    final goal = ref.watch(activeDeckProvider).asData?.value;
     if (goal == null) return const SizedBox.shrink();
     final aim0 = goal.interviews.where((iv) => iv.id == aimId).firstOrNull;
     if (aim0 == null) return const SizedBox.shrink();
@@ -48,7 +48,7 @@ class _InterviewSheet extends ConsumerWidget {
     final today =
         ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
     final refDate = DateTime(today.year, today.month, today.day);
-    final notifier = ref.read(studyGoalsProvider.notifier);
+    final notifier = ref.read(decksProvider.notifier);
     final registry = ref.watch(templateRegistryProvider).asData?.value;
     final target = registry == null
         ? null
@@ -59,7 +59,7 @@ class _InterviewSheet extends ConsumerWidget {
     // "Occurred" = the round's day has arrived; only then can you log a result.
     final occurred = cur?.date != null && !cur!.date!.isAfter(refDate);
 
-    Future<void> save(Aim a) => notifier.upsertInterview(goal.id, a);
+    Future<void> save(Aim a) => notifier.upsertAim(goal.id, a);
 
     Future<void> reschedule() async {
       if (cur == null) return;
@@ -86,7 +86,7 @@ class _InterviewSheet extends ConsumerWidget {
     Future<void> confirmDelete() async {
       final ok = await _confirmDelete(context, aim, target);
       if (ok) {
-        await notifier.removeInterview(goal.id, aim.id);
+        await notifier.removeAim(goal.id, aim.id);
         if (context.mounted) Navigator.pop(context);
       }
     }
@@ -370,7 +370,7 @@ class _Timeline extends StatelessWidget {
   const _Timeline({required this.aim, required this.goal, required this.today});
 
   final Aim aim;
-  final StudyGoal goal;
+  final Deck goal;
   final DateTime today;
 
   // Faint primary wash marking the current round's row.

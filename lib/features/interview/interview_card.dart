@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import 'interview_actions.dart';
@@ -21,7 +21,7 @@ class InterviewCard extends ConsumerWidget {
       {super.key, required this.aim, required this.goal, required this.today});
 
   final Aim aim;
-  final StudyGoal goal;
+  final Deck goal;
   final DateTime today;
 
   @override
@@ -63,9 +63,8 @@ class InterviewCard extends ConsumerWidget {
         await _archive(context, ref);
         return false; // handled with undo; don't remove from the tree ourselves
       },
-      onDismissed: (_) => ref
-          .read(studyGoalsProvider.notifier)
-          .removeInterview(goal.id, aim.id),
+      onDismissed: (_) =>
+          ref.read(decksProvider.notifier).removeAim(goal.id, aim.id),
       background: _swipeBg(theme, ended),
       child: row,
     );
@@ -201,16 +200,15 @@ class InterviewCard extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final before = aim;
     await ref
-        .read(studyGoalsProvider.notifier)
-        .upsertInterview(goal.id, archiveInterview(aim));
+        .read(decksProvider.notifier)
+        .upsertAim(goal.id, archiveInterview(aim));
     messenger.showSnackBar(SnackBar(
       content: Text(
           'Archived ${aim.companyName.isEmpty ? "interview" : aim.companyName}'),
       action: SnackBarAction(
         label: 'Undo',
-        onPressed: () => ref
-            .read(studyGoalsProvider.notifier)
-            .upsertInterview(goal.id, before),
+        onPressed: () =>
+            ref.read(decksProvider.notifier).upsertAim(goal.id, before),
       ),
     ));
   }

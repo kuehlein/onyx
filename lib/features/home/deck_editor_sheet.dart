@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../shared/design/onyx_design.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/widgets/sheet_header.dart';
 
-/// Create or edit a [StudyGoal] (task #30d, G6) — name, template, membership
+/// Create or edit a [Deck] (task #30d, G6) — name, template, membership
 /// query, deadline, and budget weight, plus graduate/delete for an existing goal.
 /// This is the in-app path to defining the concurrent goals the lanes hub shows.
-Future<void> showGoalEditor(BuildContext context, {StudyGoal? goal}) =>
+Future<void> showDeckEditor(BuildContext context, {Deck? goal}) =>
     showOnyxSheet<void>(
       context,
-      builder: (_) => GoalEditorSheet(goal: goal),
+      builder: (_) => DeckEditorSheet(goal: goal),
     );
 
 /// A compact manager for all study goals — tap one to edit, or add a new one.
 /// The reachable-from-anywhere entry (Settings) so a single-goal user can define
 /// a second goal (which surfaces the lanes hub).
-Future<void> showGoalsManager(BuildContext context) => showOnyxSheet<void>(
+Future<void> showDecksManager(BuildContext context) => showOnyxSheet<void>(
       context,
       builder: (_) => const _GoalsManagerSheet(),
     );
@@ -27,7 +27,7 @@ Future<void> showGoalsManager(BuildContext context) => showOnyxSheet<void>(
 class _GoalsManagerSheet extends ConsumerWidget {
   const _GoalsManagerSheet();
 
-  static String _membership(StudyGoal g) => switch (g.membership) {
+  static String _membership(Deck g) => switch (g.membership) {
         TagMembership(:final tag) => '#$tag',
         FolderMembership(:final path) => '$path/',
         _ => 'Whole vault',
@@ -35,7 +35,7 @@ class _GoalsManagerSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(studyGoalsProvider).asData?.value ?? const [];
+    final goals = ref.watch(decksProvider).asData?.value ?? const [];
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -50,18 +50,18 @@ class _GoalsManagerSheet extends ConsumerWidget {
                   title: Text(g.name),
                   subtitle: Text(
                     '${_membership(g)}'
-                    '${g.state == GoalState.paused ? ' · paused' : ''}'
-                    '${g.state == GoalState.graduated ? ' · graduated' : ''}',
+                    '${g.state == DeckState.paused ? ' · paused' : ''}'
+                    '${g.state == DeckState.graduated ? ' · graduated' : ''}',
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => showGoalEditor(context, goal: g),
+                  onTap: () => showDeckEditor(context, goal: g),
                 ),
               const Divider(),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.add_circle_outline),
                 title: const Text('New goal'),
-                onTap: () => showGoalEditor(context),
+                onTap: () => showDeckEditor(context),
               ),
             ],
           ),
@@ -71,18 +71,18 @@ class _GoalsManagerSheet extends ConsumerWidget {
   }
 }
 
-class GoalEditorSheet extends ConsumerStatefulWidget {
-  const GoalEditorSheet({super.key, this.goal});
+class DeckEditorSheet extends ConsumerStatefulWidget {
+  const DeckEditorSheet({super.key, this.goal});
 
-  final StudyGoal? goal;
+  final Deck? goal;
 
   @override
-  ConsumerState<GoalEditorSheet> createState() => _GoalEditorSheetState();
+  ConsumerState<DeckEditorSheet> createState() => _GoalEditorSheetState();
 }
 
 enum _Kind { all, tag, folder }
 
-class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
+class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   late final TextEditingController _name =
       TextEditingController(text: widget.goal?.name ?? '');
   late final TextEditingController _value = TextEditingController(
@@ -125,16 +125,16 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
       _Kind.folder => FolderMembership(value),
     };
     final id = widget.goal?.id ?? (_slug(name).isEmpty ? 'goal' : _slug(name));
-    final goal = StudyGoal(
+    final goal = Deck(
       id: id,
       name: name,
       templateId: _templateId ?? '',
       membership: membership,
       deadline: _deadline,
       budgetWeight: _weight,
-      state: widget.goal?.state ?? GoalState.active,
+      state: widget.goal?.state ?? DeckState.active,
     );
-    ref.read(studyGoalsProvider.notifier).upsert(goal);
+    ref.read(decksProvider.notifier).upsert(goal);
     Navigator.of(context).pop();
   }
 
@@ -256,8 +256,8 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                         icon: const Icon(Icons.check_circle_outline),
                         label: const Text('Graduate'),
                         onPressed: () {
-                          ref.read(studyGoalsProvider.notifier).upsert(
-                              existing.copyWith(state: GoalState.graduated));
+                          ref.read(decksProvider.notifier).upsert(
+                              existing.copyWith(state: DeckState.graduated));
                           Navigator.of(context).pop();
                         },
                       ),
@@ -269,9 +269,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
                             foregroundColor: theme.colorScheme.error),
                         label: const Text('Delete'),
                         onPressed: () {
-                          ref
-                              .read(studyGoalsProvider.notifier)
-                              .remove(existing.id);
+                          ref.read(decksProvider.notifier).remove(existing.id);
                           Navigator.of(context).pop();
                         },
                       ),

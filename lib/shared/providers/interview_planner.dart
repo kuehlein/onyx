@@ -4,11 +4,11 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_plan.dart';
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import 'ai.dart';
 import 'clock.dart';
 import 'readiness.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'interview_planner.g.dart';
@@ -122,12 +122,12 @@ class InterviewPlanner extends _$InterviewPlanner {
     // rather than filed in the past.
     final aim = plan.toInterview('goal-${now.microsecondsSinceEpoch}',
         notBefore: clock.today());
-    final goal = await ref.read(activeStudyGoalProvider.future);
+    final goal = await ref.read(activeDeckProvider.future);
     // Seed the goal's target slots from the plan only when the user hasn't set
     // one yet (a plain slot is null on the goal). One upsert carries the new
     // interview + any seeded slots + the deadline.
     final unset = goal.levelId == null;
-    await ref.read(studyGoalsProvider.notifier).upsert(goal.copyWith(
+    await ref.read(decksProvider.notifier).upsert(goal.copyWith(
           levelId: unset ? plan.level.name : goal.levelId,
           contextId: unset ? plan.tier.name : goal.contextId,
           trackId: unset ? plan.track.name : goal.trackId,

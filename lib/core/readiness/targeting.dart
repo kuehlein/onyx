@@ -1,5 +1,5 @@
 import '../../shared/models/card.dart';
-import '../goal/aim.dart';
+import '../deck/aim.dart';
 import 'target.dart';
 
 /// The effective study targeting for one goal: the goal's base [ReadinessTarget]
@@ -17,7 +17,7 @@ class Targeting {
   const Targeting({
     required this.base,
     this.interviews = const [],
-    this.goalId = '',
+    this.deckId = '',
     this.deadline,
   });
 
@@ -28,7 +28,7 @@ class Targeting {
   final List<Aim> interviews;
 
   /// The goal's id + due date — seed a single-date interview's synthetic round.
-  final String goalId;
+  final String deckId;
   final DateTime? deadline;
 
   /// Effective per-domain weight: the base heuristic, raised by whichever active
@@ -64,7 +64,7 @@ class Targeting {
   DateTime? get governingDate {
     DateTime? soonest = base.interviewDate;
     for (final iv in interviews) {
-      for (final d in iv.roundDates(goalId, deadline)) {
+      for (final d in iv.roundDates(deckId, deadline)) {
         if (soonest == null || d.isBefore(soonest)) soonest = d;
       }
     }
@@ -92,7 +92,7 @@ class Targeting {
     for (final iv in interviews) {
       // Ramp retention toward the NEXT upcoming round — as round 1 passes, the
       // focus shifts to round 2, etc.
-      final date = iv.nextRoundDate(goalId, deadline, today);
+      final date = iv.nextRoundDate(deckId, deadline, today);
       if (date == null) continue;
       final daysLeft =
           DateTime(date.year, date.month, date.day).difference(today).inDays;

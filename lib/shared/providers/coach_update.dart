@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart';
-import '../../core/goal/aim.dart';
+import '../../core/deck/aim.dart';
 import '../../core/readiness/readiness.dart';
 import 'algo.dart';
 import 'analytics.dart';
@@ -10,7 +10,7 @@ import 'clock.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'template.dart';
 
 part 'coach_update.g.dart';
@@ -22,9 +22,9 @@ part 'coach_update.g.dart';
 @riverpod
 Future<CoachUpdate?> coachUpdate(Ref ref) async {
   // Register synchronously (before the first await) so a mid-flight goal edit
-  // rebuilding studyGoals can't leave us using a disposed ref after the gap.
-  final goalF = ref.watch(activeStudyGoalProvider.future);
-  final subjectF = ref.watch(activeGoalTemplateProvider.future);
+  // rebuilding decks can't leave us using a disposed ref after the gap.
+  final deckF = ref.watch(activeDeckProvider.future);
+  final subjectF = ref.watch(activeDeckTemplateProvider.future);
   final readiness = await ref.watch(readinessProvider.future);
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 
@@ -58,7 +58,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
 
   // Days to the nearest upcoming interview (nearest non-ended active-interview
   // round on the active goal, Phase B) — gates the last-mile behavioral nudge.
-  final goal = await goalF;
+  final goal = await deckF;
   final subject = await subjectF;
   final interviews = [
     for (final iv in goal.interviews)

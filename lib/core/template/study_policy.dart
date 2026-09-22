@@ -24,7 +24,7 @@ const cramWindowDays = 14;
 
 /// Does the material need to LAST, or is it for a one-off dated event? Drives
 /// whether cramming is ever auto-enabled (axis 2).
-enum GoalPermanence { durable, terminal }
+enum DeckPermanence { durable, terminal }
 
 /// The introduction/scheduling shape (axis 2). `durable` = long-term (Learn is
 /// the first exposure → graduate straight to a spaced interval; interleave after
@@ -81,7 +81,7 @@ class StudyPolicy {
 /// so timeline pressure never hollows out the foundation the dependency graph
 /// relies on (see docs/practice-flow-plan.md).
 StudyPolicy resolveStudyPolicy({
-  GoalPermanence permanence = GoalPermanence.durable,
+  DeckPermanence permanence = DeckPermanence.durable,
   int? daysToTarget,
   bool gatesDownstream = false,
   double baseRetention = retentionDefault,
@@ -91,7 +91,7 @@ StudyPolicy resolveStudyPolicy({
       daysToTarget >= 0 &&
       daysToTarget <= cramWindowDays;
   final cram =
-      permanence == GoalPermanence.terminal && near && !gatesDownstream;
+      permanence == DeckPermanence.terminal && near && !gatesDownstream;
   return StudyPolicy(
     desiredRetention:
         clampRetention(cram ? retentionCramTarget : baseRetention),

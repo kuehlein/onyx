@@ -1,8 +1,8 @@
 /// One-time bridge (task #30d Phase B — aim unification, B5): fold the legacy aim
 /// stores — the base [ReadinessTarget] (`onyx-target.json`) + the interview list
 /// (`onyx-goals.json`, the old `PrepGoal` file) — into the whole-vault **default**
-/// [StudyGoal]. The base target supplies the goal's slots + deadline; each legacy
-/// entry becomes an [Aim]. Read-only parse; the caller ([StudyGoals])
+/// [Deck]. The base target supplies the goal's slots + deadline; each legacy
+/// entry becomes an [Aim]. Read-only parse; the caller ([Decks])
 /// write-through-persists the folded default so the legacy files fall out of use.
 library;
 
@@ -13,18 +13,18 @@ import '../util.dart';
 import '../readiness/target.dart';
 import '../template/deck_template.dart';
 import '../vault/vault_source.dart';
-import 'study_goal.dart';
+import 'deck.dart';
 
 /// The whole-vault default goal, enriched from the legacy aim data. Slots/deadline
 /// from [baseTarget] (null → the template fallbacks stand); the interviews from
-/// [interviews]. With no legacy data this equals `defaultGoalFor(template)`.
-StudyGoal migratedDefaultGoal(
+/// [interviews]. With no legacy data this equals `defaultDeckFor(template)`.
+Deck migratedDefaultDeck(
   DeckTemplate template, {
   ReadinessTarget? baseTarget,
   List<Aim> interviews = const [],
 }) =>
-    StudyGoal(
-      id: defaultGoalId,
+    Deck(
+      id: defaultDeckId,
       name: template.id,
       templateId: template.id,
       levelId: baseTarget?.levelId,
@@ -40,7 +40,7 @@ String get _legacyGoalsFile =>
     isDevDataMode ? 'onyx-goals.dev.json' : 'onyx-goals.json';
 
 /// Read + parse the legacy `onyx-goals.json` interviews from the vault. Empty on
-/// an absent/malformed file. Used once by the [StudyGoals] migration branch.
+/// an absent/malformed file. Used once by the [Decks] migration branch.
 Future<List<Aim>> legacyInterviews(VaultSource source) async =>
     legacyInterviewsFromRaw(await source.readMeta(_legacyGoalsFile));
 

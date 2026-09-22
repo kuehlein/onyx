@@ -441,7 +441,7 @@ class _ConsistencySection extends ConsumerWidget {
     // so under multiple goals it's honestly labelled "all subjects" — unlike the
     // other panels, it isn't this lane's number.
     final multiGoal =
-        (ref.watch(activeGoalCountProvider).asData?.value ?? 1) >= 2;
+        (ref.watch(activeDeckCountProvider).asData?.value ?? 1) >= 2;
     return _Section(
       title: 'Study consistency',
       subtitle: multiGoal

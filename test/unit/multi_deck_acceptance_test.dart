@@ -4,14 +4,14 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/vault.dart';
 import 'package:path/path.dart' as p;
 // ignore: depend_on_referenced_packages
@@ -100,21 +100,21 @@ void main() {
     addTearDown(c.dispose);
     // Keep the readiness subtree mounted (as a mounted UI would) so its async
     // deps don't autodispose between one-shot reads.
-    c.listen(goalReadinessProvider('alpha'), (_, __) {});
-    c.listen(goalReadinessProvider('beta'), (_, __) {});
+    c.listen(deckReadinessProvider('alpha'), (_, __) {});
+    c.listen(deckReadinessProvider('beta'), (_, __) {});
 
     // Discovery: the two stored goals replace the whole-vault default.
-    final goals = await c.read(studyGoalsProvider.future);
+    final goals = await c.read(decksProvider.future);
     expect(goals.map((g) => g.id).toSet(), {'alpha', 'beta'});
 
     // Per-goal readiness is scoped to each lens's cards (different domains).
-    final rAlpha = await c.read(goalReadinessProvider('alpha').future);
-    final rBeta = await c.read(goalReadinessProvider('beta').future);
+    final rAlpha = await c.read(deckReadinessProvider('alpha').future);
+    final rBeta = await c.read(deckReadinessProvider('beta').future);
     expect(rAlpha.domains.map((d) => d.domain), ['algebra']);
     expect(rBeta.domains.map((d) => d.domain), ['biology']);
 
     // Shared budget splits 3:1 by weight; both active goals get a slice.
-    final budgets = await c.read(goalBudgetsProvider.future);
+    final budgets = await c.read(deckBudgetsProvider.future);
     expect(budgets.keys.toSet(), {'alpha', 'beta'});
     expect(budgets['alpha']! / budgets['beta']!, closeTo(3.0, 1e-9));
   });
@@ -127,8 +127,8 @@ void main() {
 
     // Membership is the one scoping key every per-goal analytic filters by.
     expect(
-        await c.read(goalMemberCardIdsProvider('alpha').future), {'a1', 'a2'});
-    expect(await c.read(goalMemberCardIdsProvider('beta').future), {'b1'});
+        await c.read(deckMemberCardIdsProvider('alpha').future), {'a1', 'a2'});
+    expect(await c.read(deckMemberCardIdsProvider('beta').future), {'b1'});
 
     // Seed recall for one card in each lens (different domains). Do it before the
     // first retention read so the freshly-built srs_state picks the rows up.
@@ -143,14 +143,14 @@ void main() {
       (cardId: 'b1', sectionSlug: 'definition', grade: 3, stability: 12.0),
     ], at: now);
 
-    c.listen(goalRetentionByDomainProvider('alpha'), (_, __) {});
-    c.listen(goalRetentionByDomainProvider('beta'), (_, __) {});
+    c.listen(deckRetentionByDomainProvider('alpha'), (_, __) {});
+    c.listen(deckRetentionByDomainProvider('beta'), (_, __) {});
 
     // Retention is scoped: alpha sees only algebra, beta only biology — never the
     // other lane's data (the "per-goal lie" this refactor fixes).
     final retAlpha =
-        await c.read(goalRetentionByDomainProvider('alpha').future);
-    final retBeta = await c.read(goalRetentionByDomainProvider('beta').future);
+        await c.read(deckRetentionByDomainProvider('alpha').future);
+    final retBeta = await c.read(deckRetentionByDomainProvider('beta').future);
     expect(retAlpha.map((d) => d.domain), ['algebra']);
     expect(retBeta.map((d) => d.domain), ['biology']);
   });
@@ -160,26 +160,26 @@ void main() {
     final c = make();
     addTearDown(c.dispose);
     // Keep the goal + budget graph alive across mutations (like a mounted UI).
-    c.listen(studyGoalsProvider, (_, __) {});
-    c.listen(goalBudgetsProvider, (_, __) {});
+    c.listen(decksProvider, (_, __) {});
+    c.listen(deckBudgetsProvider, (_, __) {});
 
-    final goals = await c.read(studyGoalsProvider.future);
+    final goals = await c.read(decksProvider.future);
     final total = await c.read(dailyBudgetMinutesProvider.future);
 
     // Pause beta → it drops out and its share redistributes to alpha.
     await c
-        .read(studyGoalsProvider.notifier)
+        .read(decksProvider.notifier)
         .upsert(goals.firstWhere((g) => g.id == 'beta').copyWith(
-              state: GoalState.paused,
+              state: DeckState.paused,
             ));
-    final afterPause = await c.read(goalBudgetsProvider.future);
+    final afterPause = await c.read(deckBudgetsProvider.future);
     expect(afterPause.containsKey('beta'), isFalse);
     expect(afterPause['alpha'], closeTo(total, 1e-9));
 
     // Degrade: remove beta → a single goal remains (the hub falls back to
     // today's single-goal Home).
-    await c.read(studyGoalsProvider.notifier).remove('beta');
-    final one = await c.read(studyGoalsProvider.future);
+    await c.read(decksProvider.notifier).remove('beta');
+    final one = await c.read(decksProvider.future);
     expect(one.map((g) => g.id), ['alpha']);
   });
 
@@ -214,10 +214,10 @@ void main() {
     ]);
     addTearDown(c.dispose);
 
-    final goals = await c.read(studyGoalsProvider.future);
+    final goals = await c.read(decksProvider.future);
     expect(goals.length, 1);
     final g = goals.single;
-    expect(g.id, defaultGoalId);
+    expect(g.id, defaultDeckId);
     expect([g.levelId, g.contextId, g.trackId], ['senior', 'faang', 'backend']);
     expect(g.deadline, DateTime(2026, 6, 1));
     expect(g.interviews.single.companyName, 'Google');
@@ -260,22 +260,23 @@ void main() {
     // B5 write-through persists it durably; wait for that fire-and-forget save.
     final c = container();
     addTearDown(c.dispose);
-    c.listen(studyGoalsProvider, (_, __) {});
-    final migrated = (await c.read(studyGoalsProvider.future)).single;
+    c.listen(decksProvider, (_, __) {});
+    final migrated = (await c.read(decksProvider.future)).single;
     expect(migrated.interviews.single.id, 'g1');
     await _awaitFile(storeFile);
 
     // Add a second interview → the persisted default is updated.
-    await c.read(studyGoalsProvider.notifier).upsertInterview(
-        defaultGoalId, const Aim(id: 'amzn', companyName: 'Amazon'));
+    await c
+        .read(decksProvider.notifier)
+        .upsertAim(defaultDeckId, const Aim(id: 'amzn', companyName: 'Amazon'));
     expect(storeFile.existsSync(), isTrue);
 
     // A FRESH container reads the STORED default (both interviews) — the migration
     // is superseded (re-deriving from the legacy files alone would give just one).
     final c2 = container();
     addTearDown(c2.dispose);
-    final stored = (await c2.read(studyGoalsProvider.future)).single;
-    expect(stored.id, defaultGoalId);
+    final stored = (await c2.read(decksProvider.future)).single;
+    expect(stored.id, defaultDeckId);
     expect(stored.interviews.map((iv) => iv.id).toSet(), {'g1', 'amzn'});
     // Slots survived the cutover too.
     expect([stored.levelId, stored.contextId, stored.trackId],
@@ -308,16 +309,16 @@ void main() {
       }),
     ]);
     addTearDown(c.dispose);
-    c.listen(studyGoalsProvider, (_, __) {});
+    c.listen(decksProvider, (_, __) {});
 
     // All explicit goals graduated → single-goal mode on the migrated default.
-    final goals = await c.read(studyGoalsProvider.future);
-    expect(goals.single.id, defaultGoalId);
+    final goals = await c.read(decksProvider.future);
+    expect(goals.single.id, defaultDeckId);
 
     // The write-through rewrites the pre-existing file, so wait for the default to
     // appear (not mere existence), then assert the graduated goal wasn't dropped.
     final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (!storeFile.readAsStringSync().contains('"$defaultGoalId"')) {
+    while (!storeFile.readAsStringSync().contains('"$defaultDeckId"')) {
       if (DateTime.now().isAfter(deadline)) {
         fail('write-through never persisted');
       }

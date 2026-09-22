@@ -14,7 +14,7 @@ void main() {
 
     test('terminal goal near a deadline → cram + higher retention', () {
       final p = resolveStudyPolicy(
-          permanence: GoalPermanence.terminal, daysToTarget: 5);
+          permanence: DeckPermanence.terminal, daysToTarget: 5);
       expect(p.isCram, isTrue);
       expect(p.scheduleProfile.learningSteps, isNotEmpty);
       expect(p.desiredRetention, retentionCramTarget); // 0.95
@@ -22,7 +22,7 @@ void main() {
 
     test('a prerequisite flow is always durable, even under cram pressure', () {
       final p = resolveStudyPolicy(
-        permanence: GoalPermanence.terminal,
+        permanence: DeckPermanence.terminal,
         daysToTarget: 3,
         gatesDownstream: true,
       );
@@ -32,13 +32,13 @@ void main() {
 
     test('durable goal never crams, even near a date', () {
       final p = resolveStudyPolicy(
-          permanence: GoalPermanence.durable, daysToTarget: 2);
+          permanence: DeckPermanence.durable, daysToTarget: 2);
       expect(p.isCram, isFalse);
     });
 
     test('terminal but far out → durable', () {
       final p = resolveStudyPolicy(
-          permanence: GoalPermanence.terminal, daysToTarget: 60);
+          permanence: DeckPermanence.terminal, daysToTarget: 60);
       expect(p.isCram, isFalse);
     });
 

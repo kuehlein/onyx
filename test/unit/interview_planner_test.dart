@@ -15,7 +15,7 @@ import 'package:onyx/shared/providers/ai.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/interview_planner.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -168,7 +168,7 @@ void main() {
     expect(aim.active, isTrue);
 
     // It landed on the active study goal and will drive the targeting layer.
-    final goal = await c.read(activeStudyGoalProvider.future);
+    final goal = await c.read(activeDeckProvider.future);
     expect(goal.interviews.map((iv) => iv.companyName), ['Google']);
     expect(goal.interviews.single.domainWeights['system-design'], 1.6);
     // The plan seeded the goal's target slots (previously unset) + deadline.

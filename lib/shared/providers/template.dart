@@ -6,7 +6,7 @@ import '../../core/template/neutral_template.dart';
 import '../../core/template/deck_template.dart';
 import '../../core/template/template_registry.dart';
 import '../../core/vault/vault_source.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'template.g.dart';
@@ -39,8 +39,8 @@ Future<DeckTemplate> activeTemplateConfig(Ref ref) async =>
 /// (the Home target card, readiness/coach copy — G7) reads the RIGHT subject's
 /// vocabulary/target under multi-subject, not the process-global primary.
 @riverpod
-Future<DeckTemplate> activeGoalTemplate(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
+Future<DeckTemplate> activeDeckTemplate(Ref ref) async {
+  final goal = await ref.watch(activeDeckProvider.future);
   final registry = await ref.watch(templateRegistryProvider.future);
   return registry.byId(goal.templateId) ?? registry.primary;
 }

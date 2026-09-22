@@ -1,11 +1,11 @@
-/// The interview-lifecycle facet of a [StudyGoal] (task #30d Phase B — aim
+/// The interview-lifecycle facet of a [Deck] (task #30d Phase B — aim
 /// unification). A goal's *target* (level/context/track/deadline) and membership
 /// live on the goal itself; this holds only what is **interview-specific**: the
 /// company, the ordered rounds, the status/outcome, and AI-plan weight boosts.
-/// A null `interview` on a StudyGoal → a plain (non-interview) study goal.
+/// A null `interview` on a Deck → a plain (non-interview) study goal.
 ///
 /// These types are interview-generic (a screen/onsite loop with outcomes), NOT
-/// tied to the SWE target enums — so `StudyGoal` stays template-agnostic.
+/// tied to the SWE target enums — so `Deck` stays template-agnostic.
 library;
 
 import '../util.dart';
@@ -118,7 +118,7 @@ class InterviewRound {
   }
 }
 
-/// One interview attached to a [StudyGoal] via `StudyGoal.interviews` (a goal can
+/// One interview attached to a [Deck] via `Deck.interviews` (a goal can
 /// hold several, which the targeting layer blends).
 class Aim {
   const Aim({
@@ -134,7 +134,7 @@ class Aim {
     this.planNotes,
   });
 
-  /// Stable id, unique within the parent goal's [StudyGoal.interviews] — the key
+  /// Stable id, unique within the parent goal's [Deck.interviews] — the key
   /// the UI upserts/removes/mutes by, and what the debrief flow looks up. Migrated
   /// from the legacy `PrepGoal.id`; empty only on a not-yet-persisted draft.
   final String id;
@@ -165,43 +165,43 @@ class Aim {
   final String? planNotes;
 
   /// Rounds as the source of truth, migrating the goal's single [deadline] into a
-  /// synthetic round 1 when no rounds are stored. [goalId] seeds the round id.
-  List<InterviewRound> effectiveRounds(String goalId, DateTime? deadline) =>
+  /// synthetic round 1 when no rounds are stored. [deckId] seeds the round id.
+  List<InterviewRound> effectiveRounds(String deckId, DateTime? deadline) =>
       rounds.isNotEmpty
           ? rounds
           : (deadline != null
               ? [
                   InterviewRound(
-                      id: '${id.isNotEmpty ? id : goalId}-r1',
+                      id: '${id.isNotEmpty ? id : deckId}-r1',
                       number: 1,
                       date: deadline)
                 ]
               : const []);
 
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
-  InterviewRound? currentRound(String goalId, DateTime? deadline) {
-    for (final r in effectiveRounds(goalId, deadline)) {
+  InterviewRound? currentRound(String deckId, DateTime? deadline) {
+    for (final r in effectiveRounds(deckId, deadline)) {
       if (r.outcome == AimOutcome.pending) return r;
     }
     return null;
   }
 
   /// Resolved rounds, oldest first — the history behind [currentRound].
-  List<InterviewRound> pastRounds(String goalId, DateTime? deadline) => [
-        for (final r in effectiveRounds(goalId, deadline))
+  List<InterviewRound> pastRounds(String deckId, DateTime? deadline) => [
+        for (final r in effectiveRounds(deckId, deadline))
           if (r.outcome != AimOutcome.pending) r,
       ];
 
   /// All scheduled round dates (date-only), for calendar flags.
-  List<DateTime> roundDates(String goalId, DateTime? deadline) => [
-        for (final r in effectiveRounds(goalId, deadline))
+  List<DateTime> roundDates(String deckId, DateTime? deadline) => [
+        for (final r in effectiveRounds(deckId, deadline))
           if (r.date != null)
             DateTime(r.date!.year, r.date!.month, r.date!.day),
       ];
 
   /// The soonest round on/after [from] (else the earliest scheduled), or null.
-  DateTime? nextRoundDate(String goalId, DateTime? deadline, [DateTime? from]) {
-    final dates = roundDates(goalId, deadline)..sort();
+  DateTime? nextRoundDate(String deckId, DateTime? deadline, [DateTime? from]) {
+    final dates = roundDates(deckId, deadline)..sort();
     if (dates.isEmpty) return null;
     if (from == null) return dates.first;
     return dates.firstWhere((d) => !d.isBefore(from), orElse: () => dates.last);

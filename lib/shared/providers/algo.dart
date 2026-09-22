@@ -15,7 +15,7 @@ import 'interview.dart';
 import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'algo.g.dart';
@@ -25,7 +25,7 @@ part 'algo.g.dart';
 /// review/learn queues exclude those, so the two tracks never mix.
 @riverpod
 Future<List<AlgoTask>> algoQueue(Ref ref) async {
-  final goalF = ref.watch(activeStudyGoalProvider.future); // register first
+  final deckF = ref.watch(activeDeckProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   // Watch srsStates + solvedToday so the queue recomputes after a solve (a solved
   // problem reschedules out, and today's tally shrinks the day's remaining work).
@@ -35,7 +35,7 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
   final min = await ref.watch(algoDailyMinProvider.future);
   final max = await ref.watch(algoDailyMaxProvider.future);
   final solvedToday = await ref.watch(algoSolvedTodayProvider.future);
-  final goal = await goalF;
+  final goal = await deckF;
   return buildAlgoQueue(
     // Scope to the active goal's cards (task #30d, G5+) so a non-algorithms lane
     // doesn't surface algos; the whole-vault default goal is unchanged.

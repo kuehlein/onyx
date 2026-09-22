@@ -21,11 +21,11 @@ export 'membership_query.dart';
 /// Where a goal sits in its lifecycle. Only [active] goals draw from the daily
 /// budget; [paused] keeps state but drops out of the plan; [graduated] is
 /// finished/archived (term churn — e.g. a course completed).
-enum GoalState { active, paused, graduated }
+enum DeckState { active, paused, graduated }
 
 /// A configured, query-defined study objective. Immutable; edits produce a copy.
-class StudyGoal {
-  const StudyGoal({
+class Deck {
+  const Deck({
     required this.id,
     required this.name,
     required this.templateId,
@@ -35,7 +35,7 @@ class StudyGoal {
     this.trackId,
     this.deadline,
     this.budgetWeight = 1.0,
-    this.state = GoalState.active,
+    this.state = DeckState.active,
     this.interviews = const [],
   });
 
@@ -65,7 +65,7 @@ class StudyGoal {
   /// the active set; see G4).
   final double budgetWeight;
 
-  final GoalState state;
+  final DeckState state;
 
   /// The interviews this goal is prepping for (Phase B aim unification) — a
   /// subject can hold several at once (Google + Amazon), which the targeting
@@ -73,7 +73,7 @@ class StudyGoal {
   /// without an interview loop). All share the goal's level/context/track slots.
   final List<Aim> interviews;
 
-  bool get isActive => state == GoalState.active;
+  bool get isActive => state == DeckState.active;
 
   /// The member cards of this goal, drawn from [cards].
   Iterable<Card> select(Iterable<Card> cards) =>
@@ -113,7 +113,7 @@ class StudyGoal {
           'interviews': [for (final i in interviews) i.toJson()],
       };
 
-  static StudyGoal fromJson(Map<String, dynamic> m) => StudyGoal(
+  static Deck fromJson(Map<String, dynamic> m) => Deck(
         id: m['id'] as String,
         name: (m['name'] ?? m['id']) as String,
         templateId: (m['templateId'] ?? '') as String,
@@ -128,9 +128,9 @@ class StudyGoal {
             ? DateTime.tryParse(m['deadline'] as String)
             : null,
         budgetWeight: (m['budgetWeight'] as num?)?.toDouble() ?? 1.0,
-        state: GoalState.values.firstWhere(
+        state: DeckState.values.firstWhere(
           (s) => s.name == m['state'],
-          orElse: () => GoalState.active,
+          orElse: () => DeckState.active,
         ),
         interviews: m['interviews'] is List
             ? [
@@ -143,7 +143,7 @@ class StudyGoal {
   // Nullable slots use an _unset sentinel so a caller can clear them back to null
   // (e.g. convert a dated goal to open-ended) — a plain `x ?? this.x` can't
   // distinguish "omit" from "set to null".
-  StudyGoal copyWith({
+  Deck copyWith({
     String? name,
     String? templateId,
     MembershipQuery? membership,
@@ -152,10 +152,10 @@ class StudyGoal {
     Object? trackId = _unset,
     Object? deadline = _unset,
     double? budgetWeight,
-    GoalState? state,
+    DeckState? state,
     List<Aim>? interviews,
   }) =>
-      StudyGoal(
+      Deck(
         id: id,
         name: name ?? this.name,
         templateId: templateId ?? this.templateId,
@@ -174,12 +174,12 @@ const _unset = Object();
 
 /// The id of the implicit whole-vault goal that a single-subject vault runs as —
 /// the degradation case that keeps behavior identical to pre-#30d.
-const defaultGoalId = 'default';
+const defaultDeckId = 'default';
 
 /// The implicit default goal: the whole vault, targeted by [template]. Used until
 /// the user defines explicit goals (G3), and always for a single-template vault.
-StudyGoal defaultGoalFor(DeckTemplate template) => StudyGoal(
-      id: defaultGoalId,
+Deck defaultDeckFor(DeckTemplate template) => Deck(
+      id: defaultDeckId,
       name: template.id,
       templateId: template.id,
       membership: const AllCards(),

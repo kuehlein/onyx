@@ -2,12 +2,12 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/learn.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -36,11 +36,11 @@ Card _card(String id, {required String path}) => Card(
       filePath: path,
     );
 
-class _FixedGoals extends StudyGoals {
+class _FixedGoals extends Decks {
   _FixedGoals(this._goals);
-  final List<StudyGoal> _goals;
+  final List<Deck> _goals;
   @override
-  Future<List<StudyGoal>> build() async => _goals;
+  Future<List<Deck>> build() async => _goals;
 }
 
 void main() {
@@ -57,19 +57,19 @@ void main() {
     skipped: 0,
   );
 
-  ProviderContainer make(StudyGoal goal) => ProviderContainer(overrides: [
+  ProviderContainer make(Deck goal) => ProviderContainer(overrides: [
         appDatabaseProvider.overrideWith((ref) {
           final db = AppDatabase.withExecutor(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),
         vaultIndexProvider.overrideWith((ref) async => index),
-        studyGoalsProvider.overrideWith(() => _FixedGoals([goal])),
+        decksProvider.overrideWith(() => _FixedGoals([goal])),
       ]);
 
   test('learn queue scopes to the active goal', () async {
     if (!_sqliteAvailable) return;
-    final c = make(StudyGoal(
+    final c = make(Deck(
       id: 'alpha',
       name: 'Alpha',
       templateId: 'software-interviews',
@@ -86,7 +86,7 @@ void main() {
 
   test('a beta goal learns only beta cards', () async {
     if (!_sqliteAvailable) return;
-    final c = make(StudyGoal(
+    final c = make(Deck(
       id: 'beta',
       name: 'Beta',
       templateId: 'software-interviews',

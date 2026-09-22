@@ -10,7 +10,7 @@ library;
 import 'dart:convert';
 import '../util.dart';
 
-import '../goal/aim.dart';
+import '../deck/aim.dart';
 import '../readiness/target.dart';
 
 /// A structured prep plan proposed by the planner, ready to become an
@@ -60,7 +60,7 @@ class InterviewPlan {
   final String summary;
 
   /// Convert to a persistable [Aim] (active) — the Phase B unified
-  /// facet attached to a [StudyGoal]. The target (level/context/track/deadline)
+  /// facet attached to a [Deck]. The target (level/context/track/deadline)
   /// lives on the parent goal now, so only the interview-specific facets carry
   /// over. [id] is caller-supplied. [notBefore] drops a past date (usually a
   /// wrong-year slip) so the interview is simply unscheduled rather than filed in

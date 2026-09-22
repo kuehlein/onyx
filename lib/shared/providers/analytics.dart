@@ -9,7 +9,7 @@ import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'vault.dart';
 
 part 'analytics.g.dart';
@@ -19,15 +19,15 @@ part 'analytics.g.dart';
 const retentionWindow = Duration(days: 90);
 
 /// Per-domain retention (task #27) for a SPECIFIC goal — its member cards' review
-/// log + current FSRS state, grouped by domain. Scoped to `goalMemberCardIds` so
+/// log + current FSRS state, grouped by domain. Scoped to `deckMemberCardIds` so
 /// a lane shows only its own recall; the whole-vault default goal includes every
 /// card, so single-goal numbers are unchanged.
 @riverpod
-Future<List<DomainRetention>> goalRetentionByDomain(
-    Ref ref, String goalId) async {
+Future<List<DomainRetention>> deckRetentionByDomain(
+    Ref ref, String deckId) async {
   // Register deps before the first await (disposal hazard — a goal edit rebuilds
-  // studyGoals/memberIds and would invalidate this instance mid-await).
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  // decks/memberIds and would invalidate this instance mid-await).
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
   final clockF = ref.watch(clockProvider.future);
@@ -58,21 +58,21 @@ Future<List<DomainRetention>> goalRetentionByDomain(
   );
 }
 
-/// Per-domain retention for the ACTIVE goal — see [goalRetentionByDomain].
+/// Per-domain retention for the ACTIVE goal — see [deckRetentionByDomain].
 @riverpod
 Future<List<DomainRetention>> retentionByDomain(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalRetentionByDomainProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckRetentionByDomainProvider(goal.id).future);
 }
 
-/// Per-TAG retention for a SPECIFIC goal (task #27): like [goalRetentionByDomain]
+/// Per-TAG retention for a SPECIFIC goal (task #27): like [deckRetentionByDomain]
 /// but each member card counts toward EVERY tag it carries, not just its domain
 /// (first tag). So a cross-cutting tag (e.g. `caching`, `sharding`) gets its own
 /// recall across domains — a finer lens than the domain rollup.
 @riverpod
-Future<List<DomainRetention>> goalRetentionByTag(Ref ref, String goalId) async {
+Future<List<DomainRetention>> deckRetentionByTag(Ref ref, String deckId) async {
   // Register deps before the first await (disposal hazard).
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
   final clockF = ref.watch(clockProvider.future);
@@ -103,19 +103,19 @@ Future<List<DomainRetention>> goalRetentionByTag(Ref ref, String goalId) async {
   );
 }
 
-/// Per-tag retention for the ACTIVE goal — see [goalRetentionByTag].
+/// Per-tag retention for the ACTIVE goal — see [deckRetentionByTag].
 @riverpod
 Future<List<DomainRetention>> retentionByTag(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalRetentionByTagProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckRetentionByTagProvider(goal.id).future);
 }
 
 /// Averaged mock-interview performance + rubric breakdown for a SPECIFIC goal —
 /// mocks on its member cards. The whole-vault default goal includes all, so
 /// single-goal numbers are unchanged. Recomputes on a new mock.
 @riverpod
-Future<MockSkills> goalMockSkills(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<MockSkills> deckMockSkills(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final transferF =
       ref.watch(appliedTransferProvider.future); // refresh on mocks
   final repo = ref.watch(appliedRepositoryProvider);
@@ -142,18 +142,18 @@ Future<MockSkills> goalMockSkills(Ref ref, String goalId) async {
   ]);
 }
 
-/// Mock skills for the ACTIVE goal — see [goalMockSkills].
+/// Mock skills for the ACTIVE goal — see [deckMockSkills].
 @riverpod
 Future<MockSkills> mockSkills(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalMockSkillsProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckMockSkillsProvider(goal.id).future);
 }
 
 /// System-design mock performance + rubric breakdown for a goal (its own rubric,
 /// distinct from the coding mock skills). Recomputes on a new mock.
 @riverpod
-Future<MockSkills> goalSystemDesignSkills(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<MockSkills> deckSystemDesignSkills(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final transferF =
       ref.watch(appliedTransferProvider.future); // refresh on mocks
   final repo = ref.watch(appliedRepositoryProvider);
@@ -172,18 +172,18 @@ Future<MockSkills> goalSystemDesignSkills(Ref ref, String goalId) async {
   ]);
 }
 
-/// System-design skills for the ACTIVE goal — see [goalSystemDesignSkills].
+/// System-design skills for the ACTIVE goal — see [deckSystemDesignSkills].
 @riverpod
 Future<MockSkills> systemDesignSkills(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalSystemDesignSkillsProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckSystemDesignSkillsProvider(goal.id).future);
 }
 
 /// Behavioral mock performance + STAR+L rubric breakdown for a goal (its own
 /// rubric). Its own Insights section so it doesn't mix with coding/SD mocks.
 @riverpod
-Future<MockSkills> goalBehavioralSkills(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<MockSkills> deckBehavioralSkills(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final transferF =
       ref.watch(appliedTransferProvider.future); // refresh on mocks
   final repo = ref.watch(appliedRepositoryProvider);
@@ -202,18 +202,18 @@ Future<MockSkills> goalBehavioralSkills(Ref ref, String goalId) async {
   ]);
 }
 
-/// Behavioral skills for the ACTIVE goal — see [goalBehavioralSkills].
+/// Behavioral skills for the ACTIVE goal — see [deckBehavioralSkills].
 @riverpod
 Future<MockSkills> behavioralSkills(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalBehavioralSkillsProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckBehavioralSkillsProvider(goal.id).future);
 }
 
 /// Algorithms-track progress for a goal: problems picked up, clean-solve rate,
 /// momentum. Recomputes when a solve is logged (invalidates appliedTransfer).
 @riverpod
-Future<AlgoStats> goalAlgoStats(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<AlgoStats> deckAlgoStats(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final transferF =
       ref.watch(appliedTransferProvider.future); // refresh on solves
   final indexF = ref.watch(vaultIndexProvider.future);
@@ -237,18 +237,18 @@ Future<AlgoStats> goalAlgoStats(Ref ref, String goalId) async {
   ], clock.now());
 }
 
-/// Algorithms progress for the ACTIVE goal — see [goalAlgoStats].
+/// Algorithms progress for the ACTIVE goal — see [deckAlgoStats].
 @riverpod
 Future<AlgoStats> algoStats(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalAlgoStatsProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckAlgoStatsProvider(goal.id).future);
 }
 
 /// Per-pattern mastery for the Algorithms track within a goal — how much of each
 /// pattern you can durably solve (execution clock). Recomputes after solves.
 @riverpod
-Future<List<PatternMastery>> goalPatternMastery(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<List<PatternMastery>> deckPatternMastery(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
   final memberIds = await memberIdsF;
@@ -273,17 +273,17 @@ Future<List<PatternMastery>> goalPatternMastery(Ref ref, String goalId) async {
   ]);
 }
 
-/// Pattern mastery for the ACTIVE goal — see [goalPatternMastery].
+/// Pattern mastery for the ACTIVE goal — see [deckPatternMastery].
 @riverpod
 Future<List<PatternMastery>> patternMastery(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalPatternMasteryProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckPatternMasteryProvider(goal.id).future);
 }
 
 /// How many of a goal's cards come due on each of the next 14 days (FSRS `dueAt`).
 @riverpod
-Future<List<int>> goalDueForecast(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<List<int>> deckDueForecast(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   final statesF = ref.watch(srsStatesProvider.future);
   final clockF = ref.watch(clockProvider.future);
   final memberIds = await memberIdsF;
@@ -298,17 +298,17 @@ Future<List<int>> goalDueForecast(Ref ref, String goalId) async {
   );
 }
 
-/// Due forecast for the ACTIVE goal — see [goalDueForecast].
+/// Due forecast for the ACTIVE goal — see [deckDueForecast].
 @riverpod
 Future<List<int>> dueForecast(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalDueForecastProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckDueForecastProvider(goal.id).future);
 }
 
 /// A goal's most-lapsed cards (leeches worth reformulating), most-failed first.
 @riverpod
-Future<List<StrugglingCard>> goalStrugglingCards(Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<List<StrugglingCard>> deckStrugglingCards(Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   ref.watch(srsStatesProvider); // refresh after reviews change
   final indexF = ref.watch(vaultIndexProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
@@ -325,11 +325,11 @@ Future<List<StrugglingCard>> goalStrugglingCards(Ref ref, String goalId) async {
   );
 }
 
-/// Struggling cards for the ACTIVE goal — see [goalStrugglingCards].
+/// Struggling cards for the ACTIVE goal — see [deckStrugglingCards].
 @riverpod
 Future<List<StrugglingCard>> strugglingCards(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalStrugglingCardsProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckStrugglingCardsProvider(goal.id).future);
 }
 
 /// Study actions per day over the last 4 weeks (a compact activity strip).

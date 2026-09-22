@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import '../../shared/providers/clock.dart';
-import '../../shared/providers/study_goals.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/design/onyx_design.dart';
 import 'interview_card.dart';
 import 'interview_planner_sheet.dart';
@@ -19,7 +19,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goalAsync = ref.watch(activeStudyGoalProvider);
+    final deckAsync = ref.watch(activeDeckProvider);
     final today =
         ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
 
@@ -30,7 +30,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Plan an interview'),
       ),
-      body: goalAsync.when(
+      body: deckAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (goal) {
@@ -69,7 +69,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
 
   // Sort by the CURRENT (upcoming) round — so scheduling a later round re-sorts
   // by that round, not the first one. Ended loops fall back to their last round.
-  int _byRound(Aim a, Aim b, StudyGoal goal) {
+  int _byRound(Aim a, Aim b, Deck goal) {
     final da = _sortDate(a, goal);
     final db = _sortDate(b, goal);
     if (da == null && db == null) return 0;
@@ -78,7 +78,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
     return da.compareTo(db);
   }
 
-  DateTime? _sortDate(Aim a, StudyGoal goal) {
+  DateTime? _sortDate(Aim a, Deck goal) {
     final cur = a.currentRound(goal.id, goal.deadline)?.date;
     if (cur != null) return cur;
     final dates = a.roundDates(goal.id, goal.deadline);
@@ -94,7 +94,7 @@ class _PastSection extends StatefulWidget {
       {required this.past, required this.goal, required this.today});
 
   final List<Aim> past;
-  final StudyGoal goal;
+  final Deck goal;
   final DateTime today;
 
   @override

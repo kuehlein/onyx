@@ -1,17 +1,17 @@
-import 'study_goal.dart';
+import 'deck.dart';
 
 /// Splits the shared daily study budget across concurrent goals (task #30d, G4).
 ///
 /// [totalMinutes] is divided among the **active** goals in proportion to their
-/// [StudyGoal.budgetWeight]. Paused/graduated goals (and non-positive weights)
+/// [Deck.budgetWeight]. Paused/graduated goals (and non-positive weights)
 /// get nothing and are simply excluded from the denominator, so a paused goal's
 /// share flows to the active ones — "pause redistributes" falls out for free.
-/// Returns a `goalId → minutes` map; empty when no goal is active.
+/// Returns a `deckId → minutes` map; empty when no goal is active.
 ///
 /// A single active goal receives the whole budget, so single-goal behavior is
 /// unchanged.
 Map<String, double> allocateBudget({
-  required List<StudyGoal> goals,
+  required List<Deck> goals,
   required double totalMinutes,
 }) {
   final active = [

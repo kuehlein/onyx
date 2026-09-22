@@ -2,7 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -10,7 +10,7 @@ import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
@@ -42,11 +42,11 @@ DeckTemplate _template(String id, double stabilityDays) => DeckTemplate(
       ),
     );
 
-class _FixedGoals extends StudyGoals {
+class _FixedGoals extends Decks {
   _FixedGoals(this._goals);
-  final List<StudyGoal> _goals;
+  final List<Deck> _goals;
   @override
-  Future<List<StudyGoal>> build() async => _goals;
+  Future<List<Deck>> build() async => _goals;
 }
 
 void main() {
@@ -100,17 +100,17 @@ void main() {
       vaultIndexProvider.overrideWith((ref) async => index),
       srsStatesProvider.overrideWith((ref) async => states),
       templateRegistryProvider.overrideWith((ref) async => registry),
-      studyGoalsProvider.overrideWith(() => _FixedGoals(const [
-            StudyGoal(id: 'g-short', name: 'S', templateId: 'short'),
-            StudyGoal(id: 'g-long', name: 'L', templateId: 'long'),
+      decksProvider.overrideWith(() => _FixedGoals(const [
+            Deck(id: 'g-short', name: 'S', templateId: 'short'),
+            Deck(id: 'g-long', name: 'L', templateId: 'long'),
           ])),
     ]);
     addTearDown(c.dispose);
-    c.listen(goalReadinessProvider('g-short'), (_, __) {});
-    c.listen(goalReadinessProvider('g-long'), (_, __) {});
+    c.listen(deckReadinessProvider('g-short'), (_, __) {});
+    c.listen(deckReadinessProvider('g-long'), (_, __) {});
 
-    final short = await c.read(goalReadinessProvider('g-short').future);
-    final long = await c.read(goalReadinessProvider('g-long').future);
+    final short = await c.read(deckReadinessProvider('g-short').future);
+    final long = await c.read(deckReadinessProvider('g-long').future);
 
     // Same card + stability (60), but the short-durability template counts it as
     // fully learned while the long-durability one still sees it as maturing → the

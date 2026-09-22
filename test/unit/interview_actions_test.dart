@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/aim.dart';
+import 'package:onyx/core/deck/aim.dart';
 import 'package:onyx/features/interview/interview_actions.dart';
 
 Aim _active({List<InterviewRound>? rounds}) => Aim(

@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/aim_migration.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/aim_migration.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 
 /// Phase B (B5): the legacy aim stores (base target + the old `onyx-goals.json`
-/// PrepGoal array) fold into the whole-vault default StudyGoal losing nothing —
+/// PrepGoal array) fold into the whole-vault default Deck losing nothing —
 /// slots/deadline + each interview. The user's real vault has legacy data, so the
 /// `legacyInterviewsFromRaw` parse (guarded here) must stay correct.
 void main() {
@@ -63,7 +63,7 @@ void main() {
     });
   });
 
-  group('migratedDefaultGoal', () {
+  group('migratedDefaultDeck', () {
     test('folds the base target + interviews into the default goal', () {
       final base = ReadinessTarget.of(
         level: SeniorityLevel.senior,
@@ -77,12 +77,12 @@ void main() {
         '"domainWeights":{"system-design":1.3},"status":"active"}]',
       );
 
-      final goal = migratedDefaultGoal(softwareInterviewsTemplate,
+      final goal = migratedDefaultDeck(softwareInterviewsTemplate,
           baseTarget: base, interviews: interviews);
 
       // Default goal carries the base target's slots + deadline (ids == enum
       // names).
-      expect(goal.id, defaultGoalId);
+      expect(goal.id, defaultDeckId);
       expect([goal.levelId, goal.contextId, goal.trackId],
           ['senior', 'faang', 'backend']);
       expect(goal.deadline, DateTime(2026, 6, 1));
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('no legacy data → a bare default goal (template fallbacks stand)', () {
-      final bare = migratedDefaultGoal(softwareInterviewsTemplate);
+      final bare = migratedDefaultDeck(softwareInterviewsTemplate);
       expect(bare.levelId, isNull);
       expect(bare.deadline, isNull);
       expect(bare.interviews, isEmpty);

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/shared/models/card.dart';
 
@@ -62,9 +62,9 @@ void main() {
     });
   });
 
-  group('StudyGoal', () {
+  group('Deck', () {
     test('select applies the membership query', () {
-      final goal = StudyGoal(
+      final goal = Deck(
         id: 'debate',
         name: 'Saints debate',
         templateId: 'demo',
@@ -75,8 +75,8 @@ void main() {
     });
 
     test('the implicit default goal is the whole vault', () {
-      final goal = defaultGoalFor(_template);
-      expect(goal.id, defaultGoalId);
+      final goal = defaultDeckFor(_template);
+      expect(goal.id, defaultDeckId);
       expect(goal.templateId, 'demo');
       expect(goal.membership, isA<AllCards>());
       expect(goal.select(cards).length, cards.length);
@@ -87,19 +87,19 @@ void main() {
       // A deadline with a time-of-day is coerced to date-only midnight.
       final deadline = DateTime(2026, 3, 1, 20, 30);
       // Null slots → template fallbacks.
-      final bare = defaultGoalFor(_template).copyWith(deadline: deadline);
+      final bare = defaultDeckFor(_template).copyWith(deadline: deadline);
       final t1 = bare.toTarget(_template);
       expect([t1.levelId, t1.contextId, t1.trackId], ['l', 'c', 't']);
       expect(t1.interviewDate, DateTime(2026, 3, 1));
 
       // Empty-string slots also fall back to the template (not kept as '').
-      final empty = defaultGoalFor(_template)
+      final empty = defaultDeckFor(_template)
           .copyWith(levelId: '', contextId: '', trackId: '');
       final te = empty.toTarget(_template);
       expect([te.levelId, te.contextId, te.trackId], ['l', 'c', 't']);
 
       // Explicit slots win.
-      const chosen = StudyGoal(
+      const chosen = Deck(
         id: 'g',
         name: 'G',
         templateId: 'demo',
@@ -112,17 +112,17 @@ void main() {
     });
 
     test('copyWith updates fields but keeps id', () {
-      final g = defaultGoalFor(_template)
-          .copyWith(state: GoalState.paused, budgetWeight: 0.3);
-      expect(g.id, defaultGoalId);
-      expect(g.state, GoalState.paused);
+      final g = defaultDeckFor(_template)
+          .copyWith(state: DeckState.paused, budgetWeight: 0.3);
+      expect(g.id, defaultDeckId);
+      expect(g.state, DeckState.paused);
       expect(g.budgetWeight, 0.3);
       expect(g.isActive, isFalse);
     });
 
     test('copyWith can clear a nullable field back to null', () {
       final dated =
-          defaultGoalFor(_template).copyWith(deadline: DateTime(2026));
+          defaultDeckFor(_template).copyWith(deadline: DateTime(2026));
       expect(dated.deadline, isNotNull);
       // Omitting deadline keeps it; passing null clears it.
       expect(dated.copyWith(budgetWeight: 0.5).deadline, isNotNull);
@@ -149,16 +149,16 @@ void main() {
         ],
         domainWeights: {'arrays': 1.5},
       );
-      const goalId = 'acme';
-      final goal = StudyGoal(
-        id: goalId,
+      const deckId = 'acme';
+      final goal = Deck(
+        id: deckId,
         name: 'Acme',
         templateId: 'demo',
         deadline: DateTime(2026, 5, 1),
         interviews: [aim],
       );
 
-      final back = StudyGoal.fromJson(goal.toJson());
+      final back = Deck.fromJson(goal.toJson());
       expect(back.interviews.length, 1);
       final iv = back.interviews.single;
       expect(iv.companyName, 'Acme');
@@ -166,11 +166,11 @@ void main() {
       expect(iv.domainWeights['arrays'], 1.5);
 
       // The upcoming round is the first pending one; the passed one is history.
-      expect(iv.currentRound(goalId, back.deadline)?.id, 'r2');
-      expect(iv.pastRounds(goalId, back.deadline).map((r) => r.id), ['r1']);
+      expect(iv.currentRound(deckId, back.deadline)?.id, 'r2');
+      expect(iv.pastRounds(deckId, back.deadline).map((r) => r.id), ['r1']);
 
       // A plain study goal has no interviews.
-      expect(defaultGoalFor(_template).interviews, isEmpty);
+      expect(defaultDeckFor(_template).interviews, isEmpty);
     });
   });
 }

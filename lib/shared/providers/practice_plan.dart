@@ -8,7 +8,7 @@ import 'algo.dart';
 import 'clock.dart';
 import 'learn.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'system_design.dart';
 import 'vault.dart';
 
@@ -31,7 +31,7 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(recognitionRepositoryProvider).loadStates();
   final clockF = ref.watch(clockProvider.future);
-  final goalF = ref.watch(activeStudyGoalProvider.future);
+  final deckF = ref.watch(activeDeckProvider.future);
 
   final review = await ref.watch(reviewQueueProvider.future);
   final learn = await ref.watch(learnQueueProvider.future);
@@ -41,7 +41,7 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
   final index = await indexF;
   final states = await statesF;
   final now = (await clockF).now();
-  final goal = await goalF;
+  final goal = await deckF;
   DateTime? mockDueOf(c) => states['${c.id}::mock']?.dueAt;
 
   return [

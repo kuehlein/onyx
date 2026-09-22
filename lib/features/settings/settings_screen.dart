@@ -25,7 +25,7 @@ import '../../shared/providers/settings.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/destructive_row.dart';
 import '../browse/publish_deck_sheet.dart';
-import '../home/goal_editor_sheet.dart';
+import '../home/deck_editor_sheet.dart';
 import '../onboarding/folder_source_sheet.dart';
 import 'api_key_sheet.dart';
 import 'how_cards_are_read.dart';
@@ -106,7 +106,7 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: const Text(
                 'Define subjects/focuses to study concurrently — they share '
                 'your daily time.'),
-            onTap: () => showGoalsManager(context),
+            onTap: () => showDecksManager(context),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),

@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/clock.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/features/interview/upcoming_interviews_screen.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/readiness.dart';
-import 'package:onyx/shared/providers/study_goals.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 /// A fake study-goals notifier holding one default goal whose [interviews] are
 /// the interviews under test (Phase B — the interview cluster reads the active
 /// goal's interviews).
-class _FakeGoals extends StudyGoals {
+class _FakeGoals extends Decks {
   _FakeGoals(this._interviews);
   final List<Aim> _interviews;
   @override
-  Future<List<StudyGoal>> build() async => [
-        StudyGoal(
-          id: defaultGoalId,
+  Future<List<Deck>> build() async => [
+        Deck(
+          id: defaultDeckId,
           name: 'default',
           templateId: 'software-interviews',
           interviews: _interviews,
@@ -28,7 +28,7 @@ class _FakeGoals extends StudyGoals {
 
 Widget _app(List<Aim> interviews) => ProviderScope(
       overrides: [
-        studyGoalsProvider.overrideWith(() => _FakeGoals(interviews)),
+        decksProvider.overrideWith(() => _FakeGoals(interviews)),
         clockProvider.overrideWith((ref) async => Clock.real),
         // templateRegistry uses the built-in SWE config when the source is null.
         vaultSourceProvider.overrideWithValue(null),

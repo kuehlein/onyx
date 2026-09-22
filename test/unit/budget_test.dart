@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/budget.dart';
-import 'package:onyx/core/goal/study_goal.dart';
+import 'package:onyx/core/deck/budget.dart';
+import 'package:onyx/core/deck/deck.dart';
 
-StudyGoal _g(String id,
-        {double weight = 1.0, GoalState state = GoalState.active}) =>
-    StudyGoal(
+Deck _g(String id, {double weight = 1.0, DeckState state = DeckState.active}) =>
+    Deck(
       id: id,
       name: id,
       templateId: 't',
@@ -31,7 +30,7 @@ void main() {
 
     test('a paused goal drops out and its share redistributes', () {
       final b = allocateBudget(
-        goals: [_g('a'), _g('b', state: GoalState.paused), _g('c')],
+        goals: [_g('a'), _g('b', state: DeckState.paused), _g('c')],
         totalMinutes: 120,
       );
       expect(b.containsKey('b'), isFalse);
@@ -42,7 +41,7 @@ void main() {
       final b = allocateBudget(
         goals: [
           _g('a'),
-          _g('grad', state: GoalState.graduated),
+          _g('grad', state: DeckState.graduated),
           _g('zero', weight: 0),
         ],
         totalMinutes: 100,
@@ -53,7 +52,7 @@ void main() {
     test('no active goals → empty', () {
       expect(
         allocateBudget(
-          goals: [_g('a', state: GoalState.paused)],
+          goals: [_g('a', state: DeckState.paused)],
           totalMinutes: 100,
         ),
         isEmpty,

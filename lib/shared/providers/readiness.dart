@@ -8,11 +8,11 @@ import '../../core/readiness/projection.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/targeting.dart';
-import '../../core/goal/study_goal.dart';
+import '../../core/deck/deck.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'srs.dart';
-import 'study_goals.dart';
+import 'decks.dart';
 import 'template.dart';
 import 'vault.dart';
 
@@ -63,9 +63,9 @@ Future<({Map<String, TransferEstimate> byDomain, bool interview})>
 /// member cards so a lane's evidence counts are its own; the whole-vault default
 /// goal includes every attempt, so single-goal numbers are unchanged.
 @riverpod
-Future<Map<String, ({int attempts, int contested})>> goalAppliedSummary(
-    Ref ref, String goalId) async {
-  final memberIdsF = ref.watch(goalMemberCardIdsProvider(goalId).future);
+Future<Map<String, ({int attempts, int contested})>> deckAppliedSummary(
+    Ref ref, String deckId) async {
+  final memberIdsF = ref.watch(deckMemberCardIdsProvider(deckId).future);
   // The family caches its `attempts()` read, so — like the mock providers — it
   // refreshes off appliedTransfer (invalidated wherever a mock/solve is
   // recorded). Invalidating the wrapper alone wouldn't reach this instance.
@@ -97,26 +97,26 @@ Future<Map<String, ({int attempts, int contested})>> goalAppliedSummary(
   return out;
 }
 
-/// Per-domain applied-evidence counts for the ACTIVE goal — see [goalAppliedSummary].
+/// Per-domain applied-evidence counts for the ACTIVE goal — see [deckAppliedSummary].
 @riverpod
 Future<Map<String, ({int attempts, int contested})>> appliedSummary(
     Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalAppliedSummaryProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckAppliedSummaryProvider(goal.id).future);
 }
 
 /// Resolve a goal by id from an already-loaded list, falling back to the
-/// default/first. (Pure — the caller watches [studyGoalsProvider] up front so
-/// there's no ref use after an await; see the note on [goalReadiness].)
-StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
-    goals.firstWhere((g) => g.id == goalId, orElse: () => goals.first);
+/// default/first. (Pure — the caller watches [decksProvider] up front so
+/// there's no ref use after an await; see the note on [deckReadiness].)
+Deck _pick(List<Deck> goals, String deckId) =>
+    goals.firstWhere((g) => g.id == deckId, orElse: () => goals.first);
 
 /// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
 /// whole-vault default — carries its own level/context/track (+ deadline); the
 /// default's were seeded from the legacy saved target on first run
-/// ([migratedDefaultGoal]) and are edited through [StudyGoals] like any goal's.
+/// ([migratedDefaultDeck]) and are edited through [Decks] like any goal's.
 ///
-/// NOTE (#30d multi-template): [goalReadiness] now scores each goal against its
+/// NOTE (#30d multi-template): [deckReadiness] now scores each goal against its
 /// OWN template (durability bar + domain weights). The remaining sliver:
 /// readinessLadderPosition/readinessForecast/readinessPace (single-goal-Home
 /// surfaces, via ladder.dart + projection.dart) still read the process-global
@@ -124,26 +124,26 @@ StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
 /// thread the goal's DeckTemplate there too when a focused non-default goal needs
 /// its own ladder/forecast.
 @riverpod
-Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
+Future<ReadinessTarget> targetForDeck(Ref ref, String deckId) async {
   // Register every dependency synchronously, before any await, so a mid-flight
-  // invalidation (e.g. a goal edit/pause rebuilding studyGoals) can't leave us
+  // invalidation (e.g. a goal edit/pause rebuilding decks) can't leave us
   // using a disposed ref after the async gap.
-  final goalsF = ref.watch(studyGoalsProvider.future);
+  final goalsF = ref.watch(decksProvider.future);
   final registryF = ref.watch(templateRegistryProvider.future);
-  final goal = _pick(await goalsF, goalId);
+  final goal = _pick(await goalsF, deckId);
   final registry = await registryF;
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
 }
 
 /// A given goal's effective [Targeting]: its base target combined with its ACTIVE
-/// interviews (Phase B — the interviews live on the [StudyGoal] now, so this is
+/// interviews (Phase B — the interviews live on the [Deck] now, so this is
 /// uniform across the default and standalone goals). With no active interviews it
 /// equals reading the base target directly.
 @riverpod
-Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
-  final goalsF = ref.watch(studyGoalsProvider.future);
-  final targetF = ref.watch(targetForGoalProvider(goalId).future);
-  final goal = _pick(await goalsF, goalId);
+Future<Targeting> targetingForDeck(Ref ref, String deckId) async {
+  final goalsF = ref.watch(decksProvider.future);
+  final targetF = ref.watch(targetForDeckProvider(deckId).future);
+  final goal = _pick(await goalsF, deckId);
   final base = await targetF;
   return Targeting(
     base: base,
@@ -151,16 +151,16 @@ Future<Targeting> targetingForGoal(Ref ref, String goalId) async {
       for (final iv in goal.interviews)
         if (iv.active) iv,
     ],
-    goalId: goal.id,
+    deckId: goal.id,
     deadline: goal.deadline,
   );
 }
 
-/// The ACTIVE goal's base target — see [targetForGoal].
+/// The ACTIVE goal's base target — see [targetForDeck].
 @riverpod
 Future<ReadinessTarget> activeTarget(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(targetForGoalProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(targetForDeckProvider(goal.id).future);
 }
 
 /// Whether the active goal has an explicitly-chosen target (vs the template's
@@ -170,32 +170,32 @@ Future<ReadinessTarget> activeTarget(Ref ref) async {
 /// faithful proxy).
 @riverpod
 Future<bool> activeTargetIsSet(Ref ref) async =>
-    (await ref.watch(activeStudyGoalProvider.future)).levelId != null;
+    (await ref.watch(activeDeckProvider.future)).levelId != null;
 
-/// The ACTIVE goal's targeting — see [targetingForGoal]. Single default goal →
+/// The ACTIVE goal's targeting — see [targetingForDeck]. Single default goal →
 /// identical to [targeting].
 @riverpod
 Future<Targeting> activeTargeting(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(targetingForGoalProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(targetingForDeckProvider(goal.id).future);
 }
 
 /// Knowledge-base readiness (Phase A) for a SPECIFIC goal — its member cards
 /// scored against its target, from `srs_state` + FSRS stability. The hub reads
 /// this per lane; nothing is stored (recomputed, so it persists across devices).
 @riverpod
-Future<Readiness> goalReadiness(Ref ref, String goalId) async {
+Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   // Watch every dependency synchronously (before the first await): a goal
-  // edit/pause rebuilds studyGoals and invalidates this instance, and any
+  // edit/pause rebuilds decks and invalidates this instance, and any
   // ref.watch after an await would then throw "used after disposed".
-  final goalsF = ref.watch(studyGoalsProvider.future);
+  final goalsF = ref.watch(decksProvider.future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
-  final targetingF = ref.watch(targetingForGoalProvider(goalId).future);
-  final targetF = ref.watch(targetForGoalProvider(goalId).future);
+  final targetingF = ref.watch(targetingForDeckProvider(deckId).future);
+  final targetF = ref.watch(targetForDeckProvider(deckId).future);
   final registryF = ref.watch(templateRegistryProvider.future);
   final appliedF = ref.watch(appliedTransferProvider.future);
-  final goal = _pick(await goalsF, goalId);
+  final goal = _pick(await goalsF, deckId);
   final index = await indexF;
   final states = await statesF;
   final applied = await appliedF;
@@ -220,7 +220,7 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   // a Korean goal isn't scored with SWE's durability/weights (multi-template).
   final double stabilityTarget;
   final Map<String, double> domainWeights;
-  if (goal.id == defaultGoalId) {
+  if (goal.id == defaultDeckId) {
     final targeting = await targetingF;
     stabilityTarget = targeting.stabilityTarget;
     domainWeights = {for (final d in domains) d: targeting.weightForDomain(d)};
@@ -243,11 +243,11 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   );
 }
 
-/// Knowledge-base readiness for the ACTIVE goal — see [goalReadiness].
+/// Knowledge-base readiness for the ACTIVE goal — see [deckReadiness].
 @riverpod
 Future<Readiness> readiness(Ref ref) async {
-  final goal = await ref.watch(activeStudyGoalProvider.future);
-  return ref.watch(goalReadinessProvider(goal.id).future);
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckReadinessProvider(goal.id).future);
 }
 
 /// Where the current knowledge base sits on the level×company ladder relative
@@ -259,7 +259,7 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   final states = await ref.watch(srsStatesProvider.future);
   final target = await ref.watch(activeTargetProvider.future);
   final applied = await ref.watch(appliedTransferProvider.future);
-  final goal = await ref.watch(activeStudyGoalProvider.future);
+  final goal = await ref.watch(activeDeckProvider.future);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
@@ -313,7 +313,7 @@ Future<ReadinessForecast?> readinessForecastFor(
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final today = (await ref.watch(clockProvider.future)).today();
-  final goal = await ref.watch(activeStudyGoalProvider.future);
+  final goal = await ref.watch(activeDeckProvider.future);
   // Forecast against the active goal's OWN template (#30d multi-template); the
   // dims record stays role-only so the per-role memoisation + external callers are
   // unchanged.

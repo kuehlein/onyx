@@ -40,7 +40,7 @@ void main() {
     rungScores: List<double>.filled(readinessLadder.length, 0.6),
     clearedCount: 4,
     youFraction: 0.6,
-    goalIndex: 5, // Senior · FAANG
+    deckIndex: 5, // Senior · FAANG
     goalFraction: 0.75,
     goalLabel: 'Senior · FAANG',
     currentLabel: 'Mid · FAANG',

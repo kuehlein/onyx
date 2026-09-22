@@ -42,8 +42,8 @@ class ReadinessPanel extends ConsumerWidget {
         ref.watch(appliedSummaryProvider).asData?.value ?? const {};
     // The active goal's assessment vocabulary (fall back to the primary while it
     // loads) so a non-SWE goal never reads "interview" copy (G7).
-    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
+    final deckTemplate = ref.watch(activeDeckTemplateProvider).asData?.value;
+    final vocab = deckTemplate?.vocabulary ?? activeTemplate.vocabulary;
     final anyStudied = r.domains.any((d) => d.studied > 0);
     // A no-loss "last 7 days" activity indicator (never a streak/guilt cue —
     // design-system §4.10, readiness-dashboard §6). Shown once there's activity.
@@ -612,7 +612,7 @@ class _MilestoneChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final goalLevel = pos.goalIndex ~/ 2; // 2 rungs (Typical, FAANG) per level
+    final goalLevel = pos.deckIndex ~/ 2; // 2 rungs (Typical, FAANG) per level
     final goalLabel = pos.goalLabel;
 
     return Column(
@@ -729,7 +729,7 @@ class _TickedBar extends StatelessWidget {
       builder: (context, c) {
         final w = c.maxWidth;
         final radius = BorderRadius.circular(_barHeight / 2);
-        final goalX = goal == null ? null : goal!.clamp(0.0, 1.0) * w;
+        final deckX = goal == null ? null : goal!.clamp(0.0, 1.0) * w;
         final ceiling = (recall ?? value).clamp(0.0, 1.0);
         final showCeiling = ceiling > value.clamp(0.0, 1.0) + 1e-6;
         return SizedBox(
@@ -775,16 +775,16 @@ class _TickedBar extends StatelessWidget {
                       color: color),
                 ),
               ),
-              if (goalX != null) ...[
+              if (deckX != null) ...[
                 // Flag sits above the bar, with a thin tick connecting down from
                 // just under the flag through the track — no overlap.
                 Positioned(
-                  left: (goalX - 5).clamp(0.0, w - 10),
+                  left: (deckX - 5).clamp(0.0, w - 10),
                   top: 0,
                   child: Icon(Icons.flag, size: _goalFlagSize, color: muted),
                 ),
                 Positioned(
-                  left: (goalX - 0.75).clamp(0.0, w - 1.5),
+                  left: (deckX - 0.75).clamp(0.0, w - 1.5),
                   top: _goalFlagSize,
                   child: Container(
                       width: 1.5,
