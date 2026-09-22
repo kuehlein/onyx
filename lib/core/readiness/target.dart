@@ -15,6 +15,7 @@ library;
 
 import 'dart:convert';
 import '../template/active_template.dart';
+import '../deck/aim.dart';
 import '../template/deck_template.dart';
 import '../util.dart';
 
@@ -79,6 +80,21 @@ class ReadinessTarget {
         trackId: track.name,
         interviewDate: interviewDate,
         templateTarget: templateTarget,
+      );
+
+  /// The readiness target for a single [aim] — its own knobs, falling back to the
+  /// [template]'s slot fallbacks for any it leaves unset. This is the per-aim
+  /// "toTarget" (S1: aims own the 4 knobs; the deck is a pure lens). Readiness
+  /// consumes it per active aim + rolls up weakest-link in S2. [date] is the aim's
+  /// governing round date, if any.
+  factory ReadinessTarget.forAim(Aim aim, DeckTemplate template,
+          {DateTime? date}) =>
+      ReadinessTarget(
+        levelId: aim.levelId ?? template.target.fallbackLevelId,
+        contextId: aim.contextId ?? template.target.fallbackContextId,
+        trackId: aim.trackId ?? template.target.fallbackTrackId,
+        interviewDate: date,
+        templateTarget: template.target,
       );
 
   final String levelId;

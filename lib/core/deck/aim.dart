@@ -132,6 +132,9 @@ class Aim {
     this.domainWeights = const {},
     this.conceptWeights = const {},
     this.planNotes,
+    this.levelId,
+    this.contextId,
+    this.trackId,
   });
 
   /// Stable id, unique within the parent goal's [Deck.aims] — the key
@@ -163,6 +166,15 @@ class Aim {
 
   /// A short AI-plan summary attached to the interview.
   final String? planNotes;
+
+  /// This aim's own readiness knobs — slot ids on the deck's template: difficulty
+  /// [levelId], durability [contextId], domain-emphasis [trackId]. Null → the
+  /// template's fallback for that slot. Aims OWN these (S1 — the deck is a pure
+  /// lens); the date knob is carried by [rounds]. Resolved via
+  /// `ReadinessTarget.forAim`.
+  final String? levelId;
+  final String? contextId;
+  final String? trackId;
 
   /// Rounds as the source of truth, migrating the goal's single [deadline] into a
   /// synthetic round 1 when no rounds are stored. [deckId] seeds the round id.
@@ -239,6 +251,9 @@ class Aim {
     Map<String, double>? domainWeights,
     Map<String, double>? conceptWeights,
     Object? planNotes = _unset,
+    Object? levelId = _unset,
+    Object? contextId = _unset,
+    Object? trackId = _unset,
   }) =>
       Aim(
         id: id ?? this.id,
@@ -253,6 +268,9 @@ class Aim {
         domainWeights: domainWeights ?? this.domainWeights,
         conceptWeights: conceptWeights ?? this.conceptWeights,
         planNotes: planNotes == _unset ? this.planNotes : planNotes as String?,
+        levelId: levelId == _unset ? this.levelId : levelId as String?,
+        contextId: contextId == _unset ? this.contextId : contextId as String?,
+        trackId: trackId == _unset ? this.trackId : trackId as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -266,6 +284,9 @@ class Aim {
         if (domainWeights.isNotEmpty) 'domainWeights': domainWeights,
         if (conceptWeights.isNotEmpty) 'conceptWeights': conceptWeights,
         if (planNotes != null) 'planNotes': planNotes,
+        if (levelId != null) 'levelId': levelId,
+        if (contextId != null) 'contextId': contextId,
+        if (trackId != null) 'trackId': trackId,
       };
 
   static Aim fromJson(Map<String, dynamic> m) => Aim(
@@ -283,6 +304,9 @@ class Aim {
         domainWeights: _weightMap(m['domainWeights']),
         conceptWeights: _weightMap(m['conceptWeights']),
         planNotes: m['planNotes'] is String ? m['planNotes'] as String : null,
+        levelId: m['levelId'] as String?,
+        contextId: m['contextId'] as String?,
+        trackId: m['trackId'] as String?,
       );
 }
 
