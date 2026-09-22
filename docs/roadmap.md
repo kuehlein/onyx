@@ -24,6 +24,10 @@ model before we add features, so we build on the right shape.
   lens)** + **a set of aims** (difficulty/emphasis/durability/date); readiness weakest-link *across*
   aims; daily plan allocates *across* aims. Retire the single-target assumption. *Absorbs the rest
   of G7 (a–f done, #88) and enforces invariant #2 — the #92 no-type-branch burn-down + a lint guard.*
+  - *Landed:* invariant #2 (**#92 done**) — the genuine card-type branches are config now
+    (`isApproachType`/`isApproachCard`, `FlowSpec.prereqSource`) and the `no_card_type_branch`
+    lint guards against new ones; the shared `buildConceptComfort` helper (**#87** comfort-dedup).
+  - *Still open:* the deck-as-lens + set-of-aims reframe itself (the model/vocabulary rename).
 - **1b · IA: vault → deck → home** (→ deck_selection, home): deck-selection as the vault-level hub
   (landing when >1 deck); single-deck degradation **with an escape hatch** (fixes the pause-strands
   bug); deck-scoped Home ("Home" stays the name).
