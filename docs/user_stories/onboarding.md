@@ -17,7 +17,7 @@ sync account, managed-AI billing, class membership.
   - Password-protect the app? (set a password) — [MVP-optional]
     - Encrypt the contents of the vault as well? — [MVP-optional]
   - Push/pull from upstream? → a real account + email verification — [later, cloud track]
-    - Can users pull without an account? I think that that should be fine?
+    - Can users pull without an account? **Yes** — pulling shared/public content needs no account; an account is for pushing / private / sync.
   - Backups? → a real account + email verification — [later, cloud track]
   - Let us manage your AI usage? → payment + usage limits — [later, cloud track]
   - Are you in a class? → a class code; read/write permissions on class-published content — [non-MVP]
@@ -42,7 +42,12 @@ sync account, managed-AI billing, class membership.
   the guided flow itself fires once.
   **Status.** Accepted
 - **Consider adding a QR code scan to set up an account with defaults?** It would put you in a class and pull one or more decks into your vault with pre configured settings. This would not be MVP and would need a bit of ideation (e.g., a student that already has the app from a different class setting up the app for a new class, we wouldn't want to overwrite all of their existing data).
-  **Status.** New question, needs rec (you can ask me via the prompt)
+  **Rec.** Non-MVP; frame it as **class/org quick-setup** — a scanned code sets account defaults
+  and pulls the class's deck(s) with preconfigured settings. Critically it **merges, never
+  overwrites**: joining a new class *adds* a deck + its config and leaves existing decks/data
+  untouched (your returning-student case). A guarded import, not a fresh-install path — parked
+  with the cloud/class track.
+  **Status.** Accepted (non-MVP; parked).
 
 ## Cross-refs
 [deck_creation](deck_creation.md) · [settings](settings.md) (account/sync/AI rows) ·

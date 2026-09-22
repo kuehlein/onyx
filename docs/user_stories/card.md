@@ -43,9 +43,22 @@
   half-overlapping screens.
   **Status.** Accepted
 - **How to handle modifying cards that have already been learned/tested?**
-  **Status.** New question, needs rec (you can ask me via the prompt)
+  **Rec.** Default: **keep the FSRS history** — the schedule is tied to the card/section identity,
+  not its exact text, so fixing a typo or clarifying doesn't reset progress. When an edit
+  **materially changes what's tested** (the answer itself changed), the old schedule is
+  misleading → offer a per-edit choice: *keep schedule* vs *reset this card/section*, optionally
+  routing it through a light re-verify (mirroring how pulled/updated cards re-enter the draft
+  gate). Never silently reset.
+  **Status.** Accepted.
 - **How to handle sections that should not be tested?** - I think we hardcode some card sections to not be studied (e.g., references), but this should be up to the user as they may structure cards differently. Can the query lens for deck building be granular enough to include or exclude parts of a card? Likely non-MVP unless easy. This can be ignored if too challenging in favor of removing specific cards or sections from the deck at a per-deck settings level.
-  **Status.** New question, needs rec (you can ask me via the prompt)
+  **Rec.** Two layered mechanisms, both already partly in the engine: a **per-deck `neverQuizzed`
+  set** (e.g. `References`, `Sources`) in the deck's parse rules — the default blocklist,
+  user-editable — and a **per-card frontmatter** override (mark a section `quizzable: false`).
+  That handles "everyone structures cards differently" without new machinery. Making the **query
+  lens** exclude *parts of a card* is more than a lens does (a lens selects cards, not sub-card
+  slices) → **skip**; the neverQuizzed + frontmatter path is the clean MVP, with per-deck section
+  exclusion as the fallback you noted.
+  **Status.** Accepted (query-lens sub-card granularity dropped).
 
 ## Cross-refs
 [browse](browse.md) (entry + stubs) · [deck_creation](deck_creation.md) (authoring) ·

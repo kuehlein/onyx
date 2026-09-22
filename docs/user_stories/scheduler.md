@@ -35,7 +35,11 @@ FSRS — when, at the current pace, you'll be ready for each.
   **Rec.** **Yes** — unify with [Your Target](your_target.md) into one per-deck **Aims**
   surface: the aim list (knobs + date + status) with a calendar view of the dated ones. Goal
   difficulty, scheduling, and management are the same object seen three ways.
-  **Status.** Pending - I meant should we have one for the vault level with all dated aims? Seems useful, but tricky.
+  **Status.** Accepted (the per-deck unify). On your clarification — a **vault-level calendar of
+  all dated aims across decks** is useful, at the vault level (deck selection). The hard part
+  isn't the calendar, it's that pacing is a **shared daily budget across decks**, so ready-by
+  dates must reflect that shared allocation, not independent per-deck projections. MVP: per-deck
+  dated aims first; the vault aggregate later.
 - **App-bar placement?**
   **Rec.** At the deck level, reach Aims from Home (the aims card) — a dedicated app-bar tab is
   optional. A **cross-deck calendar** at the *vault* level (deck selection) is the better

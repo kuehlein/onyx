@@ -41,7 +41,10 @@ deck).
 - **Better name than "Home"?**
   **Rec.** Keep **Home** as the per-deck top view. If decks become prominent in the IA, **"Today"**
   reads well(it *is* the today-queue). Low stakes; revisit alongside the deck-selection IA.
-  **Status.** Pending - "Today" could conflict with the vault level view. From the deck level, unless we only have one deck, would "Today" be misleading and suggest "this is all we have for today?" for the single deck?
+  **Rec (resolved).** Your concern is right — "Today" at the deck level can mislead a single-deck
+  user. Keep **Home** for the deck view; reserve **"Today"** for a possible **vault-level**
+  cross-deck daily view, where it isn't ambiguous.
+  **Status.** Accepted (Home = deck view; "Today" reserved for a vault-level view).
 
 ## View accessed from
 The app bar (per-deck tabs) · deck selection · the app landing (single-deck case).

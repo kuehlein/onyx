@@ -36,7 +36,7 @@ worked example, not the product.
   across them.** The old single "senior · backend · FAANG" target is just *one* aim with those
   knobs set — the CS/FAANG path stays first-class, it's no longer a special case.
 
-## Personas (P1–P6, from `personas-and-stories.md`)
+## Personas (P1–P6 — details in [personas.md](personas.md))
 - **P1** — K-12 class student (studies a teacher's deck via a class code).
 - **P2** — exam / deadline student (a dated test drives the pace).
 - **P3** — open-ended hobbyist (Korean, music theory; often no fixed date).
@@ -105,4 +105,4 @@ re-shape vs reuse.
 ## Files
 [onboarding](onboarding.md) · [deck_selection](deck_selection.md) · [deck_creation](deck_creation.md)
 · [home](home.md) · [your_target](your_target.md) · [scheduler](scheduler.md) · [card](card.md)
-· [browse](browse.md) · [analytics](analytics.md) · [settings](settings.md)
+· [browse](browse.md) · [analytics](analytics.md) · [settings](settings.md) · [personas](personas.md)

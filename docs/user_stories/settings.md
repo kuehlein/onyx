@@ -22,11 +22,13 @@ below).
   **Rec.** **Yes.** Vault/app settings (account, AI, backup, theme, dev) live at the **vault
   level** (from deck selection); deck settings (parsing, pace/load, aim defaults) live **inside
   the deck** (from its Home). This split is also the answer to the app-bar unease below.
-  **Status.** Accepted - at the deck level settings we should make it clear that this is only for the current deck's level and maybe add a redirect to the whole vault settings.
+  **Status.** Accepted. On your note — the deck-settings header reads **"This deck only"** with a
+  **"Vault settings →"** link.
 - **Should parsing be per-vault or per-deck? On the settings page or the deck's home?**
   **Rec.** **Per-deck with a vault default** (a deck may be a different domain that parses
   differently). Edit it from the deck (a "how cards are read" entry), not a global page.
-  **Status.** Accepted - Maybe add the option to "Set as the default for all decks." for the conveinience of the user? Only if good UX.
+  **Status.** Accepted. On your note — the parsing config gets a **"Set as default for all decks"**
+  action (writes the vault default); low-cost, good UX.
 - **App-bar placement feels off — why?**
   **Rec.** Because Settings is two things at two scopes. It feels wrong to pin one "Settings"
   when half of it is vault-wide and half is deck-specific. Resolve by **scope, not placement**:

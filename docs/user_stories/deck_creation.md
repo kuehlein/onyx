@@ -40,7 +40,10 @@ registry / cloud track]
   difficulty, the minimum-information principle, FSRS-aware card shape, the parse contract, plus
   the deck's domain profile. This exists (`examples/vault/_meta/authoring-method.md`); the flow
   should load + apply it rather than reinvent it.
-  **Status.** Accepted - do we need more than this? How will the AI know about the scope of a subject, a curriculum, the amount of depth to use, etc.? I think we will need to research how to add to what you suggested to make it work for any subject in general.
+  **Status.** Accepted. On your note — yes, we need more: an AI-led **scoping conversation** up
+  front (subject, target aims/level, curriculum outline, depth) encoded into the deck's
+  skill/config, grounded by a deep-research pass on curriculum + scope design. Tracked as a
+  roadmap research task.
 - **The in-app editor gap** ("I want to steer clear of an authoring tool but not leave a weird
   hole").
   **Rec.** Keep a **light** editor (title / body / tags / live preview) plus AI-chat card

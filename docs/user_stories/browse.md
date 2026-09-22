@@ -17,11 +17,11 @@ spot broken links.
 
 ## Open questions → recommendations
 - **Deck-only vs whole-vault browse** (the second-brain tension).
-  **Rec.** MVP is **deck-scoped** (reuses what exists). Offer a **scope toggle** to browse the
-  whole vault *only because it's the same widget over the "all cards" lens* — cheap — but don't
-  build second-brain-grade browsing (graph views, backlink panels) here; Onyx stays orthogonal
-  to a knowledge base. Ship whole-vault browse if and only if it's genuinely near-free.
-  **Status.** Pending - The only reason for a whole-vault browse that I can think of is for authoring new decks. If it is a good UI/UX for authoring new decks, we can add a whole-vault browse as a part of that process, otherwise we should probably avoid it, unless you can come up with some good reasons to have it.
+  **Rec.** Agree with your instinct — **don't add a general whole-vault Browse** (it drifts toward
+  second-brain). The one justified use — authoring/refining a lens — gets a **scoped card-explorer
+  inside [deck creation](deck_creation.md)**, with live "N included / M excluded" counts, *not* a
+  Browse mode. Browse stays **deck-scoped**; I couldn't find a stronger reason to widen it.
+  **Status.** Accepted (Browse deck-scoped; whole-vault card-explorer lives in deck creation only).
 - **How advanced should search be — is `tags:foo tier:2` too much?**
   **Rec.** MVP = simple filters (title / tag / coverage). A small **query mini-language**
   (`tags:` / `tier:` / `!`) is powerful *and* is literally the deck-lens language — so design

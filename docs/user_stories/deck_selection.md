@@ -27,7 +27,9 @@ From here the user can:
   shared across decks, so deleting them here would be surprising + destructive. Mark the deck
   archived, hide it from the active list, and add an **"Archived" section** to restore or remove
   the *lens*. Deleting actual card files stays a vault operation the user does in their own tool.
-  **Status.** Accepted - we should consider a way to indicate what should be deleted should the user want to remove those files from their vault.
+  **Status.** Accepted. On your note — when removing a lens, surface the cards **unique to it**
+  (in no other active/archived deck) as safe-to-delete, behind an explicit confirmed "also delete
+  these N files from the vault" — destructive, never default.
 - **Should the app bar appear here?** (Its items — Browse / Analytics / Settings — are currently
   deck-scoped, but this view is vault-level.)
   **Rec.** At the vault level the app bar should host only **vault-scoped** actions:
