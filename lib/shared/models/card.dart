@@ -181,6 +181,13 @@ class Card {
   /// (task #30d); single-subject vaults resolve to the one active subject.
   bool get isPracticeTrack => subjectFor(subjectId).isPracticeTrackType(type);
 
+  /// Whether this is an *approach-only* applied card (its [overview] is a problem
+  /// statement and the study UI offers practice instead of plain recall) rather
+  /// than a recall fact. Config-driven (invariant #2) via this card's own subject,
+  /// replacing scattered `type == 'interview-question'` checks. Single-subject
+  /// vaults resolve to the one active subject.
+  bool get isApproachCard => subjectFor(subjectId).isApproachType(type);
+
   /// This card's lifecycle status. [CardStatus.draft] cards are excluded from all
   /// scheduling and every readiness denominator until promoted through the review
   /// gate (see [isDraft], [CardStatus]); absent `status:` defaults to active.

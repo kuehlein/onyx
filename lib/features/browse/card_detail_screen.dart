@@ -93,7 +93,7 @@ class _CardDetail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isInterview = card.type == kTypeInterviewQuestion;
+    final isApproach = card.isApproachCard;
     final now = DateTime.now();
 
     return Scaffold(
@@ -137,10 +137,10 @@ class _CardDetail extends ConsumerWidget {
                   runSpacing: Dim.space1,
                   children: [
                     _MetaChip(
-                      icon: isInterview
+                      icon: isApproach
                           ? Icons.forum_outlined
                           : Icons.style_outlined,
-                      label: isInterview ? 'Interview question' : 'Flashcard',
+                      label: isApproach ? 'Interview question' : 'Flashcard',
                     ),
                     if (card.domain != null) _MetaChip(label: card.domain!),
                     for (final entry in card.tiers.entries)
@@ -160,7 +160,7 @@ class _CardDetail extends ConsumerWidget {
                   const SizedBox(height: Dim.space4),
                   CardMarkdown(card.overview),
                 ],
-                if (isInterview) ...[
+                if (isApproach) ...[
                   const SizedBox(height: Dim.space4),
                   Wrap(
                     spacing: Dim.space2,

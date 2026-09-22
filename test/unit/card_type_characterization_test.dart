@@ -82,6 +82,24 @@ void main() {
     });
   });
 
+  group('isApproachCard truth table (config-driven, invariant #2)', () {
+    // The approach-only policy that used to be a hardcoded
+    // `type == 'interview-question'` UI branch (quiz/practice/detail/coach) — now
+    // derived from the flow's QuizzabilityPolicy.approachOnly.
+    const expected = {
+      'flashcard': false,
+      'interview-question': true,
+      'algorithm': false,
+      'system-design': false,
+      'behavioral': false,
+    };
+    test('each type', () {
+      expected.forEach((t, isApproach) {
+        expect(_parse(t)!.isApproachCard, isApproach, reason: t);
+      });
+    });
+  });
+
   group('quizzability by type', () {
     test('flashcard: normal section quizzable, blocklist heading not', () {
       final c = _parse('flashcard', sections: ['Detail', 'Related'])!;

@@ -17,9 +17,9 @@ List<Card> buildPracticeSet({
   ];
 
   inDomain.sort((a, b) {
-    // Applied problems (interview questions) first.
-    final aApplied = a.type == kTypeInterviewQuestion ? 0 : 1;
-    final bApplied = b.type == kTypeInterviewQuestion ? 0 : 1;
+    // Applied problems (approach-only cards) first.
+    final aApplied = a.isApproachCard ? 0 : 1;
+    final bApplied = b.isApproachCard ? 0 : 1;
     if (aApplied != bApplied) return aApplied.compareTo(bApplied);
     // Then foundational tiers first (tier 1 = most foundational).
     final aTier = a.tiers[domain] ?? 99;

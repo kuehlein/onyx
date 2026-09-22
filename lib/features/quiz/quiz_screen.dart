@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
-import '../../shared/models/card.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/url.dart';
 import '../../shared/providers/coach.dart';
@@ -165,7 +164,7 @@ class _ReviewView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final card = item.card;
-    final isInterview = card.type == kTypeInterviewQuestion;
+    final isApproach = card.isApproachCard;
 
     return Center(
       child: ConstrainedBox(
@@ -198,7 +197,7 @@ class _ReviewView extends StatelessWidget {
                     const SizedBox(height: Dim.space3),
                     // The cue: problem statement for interview cards, else the
                     // section heading you're recalling.
-                    if (isInterview && card.overview.isNotEmpty)
+                    if (isApproach && card.overview.isNotEmpty)
                       CardMarkdown(card.overview)
                     else
                       Text(item.section.heading,
@@ -208,10 +207,10 @@ class _ReviewView extends StatelessWidget {
                       const SizedBox(height: Dim.space5),
                       Text(
                         !coachEnabled
-                            ? (isInterview
+                            ? (isApproach
                                 ? 'Recall your approach, then reveal to check.'
                                 : 'Recall it, then reveal to check.')
-                            : isInterview
+                            : isApproach
                                 ? 'Recall your approach — talk it through with '
                                     'the coach, or reveal.'
                                 : 'Recall it — talk it through with the coach, '
@@ -224,14 +223,14 @@ class _ReviewView extends StatelessWidget {
                       const SizedBox(height: Dim.space4),
                       const Divider(),
                       const SizedBox(height: Dim.space2),
-                      if (isInterview)
+                      if (isApproach)
                         Text(item.section.heading,
                             style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: theme.colorScheme.primary)),
-                      if (isInterview) const SizedBox(height: Dim.space2),
+                      if (isApproach) const SizedBox(height: Dim.space2),
                       CardMarkdown(item.section.content),
-                      if (isInterview && card.practiceUrl != null) ...[
+                      if (isApproach && card.practiceUrl != null) ...[
                         const SizedBox(height: Dim.space3),
                         Align(
                           alignment: Alignment.centerLeft,

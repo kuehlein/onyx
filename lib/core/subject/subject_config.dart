@@ -276,6 +276,14 @@ class SubjectConfig {
     return f != null && f.scheduling != SchedulingModel.recall;
   }
 
+  /// Whether a card type is *approach-only* — an applied problem where you
+  /// rehearse the approach (its `overview` is the problem statement and the study
+  /// UI offers practice) rather than a plain recall fact. Config-driven
+  /// (invariant #2) replacement for the scattered `type == 'interview-question'`
+  /// UI branches. Unknown/unconfigured → false (a plain card).
+  bool isApproachType(String cardType) =>
+      flowForType(cardType)?.quizzability == QuizzabilityPolicy.approachOnly;
+
   /// Whether [cardType] is a recognized flow for this subject (used to decide a
   /// markdown file is an Onyx card).
   bool isCardType(String cardType) => flowForType(cardType) != null;

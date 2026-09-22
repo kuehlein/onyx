@@ -122,7 +122,7 @@ class _PracticeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isInterview = card.type == kTypeInterviewQuestion;
+    final isApproach = card.isApproachCard;
 
     return Center(
       child: ConstrainedBox(
@@ -143,7 +143,7 @@ class _PracticeCard extends StatelessWidget {
                     const SizedBox(height: Dim.space3),
                     // The cue: the problem statement for interview cards, else
                     // the card title alone (concept recall).
-                    if (isInterview && card.overview.isNotEmpty)
+                    if (isApproach && card.overview.isNotEmpty)
                       CardMarkdown(card.overview)
                     else
                       Text('Recall what you know, then reveal to check.',
