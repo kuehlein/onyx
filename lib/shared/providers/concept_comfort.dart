@@ -36,6 +36,9 @@ ConceptComfort buildConceptComfort(List<Card> cards, Set<String> stateKeys) {
   final idByFile = <String, String>{};
   final label = <String, String>{};
   for (final c in cards) {
+    // The concept-card predicate is the deferred config fix (see the class doc:
+    // TODO #87/#32 — needs the concept-vs-applied-recall model call).
+    // ignore: no_card_type_branch
     if (c.type != kTypeFlashcard) continue;
     final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
     idByFile[slug] = c.id;

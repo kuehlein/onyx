@@ -36,6 +36,11 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 1. **Vault = SSoT; the DB is derived.** Never store authoritative data only in the DB.
 2. **Config, not code.** The engine reads the deck/subject config; **no `if/else` on card type** —
    dispatch through the flow/scheduling config. A new subject is config, never an app-code branch.
+   Enforced by the `no_card_type_branch` custom-lint (`tools/onyx_lints`); comparing to a config
+   value (`c.type == flow.cardType`) is the right pattern and passes. The only exemptions are a
+   built-in flow's *own* engine (the algorithm / system-design / behavioral providers + screens),
+   each carrying a visible `ignore` — a new subject runs on the generic `flow_runner` path, not
+   these, so the invariant still holds.
 3. **Scheduling never travels.** Deck import/publish carries content only; imported cards land
    `status: draft`. Nothing about *your* schedule crosses a deck boundary.
 4. **Draft exclusion.** `status: draft` cards are excluded from FSRS **and every**

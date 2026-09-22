@@ -1,3 +1,7 @@
+// This IS the built-in Algorithms flow's queue engine; a new subject runs on the
+// generic vault-flow path (flow_runner), so the type filter doesn't reintroduce
+// the invariant-#2 drift the guard prevents elsewhere.
+// ignore_for_file: no_card_type_branch
 import '../../shared/models/card.dart';
 import 'review_queue.dart' show ReviewItem;
 

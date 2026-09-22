@@ -1,3 +1,7 @@
+// This IS the built-in Algorithms flow's engine; a new subject runs on the
+// generic vault-flow path (flow_runner), so these type filters don't reintroduce
+// the invariant-#2 drift the guard prevents elsewhere.
+// ignore_for_file: no_card_type_branch
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';

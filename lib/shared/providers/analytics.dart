@@ -256,6 +256,9 @@ Future<List<PatternMastery>> goalPatternMastery(Ref ref, String goalId) async {
   final states = await statesF;
   return computePatternMastery([
     for (final c in index.cards)
+      // Pattern mastery is the built-in Algorithms two-clock analytic; folding it
+      // to a config predicate needs the concept-vs-applied-recall call (#87/#32).
+      // ignore: no_card_type_branch
       if (c.type == kTypeAlgorithm && memberIds.contains(c.id))
         (
           pattern: c.title,

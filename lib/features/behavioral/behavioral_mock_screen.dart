@@ -1,3 +1,7 @@
+// This IS the built-in Behavioral flow's screen; a new subject runs on the
+// generic vault-flow path (flow_runner), so the type guard doesn't reintroduce
+// the invariant-#2 drift the guard prevents elsewhere.
+// ignore_for_file: no_card_type_branch
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
