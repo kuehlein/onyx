@@ -117,4 +117,62 @@ void main() {
     // short goal reads more ready. (Proves per-goal template scoring, not global.)
     expect(short.overall, greaterThan(long.overall));
   });
+
+  test('deck readiness rolls up weakest-link across active aims (S2)',
+      () async {
+    if (!_sqliteAvailable) return;
+    // One template, two durability contexts: easy (low bar) vs hard (high bar).
+    final reg = TemplateRegistry(entries: const [
+      TemplateEntry(
+        rootDir: '',
+        config: DeckTemplate(
+          id: 'swe',
+          target: TargetSpec(
+            levels: [
+              LevelValue(id: 'l', label: 'L', tierCurve: [1.0])
+            ],
+            contexts: [
+              ContextValue(id: 'easy', label: 'Easy', stabilityTargetDays: 20),
+              ContextValue(id: 'hard', label: 'Hard', stabilityTargetDays: 200),
+            ],
+            tracks: [TrackValue(id: 't', label: 'T')],
+            families: [],
+            fallbackLevelId: 'l',
+            fallbackContextId: 'easy',
+            fallbackTrackId: 't',
+          ),
+        ),
+      ),
+    ], primaryId: 'swe');
+
+    Future<double> overallFor(List<Aim> aims) async {
+      final c = ProviderContainer(overrides: [
+        appDatabaseProvider.overrideWith((ref) {
+          final db = AppDatabase.withExecutor(NativeDatabase.memory());
+          ref.onDispose(db.close);
+          return db;
+        }),
+        vaultIndexProvider.overrideWith((ref) async => index),
+        srsStatesProvider.overrideWith((ref) async => states),
+        templateRegistryProvider.overrideWith((ref) async => reg),
+        decksProvider.overrideWith(() => _FixedGoals(
+              [Deck(id: 'g', name: 'G', templateId: 'swe', aims: aims)],
+            )),
+      ]);
+      addTearDown(c.dispose);
+      c.listen(deckReadinessProvider('g'), (_, __) {});
+      return (await c.read(deckReadinessProvider('g').future)).overall;
+    }
+
+    final easy = await overallFor(const [Aim(id: 'e', contextId: 'easy')]);
+    final hard = await overallFor(const [Aim(id: 'h', contextId: 'hard')]);
+    final both = await overallFor(const [
+      Aim(id: 'e', contextId: 'easy'),
+      Aim(id: 'h', contextId: 'hard')
+    ]);
+
+    expect(hard, lessThan(easy)); // a higher durability bar reads less ready
+    // Two aims → the deck binds to the HARDER one (weakest-link), not an average.
+    expect(both, hard);
+  });
 }

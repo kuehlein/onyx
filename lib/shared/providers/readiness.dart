@@ -191,7 +191,6 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   final goalsF = ref.watch(decksProvider.future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
-  final targetingF = ref.watch(targetingForDeckProvider(deckId).future);
   final targetF = ref.watch(targetForDeckProvider(deckId).future);
   final registryF = ref.watch(templateRegistryProvider.future);
   final appliedF = ref.watch(appliedTransferProvider.future);
@@ -214,33 +213,54 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
       if (c.domain != null) c.domain!,
   };
 
-  // Score against the goal's OWN template (durability bar + domain weights). The
-  // default goal keeps the full targeting (base target + active interview boosts,
-  // primary template); any other goal uses its template's TargetSpec directly, so
-  // a Korean goal isn't scored with SWE's durability/weights (multi-template).
-  final double stabilityTarget;
-  final Map<String, double> domainWeights;
-  if (goal.id == defaultDeckId) {
-    final targeting = await targetingF;
-    stabilityTarget = targeting.stabilityTarget;
-    domainWeights = {for (final d in domains) d: targeting.weightForDomain(d)};
-  } else {
-    final registry = await registryF;
-    final spec = (registry.byId(goal.templateId) ?? registry.primary).target;
-    final t = await targetF;
-    stabilityTarget = spec.stabilityTargetDays(t.contextId);
-    domainWeights = {
-      for (final d in domains) d: spec.domainWeight(t.trackId, d),
-    };
+  // Score each ACTIVE aim on its OWN knobs (durability bar + domain emphasis)
+  // against the deck's template, then roll up **weakest-link**: the deck's
+  // readiness is its hardest-to-clear aim, never an average that hides a gap (the
+  // competing-aims decision — user_stories/index.md). A deck with no active aim
+  // scores against its own base target (0-aim coverage-only is a later slice). A
+  // single aim reproduces the pre-S2 single-target readiness (invariant #8).
+  final registry = await registryF;
+  final template = registry.byId(goal.templateId) ?? registry.primary;
+
+  Readiness scoreFor(ReadinessTarget base, Aim? aim) {
+    final tg = Targeting(
+      base: base,
+      aims: aim == null ? const [] : [aim],
+      deckId: goal.id,
+      deadline: goal.deadline,
+    );
+    return computeReadiness(
+      cards: conceptCards,
+      stabilityByKey: stabilityByKey,
+      stabilityTarget: tg.stabilityTarget,
+      domainWeights: {for (final d in domains) d: tg.weightForDomain(d)},
+      transferByDomain: applied.interview ? applied.byDomain : null,
+    );
   }
 
-  return computeReadiness(
-    cards: conceptCards,
-    stabilityByKey: stabilityByKey,
-    stabilityTarget: stabilityTarget,
-    domainWeights: domainWeights,
-    transferByDomain: applied.interview ? applied.byDomain : null,
-  );
+  final activeAims = [
+    for (final a in goal.aims)
+      if (a.active) a,
+  ];
+  if (activeAims.isEmpty) return scoreFor(await targetF, null);
+
+  Readiness? binding;
+  for (final aim in activeAims) {
+    // The aim's own knobs, falling back to the deck's slots (transitional until
+    // the slots move onto aims) then the template — so a single inherited aim
+    // scores exactly as the deck's target did.
+    final base = ReadinessTarget.forAim(
+      aim.copyWith(
+        levelId: aim.levelId ?? goal.levelId,
+        contextId: aim.contextId ?? goal.contextId,
+        trackId: aim.trackId ?? goal.trackId,
+      ),
+      template,
+    );
+    final r = scoreFor(base, aim);
+    if (binding == null || r.overall < binding.overall) binding = r;
+  }
+  return binding!;
 }
 
 /// Knowledge-base readiness for the ACTIVE goal — see [deckReadiness].
