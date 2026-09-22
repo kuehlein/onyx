@@ -30,7 +30,7 @@ model before we add features, so we build on the right shape.
   - *The reframe* (planned 2026-09-22 from a 4-agent code map; decisions: name → **`DeckTemplate`**,
     order → **rename-first then structural**). Model mapping: `StudyGoal`=deck, `InterviewAim`=aim
     (already a *list*), `SubjectConfig`=the per-directory *template*, `ReadinessTarget`=the 4 knobs.
-    - **① Rename (byte-identical, layered green commits):** **R1** `SubjectConfig→DeckTemplate`
+    - **① Rename — ✅ DONE (2026-09-22):** byte-identical, layered green commits. **R1** `SubjectConfig→DeckTemplate`
       (+ `core/subject/→core/template/`, `activeSubject→activeTemplate`, `Card.subjectId→templateId`;
       keep on-disk `onyx-subject.yaml` + built-in ids); **R2** `InterviewAim→Aim`; **R3**
       `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
