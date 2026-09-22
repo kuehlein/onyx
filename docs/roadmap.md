@@ -27,7 +27,21 @@ model before we add features, so we build on the right shape.
   - *Landed:* invariant #2 (**#92 done**) — the genuine card-type branches are config now
     (`isApproachType`/`isApproachCard`, `FlowSpec.prereqSource`) and the `no_card_type_branch`
     lint guards against new ones; the shared `buildConceptComfort` helper (**#87** comfort-dedup).
-  - *Still open:* the deck-as-lens + set-of-aims reframe itself (the model/vocabulary rename).
+  - *The reframe* (planned 2026-09-22 from a 4-agent code map; decisions: name → **`DeckTemplate`**,
+    order → **rename-first then structural**). Model mapping: `StudyGoal`=deck, `InterviewAim`=aim
+    (already a *list*), `SubjectConfig`=the per-directory *template*, `ReadinessTarget`=the 4 knobs.
+    - **① Rename (byte-identical, layered green commits):** **R1** `SubjectConfig→DeckTemplate`
+      (+ `core/subject/→core/template/`, `activeSubject→activeTemplate`, `Card.subjectId→templateId`;
+      keep on-disk `onyx-subject.yaml` + built-in ids); **R2** `InterviewAim→Aim`; **R3**
+      `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
+      **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
+    - **② Structural (behavior):** **S1** lift the 4 knobs onto each `Aim` (today shared on the deck);
+      **S2** readiness **weakest-link across aims** (today a mean across domains, one target); **S3**
+      daily-plan **allocation across aims** (today one nearest-date + merged weights); **S4** per-aim
+      pace/forecast; **S5** the unified **Aims surface** (merges Your Target + scheduler + interview
+      list; wires/retires #90 debrief — *subsumes 1c*).
+    - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,
+      never a domain-weight swing (a documented past inversion).
 - **1b · IA: vault → deck → home** (→ deck_selection, home): deck-selection as the vault-level hub
   (landing when >1 deck); single-deck degradation **with an escape hatch** (fixes the pause-strands
   bug); deck-scoped Home ("Home" stays the name).
