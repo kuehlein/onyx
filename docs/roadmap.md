@@ -42,6 +42,10 @@ model before we add features, so we build on the right shape.
       list; wires/retires #90 debrief — *subsumes 1c*).
     - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,
       never a domain-weight swing (a documented past inversion).
+    - *Competing aims* (e.g. backend general aim + frontend interviews): weakest-link readiness (never
+      averaged, per-aim shown) + urgency/deadline-weighted allocation + the user's pause lever; the
+      coach may gently flag low-overlap tension, never auto-override. Shape agreed; mechanism in
+      **S2** (rollup) + **S3** (allocation) + a coach nudge. See the Open decision in `user_stories/index.md`.
 - **1b · IA: vault → deck → home** (→ deck_selection, home): deck-selection as the vault-level hub
   (landing when >1 deck); single-deck degradation **with an escape hatch** (fixes the pause-strands
   bug); deck-scoped Home ("Home" stays the name).

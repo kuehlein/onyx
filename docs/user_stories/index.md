@@ -84,6 +84,14 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
   handle new/modified upstream content? And — if vaults are backed up to a server — is plain-text
   storage of *app data* (not content) still worth its cost? → **resolve before the cloud/registry
   track.**
+- **Competing aims** (tension between concurrent aims — e.g. a general *backend* aim + two *frontend*
+  interviews). **Rec (shape agreed 2026-09-22; refine the mechanism in S2/S3):** readiness **never
+  averages** — score each aim on its own terms, show per-aim, deck headline = **weakest-link**; the
+  daily plan **allocates by urgency/deadline** (dated aims nearing their date pull more; open-ended
+  aims hold a baseline) — not a naive split, not an automatic override; **pause is the user's lever**
+  (the existing active/mute toggle) — no auto-override (preserves autonomy, avoids silently abandoning
+  a goal); the **coach may detect low emphasis-overlap and gently suggest** focusing one, never
+  auto-pause. Mechanism deferred → S2 (rollup) + S3 (allocation) + a coach nudge slice.
 - Per-file **Pending / New** questions: onboarding (QR quick-setup), home ("Today" naming), browse
   (whole-vault), scheduler (vault-level calendar), card (editing already-learned cards; per-section
   test exclusion), plus the refinements noted in deck_selection / deck_creation / settings.
