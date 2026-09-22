@@ -71,15 +71,14 @@ void main() {
     });
   });
 
-  group('ReadinessTarget serialization', () {
-    test('round-trips including date', () {
-      final t = ReadinessTarget.of(
-        level: SeniorityLevel.senior,
-        company: CompanyTier.faang,
-        track: Track.backend,
-        interviewDate: DateTime(2026, 11, 3),
+  // The legacy onyx-target.json is migration INPUT only (read-only; the write
+  // side was removed with the aim unification). Cover the live decode path.
+  group('ReadinessTarget legacy decode (onyx-target.json migration read)', () {
+    test('decodes stored JSON including date', () {
+      final back = ReadinessTarget.tryDecode(
+        '{"level":"senior","company":"faang","track":"backend",'
+        '"interviewDate":"2026-11-03"}',
       );
-      final back = ReadinessTarget.tryDecode(t.encode());
       expect(back, isNotNull);
       expect(back!.level, SeniorityLevel.senior);
       expect(back.company, CompanyTier.faang);
@@ -88,10 +87,12 @@ void main() {
       expect(back.label, 'Senior · FAANG · Backend');
     });
 
-    test('null date omitted and decodes back to null', () {
-      const t = ReadinessTarget.fallback;
-      expect(t.encode().contains('interviewDate'), isFalse);
-      expect(ReadinessTarget.tryDecode(t.encode())!.interviewDate, isNull);
+    test('missing date decodes back to null', () {
+      final back = ReadinessTarget.tryDecode(
+        '{"level":"mid","company":"faang","track":"general"}',
+      );
+      expect(back, isNotNull);
+      expect(back!.interviewDate, isNull);
     });
 
     test('malformed input decodes to null (caller falls back)', () {

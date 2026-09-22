@@ -10,7 +10,7 @@ import '_palette.dart';
 /// (design-system §2). Access via `context.tokens`.
 ///
 /// Dark-locked: only [standard] is registered; [lerp] is implemented for smooth
-/// future token tweaks. Convenience getters (`insetCard`, `brCard`, …) keep call
+/// future token tweaks. Convenience getters (`brCard`, `brChip`, …) keep call
 /// sites literal-free.
 @immutable
 class OnyxTokens extends ThemeExtension<OnyxTokens> {
@@ -92,8 +92,6 @@ class OnyxTokens extends ThemeExtension<OnyxTokens> {
   );
 
   // ── Convenience (keep call sites literal-free) ─────────────────────────────
-  EdgeInsets get insetCard => EdgeInsets.all(space4);
-  EdgeInsets get insetSheet => EdgeInsets.all(space4);
   BorderRadius get brChip => BorderRadius.circular(radiusChip);
   BorderRadius get brCard => BorderRadius.circular(radiusCard);
   BorderRadius get brSheet => BorderRadius.circular(radiusSheet);

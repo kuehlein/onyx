@@ -1,5 +1,4 @@
 import '../../shared/models/card.dart';
-import '../ai/system_design_interviewer.dart';
 import '../practice/mock_grader.dart';
 import '../readiness/target.dart';
 import 'assessment.dart';
@@ -62,12 +61,6 @@ String buildSdGraderSystem({
   }
   return b.toString();
 }
-
-/// Renders the conversation into a transcript for the grader. Alias of the
-/// interviewer transcript renderer (same format).
-String buildSdGraderTranscript(
-        List<({String role, String content})> messages) =>
-    buildInterviewTranscript(messages);
 
 /// Parses a grader reply into an [SdGrade] (SD rubric dimensions), or null.
 SdGrade? parseSdGrade(String raw) =>

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../features/algorithms/algo_screen.dart';
 import '../features/behavioral/behavioral_entry_screen.dart';
-import '../features/behavioral/behavioral_mock_screen.dart';
 import '../features/behavioral/story_bank_screen.dart';
 import '../features/behavioral/story_capture_screen.dart';
 import '../features/browse/browse_screen.dart';
@@ -25,7 +24,6 @@ import '../features/reader/reader_screen.dart';
 import '../features/report/readiness_report_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/system_design/sd_entry_screen.dart';
-import '../features/system_design/sd_mock_screen.dart';
 import '../shared/providers/vault.dart';
 
 /// Builds the app router: a persistent bottom-nav shell (indexed stack, so each
@@ -64,14 +62,6 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         // The system-design practice track: pick a problem, run a mock.
         GoRoute(
             path: '/system-design', builder: (_, __) => const SdEntryScreen()),
-        GoRoute(
-          path: '/system-design/mock/:id',
-          builder: (_, state) => SdMockScreen(
-            problemId: state.pathParameters['id']!,
-            levelName: state.uri.queryParameters['level'],
-            supportName: state.uri.queryParameters['support'],
-          ),
-        ),
         // A config-driven practice flow for one card (a vault-authored flow, e.g.
         // a Korean `conversation`). Full-screen, pushed from Home like the SD/algo
         // sessions; `:type` is the card type / practice-track id, `:id` the card.
@@ -98,14 +88,6 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         GoRoute(
             path: '/behavioral/story-bank',
             builder: (_, __) => const StoryBankScreen()),
-        GoRoute(
-          path: '/behavioral/mock/:id',
-          builder: (_, state) => BehavioralMockScreen(
-            competencyId: state.pathParameters['id']!,
-            levelName: state.uri.queryParameters['level'],
-            supportName: state.uri.queryParameters['support'],
-          ),
-        ),
         // The concept-card review session. A full-screen flow launched from
         // Home (like Learn / Algorithms), not a bottom-nav tab — the tabs are
         // app SECTIONS, the study sessions are actions.

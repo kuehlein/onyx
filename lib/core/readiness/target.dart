@@ -148,18 +148,7 @@ class ReadinessTarget {
 
   // JSON keys stay level/company/track (values are slot ids == legacy enum
   // names), so existing onyx-target.json / onyx-goals.json files load unchanged.
-  Map<String, dynamic> toJson() => {
-        'level': levelId,
-        'company': contextId,
-        'track': trackId,
-        if (interviewDate != null)
-          'interviewDate': '${interviewDate!.year.toString().padLeft(4, '0')}-'
-              '${interviewDate!.month.toString().padLeft(2, '0')}-'
-              '${interviewDate!.day.toString().padLeft(2, '0')}',
-      };
-
-  String encode() => jsonEncode(toJson());
-
+  // Read-only now: the legacy file is migration INPUT, no longer written.
   static ReadinessTarget fromJson(Map<String, dynamic> m) => ReadinessTarget(
         levelId: (m['level'] as String?) ?? fallback.levelId,
         contextId: (m['company'] as String?) ?? fallback.contextId,

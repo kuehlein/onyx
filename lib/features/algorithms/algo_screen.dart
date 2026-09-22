@@ -202,7 +202,7 @@ class _ActionArea extends StatelessWidget {
     final List<Widget> children;
     if (mode == AlgoMode.explain) {
       children = [
-        _ExplainCta(prominent: true, onExplain: onExplain),
+        _ExplainCta(onExplain: onExplain),
         const SizedBox(height: Dim.space3),
         if (showSolve)
           _SolveBlock(note: note, onLog: onLog)
@@ -316,9 +316,8 @@ class _SolveBlock extends StatelessWidget {
 /// The explain-mode call to action: the phone-doable primary on an explain-due
 /// day.
 class _ExplainCta extends StatelessWidget {
-  const _ExplainCta({required this.prominent, required this.onExplain});
+  const _ExplainCta({required this.onExplain});
 
-  final bool prominent; // reserved; currently always the prominent form
   final VoidCallback onExplain;
 
   @override

@@ -28,7 +28,6 @@ void main() {
       expect(t.space4, 16);
       expect(t.radiusCard, 12);
       expect(t.brCard, BorderRadius.circular(12));
-      expect(t.insetCard, const EdgeInsets.all(16));
     });
 
     test('copyWith overrides one field, keeps the rest', () {

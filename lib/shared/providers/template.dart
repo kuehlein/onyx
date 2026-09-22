@@ -11,12 +11,6 @@ import 'vault.dart';
 
 part 'template.g.dart';
 
-/// The filename that declares a subject. At the vault root's `_meta/` it's the
-/// legacy single-subject config; in any subtree it declares that subtree as a
-/// concurrent subject (task #30d). The fuller `_onyx/config.md` layout in
-/// docs/vault-structure.md is a later refinement.
-const templateConfigFileName = 'onyx-subject.yaml';
-
 /// Discovers every subject config in the vault and builds the [TemplateRegistry]
 /// — one entry per per-directory config, or a single built-in SWE reference when
 /// the vault declares none. Also sets the process-wide [activeTemplate] (the
