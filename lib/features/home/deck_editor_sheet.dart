@@ -39,7 +39,7 @@ class _GoalsManagerSheet extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SheetHeader(title: 'Study goals', icon: Icons.flag_outlined),
+        const SheetHeader(title: 'Decks', icon: Icons.flag_outlined),
         SheetScrollBody(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,7 +60,7 @@ class _GoalsManagerSheet extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.add_circle_outline),
-                title: const Text('New goal'),
+                title: const Text('New deck'),
                 onTap: () => showDeckEditor(context),
               ),
             ],
@@ -124,7 +124,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       _Kind.tag => TagMembership(value),
       _Kind.folder => FolderMembership(value),
     };
-    final id = widget.goal?.id ?? (_slug(name).isEmpty ? 'goal' : _slug(name));
+    final id = widget.goal?.id ?? (_slug(name).isEmpty ? 'deck' : _slug(name));
     final goal = Deck(
       id: id,
       name: name,
@@ -161,7 +161,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SheetHeader(
-          title: existing == null ? 'New study goal' : 'Edit goal',
+          title: existing == null ? 'New deck' : 'Edit deck',
           icon: Icons.flag_outlined,
         ),
         SheetScrollBody(
@@ -245,7 +245,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
               const SizedBox(height: Dim.space3),
               FilledButton(
                 onPressed: _valid ? _save : null,
-                child: Text(existing == null ? 'Create goal' : 'Save'),
+                child: Text(existing == null ? 'Create deck' : 'Save'),
               ),
               if (existing != null) ...[
                 const SizedBox(height: Dim.space2),

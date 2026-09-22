@@ -102,9 +102,9 @@ class SettingsScreen extends ConsumerWidget {
           const _SectionHeader('Learning'),
           ListTile(
             leading: const Icon(Icons.flag_outlined),
-            title: const Text('Study goals'),
+            title: const Text('Decks'),
             subtitle: const Text(
-                'Define subjects/focuses to study concurrently — they share '
+                'Define the decks you study concurrently — they share '
                 'your daily time.'),
             onTap: () => showDecksManager(context),
           ),

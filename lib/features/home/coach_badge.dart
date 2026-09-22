@@ -118,7 +118,7 @@ class CoachBadge extends ConsumerWidget {
     return (
       overallPct: r == null ? 0 : (r.overall * 100).round(),
       coveragePct: total == 0 ? 0 : (studied / total * 100).round(),
-      targetLabel: t?.label ?? 'your goal',
+      targetLabel: t?.label ?? 'your target',
       days: days,
     );
   }

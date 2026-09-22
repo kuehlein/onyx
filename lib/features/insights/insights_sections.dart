@@ -445,7 +445,7 @@ class _ConsistencySection extends ConsumerWidget {
     return _Section(
       title: 'Study consistency',
       subtitle: multiGoal
-          ? 'Study actions per day across all subjects, last 4 weeks. Showing '
+          ? 'Study actions per day across all decks, last 4 weeks. Showing '
               'up beats cramming.'
           : 'Study actions per day, last 4 weeks. Showing up beats cramming.',
       child: async.when(

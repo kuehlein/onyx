@@ -614,7 +614,7 @@ class _ProgressDelta extends StatelessWidget {
               Expanded(
                 child: Text(
                   targetLabel == null
-                      ? 'Progress toward your goal'
+                      ? 'Progress toward your target'
                       : 'Progress toward $targetLabel',
                   style: theme.textTheme.titleSmall,
                 ),

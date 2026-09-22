@@ -48,7 +48,7 @@ class LanesHub extends ConsumerWidget {
             Text("Today's mix", style: theme.textTheme.headlineSmall),
             const SizedBox(height: Dim.space1),
             Text(
-              'Your study goals share the day. Tap one to study it.',
+              'Your decks share the day. Tap one to study it.',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
@@ -64,7 +64,7 @@ class LanesHub extends ConsumerWidget {
             const SizedBox(height: Dim.space2),
             OutlinedButton.icon(
               icon: const Icon(Icons.add),
-              label: const Text('New goal'),
+              label: const Text('New deck'),
               onPressed: () => showDeckEditor(context),
             ),
           ],

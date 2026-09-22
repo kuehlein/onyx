@@ -57,7 +57,7 @@ void main() {
     await tester.enterText(find.byType(TextField).last, 'korean');
     await tester.pump();
 
-    await tester.tap(find.text('Create goal'));
+    await tester.tap(find.text('Create deck'));
     await tester.pumpAndSettle();
 
     expect(cap.upserted, isNotNull);

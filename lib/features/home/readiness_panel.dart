@@ -646,7 +646,7 @@ class _MilestoneChips extends StatelessWidget {
 
   String _caption(String goalLabel) {
     if (pos.atOrAboveGoal) {
-      return 'You clear your $goalLabel goal — validate it with mocks.';
+      return 'You clear your $goalLabel target — validate it with mocks.';
     }
     final where = pos.currentLabel == null
         ? 'Building your foundation'
