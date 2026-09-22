@@ -14,7 +14,7 @@ import 'package:onyx/shared/providers/vault.dart';
 /// goal's interviews).
 class _FakeGoals extends StudyGoals {
   _FakeGoals(this._interviews);
-  final List<InterviewAim> _interviews;
+  final List<Aim> _interviews;
   @override
   Future<List<StudyGoal>> build() async => [
         StudyGoal(
@@ -26,7 +26,7 @@ class _FakeGoals extends StudyGoals {
       ];
 }
 
-Widget _app(List<InterviewAim> interviews) => ProviderScope(
+Widget _app(List<Aim> interviews) => ProviderScope(
       overrides: [
         studyGoalsProvider.overrideWith(() => _FakeGoals(interviews)),
         clockProvider.overrideWith((ref) async => Clock.real),
@@ -38,7 +38,7 @@ Widget _app(List<InterviewAim> interviews) => ProviderScope(
       child: const MaterialApp(home: UpcomingInterviewsScreen()),
     );
 
-InterviewAim _aim(String id, String company, {DateTime? date}) => InterviewAim(
+Aim _aim(String id, String company, {DateTime? date}) => Aim(
       id: id,
       companyName: company,
       rounds: date == null
@@ -78,7 +78,7 @@ void main() {
   testWidgets('ended interviews live in a collapsible Past section',
       (tester) async {
     await tester.pumpWidget(_app([
-      const InterviewAim(
+      const Aim(
         id: 'g1',
         companyName: 'Google',
         status: InterviewStatus.rejected,

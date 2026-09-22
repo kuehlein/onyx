@@ -12,10 +12,10 @@ library;
 import '../../shared/models/card.dart';
 import '../readiness/target.dart';
 import '../template/deck_template.dart';
-import 'interview_aim.dart';
+import 'aim.dart';
 import 'membership_query.dart';
 
-export 'interview_aim.dart';
+export 'aim.dart';
 export 'membership_query.dart';
 
 /// Where a goal sits in its lifecycle. Only [active] goals draw from the daily
@@ -71,7 +71,7 @@ class StudyGoal {
   /// subject can hold several at once (Google + Amazon), which the targeting
   /// layer blends. Empty → a plain study goal (open-ended, or a dated exam
   /// without an interview loop). All share the goal's level/context/track slots.
-  final List<InterviewAim> interviews;
+  final List<Aim> interviews;
 
   bool get isActive => state == GoalState.active;
 
@@ -135,8 +135,7 @@ class StudyGoal {
         interviews: m['interviews'] is List
             ? [
                 for (final e in m['interviews'] as List)
-                  if (e is Map)
-                    InterviewAim.fromJson(e.cast<String, dynamic>()),
+                  if (e is Map) Aim.fromJson(e.cast<String, dynamic>()),
               ]
             : const [],
       );
@@ -154,7 +153,7 @@ class StudyGoal {
     Object? deadline = _unset,
     double? budgetWeight,
     GoalState? state,
-    List<InterviewAim>? interviews,
+    List<Aim>? interviews,
   }) =>
       StudyGoal(
         id: id,

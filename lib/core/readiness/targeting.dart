@@ -1,9 +1,9 @@
 import '../../shared/models/card.dart';
-import '../goal/interview_aim.dart';
+import '../goal/aim.dart';
 import 'target.dart';
 
 /// The effective study targeting for one goal: the goal's base [ReadinessTarget]
-/// combined with its ACTIVE [InterviewAim]s (Phase B — the interviews replace the
+/// combined with its ACTIVE [Aim]s (Phase B — the interviews replace the
 /// legacy `List<PrepGoal>`). Consumers (learn order, readiness weighting, pace)
 /// read this, so a specific interview biases study — while FSRS state stays pure
 /// (see the fsrs-exam-targeting memory: it biases learn order, readiness, pace,
@@ -25,7 +25,7 @@ class Targeting {
   final ReadinessTarget base;
 
   /// The goal's ACTIVE interviews (the caller filters out muted ones).
-  final List<InterviewAim> interviews;
+  final List<Aim> interviews;
 
   /// The goal's id + due date — seed a single-date interview's synthetic round.
   final String goalId;
@@ -109,7 +109,7 @@ class Targeting {
   /// Whether [iv] emphasizes this card — an explicit domain/concept boost.
   /// (The track heuristic is the base's, shared by all interviews, so it can't
   /// distinguish one interview here.)
-  bool _interviewTargets(InterviewAim iv, Card card) {
+  bool _interviewTargets(Aim iv, Card card) {
     final dom = card.domain;
     if (dom != null && iv.domainWeights.containsKey(dom)) return true;
     return card.concepts.any((c) => iv.conceptWeights.containsKey(c));

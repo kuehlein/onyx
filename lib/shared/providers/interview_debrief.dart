@@ -4,7 +4,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import 'ai.dart';
 import 'study_goals.dart';
 import 'template.dart';
@@ -47,7 +47,7 @@ class InterviewDebriefState {
 }
 
 /// Drives the "how did the interview go? → adjust the plan" chat, keyed by the
-/// [InterviewAim.id] being debriefed. Sonnet, since it reasons about the role +
+/// [Aim.id] being debriefed. Sonnet, since it reasons about the role +
 /// deck and emits structured output.
 @riverpod
 class InterviewDebrief extends _$InterviewDebrief {
@@ -57,8 +57,8 @@ class InterviewDebrief extends _$InterviewDebrief {
   InterviewDebriefState build(String goalId) => const InterviewDebriefState();
 
   /// The interview being debriefed — looked up by id on the active study goal
-  /// (Phase B). [goalId] is the [InterviewAim.id].
-  Future<InterviewAim?> _aim() async {
+  /// (Phase B). [goalId] is the [Aim.id].
+  Future<Aim?> _aim() async {
     final goal = await ref.read(activeStudyGoalProvider.future);
     for (final iv in goal.interviews) {
       if (iv.id == goalId) return iv;
@@ -133,7 +133,7 @@ class InterviewDebrief extends _$InterviewDebrief {
   /// Apply the current debrief to the interview: record the outcome, merge the
   /// reweights, append the summary. Returns the updated interview, or null if
   /// there's nothing to apply / the interview is gone.
-  Future<InterviewAim?> apply() async {
+  Future<Aim?> apply() async {
     final result = state.result;
     if (result == null) return null;
     final goal = await ref.read(activeStudyGoalProvider.future);

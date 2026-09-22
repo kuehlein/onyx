@@ -28,7 +28,7 @@ void main() {
       expect(iv.companyName, 'Google');
       expect(iv.active, isFalse);
       expect(iv.status, InterviewStatus.offer);
-      expect(iv.outcome, GoalOutcome.passed);
+      expect(iv.outcome, AimOutcome.passed);
       expect(iv.outcomeNotes, 'strong');
       expect(iv.domainWeights['system-design'], 1.3);
       expect(iv.conceptWeights['consistent-hashing'], 2.0);
@@ -87,7 +87,7 @@ void main() {
           ['senior', 'faang', 'backend']);
       expect(goal.deadline, DateTime(2026, 6, 1));
 
-      // Each legacy interview → an InterviewAim, preserving its facets + date.
+      // Each legacy interview → an Aim, preserving its facets + date.
       expect(goal.interviews.length, 1);
       final iv = goal.interviews.single;
       expect(iv.companyName, 'Google');

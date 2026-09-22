@@ -11,7 +11,7 @@ library;
 import '../util.dart';
 
 /// The outcome of an interview (or a single round of one).
-enum GoalOutcome { pending, passed, failed }
+enum AimOutcome { pending, passed, failed }
 
 /// Where an interview sits in its lifecycle. [active] loops still have a current
 /// upcoming round; the rest are ended and live in the "past" section — kept for
@@ -59,7 +59,7 @@ class InterviewRound {
     required this.number,
     this.type = InterviewRoundType.other,
     this.date,
-    this.outcome = GoalOutcome.pending,
+    this.outcome = AimOutcome.pending,
     this.notes,
   });
 
@@ -71,7 +71,7 @@ class InterviewRound {
 
   /// When this round is scheduled, or null if not yet set.
   final DateTime? date;
-  final GoalOutcome outcome;
+  final AimOutcome outcome;
   final String? notes;
 
   /// e.g. "Round 2 · System design".
@@ -81,7 +81,7 @@ class InterviewRound {
     int? number,
     InterviewRoundType? type,
     Object? date = _unset,
-    GoalOutcome? outcome,
+    AimOutcome? outcome,
     Object? notes = _unset,
   }) =>
       InterviewRound(
@@ -112,7 +112,7 @@ class InterviewRound {
           InterviewRoundType.other,
       date: _parseDate(m['date']),
       outcome:
-          enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+          enumByName(AimOutcome.values, m['outcome']) ?? AimOutcome.pending,
       notes: m['notes'] is String ? m['notes'] as String : null,
     );
   }
@@ -120,14 +120,14 @@ class InterviewRound {
 
 /// One interview attached to a [StudyGoal] via `StudyGoal.interviews` (a goal can
 /// hold several, which the targeting layer blends).
-class InterviewAim {
-  const InterviewAim({
+class Aim {
+  const Aim({
     this.id = '',
     this.companyName = '',
     this.rounds = const [],
     this.active = true,
     this.status = InterviewStatus.active,
-    this.outcome = GoalOutcome.pending,
+    this.outcome = AimOutcome.pending,
     this.outcomeNotes,
     this.domainWeights = const {},
     this.conceptWeights = const {},
@@ -153,7 +153,7 @@ class InterviewAim {
   /// The interview's lifecycle state.
   final InterviewStatus status;
 
-  final GoalOutcome outcome;
+  final AimOutcome outcome;
   final String? outcomeNotes;
 
   /// Explicit per-domain / per-concept boosts from an AI plan (on top of the
@@ -181,7 +181,7 @@ class InterviewAim {
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
   InterviewRound? currentRound(String goalId, DateTime? deadline) {
     for (final r in effectiveRounds(goalId, deadline)) {
-      if (r.outcome == GoalOutcome.pending) return r;
+      if (r.outcome == AimOutcome.pending) return r;
     }
     return null;
   }
@@ -189,7 +189,7 @@ class InterviewAim {
   /// Resolved rounds, oldest first — the history behind [currentRound].
   List<InterviewRound> pastRounds(String goalId, DateTime? deadline) => [
         for (final r in effectiveRounds(goalId, deadline))
-          if (r.outcome != GoalOutcome.pending) r,
+          if (r.outcome != AimOutcome.pending) r,
       ];
 
   /// All scheduled round dates (date-only), for calendar flags.
@@ -209,7 +209,7 @@ class InterviewAim {
 
   /// Heal stale data: a round dated in the FUTURE can't have a logged result, so
   /// reset any such round to pending. Returns the same instance when clean.
-  InterviewAim normalized(DateTime today) {
+  Aim normalized(DateTime today) {
     if (rounds.isEmpty) return this;
     final t = DateTime(today.year, today.month, today.day);
     var changed = false;
@@ -217,9 +217,9 @@ class InterviewAim {
     for (final r in rounds) {
       final d = r.date;
       if (d != null &&
-          r.outcome != GoalOutcome.pending &&
+          r.outcome != AimOutcome.pending &&
           DateTime(d.year, d.month, d.day).isAfter(t)) {
-        fixed.add(r.copyWith(outcome: GoalOutcome.pending));
+        fixed.add(r.copyWith(outcome: AimOutcome.pending));
         changed = true;
       } else {
         fixed.add(r);
@@ -228,19 +228,19 @@ class InterviewAim {
     return changed ? copyWith(rounds: fixed) : this;
   }
 
-  InterviewAim copyWith({
+  Aim copyWith({
     String? id,
     String? companyName,
     List<InterviewRound>? rounds,
     bool? active,
     InterviewStatus? status,
-    GoalOutcome? outcome,
+    AimOutcome? outcome,
     Object? outcomeNotes = _unset,
     Map<String, double>? domainWeights,
     Map<String, double>? conceptWeights,
     Object? planNotes = _unset,
   }) =>
-      InterviewAim(
+      Aim(
         id: id ?? this.id,
         companyName: companyName ?? this.companyName,
         rounds: rounds ?? this.rounds,
@@ -268,7 +268,7 @@ class InterviewAim {
         if (planNotes != null) 'planNotes': planNotes,
       };
 
-  static InterviewAim fromJson(Map<String, dynamic> m) => InterviewAim(
+  static Aim fromJson(Map<String, dynamic> m) => Aim(
         id: m['id'] is String ? m['id'] as String : '',
         companyName:
             m['companyName'] is String ? m['companyName'] as String : '',
@@ -277,7 +277,7 @@ class InterviewAim {
         status: enumByName(InterviewStatus.values, m['status']) ??
             InterviewStatus.active,
         outcome:
-            enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+            enumByName(AimOutcome.values, m['outcome']) ?? AimOutcome.pending,
         outcomeNotes:
             m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
         domainWeights: _weightMap(m['domainWeights']),

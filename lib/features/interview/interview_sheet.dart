@@ -59,7 +59,7 @@ class _InterviewSheet extends ConsumerWidget {
     // "Occurred" = the round's day has arrived; only then can you log a result.
     final occurred = cur?.date != null && !cur!.date!.isAfter(refDate);
 
-    Future<void> save(InterviewAim a) => notifier.upsertInterview(goal.id, a);
+    Future<void> save(Aim a) => notifier.upsertInterview(goal.id, a);
 
     Future<void> reschedule() async {
       if (cur == null) return;
@@ -214,7 +214,7 @@ class _InterviewSheet extends ConsumerWidget {
   }
 
   Widget _practiceButton(
-      BuildContext context, InterviewAim aim, ReadinessTarget? target) {
+      BuildContext context, Aim aim, ReadinessTarget? target) {
     final top = _topDomain(aim);
     if (top == null) return const SizedBox.shrink();
     final forLabel = aim.companyName.isEmpty
@@ -234,7 +234,7 @@ class _InterviewSheet extends ConsumerWidget {
     );
   }
 
-  String? _topDomain(InterviewAim aim) {
+  String? _topDomain(Aim aim) {
     if (aim.domainWeights.isEmpty) return null;
     final keys = aim.domainWeights.keys.toList()
       ..sort((a, b) => aim.domainWeights[b]!.compareTo(aim.domainWeights[a]!));
@@ -242,7 +242,7 @@ class _InterviewSheet extends ConsumerWidget {
   }
 
   Future<bool> _confirmDelete(
-      BuildContext context, InterviewAim aim, ReadinessTarget? target) async {
+      BuildContext context, Aim aim, ReadinessTarget? target) async {
     final title = aim.companyName.isEmpty
         ? (target?.label ?? 'this interview')
         : aim.companyName;
@@ -369,7 +369,7 @@ class _EndedBanner extends StatelessWidget {
 class _Timeline extends StatelessWidget {
   const _Timeline({required this.aim, required this.goal, required this.today});
 
-  final InterviewAim aim;
+  final Aim aim;
   final StudyGoal goal;
   final DateTime today;
 
@@ -401,9 +401,9 @@ class _Timeline extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final (IconData icon, Color color) = switch (r.outcome) {
-      GoalOutcome.passed => (Icons.check_circle, StatusColor.good),
-      GoalOutcome.failed => (Icons.cancel, StatusColor.bad),
-      GoalOutcome.pending => (
+      AimOutcome.passed => (Icons.check_circle, StatusColor.good),
+      AimOutcome.failed => (Icons.cancel, StatusColor.bad),
+      AimOutcome.pending => (
           Icons.radio_button_checked,
           theme.colorScheme.primary
         ),

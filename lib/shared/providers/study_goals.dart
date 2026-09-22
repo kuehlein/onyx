@@ -104,10 +104,10 @@ class StudyGoals extends _$StudyGoals {
     return null;
   }
 
-  /// Add or replace an interview on a goal, matched by [InterviewAim.id], then
+  /// Add or replace an interview on a goal, matched by [Aim.id], then
   /// persist the goal. The interview cluster edits goals through here (Phase B) —
   /// on the whole-vault default this is what first persists it (see [upsert]).
-  Future<void> upsertInterview(String goalId, InterviewAim aim) async {
+  Future<void> upsertInterview(String goalId, Aim aim) async {
     final goal = _current(goalId);
     if (goal == null) return;
     final interviews = [...goal.interviews];

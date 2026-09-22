@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_plan.dart';
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
@@ -19,9 +19,9 @@ const _amber = StatusColor.warn;
 /// The "plan an interview" chat — a slide-up sheet (consistent with the coach
 /// and explain chats): describe an upcoming interview, answer any clarifying
 /// questions, review the proposed plan, and save it as an active interview.
-/// Returns the saved [InterviewAim], or null if dismissed without saving.
-Future<InterviewAim?> showInterviewPlannerSheet(BuildContext context) =>
-    showOnyxSheet<InterviewAim>(
+/// Returns the saved [Aim], or null if dismissed without saving.
+Future<Aim?> showInterviewPlannerSheet(BuildContext context) =>
+    showOnyxSheet<Aim>(
       context,
       builder: (_) => const _InterviewPlannerSheet(),
     );

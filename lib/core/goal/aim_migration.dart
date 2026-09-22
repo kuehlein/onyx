@@ -2,7 +2,7 @@
 /// stores — the base [ReadinessTarget] (`onyx-target.json`) + the interview list
 /// (`onyx-goals.json`, the old `PrepGoal` file) — into the whole-vault **default**
 /// [StudyGoal]. The base target supplies the goal's slots + deadline; each legacy
-/// entry becomes an [InterviewAim]. Read-only parse; the caller ([StudyGoals])
+/// entry becomes an [Aim]. Read-only parse; the caller ([StudyGoals])
 /// write-through-persists the folded default so the legacy files fall out of use.
 library;
 
@@ -21,7 +21,7 @@ import 'study_goal.dart';
 StudyGoal migratedDefaultGoal(
   DeckTemplate template, {
   ReadinessTarget? baseTarget,
-  List<InterviewAim> interviews = const [],
+  List<Aim> interviews = const [],
 }) =>
     StudyGoal(
       id: defaultGoalId,
@@ -41,19 +41,19 @@ String get _legacyGoalsFile =>
 
 /// Read + parse the legacy `onyx-goals.json` interviews from the vault. Empty on
 /// an absent/malformed file. Used once by the [StudyGoals] migration branch.
-Future<List<InterviewAim>> legacyInterviews(VaultSource source) async =>
+Future<List<Aim>> legacyInterviews(VaultSource source) async =>
     legacyInterviewsFromRaw(await source.readMeta(_legacyGoalsFile));
 
 /// Parse a legacy `onyx-goals.json` string (the old `PrepGoal.toJson` array) into
-/// [InterviewAim]s. Pure: on any parse error / non-List → `const []`; entries
+/// [Aim]s. Pure: on any parse error / non-List → `const []`; entries
 /// without a usable id are dropped. The legacy target facets (tier/level/track)
 /// are intentionally NOT carried — all interviews share the goal's slots now.
-List<InterviewAim> legacyInterviewsFromRaw(String? rawJson) {
+List<Aim> legacyInterviewsFromRaw(String? rawJson) {
   if (rawJson == null || rawJson.isEmpty) return const [];
   try {
     final data = jsonDecode(rawJson);
     if (data is! List) return const [];
-    final out = <InterviewAim>[];
+    final out = <Aim>[];
     for (final e in data) {
       if (e is! Map) continue;
       final aim = _aimFromLegacy(e.cast<String, dynamic>());
@@ -65,10 +65,10 @@ List<InterviewAim> legacyInterviewsFromRaw(String? rawJson) {
   }
 }
 
-/// One legacy interview entry → an [InterviewAim] (null if it has no id). Rounds
+/// One legacy interview entry → an [Aim] (null if it has no id). Rounds
 /// come from the stored `rounds`; if none and a single `date` parses, a synthetic
 /// round 1 preserves that date. The legacy `notes` field maps to `planNotes`.
-InterviewAim? _aimFromLegacy(Map<String, dynamic> m) {
+Aim? _aimFromLegacy(Map<String, dynamic> m) {
   final id = m['id'];
   if (id is! String || id.isEmpty) return null;
 
@@ -90,15 +90,14 @@ InterviewAim? _aimFromLegacy(Map<String, dynamic> m) {
           : const <InterviewRound>[]);
 
   final active = m['active'] is bool ? m['active'] as bool : true;
-  return InterviewAim(
+  return Aim(
     id: id,
     companyName: m['companyName'] is String ? m['companyName'] as String : '',
     rounds: effectiveRounds,
     active: active,
     status: enumByName(InterviewStatus.values, m['status']) ??
         (active ? InterviewStatus.active : InterviewStatus.archived),
-    outcome:
-        enumByName(GoalOutcome.values, m['outcome']) ?? GoalOutcome.pending,
+    outcome: enumByName(AimOutcome.values, m['outcome']) ?? AimOutcome.pending,
     outcomeNotes:
         m['outcomeNotes'] is String ? m['outcomeNotes'] as String : null,
     domainWeights: _weightMap(m['domainWeights']),

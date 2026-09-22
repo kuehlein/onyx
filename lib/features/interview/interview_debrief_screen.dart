@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ai/coach_update_chat.dart' show CoachRole;
 import '../../core/ai/interview_debrief.dart';
-import '../../core/goal/interview_aim.dart' show GoalOutcome;
+import '../../core/goal/aim.dart' show AimOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/status_pill.dart';
@@ -131,12 +131,12 @@ class _DebriefCard extends StatelessWidget {
           Text('Proposed adjustments',
               style: theme.textTheme.labelMedium
                   ?.copyWith(color: theme.colorScheme.primary)),
-          if (result.outcome != null && result.outcome != GoalOutcome.pending)
+          if (result.outcome != null && result.outcome != AimOutcome.pending)
             Padding(
               padding: const EdgeInsets.only(top: Dim.space1),
               child: Text(
                   'Outcome: '
-                  '${result.outcome == GoalOutcome.passed ? 'Passed' : 'Didn’t pass'}',
+                  '${result.outcome == AimOutcome.passed ? 'Passed' : 'Didn’t pass'}',
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w700)),
             ),

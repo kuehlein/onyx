@@ -4,7 +4,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_plan.dart';
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import 'ai.dart';
 import 'clock.dart';
 import 'readiness.dart';
@@ -14,7 +14,7 @@ import 'vault.dart';
 part 'interview_planner.g.dart';
 
 /// The interview-planner conversation: a chat that ends in a proposed
-/// [InterviewPlan] the learner can accept (→ an active [InterviewAim] on the
+/// [InterviewPlan] the learner can accept (→ an active [Aim] on the
 /// active study goal).
 class InterviewPlannerState {
   const InterviewPlannerState({
@@ -108,12 +108,12 @@ class InterviewPlanner extends _$InterviewPlanner {
     }
   }
 
-  /// Accept the current plan: attach it as an active [InterviewAim] on the active
+  /// Accept the current plan: attach it as an active [Aim] on the active
   /// study goal (which the targeting layer then applies to study). Fills the
   /// goal's target slots + deadline ONLY if unset, so an accepted plan doesn't
   /// clobber a target the user already chose. Returns the saved interview, or
   /// null if there's no plan to accept.
-  Future<InterviewAim?> accept() async {
+  Future<Aim?> accept() async {
     final plan = state.plan;
     if (plan == null) return null;
     final clock = await ref.read(clockProvider.future);

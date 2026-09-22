@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/interview_aim.dart';
+import 'package:onyx/core/goal/aim.dart';
 import 'package:onyx/features/interview/round_editing.dart';
 
-InterviewAim _aim(List<InterviewRound> rounds) => InterviewAim(
+Aim _aim(List<InterviewRound> rounds) => Aim(
       id: 'g',
       companyName: 'Stripe',
       rounds: rounds,

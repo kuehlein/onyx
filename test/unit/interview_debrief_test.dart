@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_debrief.dart';
-import 'package:onyx/core/goal/interview_aim.dart';
+import 'package:onyx/core/goal/aim.dart';
 import 'package:onyx/shared/models/card.dart';
 
 const _label = 'Google · Senior · Backend';
 
-InterviewAim _aim() => const InterviewAim(
+Aim _aim() => const Aim(
       id: 'g1',
       companyName: 'Google',
       domainWeights: {'ds-a': 1.5, 'system-design': 1.2},
@@ -64,7 +64,7 @@ void main() {
       expect(r.text, 'Sounds like DP tripped you up.');
       expect(r.text, isNot(contains('debrief')));
       expect(r.result, isNotNull);
-      expect(r.result!.outcome, GoalOutcome.failed);
+      expect(r.result!.outcome, AimOutcome.failed);
       expect(r.result!.domainWeights, {'ds-a': 1.3});
       // 2.5 is over the cap → clamped down, never a plan-overhauling spike.
       expect(r.result!.conceptWeights, {'dynamic-programming': weightCap});
@@ -139,14 +139,14 @@ void main() {
   group('DebriefResult.applyTo', () {
     test('merges reweights, sets the outcome, and appends the summary', () {
       const result = DebriefResult(
-        outcome: GoalOutcome.failed,
+        outcome: AimOutcome.failed,
         domainWeights: {'ds-a': 2.0, 'behavioral': 1.3},
         conceptWeights: {'dynamic-programming': 2.5},
         summary: 'Drill DP; graphs are solid.',
       );
       final updated = result.applyTo(_aim());
 
-      expect(updated.outcome, GoalOutcome.failed);
+      expect(updated.outcome, AimOutcome.failed);
       // New key overrides / adds; untouched keys survive.
       expect(updated.domainWeights['ds-a'], 2.0);
       expect(updated.domainWeights['behavioral'], 1.3);
@@ -162,7 +162,7 @@ void main() {
     test('a null outcome leaves the interview outcome as-is', () {
       const result = DebriefResult(summary: 'Just some notes.');
       final updated = result.applyTo(_aim());
-      expect(updated.outcome, GoalOutcome.pending);
+      expect(updated.outcome, AimOutcome.pending);
     });
   });
 }

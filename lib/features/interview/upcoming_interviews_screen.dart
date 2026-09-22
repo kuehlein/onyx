@@ -69,7 +69,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
 
   // Sort by the CURRENT (upcoming) round — so scheduling a later round re-sorts
   // by that round, not the first one. Ended loops fall back to their last round.
-  int _byRound(InterviewAim a, InterviewAim b, StudyGoal goal) {
+  int _byRound(Aim a, Aim b, StudyGoal goal) {
     final da = _sortDate(a, goal);
     final db = _sortDate(b, goal);
     if (da == null && db == null) return 0;
@@ -78,7 +78,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
     return da.compareTo(db);
   }
 
-  DateTime? _sortDate(InterviewAim a, StudyGoal goal) {
+  DateTime? _sortDate(Aim a, StudyGoal goal) {
     final cur = a.currentRound(goal.id, goal.deadline)?.date;
     if (cur != null) return cur;
     final dates = a.roundDates(goal.id, goal.deadline);
@@ -93,7 +93,7 @@ class _PastSection extends StatefulWidget {
   const _PastSection(
       {required this.past, required this.goal, required this.today});
 
-  final List<InterviewAim> past;
+  final List<Aim> past;
   final StudyGoal goal;
   final DateTime today;
 

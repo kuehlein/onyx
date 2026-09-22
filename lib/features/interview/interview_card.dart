@@ -20,7 +20,7 @@ class InterviewCard extends ConsumerWidget {
   const InterviewCard(
       {super.key, required this.aim, required this.goal, required this.today});
 
-  final InterviewAim aim;
+  final Aim aim;
   final StudyGoal goal;
   final DateTime today;
 

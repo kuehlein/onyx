@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import '../../shared/design/onyx_design.dart';
 
 /// Shared interview-round editing used by both the target sheet and the
 /// Upcoming-interviews screen: a dialog to add/edit one round, plus the pure
-/// mutation helpers that keep an [InterviewAim]'s rounds ordered and renumbered.
+/// mutation helpers that keep an [Aim]'s rounds ordered and renumbered.
 
 /// Re-order [rounds] by date (dated ascending, undated last, ties by number),
 /// renumber 1..n, and return the updated aim. The goal's single [deadline] is no
 /// longer denormalized here — rounds are the source of truth.
-InterviewAim syncedAim(InterviewAim a, List<InterviewRound> rounds) {
+Aim syncedAim(Aim a, List<InterviewRound> rounds) {
   final sorted = [...rounds]..sort((x, y) {
       if (x.date == null && y.date == null) return x.number.compareTo(y.number);
       if (x.date == null) return 1;
@@ -24,7 +24,7 @@ InterviewAim syncedAim(InterviewAim a, List<InterviewRound> rounds) {
 }
 
 /// Add or replace a round (matched by id), returning the synced aim.
-InterviewAim aimWithRound(InterviewAim a, InterviewRound round) {
+Aim aimWithRound(Aim a, InterviewRound round) {
   final rounds = [...a.rounds];
   final i = rounds.indexWhere((r) => r.id == round.id);
   if (i >= 0) {
@@ -37,7 +37,7 @@ InterviewAim aimWithRound(InterviewAim a, InterviewRound round) {
 
 /// Remove a round by id. Returns the synced aim, or null when that empties the
 /// loop (the caller should then delete the whole interview).
-InterviewAim? aimWithoutRound(InterviewAim a, String roundId) {
+Aim? aimWithoutRound(Aim a, String roundId) {
   final rounds = [...a.rounds]..removeWhere((r) => r.id == roundId);
   if (rounds.isEmpty) return null;
   return syncedAim(a, rounds);
@@ -46,7 +46,7 @@ InterviewAim? aimWithoutRound(InterviewAim a, String roundId) {
 /// A fresh round for [a], numbered next in the loop. Defaults to the generic
 /// [InterviewRoundType.other] — the learner picks the real kind if they know it,
 /// rather than us presuming a screen. [seed] disambiguates the id.
-InterviewRound draftRound(InterviewAim a, {required int seed}) {
+InterviewRound draftRound(Aim a, {required int seed}) {
   final n = a.rounds.length + 1;
   return InterviewRound(
     id: '${a.id}-r$n-$seed',

@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart';
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import '../../core/readiness/readiness.dart';
 import 'algo.dart';
 import 'analytics.dart';

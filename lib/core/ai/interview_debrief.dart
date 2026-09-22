@@ -3,20 +3,20 @@
 /// evidence supports it — emits a hidden `<debrief>{…}</debrief>` block that
 /// records the outcome and makes SMALL, conservative reweights toward genuine,
 /// recurring weaknesses. Same tagged-JSON trick as the planner; applied back
-/// onto the [InterviewAim].
+/// onto the [Aim].
 ///
 /// Hardened against overreaction: one interview is a tiny, noisy sample, so the
 /// prompt only reweights durable patterns (not one-off unlucky questions),
 /// separates learnable content gaps from nerves/luck, grounds rare-vs-common in
 /// the deck's own `frequency` labels, and the parser CLAMPS every multiplier to
 /// [1.0, [weightCap]] so the model can never destabilise the plan. Applied back
-/// onto the [InterviewAim] (Phase B aim unification).
+/// onto the [Aim] (Phase B aim unification).
 library;
 
 import 'dart:convert';
 
 import '../../shared/models/card.dart';
-import '../goal/interview_aim.dart';
+import '../goal/aim.dart';
 
 /// The hard ceiling on any debrief-proposed weight multiplier. Deliberately
 /// lower than the planner's (a full plan can weight ~2.0) — a single interview
@@ -33,7 +33,7 @@ class DebriefResult {
   });
 
   /// passed/failed if the learner said; null leaves the goal's outcome as-is.
-  final GoalOutcome? outcome;
+  final AimOutcome? outcome;
 
   /// Weight adjustments (deck keys) — merged over the goal's existing weights.
   final Map<String, double> domainWeights;
@@ -45,7 +45,7 @@ class DebriefResult {
   /// Fold this debrief into [a]: set the outcome, merge the reweights, and
   /// append the summary to the interview's plan notes + record it as the outcome
   /// note.
-  InterviewAim applyTo(InterviewAim a) => a.copyWith(
+  Aim applyTo(Aim a) => a.copyWith(
         outcome: outcome ?? a.outcome,
         domainWeights: {...a.domainWeights, ...domainWeights},
         conceptWeights: {...a.conceptWeights, ...conceptWeights},
@@ -199,13 +199,13 @@ DebriefResult? _parse(String json) {
   }
 }
 
-GoalOutcome? _outcome(Object? v) {
+AimOutcome? _outcome(Object? v) {
   if (v is! String) return null;
   switch (v) {
     case 'passed':
-      return GoalOutcome.passed;
+      return AimOutcome.passed;
     case 'failed':
-      return GoalOutcome.failed;
+      return AimOutcome.failed;
     default:
       return null; // "unknown" or junk → leave as-is
   }

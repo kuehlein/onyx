@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/interview_aim.dart';
+import 'package:onyx/core/goal/aim.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/readiness/targeting.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -24,9 +24,7 @@ Card _card(String domain, {List<String> concepts = const []}) => Card(
     );
 
 /// An interview scheduled on a single [date] (a synthetic round 1 carries it).
-InterviewAim _on(DateTime date,
-        {Map<String, double> domainWeights = const {}}) =>
-    InterviewAim(
+Aim _on(DateTime date, {Map<String, double> domainWeights = const {}}) => Aim(
       rounds: [InterviewRound(id: 'r', number: 1, date: date)],
       domainWeights: domainWeights,
     );
@@ -48,7 +46,7 @@ void main() {
     test(
         'an active interview raises the weight of a domain it boosts (max, not sum)',
         () {
-      const iv = InterviewAim(domainWeights: {'ds-a': 5.0});
+      const iv = Aim(domainWeights: {'ds-a': 5.0});
       final t = Targeting(base: _base, interviews: [iv]);
       // base ds-a weight is modest; the interview's +5 boost dominates.
       expect(t.weightForDomain('ds-a'),
@@ -61,8 +59,8 @@ void main() {
     test(
         'weightForCard adds the strongest concept boost among active interviews',
         () {
-      const iv = InterviewAim(
-          conceptWeights: {'consistent-hashing': 3.0, 'irrelevant': 1.0});
+      const iv =
+          Aim(conceptWeights: {'consistent-hashing': 3.0, 'irrelevant': 1.0});
       final t = Targeting(base: _base, interviews: [iv]);
       final w = t.weightForCard(
           _card('ds-a', concepts: ['consistent-hashing', 'irrelevant']));
@@ -87,7 +85,7 @@ void main() {
     });
 
     test('governingDate sees the soonest ROUND of a multi-round loop', () {
-      final loop = InterviewAim(rounds: [
+      final loop = Aim(rounds: [
         InterviewRound(id: 'r1', number: 1, date: DateTime(2026, 9, 25)),
         InterviewRound(id: 'r2', number: 2, date: DateTime(2026, 9, 10)),
       ]);
@@ -97,7 +95,7 @@ void main() {
 
     test('a roundless interview falls back to the goal deadline (new path)',
         () {
-      const iv = InterviewAim(domainWeights: {'ds-a': 5.0});
+      const iv = Aim(domainWeights: {'ds-a': 5.0});
       final t = Targeting(
         base: _base,
         interviews: [iv],

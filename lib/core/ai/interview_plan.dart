@@ -1,6 +1,6 @@
 /// The AI "interview planner" (task #24/#25 family, Phase 1): a chat that turns a
 /// described interview ("Google, senior backend, Maps, in 2 weeks") into a
-/// STRUCTURED prep plan the app can apply as an [InterviewAim]. The model asks
+/// STRUCTURED prep plan the app can apply as an [Aim]. The model asks
 /// clarifying questions until it has enough, then emits a human summary plus a
 /// hidden `<plan>{…}</plan>` block (same tagged-JSON trick as the coach's
 /// assessment) that we parse here. It biases EXISTING deck material (learning
@@ -10,11 +10,11 @@ library;
 import 'dart:convert';
 import '../util.dart';
 
-import '../goal/interview_aim.dart';
+import '../goal/aim.dart';
 import '../readiness/target.dart';
 
 /// A structured prep plan proposed by the planner, ready to become an
-/// [InterviewAim].
+/// [Aim].
 class InterviewPlan {
   const InterviewPlan({
     required this.company,
@@ -59,18 +59,18 @@ class InterviewPlan {
   /// The human-readable plan / rationale (Markdown).
   final String summary;
 
-  /// Convert to a persistable [InterviewAim] (active) — the Phase B unified
+  /// Convert to a persistable [Aim] (active) — the Phase B unified
   /// facet attached to a [StudyGoal]. The target (level/context/track/deadline)
   /// lives on the parent goal now, so only the interview-specific facets carry
   /// over. [id] is caller-supplied. [notBefore] drops a past date (usually a
   /// wrong-year slip) so the interview is simply unscheduled rather than filed in
   /// the past.
-  InterviewAim toInterview(String id, {DateTime? notBefore}) {
+  Aim toInterview(String id, {DateTime? notBefore}) {
     final safeDate =
         (date != null && notBefore != null && date!.isBefore(notBefore))
             ? null
             : date;
-    return InterviewAim(
+    return Aim(
       id: id,
       companyName: company,
       domainWeights: domainWeights,

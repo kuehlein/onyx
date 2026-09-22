@@ -100,11 +100,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     // shown); a neutral subject reads neutrally and hides the interview loop (G7).
     final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
     final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
-    final interviews = goal?.interviews ?? const <InterviewAim>[];
+    final interviews = goal?.interviews ?? const <Aim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
     final scheduled = goal == null
-        ? const <InterviewAim>[]
+        ? const <Aim>[]
         : ([
             for (final iv in interviews)
               if (!iv.status.isEnded && _hasUpcomingRound(iv, goal, today)) iv,
@@ -851,7 +851,7 @@ class _CalendarLegend extends StatelessWidget {
 /// rollover); no hand-rolled math.
 /// Whether [a] has any round on or after [today] — i.e. the loop isn't fully in
 /// the past. Fully-past interviews drop out of the sheet's list + calendar.
-bool _hasUpcomingRound(InterviewAim a, StudyGoal goal, DateTime today) {
+bool _hasUpcomingRound(Aim a, StudyGoal goal, DateTime today) {
   final dates = a.roundDates(goal.id, goal.deadline);
   if (dates.isEmpty) return false;
   final t = DateTime(today.year, today.month, today.day);
@@ -881,7 +881,7 @@ class _ScheduledSection extends ConsumerStatefulWidget {
     required this.onAdd,
   });
 
-  final List<InterviewAim> interviews; // sorted by soonest round first
+  final List<Aim> interviews; // sorted by soonest round first
   final StudyGoal goal;
   final DateTime today;
   final VoidCallback onAdd;

@@ -267,7 +267,7 @@ void main() {
 
     // Add a second interview → the persisted default is updated.
     await c.read(studyGoalsProvider.notifier).upsertInterview(
-        defaultGoalId, const InterviewAim(id: 'amzn', companyName: 'Amazon'));
+        defaultGoalId, const Aim(id: 'amzn', companyName: 'Amazon'));
     expect(storeFile.existsSync(), isTrue);
 
     // A FRESH container reads the STORED default (both interviews) — the migration

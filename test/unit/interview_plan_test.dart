@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/ai/interview_plan.dart';
-import 'package:onyx/core/goal/interview_aim.dart';
+import 'package:onyx/core/goal/aim.dart';
 import 'package:onyx/core/readiness/target.dart';
 
 final _base = ReadinessTarget.of(
@@ -89,7 +89,7 @@ void main() {
   });
 
   group('InterviewPlan.toInterview', () {
-    test('maps into a persistable active InterviewAim', () {
+    test('maps into a persistable active Aim', () {
       final plan = InterviewPlan(
         company: 'Google',
         role: 'Senior Backend',

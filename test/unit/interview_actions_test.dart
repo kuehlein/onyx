@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/goal/interview_aim.dart';
+import 'package:onyx/core/goal/aim.dart';
 import 'package:onyx/features/interview/interview_actions.dart';
 
-InterviewAim _active({List<InterviewRound>? rounds}) => InterviewAim(
+Aim _active({List<InterviewRound>? rounds}) => Aim(
       id: 'g',
       companyName: 'Stripe',
       rounds: rounds ??
@@ -22,7 +22,7 @@ void main() {
         InterviewRound(
             id: 'a',
             number: 1,
-            outcome: GoalOutcome.passed,
+            outcome: AimOutcome.passed,
             date: DateTime(2026, 9, 1)),
         InterviewRound(id: 'b', number: 2, date: DateTime(2026, 9, 20)),
       ]);
@@ -33,7 +33,7 @@ void main() {
     test('a legacy single deadline migrates to a pending current round', () {
       // The interview holds no rounds; the parent goal's deadline seeds a
       // synthetic round 1 via effectiveRounds/currentRound.
-      const a = InterviewAim(id: 'x', companyName: 'Stripe');
+      const a = Aim(id: 'x', companyName: 'Stripe');
       expect(a.currentRound('x', DateTime(2026, 10, 1))?.date,
           DateTime(2026, 10, 1));
       expect(a.pastRounds('x', DateTime(2026, 10, 1)), isEmpty);
@@ -51,7 +51,7 @@ void main() {
       final out = passAndScheduleNext(a, next);
       expect(out.status, InterviewStatus.active);
       expect(out.pastRounds('g', null).length, 1);
-      expect(out.pastRounds('g', null).first.outcome, GoalOutcome.passed);
+      expect(out.pastRounds('g', null).first.outcome, AimOutcome.passed);
       expect(currentRoundOf(out)?.id, 'g-r2');
       expect(currentRoundOf(out)?.type, InterviewRoundType.onsite);
     });
@@ -62,21 +62,21 @@ void main() {
       final out = endInterview(_active(), InterviewStatus.rejected);
       expect(out.status, InterviewStatus.rejected);
       expect(out.active, isFalse);
-      expect(out.rounds.last.outcome, GoalOutcome.failed);
+      expect(out.rounds.last.outcome, AimOutcome.failed);
       expect(currentRoundOf(out), isNull);
     });
 
     test('offer passes the current round', () {
       final out = endInterview(_active(), InterviewStatus.offer);
       expect(out.status, InterviewStatus.offer);
-      expect(out.rounds.last.outcome, GoalOutcome.passed);
+      expect(out.rounds.last.outcome, AimOutcome.passed);
     });
 
     test('withdrawn leaves the round pending', () {
       final out = endInterview(_active(), InterviewStatus.withdrawn);
       expect(out.status, InterviewStatus.withdrawn);
       expect(out.active, isFalse);
-      expect(out.rounds.last.outcome, GoalOutcome.pending);
+      expect(out.rounds.last.outcome, AimOutcome.pending);
     });
   });
 
@@ -99,7 +99,7 @@ void main() {
       final reopened = reopenInterview(rejected);
       expect(reopened.status, InterviewStatus.active);
       expect(currentRoundOf(reopened), isNotNull);
-      expect(currentRoundOf(reopened)?.outcome, GoalOutcome.pending);
+      expect(currentRoundOf(reopened)?.outcome, AimOutcome.pending);
     });
   });
 

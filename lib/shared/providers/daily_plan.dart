@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/goal/budget.dart';
-import '../../core/goal/interview_aim.dart';
+import '../../core/goal/aim.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';

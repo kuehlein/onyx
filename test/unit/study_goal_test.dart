@@ -132,7 +132,7 @@ void main() {
     test(
         'the interview facet round-trips through JSON + rounds logic (Phase B)',
         () {
-      final aim = InterviewAim(
+      final aim = Aim(
         companyName: 'Acme',
         rounds: [
           InterviewRound(
@@ -140,7 +140,7 @@ void main() {
               number: 1,
               type: InterviewRoundType.screen,
               date: DateTime(2026, 4, 1),
-              outcome: GoalOutcome.passed),
+              outcome: AimOutcome.passed),
           InterviewRound(
               id: 'r2',
               number: 2,
