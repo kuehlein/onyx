@@ -124,17 +124,27 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       _Kind.tag => TagMembership(value),
       _Kind.folder => FolderMembership(value),
     };
-    final id = widget.goal?.id ?? (_slug(name).isEmpty ? 'deck' : _slug(name));
-    final goal = Deck(
-      id: id,
-      name: name,
-      templateId: _templateId ?? '',
-      membership: membership,
-      deadline: _deadline,
-      budgetWeight: _weight,
-      state: widget.goal?.state ?? DeckState.active,
-    );
-    ref.read(decksProvider.notifier).upsert(goal);
+    final existing = widget.goal;
+    // Editing must PRESERVE everything not on this form — the deck's aims and its
+    // readiness knobs — via copyWith. Rebuilding a fresh Deck (the old bug) silently
+    // wiped them on every edit. Only a brand-new deck is constructed from scratch.
+    final deck = existing == null
+        ? Deck(
+            id: _slug(name).isEmpty ? 'deck' : _slug(name),
+            name: name,
+            templateId: _templateId ?? '',
+            membership: membership,
+            deadline: _deadline,
+            budgetWeight: _weight,
+          )
+        : existing.copyWith(
+            name: name,
+            templateId: _templateId ?? '',
+            membership: membership,
+            deadline: _deadline,
+            budgetWeight: _weight,
+          );
+    ref.read(decksProvider.notifier).upsert(deck);
     Navigator.of(context).pop();
   }
 

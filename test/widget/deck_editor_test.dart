@@ -65,4 +65,53 @@ void main() {
     expect(cap.upserted!.id, 'korean');
     expect(cap.upserted!.membership, isA<TagMembership>());
   });
+
+  testWidgets('editing a deck preserves its aims + knobs (no data loss)',
+      (tester) async {
+    final cap = _CapturingGoals();
+    const existing = Deck(
+      id: 'd',
+      name: 'Old name',
+      templateId: 'software-interviews',
+      aims: [Aim(id: 'a1', companyName: 'Google')],
+      levelId: 'senior',
+      contextId: 'faang',
+      trackId: 'backend',
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          decksProvider.overrideWith(() => cap),
+          templateRegistryProvider.overrideWith((ref) async =>
+              TemplateRegistry.single(softwareInterviewsTemplate)),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => showDeckEditor(ctx, goal: existing),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'New name');
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final saved = cap.upserted!;
+    expect(saved.id, 'd'); // same deck
+    expect(saved.name, 'New name'); // edit applied
+    // The bug rebuilt Deck() from scratch, wiping these:
+    expect(saved.aims.map((a) => a.id), ['a1']);
+    expect(saved.levelId, 'senior');
+    expect(saved.contextId, 'faang');
+    expect(saved.trackId, 'backend');
+  });
 }
