@@ -2,8 +2,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -43,7 +43,7 @@ void main() {
             c,
       ];
     });
-    tearDown(() => activeSubject = softwareInterviewsConfig);
+    tearDown(() => activeTemplate = softwareInterviewsTemplate);
 
     // Seed comfort for a whole concept card: SRS state on every quizzable
     // section → comfort 1.0 (> the 0.7 flow bar). Keyed `<id>::<slug>` exactly

@@ -5,8 +5,8 @@ import '../../core/goal/interview_aim.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/gating.dart';
 import '../../core/plan/practice_plan.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/flow_spec.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/flow_spec.dart';
 import 'clock.dart';
 import 'concept_comfort.dart';
 import 'interview.dart';
@@ -116,8 +116,9 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // card declares `depends-on`, so that branch is additive for the SWE deck.
   final prereqs = <String, List<String>>{...algoGroupPrereqs};
   for (final c in index.cards) {
-    final source = subjectFor(c.subjectId).flowForType(c.type)?.prereqSource ??
-        PrereqSource.dependsOn;
+    final source =
+        templateFor(c.templateId).flowForType(c.type)?.prereqSource ??
+            PrereqSource.dependsOn;
     switch (source) {
       case PrereqSource.wikilinks:
         prereqs[c.id] = [
@@ -148,7 +149,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // track rides the readiness target's domain weight named by its flow's
   // `weightDomain`, so the mix shifts with level (junior → algos heavier, staff
   // → system design heavier). Recall tracks (review/learn) keep their constants.
-  final flowByType = {for (final f in activeSubject.flows) f.cardType: f};
+  final flowByType = {for (final f in activeTemplate.flows) f.cardType: f};
   bool isRecall(String t) => t == kTrackReview || t == kTrackLearn;
 
   final baseWeight = <String, double>{

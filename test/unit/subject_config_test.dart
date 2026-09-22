@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template.dart';
 
-/// Golden tests for task #30: the SWE reference [softwareInterviewsConfig] locks
+/// Golden tests for task #30: the SWE reference [softwareInterviewsTemplate] locks
 /// the readiness math + flow definitions. The app reads from this config, so
 /// these assert against **literal snapshots** (independent of the implementation)
 /// — a regression in either the config values or the resolution logic fails here.
 /// Pure computation only, no UI, so a later UI rework (#50) can't disturb them.
 void main() {
-  final t = softwareInterviewsConfig.target;
+  final t = softwareInterviewsTemplate.target;
 
   group('context slot → stability bar', () {
     test('literal snapshot', () {
@@ -130,7 +130,7 @@ void main() {
 
     test('literal snapshot per card type', () {
       expected.forEach((cardType, spec) {
-        final flow = softwareInterviewsConfig.flowForType(cardType);
+        final flow = softwareInterviewsTemplate.flowForType(cardType);
         expect(flow, isNotNull, reason: cardType);
         final (scheduling, quizzability) = spec;
         expect(flow!.scheduling, scheduling, reason: '$cardType scheduling');
@@ -140,7 +140,7 @@ void main() {
     });
 
     test('unknown card type has no flow (caller falls back)', () {
-      expect(softwareInterviewsConfig.flowForType('nonexistent'), isNull);
+      expect(softwareInterviewsTemplate.flowForType('nonexistent'), isNull);
     });
 
     test('prereq source: SD gates on `## Related` wikilinks, others depends-on',
@@ -149,7 +149,7 @@ void main() {
       // branch — invariant #2).
       for (final cardType in expected.keys) {
         expect(
-          softwareInterviewsConfig.flowForType(cardType)!.prereqSource,
+          softwareInterviewsTemplate.flowForType(cardType)!.prereqSource,
           cardType == 'system-design'
               ? PrereqSource.wikilinks
               : PrereqSource.dependsOn,
@@ -162,7 +162,7 @@ void main() {
   group('vocabulary (G3) → per-subject assessment terminology', () {
     test('SWE reference keeps "interviewer" so its shared copy is unchanged',
         () {
-      final v = softwareInterviewsConfig.vocabulary;
+      final v = softwareInterviewsTemplate.vocabulary;
       expect(v.examinerNoun, 'interviewer');
       expect(v.examinerNounTitle, 'Interviewer');
       // G7: SWE also declares the assessment event so Home/readiness copy is
@@ -173,7 +173,7 @@ void main() {
     });
 
     test('a subject that declares no vocabulary gets the neutral default', () {
-      const bare = SubjectConfig(id: 'x', target: _emptyTarget);
+      const bare = DeckTemplate(id: 'x', target: _emptyTarget);
       expect(bare.vocabulary, same(Vocabulary.neutral));
       expect(bare.vocabulary.examinerNoun, 'examiner');
       expect(bare.vocabulary.examinerNounTitle, 'Examiner');
@@ -191,7 +191,7 @@ void main() {
   group('parse profile (G4) → default reproduces the built-in parser', () {
     test('SWE reference uses the standard profile (parses identically)', () {
       expect(
-          softwareInterviewsConfig.parseProfile, same(ParseProfile.standard));
+          softwareInterviewsTemplate.parseProfile, same(ParseProfile.standard));
     });
 
     test('standard defaults: H2 · .md · wikilinks on · default blocklist', () {
@@ -203,13 +203,13 @@ void main() {
     });
 
     test('a bare subject gets the standard profile', () {
-      const bare = SubjectConfig(id: 'x', target: _emptyTarget);
+      const bare = DeckTemplate(id: 'x', target: _emptyTarget);
       expect(bare.parseProfile, same(ParseProfile.standard));
     });
   });
 }
 
-/// A minimal target for constructing a bare [SubjectConfig] in the vocabulary
+/// A minimal target for constructing a bare [DeckTemplate] in the vocabulary
 /// default test — its values are irrelevant there.
 const _emptyTarget = TargetSpec(
   levels: [

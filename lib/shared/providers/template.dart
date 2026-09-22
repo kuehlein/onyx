@@ -1,69 +1,69 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/builtin_subjects.dart';
-import '../../core/subject/neutral_subject.dart';
-import '../../core/subject/subject_config.dart';
-import '../../core/subject/subject_registry.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/builtin_templates.dart';
+import '../../core/template/neutral_template.dart';
+import '../../core/template/deck_template.dart';
+import '../../core/template/template_registry.dart';
 import '../../core/vault/vault_source.dart';
 import 'study_goals.dart';
 import 'vault.dart';
 
-part 'subject.g.dart';
+part 'template.g.dart';
 
 /// The filename that declares a subject. At the vault root's `_meta/` it's the
 /// legacy single-subject config; in any subtree it declares that subtree as a
 /// concurrent subject (task #30d). The fuller `_onyx/config.md` layout in
 /// docs/vault-structure.md is a later refinement.
-const subjectConfigFileName = 'onyx-subject.yaml';
+const templateConfigFileName = 'onyx-subject.yaml';
 
-/// Discovers every subject config in the vault and builds the [SubjectRegistry]
+/// Discovers every subject config in the vault and builds the [TemplateRegistry]
 /// — one entry per per-directory config, or a single built-in SWE reference when
-/// the vault declares none. Also sets the process-wide [activeSubject] (the
+/// the vault declares none. Also sets the process-wide [activeTemplate] (the
 /// registry's primary subject) that pure core still reads pre-M2. `vaultIndex`
 /// awaits this so subjects are resolved before any card is parsed.
 @riverpod
-Future<SubjectRegistry> subjectRegistry(Ref ref) async {
+Future<TemplateRegistry> templateRegistry(Ref ref) async {
   final source = ref.watch(vaultSourceProvider);
   final registry = source == null
-      ? SubjectRegistry.single(neutralSubjectConfig)
+      ? TemplateRegistry.single(neutralTemplate)
       : await _discover(source);
-  activeSubject = registry.primary;
+  activeTemplate = registry.primary;
   activeRegistry = registry;
   return registry;
 }
 
 /// The primary subject config — the whole-vault subject, or the built-in SWE
 /// reference as a fallback. Retained for the many call sites that need a single
-/// active subject; multi-subject-aware call sites read [subjectRegistryProvider].
+/// active subject; multi-subject-aware call sites read [templateRegistryProvider].
 @riverpod
-Future<SubjectConfig> activeSubjectConfig(Ref ref) async =>
-    (await ref.watch(subjectRegistryProvider.future)).primary;
+Future<DeckTemplate> activeTemplateConfig(Ref ref) async =>
+    (await ref.watch(templateRegistryProvider.future)).primary;
 
-/// The [SubjectConfig] backing the ACTIVE study goal (its template), or the
+/// The [DeckTemplate] backing the ACTIVE study goal (its template), or the
 /// primary subject when the goal names no known template. Per-goal so shared UI
 /// (the Home target card, readiness/coach copy — G7) reads the RIGHT subject's
 /// vocabulary/target under multi-subject, not the process-global primary.
 @riverpod
-Future<SubjectConfig> activeGoalSubject(Ref ref) async {
+Future<DeckTemplate> activeGoalTemplate(Ref ref) async {
   final goal = await ref.watch(activeStudyGoalProvider.future);
-  final registry = await ref.watch(subjectRegistryProvider.future);
+  final registry = await ref.watch(templateRegistryProvider.future);
   return registry.byId(goal.templateId) ?? registry.primary;
 }
 
-Future<SubjectRegistry> _discover(VaultSource source) async {
-  final discovered = <(String, SubjectConfig)>[];
+Future<TemplateRegistry> _discover(VaultSource source) async {
+  final discovered = <(String, DeckTemplate)>[];
   for (final path in await source.listConfigPaths()) {
     final raw = await source.readCard(path);
     if (raw.trim().isEmpty) continue;
     // A config may name a built-in template by id (e.g. `id: software-interviews`)
     // to opt in without re-specifying it; else it's a full custom config. A
     // malformed config resolves to null and is skipped (falls back below).
-    final config = resolveSubjectConfig(raw);
+    final config = resolveDeckTemplate(raw);
     if (config != null) discovered.add((path, config));
   }
-  return SubjectRegistry.fromConfigs(
+  return TemplateRegistry.fromConfigs(
     discovered,
-    fallback: neutralSubjectConfig,
+    fallback: neutralTemplate,
   );
 }

@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/shared/models/card.dart';
 
@@ -470,10 +470,10 @@ a
     // Reuses the SWE target + flows (so `type: flashcard` is a card with the
     // blocklist quizzability policy) but customizes only the parse profile. The
     // existing groups above run under the DEFAULT profile — the SWE-identity net.
-    final custom = SubjectConfig(
+    final custom = DeckTemplate(
       id: 'custom-parse',
-      target: softwareInterviewsConfig.target,
-      flows: softwareInterviewsConfig.flows,
+      target: softwareInterviewsTemplate.target,
+      flows: softwareInterviewsTemplate.flows,
       parseProfile: const ParseProfile(
         sectionHeadingLevel: 3,
         wikilinks: false,
@@ -482,12 +482,12 @@ a
     );
 
     setUp(() {
-      activeRegistry = SubjectRegistry.single(custom);
-      activeSubject = custom;
+      activeRegistry = TemplateRegistry.single(custom);
+      activeTemplate = custom;
     });
     tearDown(() {
-      activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
-      activeSubject = softwareInterviewsConfig;
+      activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
+      activeTemplate = softwareInterviewsTemplate;
     });
 
     const card = '''

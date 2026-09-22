@@ -1,10 +1,10 @@
 import 'package:yaml/yaml.dart';
 
-import 'subject_config.dart';
+import 'deck_template.dart';
 
 /// Parses a subject config from YAML (the `_meta/onyx-subject.yaml` file, or the
 /// frontmatter of `_onyx/config.md` in the fuller vault layout) into a
-/// [SubjectConfig] — task #30 Phase 5. Pure; throws [FormatException] on invalid
+/// [DeckTemplate] — task #30 Phase 5. Pure; throws [FormatException] on invalid
 /// input so the loader can fall back to the built-in default.
 ///
 /// Schema (see docs/vault-structure.md; this is the minimal machine form):
@@ -24,12 +24,12 @@ import 'subject_config.dart';
 ///   wikilinks: true
 ///   neverQuizzed: [related, references, ...]  # omit → engine's default blocklist
 /// ```
-SubjectConfig subjectConfigFromYaml(String yaml) {
+DeckTemplate deckTemplateFromYaml(String yaml) {
   final root = loadYaml(yaml);
   if (root is! Map) {
     throw const FormatException('subject config must be a YAML map');
   }
-  return SubjectConfig(
+  return DeckTemplate(
     id: (root['id'] as String?) ?? 'subject',
     target: _target(root['target']),
     flows: _list(root['flows']).map(_flow).toList(),
@@ -44,7 +44,7 @@ SubjectConfig subjectConfigFromYaml(String yaml) {
 /// so the loader can resolve a built-in template (e.g. `id: software-interviews`)
 /// by id before attempting to parse the rest. Returns null on any parse failure or
 /// a missing/blank id.
-String? subjectIdFromYaml(String yaml) {
+String? templateIdFromYaml(String yaml) {
   try {
     final root = loadYaml(yaml);
     if (root is! Map) return null;

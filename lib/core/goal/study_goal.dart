@@ -3,7 +3,7 @@
 ///
 /// A goal is a named, configured, scheduled *view* of a set of related cards: a
 /// [membership] query selects the cards, a [templateId] names the target
-/// vocabulary (a `SubjectConfig`), a target selection + [deadline] set the
+/// vocabulary (a `DeckTemplate`), a target selection + [deadline] set the
 /// objective, and a [budgetWeight] + [state] control its slice of the shared daily
 /// study time. Readiness is computed per goal over its members (G2). Goals are
 /// app-managed state (persisted in `_meta/` by [id]), not vault content.
@@ -11,7 +11,7 @@ library;
 
 import '../../shared/models/card.dart';
 import '../readiness/target.dart';
-import '../subject/subject_config.dart';
+import '../template/deck_template.dart';
 import 'interview_aim.dart';
 import 'membership_query.dart';
 
@@ -45,7 +45,7 @@ class StudyGoal {
   /// Human label for the lane/hub.
   final String name;
 
-  /// The template (`SubjectConfig.id`) providing this goal's target dimensions and
+  /// The template (`DeckTemplate.id`) providing this goal's target dimensions and
   /// flow relevance.
   final String templateId;
 
@@ -83,7 +83,7 @@ class StudyGoal {
   /// null or empty slots resolved to [template]'s fallbacks, and the [deadline]
   /// (coerced to date-only, as `interviewDate` is contractually local-midnight) as
   /// the target's interview date (task #30d, G3a).
-  ReadinessTarget toTarget(SubjectConfig template) {
+  ReadinessTarget toTarget(DeckTemplate template) {
     String slot(String? id, String fallback) =>
         (id == null || id.isEmpty) ? fallback : id;
     final d = deadline;
@@ -179,7 +179,7 @@ const defaultGoalId = 'default';
 
 /// The implicit default goal: the whole vault, targeted by [template]. Used until
 /// the user defines explicit goals (G3), and always for a single-template vault.
-StudyGoal defaultGoalFor(SubjectConfig template) => StudyGoal(
+StudyGoal defaultGoalFor(DeckTemplate template) => StudyGoal(
       id: defaultGoalId,
       name: template.id,
       templateId: template.id,

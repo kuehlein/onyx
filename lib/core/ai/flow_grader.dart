@@ -14,7 +14,7 @@ library;
 
 import '../interview/assessment.dart';
 import '../practice/mock_grader.dart';
-import '../subject/flow_prompt.dart';
+import '../template/flow_prompt.dart';
 
 /// Builds a config-flow grader's system prompt: an independent, deliberately
 /// skeptical evaluator scoring the transcript against what the learner actually

@@ -27,7 +27,7 @@ abstract class VaultSource {
   /// Relative POSIX paths of every subject-config file in the vault — files named
   /// `onyx-subject.yaml`, anywhere (including inside `_meta/` folders, which
   /// [listCardPaths] excludes). Each declares a subject rooted at its enclosing
-  /// directory (see `subjectRootDir`). A vault with one (or zero) is the
+  /// directory (see `templateRootDir`). A vault with one (or zero) is the
   /// single-subject case; multiple make it a multi-subject vault (task #30d).
   Future<List<String>> listConfigPaths();
 

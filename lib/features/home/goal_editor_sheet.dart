@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/goal/study_goal.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Create or edit a [StudyGoal] (task #30d, G6) — name, template, membership
@@ -154,7 +154,7 @@ class _GoalEditorSheetState extends ConsumerState<GoalEditorSheet> {
     final theme = Theme.of(context);
     final existing = widget.goal;
     final templates =
-        ref.watch(subjectRegistryProvider).asData?.value.subjects ?? const [];
+        ref.watch(templateRegistryProvider).asData?.value.templates ?? const [];
     _templateId ??= templates.isEmpty ? null : templates.first.id;
 
     return Column(

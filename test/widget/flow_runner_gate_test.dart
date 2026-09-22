@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/dependency_gating.dart';
-import 'package:onyx/core/subject/flow_spec.dart';
+import 'package:onyx/core/template/dependency_gating.dart';
+import 'package:onyx/core/template/flow_spec.dart';
 import 'package:onyx/features/practice/flow_runner_screen.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/flow_runner.dart';

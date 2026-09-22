@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/neutral_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/neutral_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_source.dart';
-import 'package:onyx/shared/providers/subject.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 /// G7f golden: the default subject flipped from the SWE reference to the neutral
@@ -40,33 +40,33 @@ class _FakeSource implements VaultSource {
 }
 
 void main() {
-  // subjectRegistryProvider sets the process-wide activeSubject/activeRegistry as
+  // templateRegistryProvider sets the process-wide activeTemplate/activeRegistry as
   // a side effect — reset around each case so this test neither pollutes nor is
   // polluted by others (the pure-core placeholder is the SWE reference).
   void reset() {
-    activeSubject = softwareInterviewsConfig;
-    activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
+    activeTemplate = softwareInterviewsTemplate;
+    activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
   }
 
   setUp(reset);
   tearDown(reset);
 
-  Future<SubjectConfig> primaryFor(Map<String, String> configs) async {
+  Future<DeckTemplate> primaryFor(Map<String, String> configs) async {
     final c = ProviderContainer(overrides: [
       vaultSourceProvider.overrideWithValue(_FakeSource(configs)),
     ]);
     addTearDown(c.dispose);
-    return (await c.read(subjectRegistryProvider.future)).primary;
+    return (await c.read(templateRegistryProvider.future)).primary;
   }
 
   test('a config-less vault resolves to the neutral subject (flip)', () async {
-    expect(await primaryFor(const {}), same(neutralSubjectConfig));
+    expect(await primaryFor(const {}), same(neutralTemplate));
   });
 
   test('a one-line `id: software-interviews` opts back into the SWE reference',
       () async {
     final primary = await primaryFor(
         const {'_meta/onyx-subject.yaml': 'id: software-interviews'});
-    expect(primary, same(softwareInterviewsConfig));
+    expect(primary, same(softwareInterviewsTemplate));
   });
 }

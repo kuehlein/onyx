@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/plan/practice_plan.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
@@ -27,11 +27,11 @@ final bool _sqliteAvailable = () {
 /// Loads the real `korean-vault/` through the full provider graph and proves the
 /// config vault-driven **conversation** mock flow (skill authored in the vault)
 /// enters the daily plan as its own practice track — task #30 G2a, zero code
-/// changes for the subject. The registry provider sets `activeSubject` to Korean
+/// changes for the subject. The registry provider sets `activeTemplate` to Korean
 /// as a side effect of indexing; tearDown restores the SWE default.
 void main() {
   group('config vault mock flow → daily-plan track', () {
-    tearDown(() => activeSubject = softwareInterviewsConfig);
+    tearDown(() => activeTemplate = softwareInterviewsTemplate);
 
     ProviderContainer container() => ProviderContainer(
           overrides: [
@@ -52,7 +52,7 @@ void main() {
 
       // Keep the availability subtree mounted (as a mounted UI would) so its async
       // deps aren't autodisposed mid-build when the registry-driven invalidations
-      // (activeSubject → Korean) settle across the queue providers.
+      // (activeTemplate → Korean) settle across the queue providers.
       c.listen(practiceAvailabilityProvider, (_, __) {});
 
       final avail = await c.read(practiceAvailabilityProvider.future);

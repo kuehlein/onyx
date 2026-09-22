@@ -12,13 +12,13 @@ import 'clock.dart';
 import 'database.dart';
 import 'interview.dart';
 import 'readiness.dart';
-import 'subject.dart';
+import 'template.dart';
 import 'vault.dart';
 
 part 'coach.g.dart';
 
 /// The active subject's coach **skill augmentation**, loaded from its vault skill
-/// ([SubjectConfig.coachSkill] → `_meta/coach.md`, parsed by
+/// ([DeckTemplate.coachSkill] → `_meta/coach.md`, parsed by
 /// [coachSkillFromMarkdown]), or [CoachSkill.none] when the subject declares no
 /// skill or the file is missing — the research-backed foundation always stands,
 /// and a subject's vault skill layers its own domain framing on top.
@@ -29,7 +29,7 @@ Future<CoachSkill> coachSkill(Ref ref) async {
   // a skill file couldn't load.
   try {
     final source = ref.watch(vaultSourceProvider);
-    final config = await ref.watch(activeSubjectConfigProvider.future);
+    final config = await ref.watch(activeTemplateConfigProvider.future);
     final name = config.coachSkill;
     if (name == null || source == null) return CoachSkill.none;
     final md = await source.readMeta(name);

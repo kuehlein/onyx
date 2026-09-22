@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/srs/srs_scheduler.dart';
-import 'package:onyx/core/subject/study_policy.dart';
+import 'package:onyx/core/template/study_policy.dart';
 
 void main() {
   group('resolveStudyPolicy', () {

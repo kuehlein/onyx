@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/goal/study_goal.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/features/home/goal_editor_sheet.dart';
 import 'package:onyx/shared/providers/study_goals.dart';
-import 'package:onyx/shared/providers/subject.dart';
+import 'package:onyx/shared/providers/template.dart';
 
 class _CapturingGoals extends StudyGoals {
   StudyGoal? upserted;
@@ -23,8 +23,8 @@ void main() {
       ProviderScope(
         overrides: [
           studyGoalsProvider.overrideWith(() => cap),
-          subjectRegistryProvider.overrideWith(
-              (ref) async => SubjectRegistry.single(softwareInterviewsConfig)),
+          templateRegistryProvider.overrideWith((ref) async =>
+              TemplateRegistry.single(softwareInterviewsTemplate)),
         ],
         child: MaterialApp(
           home: Scaffold(

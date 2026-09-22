@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/core/vault/starter_deck.dart';
@@ -26,7 +26,7 @@ void main() {
     // The folder is a defined, NEUTRAL subject — not the SWE fallback.
     final yaml = await source.readMeta('onyx-subject.yaml');
     expect(yaml, isNotNull);
-    final cfg = subjectConfigFromYaml(yaml!);
+    final cfg = deckTemplateFromYaml(yaml!);
     expect(cfg.id, 'my-studies');
     expect(cfg.flowForType('flashcard')?.scheduling, SchedulingModel.recall);
     expect(cfg.target.tracks.map((t) => t.id), ['everything']); // no SWE tracks

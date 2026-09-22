@@ -124,7 +124,7 @@ class DraftReview extends _$DraftReview {
     try {
       final raw = await source.readCard(card.filePath);
       fresh = const CardParser()
-          .parse(raw, filePath: card.filePath, subjectId: card.subjectId);
+          .parse(raw, filePath: card.filePath, templateId: card.templateId);
     } catch (_) {
       return; // read/parse failed — leave the stale card rather than crash
     }

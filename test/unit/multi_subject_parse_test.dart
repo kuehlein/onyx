@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 
 /// M2 (#30d): card behavior — card-ness, quizzability, practice-track — resolves
@@ -20,8 +20,8 @@ const _target = TargetSpec(
   fallbackTrackId: 't',
 );
 
-SubjectConfig _subject(String id, List<FlowSpec> flows) =>
-    SubjectConfig(id: id, target: _target, flows: flows);
+DeckTemplate _subject(String id, List<FlowSpec> flows) =>
+    DeckTemplate(id: id, target: _target, flows: flows);
 
 const _card = CardParser();
 
@@ -62,25 +62,25 @@ void main() {
   ]);
 
   setUp(() {
-    activeRegistry = SubjectRegistry.fromConfigs(
+    activeRegistry = TemplateRegistry.fromConfigs(
       [
         ('alpha/onyx-subject.yaml', alpha),
         ('beta/onyx-subject.yaml', beta),
       ],
-      fallback: softwareInterviewsConfig,
+      fallback: softwareInterviewsTemplate,
     );
-    activeSubject = activeRegistry.primary;
+    activeTemplate = activeRegistry.primary;
   });
   tearDown(() {
-    activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
-    activeSubject = softwareInterviewsConfig;
+    activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
+    activeTemplate = softwareInterviewsTemplate;
   });
 
   test('same type resolves to different flows across subjects', () {
     final a =
-        _card.parse(_md('drill'), filePath: 'alpha/x.md', subjectId: 'alpha');
+        _card.parse(_md('drill'), filePath: 'alpha/x.md', templateId: 'alpha');
     expect(a, isNotNull);
-    expect(a!.subjectId, 'alpha');
+    expect(a!.templateId, 'alpha');
     // drill is a mock flow in alpha → a practice-track card, no quizzable sections.
     expect(a.isPracticeTrack, isTrue);
     expect(a.quizzableSections, isEmpty);
@@ -89,13 +89,13 @@ void main() {
   test('a type unknown to its subject is not a card', () {
     // `drill` is not a flow in beta → not an Onyx card, even though alpha has it.
     final b =
-        _card.parse(_md('drill'), filePath: 'beta/x.md', subjectId: 'beta');
+        _card.parse(_md('drill'), filePath: 'beta/x.md', templateId: 'beta');
     expect(b, isNull);
   });
 
   test('recall cards stay concept cards in their subject', () {
     final a = _card.parse(_md('flashcard'),
-        filePath: 'alpha/y.md', subjectId: 'alpha');
+        filePath: 'alpha/y.md', templateId: 'alpha');
     expect(a, isNotNull);
     expect(a!.isPracticeTrack, isFalse);
     // blocklist policy → the Approach section is quizzable.

@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/goal/study_goal.dart';
 import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/subject_config.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/deck_template.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
@@ -98,8 +98,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final goal = ref.watch(activeStudyGoalProvider).asData?.value;
     // The active goal's assessment terminology — SWE reads "interview" (chrome
     // shown); a neutral subject reads neutrally and hides the interview loop (G7).
-    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
+    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
     final interviews = goal?.interviews ?? const <InterviewAim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
@@ -187,8 +187,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                   children: [
                                     _ChipGroup<LevelValue>(
                                       label: 'Level',
-                                      values: activeSubject.target.levels,
-                                      selected: activeSubject.target
+                                      values: activeTemplate.target.levels,
+                                      selected: activeTemplate.target
                                           .levelById(t.levelId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>
@@ -203,8 +203,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                     // the chip VALUES already come from config.
                                     _ChipGroup<ContextValue>(
                                       label: 'Company',
-                                      values: activeSubject.target.contexts,
-                                      selected: activeSubject.target
+                                      values: activeTemplate.target.contexts,
+                                      selected: activeTemplate.target
                                           .contextById(t.contextId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>
@@ -212,8 +212,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                                     ),
                                     _ChipGroup<TrackValue>(
                                       label: 'Track',
-                                      values: activeSubject.target.tracks,
-                                      selected: activeSubject.target
+                                      values: activeTemplate.target.tracks,
+                                      selected: activeTemplate.target
                                           .trackById(t.trackId),
                                       labelOf: (v) => v.label,
                                       onSelected: (v) =>

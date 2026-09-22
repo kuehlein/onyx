@@ -4,10 +4,10 @@ import '../../core/ai/claude_service.dart';
 import '../../core/ai/flow_grader.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/practice/mock_session.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/dependency_gating.dart';
-import '../../core/subject/flow_prompt.dart';
-import '../../core/subject/flow_spec.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/dependency_gating.dart';
+import '../../core/template/flow_prompt.dart';
+import '../../core/template/flow_spec.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';
@@ -204,7 +204,7 @@ Future<FlowRunnerContext> flowRunnerContext(Ref ref, String cardId) async {
     );
   }
 
-  final flow = activeSubject.flowForType(card.type);
+  final flow = activeTemplate.flowForType(card.type);
   final skill =
       source == null ? null : await loadFlowSkill(source.readCard, flow?.skill);
 

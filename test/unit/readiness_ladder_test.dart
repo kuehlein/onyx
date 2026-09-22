@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, String domain, int tier, List<String> slugs) => Card(

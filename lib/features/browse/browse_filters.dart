@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/search/card_filter.dart';
-import '../../core/subject/active_subject.dart';
+import '../../core/template/active_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/sheet_header.dart';
 
@@ -78,10 +78,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                       children: [
                         _group<String>(
                           'Type',
-                          [for (final f in activeSubject.flows) f.cardType],
+                          [for (final f in activeTemplate.flows) f.cardType],
                           _types,
                           (v) =>
-                              activeSubject.flowForType(v)?.displayLabel ?? v,
+                              activeTemplate.flowForType(v)?.displayLabel ?? v,
                         ),
                         if (widget.domains.isNotEmpty)
                           _group<String>(

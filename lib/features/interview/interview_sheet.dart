@@ -6,7 +6,7 @@ import '../../core/goal/study_goal.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
@@ -49,7 +49,7 @@ class _InterviewSheet extends ConsumerWidget {
         ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
     final refDate = DateTime(today.year, today.month, today.day);
     final notifier = ref.read(studyGoalsProvider.notifier);
-    final registry = ref.watch(subjectRegistryProvider).asData?.value;
+    final registry = ref.watch(templateRegistryProvider).asData?.value;
     final target = registry == null
         ? null
         : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/goal/aim_migration.dart';
 import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 
 /// Phase B (B5): the legacy aim stores (base target + the old `onyx-goals.json`
 /// PrepGoal array) fold into the whole-vault default StudyGoal losing nothing —
@@ -77,7 +77,7 @@ void main() {
         '"domainWeights":{"system-design":1.3},"status":"active"}]',
       );
 
-      final goal = migratedDefaultGoal(softwareInterviewsConfig,
+      final goal = migratedDefaultGoal(softwareInterviewsTemplate,
           baseTarget: base, interviews: interviews);
 
       // Default goal carries the base target's slots + deadline (ids == enum
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('no legacy data → a bare default goal (template fallbacks stand)', () {
-      final bare = migratedDefaultGoal(softwareInterviewsConfig);
+      final bare = migratedDefaultGoal(softwareInterviewsTemplate);
       expect(bare.levelId, isNull);
       expect(bare.deadline, isNull);
       expect(bare.interviews, isEmpty);

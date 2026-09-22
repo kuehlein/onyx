@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/features/home/readiness_panel.dart';
 
 /// G7d: the readiness panel's assessment copy reads from the goal's [Vocabulary].

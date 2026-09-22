@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 
@@ -13,16 +13,16 @@ import 'package:onyx/core/vault/desktop_vault_source.dart';
 /// under that config — this guards the annotated reference against drift.
 void main() {
   final source = DesktopVaultSource('examples/vault');
-  late SubjectConfig cfg;
+  late DeckTemplate cfg;
 
   setUp(() async {
-    cfg = subjectConfigFromYaml((await source.readMeta('onyx-subject.yaml'))!);
-    activeRegistry = SubjectRegistry.single(cfg);
-    activeSubject = cfg;
+    cfg = deckTemplateFromYaml((await source.readMeta('onyx-subject.yaml'))!);
+    activeRegistry = TemplateRegistry.single(cfg);
+    activeTemplate = cfg;
   });
   tearDown(() {
-    activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
-    activeSubject = softwareInterviewsConfig;
+    activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
+    activeTemplate = softwareInterviewsTemplate;
   });
 
   test('loads as a subject exercising target/flows/vocab/parse', () {

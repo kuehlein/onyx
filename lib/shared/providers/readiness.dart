@@ -13,7 +13,7 @@ import 'clock.dart';
 import 'interview.dart';
 import 'srs.dart';
 import 'study_goals.dart';
-import 'subject.dart';
+import 'template.dart';
 import 'vault.dart';
 
 part 'readiness.g.dart';
@@ -120,8 +120,8 @@ StudyGoal _pick(List<StudyGoal> goals, String goalId) =>
 /// OWN template (durability bar + domain weights). The remaining sliver:
 /// readinessLadderPosition/readinessForecast/readinessPace (single-goal-Home
 /// surfaces, via ladder.dart + projection.dart) still read the process-global
-/// activeSubject — correct for the default/active goal on the primary template;
-/// thread the goal's SubjectConfig there too when a focused non-default goal needs
+/// activeTemplate — correct for the default/active goal on the primary template;
+/// thread the goal's DeckTemplate there too when a focused non-default goal needs
 /// its own ladder/forecast.
 @riverpod
 Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
@@ -129,7 +129,7 @@ Future<ReadinessTarget> targetForGoal(Ref ref, String goalId) async {
   // invalidation (e.g. a goal edit/pause rebuilding studyGoals) can't leave us
   // using a disposed ref after the async gap.
   final goalsF = ref.watch(studyGoalsProvider.future);
-  final registryF = ref.watch(subjectRegistryProvider.future);
+  final registryF = ref.watch(templateRegistryProvider.future);
   final goal = _pick(await goalsF, goalId);
   final registry = await registryF;
   return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
@@ -193,7 +193,7 @@ Future<Readiness> goalReadiness(Ref ref, String goalId) async {
   final statesF = ref.watch(srsStatesProvider.future);
   final targetingF = ref.watch(targetingForGoalProvider(goalId).future);
   final targetF = ref.watch(targetForGoalProvider(goalId).future);
-  final registryF = ref.watch(subjectRegistryProvider.future);
+  final registryF = ref.watch(templateRegistryProvider.future);
   final appliedF = ref.watch(appliedTransferProvider.future);
   final goal = _pick(await goalsF, goalId);
   final index = await indexF;
@@ -308,7 +308,8 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
 @riverpod
 Future<ReadinessForecast?> readinessForecastFor(
     Ref ref, ForecastDims dims) async {
-  final registryF = ref.watch(subjectRegistryProvider.future); // register first
+  final registryF =
+      ref.watch(templateRegistryProvider.future); // register first
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final today = (await ref.watch(clockProvider.future)).today();

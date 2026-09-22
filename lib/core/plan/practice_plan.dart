@@ -15,7 +15,7 @@ library;
 /// The four practice-track ids (String, to prepare for config-driven tracks).
 ///
 /// The practice-track ids deliberately equal the SWE FlowSpec `cardType` values
-/// so a later phase can derive them from `activeSubject.flows`; review/learn are
+/// so a later phase can derive them from `activeTemplate.flows`; review/learn are
 /// the two universal recall modes.
 const String kTrackReview = 'review';
 const String kTrackLearn = 'learn';
@@ -88,7 +88,7 @@ class TrackAvailability {
   final String track;
 
   /// Human-readable track name (e.g. "Review", "System design"). Carried here
-  /// because the pure core can't reach `SubjectConfig`; the provider that builds
+  /// because the pure core can't reach `DeckTemplate`; the provider that builds
   /// availabilities supplies it and the UI/summary render it.
   final String label;
   final List<PracticeUnit> units;

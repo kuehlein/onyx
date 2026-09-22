@@ -1,4 +1,4 @@
-import 'subject_config.dart';
+import 'deck_template.dart';
 
 /// The built-in **neutral** subject — the subject-agnostic default for a folder
 /// that declares no `onyx-subject.yaml` of its own (task #88 / G7f). One flat
@@ -10,7 +10,7 @@ import 'subject_config.dart';
 /// Deliberately minimal but VALID (non-empty target slots) so every engine path
 /// that reads a subject works without special-casing. `cardType: 'flashcard'` is
 /// the universal recall card type (matching the scaffolder's neutral YAML).
-const neutralSubjectConfig = SubjectConfig(
+const neutralTemplate = DeckTemplate(
   id: 'general',
   target: TargetSpec(
     levels: [

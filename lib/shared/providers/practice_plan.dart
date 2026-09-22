@@ -2,8 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/plan/practice_plan.dart';
 import '../../core/practice/mock_schedule.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/flow_spec.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/flow_spec.dart';
 import 'algo.dart';
 import 'clock.dart';
 import 'learn.dart';
@@ -103,7 +103,7 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
     // generically here: its cards enter the plan as whole-card, mock-due-ordered
     // units. In-code SWE flows all have `skill == null`, so this emits nothing for
     // SWE — the four tracks above are unchanged.
-    for (final flow in activeSubject.flows)
+    for (final flow in activeTemplate.flows)
       if (flow.skill != null && flow.scheduling == SchedulingModel.mock)
         TrackAvailability(
           track: flow.cardType,

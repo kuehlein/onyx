@@ -1,29 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/builtin_subjects.dart';
-import 'package:onyx/core/subject/neutral_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/template/builtin_templates.dart';
+import 'package:onyx/core/template/neutral_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 
 /// G7f: built-in templates are resolvable by id, so a config-less folder can
 /// default to the neutral subject while a SWE vault opts back in with a one-line
 /// `id: software-interviews` — the built-in reference returned verbatim (the
 /// golden that guards the default-subject flip).
 void main() {
-  group('resolveSubjectConfig — built-in opt-in by id', () {
+  group('resolveDeckTemplate — built-in opt-in by id', () {
     test('one-line `id: software-interviews` returns the built-in SWE config',
         () {
-      expect(resolveSubjectConfig('id: software-interviews'),
-          same(softwareInterviewsConfig));
+      expect(resolveDeckTemplate('id: software-interviews'),
+          same(softwareInterviewsTemplate));
       // Extra fields are ignored for a built-in (app-owned) id.
-      expect(resolveSubjectConfig('id: software-interviews\nfoo: bar'),
-          same(softwareInterviewsConfig));
+      expect(resolveDeckTemplate('id: software-interviews\nfoo: bar'),
+          same(softwareInterviewsTemplate));
     });
 
     test('`id: general` returns the neutral built-in', () {
-      expect(resolveSubjectConfig('id: general'), same(neutralSubjectConfig));
+      expect(resolveDeckTemplate('id: general'), same(neutralTemplate));
     });
 
     test('a non-built-in id is parsed as a full custom config', () {
-      final cfg = resolveSubjectConfig('''
+      final cfg = resolveDeckTemplate('''
 id: my-lang
 target:
   levels: [{id: a1, label: A1}]
@@ -36,14 +36,14 @@ target:
     });
 
     test('malformed / incomplete config → null (discovery skips it)', () {
-      expect(resolveSubjectConfig('not a map'), isNull);
-      expect(resolveSubjectConfig('id: my-lang'), isNull); // no target → throws
+      expect(resolveDeckTemplate('not a map'), isNull);
+      expect(resolveDeckTemplate('id: my-lang'), isNull); // no target → throws
     });
   });
 
   test('the neutral built-in is subject-agnostic', () {
-    expect(neutralSubjectConfig.id, 'general');
-    expect(neutralSubjectConfig.vocabulary.hasAssessment, isFalse);
-    expect(neutralSubjectConfig.flows.single.cardType, 'flashcard');
+    expect(neutralTemplate.id, 'general');
+    expect(neutralTemplate.vocabulary.hasAssessment, isFalse);
+    expect(neutralTemplate.flows.single.cardType, 'flashcard');
   });
 }

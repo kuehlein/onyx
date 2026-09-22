@@ -7,7 +7,7 @@ import '../../core/ai/interview_debrief.dart';
 import '../../core/goal/interview_aim.dart';
 import 'ai.dart';
 import 'study_goals.dart';
-import 'subject.dart';
+import 'template.dart';
 import 'vault.dart';
 
 part 'interview_debrief.g.dart';
@@ -89,7 +89,7 @@ class InterviewDebrief extends _$InterviewDebrief {
       // Label the interview by its company (falling back to the goal's target
       // role) for the prompt's "debriefing for: …" line.
       final goal = await ref.read(activeStudyGoalProvider.future);
-      final registry = await ref.read(subjectRegistryProvider.future);
+      final registry = await ref.read(templateRegistryProvider.future);
       final role = goal
           .toTarget(registry.byId(goal.templateId) ?? registry.primary)
           .label;

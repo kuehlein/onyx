@@ -1,15 +1,15 @@
 import 'package:yaml/yaml.dart';
 
 import '../../shared/models/card.dart';
-import '../subject/active_subject.dart';
-import '../subject/subject_config.dart';
+import '../template/active_template.dart';
+import '../template/deck_template.dart';
 
 /// The live card-parsing facts for the ACTIVE subject's [ParseProfile], surfaced
 /// by the "How cards are read" settings sheet (docs/settings-ux.md §4). Derived
 /// from the profile (never restated), so it always reflects the real rules — a
 /// subject that customizes its section level or file types shows its own facts.
 List<({String label, String value})> cardParsingRules() {
-  final p = activeSubject.parseProfile;
+  final p = activeTemplate.parseProfile;
   return [
     (label: 'Sections split on', value: 'Headings (H${p.sectionHeadingLevel})'),
     (
@@ -83,10 +83,10 @@ class CardParser {
 
   /// Parses [content] into a [Card], or null when the file is not an Onyx card.
   ///
-  /// [subjectId] tags the card with its owning subject (task #30d); it defaults to
+  /// [templateId] tags the card with its owning subject (task #30d); it defaults to
   /// the active subject's id, so single-subject parsing is unchanged. In a
   /// multi-subject vault the indexer passes the per-path subject id (M2).
-  Card? parse(String content, {required String filePath, String? subjectId}) {
+  Card? parse(String content, {required String filePath, String? templateId}) {
     // Normalize Windows CRLF up front so neither the frontmatter values nor the
     // line-based H1/H2/fence scan carry a trailing \r. Dart's `.` and `$` don't
     // span/precede a \r, so a CRLF-terminated `# Title` otherwise fails the
@@ -108,7 +108,7 @@ class CardParser {
     // subject (task #30d); single-subject vaults resolve to the one active
     // subject. The indexer passes the per-path subject id; a null default keeps
     // direct callers/tests on the active subject.
-    final subject = subjectFor(subjectId ?? activeSubject.id);
+    final subject = templateFor(templateId ?? activeTemplate.id);
 
     final type = (frontmatter['type'] as String?)?.trim();
     // A file is an Onyx card iff its `type:` matches one of the subject's
@@ -138,7 +138,7 @@ class CardParser {
     return Card(
       id: id,
       type: type,
-      subjectId: subjectId ?? activeSubject.id,
+      templateId: templateId ?? activeTemplate.id,
       title: title,
       overview: overview,
       tags: _stringList(frontmatter['tags']) ?? const [],
@@ -178,7 +178,7 @@ class CardParser {
   CardSection _buildSection(
     String heading,
     String content,
-    SubjectConfig subject,
+    DeckTemplate subject,
     String type,
     List<String>? quizOverride,
   ) {

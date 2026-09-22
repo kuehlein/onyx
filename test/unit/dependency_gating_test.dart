@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/dependency_gating.dart';
+import 'package:onyx/core/template/dependency_gating.dart';
 
 void main() {
   // Competence table: a concept's durability (0..1). Unknown → 0.

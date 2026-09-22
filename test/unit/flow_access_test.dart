@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/dependency_gating.dart';
-import 'package:onyx/core/subject/flow_access.dart';
+import 'package:onyx/core/template/dependency_gating.dart';
+import 'package:onyx/core/template/flow_access.dart';
 
 GateStatus _gate(bool unlocked) => GateStatus(
     unlocked: unlocked,

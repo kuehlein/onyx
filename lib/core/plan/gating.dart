@@ -17,7 +17,7 @@
 /// [algoGroupPrereqs]).
 library;
 
-import '../subject/dependency_gating.dart';
+import '../template/dependency_gating.dart';
 import 'practice_plan.dart';
 
 /// A prerequisite concept card is "comfortable" once at least this fraction of

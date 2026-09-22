@@ -11,7 +11,7 @@ import '../../core/vault/vault_ref_store.dart';
 import '../../core/vault/vault_source.dart';
 import 'database.dart';
 import 'settings.dart';
-import 'subject.dart';
+import 'template.dart';
 
 part 'vault.g.dart';
 
@@ -126,9 +126,9 @@ Future<IndexResult> vaultIndex(Ref ref) async {
   // touching `ref` risks a disposed-element error when an upstream re-settles.
   final source = ref.watch(vaultSourceProvider);
   final db = ref.watch(appDatabaseProvider);
-  // Ensure the subject registry is loaded (activeSubject set) BEFORE parsing — the
+  // Ensure the subject registry is loaded (activeTemplate set) BEFORE parsing — the
   // parser reads the flow definitions from each card's subject (#30 Phase 5 / #30d).
-  final registry = await ref.watch(subjectRegistryProvider.future);
+  final registry = await ref.watch(templateRegistryProvider.future);
   if (source == null) {
     return const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0);
   }

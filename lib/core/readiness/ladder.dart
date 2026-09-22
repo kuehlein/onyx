@@ -8,8 +8,8 @@
 library;
 
 import '../../shared/models/card.dart';
-import '../subject/active_subject.dart';
-import '../subject/subject_config.dart';
+import '../template/active_template.dart';
+import '../template/deck_template.dart';
 import '../interview/transfer.dart';
 import 'readiness.dart';
 import 'target.dart';
@@ -27,8 +27,8 @@ class Rung {
 /// The rungs in increasing demand — level-major, first context value before the
 /// second (SWE: Typical before FAANG), generated from the active subject config.
 /// A getter (not a memoized final) so it always reflects the current
-/// [activeSubject] — which the vault loader may set after startup (#30 Phase 5).
-List<Rung> get readinessLadder => ladderFor(activeSubject.target);
+/// [activeTemplate] — which the vault loader may set after startup (#30 Phase 5).
+List<Rung> get readinessLadder => ladderFor(activeTemplate.target);
 
 /// The rungs for a specific template's [spec] (#30d multi-template) — so each
 /// goal's ladder uses its own level/context slots, not the process-global primary.

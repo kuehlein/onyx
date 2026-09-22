@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/dependency_gating.dart';
-import 'package:onyx/core/subject/flow_access.dart';
-import 'package:onyx/core/subject/flow_prompt.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/dependency_gating.dart';
+import 'package:onyx/core/template/flow_access.dart';
+import 'package:onyx/core/template/flow_prompt.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 
 /// #30c Phase 6 — end-to-end acceptance: a subject defined ENTIRELY in config +
@@ -48,8 +48,8 @@ Future<String?> _read(String path) async => path == 'skills/waiter.md'
     : null;
 
 void main() {
-  setUp(() => activeSubject = subjectConfigFromYaml(_demoYaml));
-  tearDown(() => activeSubject = softwareInterviewsConfig);
+  setUp(() => activeTemplate = deckTemplateFromYaml(_demoYaml));
+  tearDown(() => activeTemplate = softwareInterviewsTemplate);
 
   test('a `conversation` card parses as a configured practice-track flow', () {
     final card = const CardParser().parse(_conversationCard, filePath: 'c.md')!;
@@ -60,7 +60,7 @@ void main() {
     expect(card.sections.any((s) => s.quizzable), isFalse);
     // Its flow carries the vault skill path (Phase 5).
     expect(
-        activeSubject.flowForType('conversation')?.skill, 'skills/waiter.md');
+        activeTemplate.flowForType('conversation')?.skill, 'skills/waiter.md');
   });
 
   test('gating + override + self-healing over the real card deps', () {
@@ -100,7 +100,7 @@ void main() {
         concepts: card.dependsOn, competenceOf: comp, competenceBar: bar);
     expect(frontier, {'greetings', 'food-nouns'});
 
-    final flow = activeSubject.flowForType(card.type)!;
+    final flow = activeTemplate.flowForType(card.type)!;
     final skill = await loadFlowSkill(_read, flow.skill);
     expect(skill, contains('friendly waiter'));
 

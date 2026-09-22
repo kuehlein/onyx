@@ -30,7 +30,7 @@ Widget _app(List<InterviewAim> interviews) => ProviderScope(
       overrides: [
         studyGoalsProvider.overrideWith(() => _FakeGoals(interviews)),
         clockProvider.overrideWith((ref) async => Clock.real),
-        // subjectRegistry uses the built-in SWE config when the source is null.
+        // templateRegistry uses the built-in SWE config when the source is null.
         vaultSourceProvider.overrideWithValue(null),
         // The card's pace chip depends on a heavy forecast; stub it out.
         readinessForecastForProvider.overrideWith((ref, dims) async => null),

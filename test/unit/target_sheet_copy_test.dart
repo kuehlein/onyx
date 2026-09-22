@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/features/home/target_sheet.dart';
 
 /// G7c: the target sheet's date-field label reads from the goal's [Vocabulary] —

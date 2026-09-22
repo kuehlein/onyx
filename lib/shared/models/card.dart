@@ -1,8 +1,8 @@
-import '../../core/subject/active_subject.dart';
+import '../../core/template/active_template.dart';
 
 // The SWE card-type value constants, re-exported so type comparisons across the
 // app use one hyphenated source of truth (no camelCase-vs-hyphen mistypes).
-export '../../core/subject/software_interviews.dart'
+export '../../core/template/software_interviews.dart'
     show
         kTypeFlashcard,
         kTypeInterviewQuestion,
@@ -16,7 +16,7 @@ export '../../core/subject/software_interviews.dart'
 /// flow is not an Onyx card and is skipped by the indexer (how `_meta/` files and
 /// ordinary notes are ignored). All behavior for a type — scheduling,
 /// quizzability, practice-track, display — comes from the active subject's
-/// `FlowSpec` (see lib/core/subject/), not a hardcoded enum (task #30c Phase 4).
+/// `FlowSpec` (see lib/core/template/), not a hardcoded enum (task #30c Phase 4).
 
 /// Author-assigned trust level, set during card verification. Guides how much to
 /// rely on a card before cross-checking it against its Resources links.
@@ -135,7 +135,7 @@ class Card {
   const Card({
     required this.id,
     required this.type,
-    this.subjectId = '',
+    this.templateId = '',
     required this.title,
     required this.overview,
     required this.tags,
@@ -171,22 +171,22 @@ class Card {
   /// it lives in (task #30d). Empty means "unspecified", resolved as the primary
   /// subject. In a single-subject vault this is that one subject's id, so nothing
   /// downstream changes. Card behavior (flow, quizzability, readiness) will resolve
-  /// against `registry[subjectId]` rather than a global (M2).
-  final String subjectId;
+  /// against `registry[templateId]` rather than a global (M2).
+  final String templateId;
 
   /// Whether this card belongs to a separate paced practice track (its flow
   /// schedules as two-clock/mock) rather than the spaced concept deck. Excluded
   /// from the review/learn queues and the recall-coverage denominator; feeds
   /// readiness via applied-transfer. Derived from this card's own subject config
   /// (task #30d); single-subject vaults resolve to the one active subject.
-  bool get isPracticeTrack => subjectFor(subjectId).isPracticeTrackType(type);
+  bool get isPracticeTrack => templateFor(templateId).isPracticeTrackType(type);
 
   /// Whether this is an *approach-only* applied card (its [overview] is a problem
   /// statement and the study UI offers practice instead of plain recall) rather
   /// than a recall fact. Config-driven (invariant #2) via this card's own subject,
   /// replacing scattered `type == 'interview-question'` checks. Single-subject
   /// vaults resolve to the one active subject.
-  bool get isApproachCard => subjectFor(subjectId).isApproachType(type);
+  bool get isApproachCard => templateFor(templateId).isApproachType(type);
 
   /// This card's lifecycle status. [CardStatus.draft] cards are excluded from all
   /// scheduling and every readiness denominator until promoted through the review

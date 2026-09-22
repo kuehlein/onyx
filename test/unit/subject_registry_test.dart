@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/template_registry.dart';
 
 const _target = TargetSpec(
   levels: [
@@ -14,48 +14,48 @@ const _target = TargetSpec(
   fallbackTrackId: 't',
 );
 
-SubjectConfig _cfg(String id) => SubjectConfig(id: id, target: _target);
+DeckTemplate _cfg(String id) => DeckTemplate(id: id, target: _target);
 
 void main() {
-  group('subjectRootDir', () {
+  group('templateRootDir', () {
     test('maps config paths to their subtree root', () {
-      expect(subjectRootDir('_meta/onyx-subject.yaml'), '');
-      expect(subjectRootDir('onyx-subject.yaml'), '');
-      expect(subjectRootDir('korean/onyx-subject.yaml'), 'korean');
-      expect(subjectRootDir('korean/_meta/onyx-subject.yaml'), 'korean');
-      expect(subjectRootDir('langs/korean/onyx-subject.yaml'), 'langs/korean');
+      expect(templateRootDir('_meta/onyx-subject.yaml'), '');
+      expect(templateRootDir('onyx-subject.yaml'), '');
+      expect(templateRootDir('korean/onyx-subject.yaml'), 'korean');
+      expect(templateRootDir('korean/_meta/onyx-subject.yaml'), 'korean');
+      expect(templateRootDir('langs/korean/onyx-subject.yaml'), 'langs/korean');
     });
   });
 
-  group('SubjectRegistry.single', () {
+  group('TemplateRegistry.single', () {
     test('is a one-entry whole-vault registry', () {
-      final r = SubjectRegistry.single(_cfg('swe'));
+      final r = TemplateRegistry.single(_cfg('swe'));
       expect(r.isSingle, isTrue);
       expect(r.primary.id, 'swe');
-      expect(r.subjectForPath('anything/at/all.md').id, 'swe');
-      expect(r.subjectIdForPath('x.md'), 'swe');
+      expect(r.templateForPath('anything/at/all.md').id, 'swe');
+      expect(r.templateIdForPath('x.md'), 'swe');
     });
   });
 
-  group('SubjectRegistry.fromConfigs', () {
+  group('TemplateRegistry.fromConfigs', () {
     test('empty discovery falls back to the built-in subject', () {
-      final r = SubjectRegistry.fromConfigs(const [], fallback: _cfg('swe'));
+      final r = TemplateRegistry.fromConfigs(const [], fallback: _cfg('swe'));
       expect(r.isSingle, isTrue);
       expect(r.primary.id, 'swe');
     });
 
     test('single root config collapses to the single-subject case', () {
-      final r = SubjectRegistry.fromConfigs(
+      final r = TemplateRegistry.fromConfigs(
         [('_meta/onyx-subject.yaml', _cfg('korean'))],
         fallback: _cfg('swe'),
       );
       expect(r.isSingle, isTrue);
       expect(r.primary.id, 'korean');
-      expect(r.subjectForPath('word-hello.md').id, 'korean');
+      expect(r.templateForPath('word-hello.md').id, 'korean');
     });
 
     test('resolves each card to its nearest-ancestor subject', () {
-      final r = SubjectRegistry.fromConfigs(
+      final r = TemplateRegistry.fromConfigs(
         [
           ('_meta/onyx-subject.yaml', _cfg('root')),
           ('korean/onyx-subject.yaml', _cfg('korean')),
@@ -64,20 +64,20 @@ void main() {
         fallback: _cfg('swe'),
       );
       expect(
-          r.subjects.map((s) => s.id), containsAll(['root', 'korean', 'cs']));
+          r.templates.map((s) => s.id), containsAll(['root', 'korean', 'cs']));
       expect(r.isSingle, isFalse);
       // Nearest-ancestor by longest matching root.
-      expect(r.subjectForPath('korean/word-hello.md').id, 'korean');
-      expect(r.subjectForPath('cs/deck/two-sum.md').id, 'cs');
+      expect(r.templateForPath('korean/word-hello.md').id, 'korean');
+      expect(r.templateForPath('cs/deck/two-sum.md').id, 'cs');
       // Under no subtree → the whole-vault (root) subject is primary.
-      expect(r.subjectForPath('misc/stray.md').id, 'root');
+      expect(r.templateForPath('misc/stray.md').id, 'root');
       expect(r.primary.id, 'root');
       expect(r.byId('cs')?.id, 'cs');
       expect(r.byId('nope'), isNull);
     });
 
     test('duplicate ids are deduped (first by path wins)', () {
-      final r = SubjectRegistry.fromConfigs(
+      final r = TemplateRegistry.fromConfigs(
         [
           ('cs/onyx-subject.yaml', _cfg('dup')),
           ('korean/onyx-subject.yaml', _cfg('dup')),
@@ -86,22 +86,22 @@ void main() {
       );
       // Only one entry survives, so path- and id-resolution can't disagree.
       expect(r.entries.length, 1);
-      expect(r.subjects.map((s) => s.id), ['dup']);
+      expect(r.templates.map((s) => s.id), ['dup']);
       expect(r.byId('dup')?.id, 'dup');
       // The second (deduped) subtree no longer resolves to a distinct config.
-      expect(r.subjectForPath('cs/x.md').id, 'dup');
+      expect(r.templateForPath('cs/x.md').id, 'dup');
     });
 
     test('deeper subtree wins over a shallower one', () {
-      final r = SubjectRegistry.fromConfigs(
+      final r = TemplateRegistry.fromConfigs(
         [
           ('langs/onyx-subject.yaml', _cfg('langs')),
           ('langs/korean/onyx-subject.yaml', _cfg('korean')),
         ],
         fallback: _cfg('swe'),
       );
-      expect(r.subjectForPath('langs/korean/hi.md').id, 'korean');
-      expect(r.subjectForPath('langs/spanish/hola.md').id, 'langs');
+      expect(r.templateForPath('langs/korean/hi.md').id, 'korean');
+      expect(r.templateForPath('langs/spanish/hola.md').id, 'langs');
       // No root subject → first discovered is primary.
       expect(r.primary.id, 'langs');
     });

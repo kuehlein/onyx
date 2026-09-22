@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
 
 /// A tiny non-SWE subject (language learning) expressed purely as config — proves
-/// the vault YAML loader (#30 Phase 5) builds a working SubjectConfig with values
+/// the vault YAML loader (#30 Phase 5) builds a working DeckTemplate with values
 /// that have nothing to do with SWE.
 const _demoYaml = '''
 id: demo-lang
@@ -26,8 +26,8 @@ flows:
 ''';
 
 void main() {
-  group('subjectConfigFromYaml', () {
-    final cfg = subjectConfigFromYaml(_demoYaml);
+  group('deckTemplateFromYaml', () {
+    final cfg = deckTemplateFromYaml(_demoYaml);
     final t = cfg.target;
 
     test('parses id + slot values', () {
@@ -74,7 +74,7 @@ void main() {
     });
 
     test('missing label falls back to id', () {
-      final c = subjectConfigFromYaml('''
+      final c = deckTemplateFromYaml('''
 id: x
 target:
   levels: [{id: only}]
@@ -86,7 +86,7 @@ target:
 
     test('empty/missing tierCurve becomes the default (no later crash)', () {
       // An empty curve used to parse fine then crash in tierRelevance(curve.first).
-      final c = subjectConfigFromYaml('''
+      final c = deckTemplateFromYaml('''
 id: x
 target:
   levels: [{id: only, tierCurve: []}]
@@ -98,10 +98,10 @@ target:
     });
 
     test('malformed / incomplete config throws (loader then defaults)', () {
-      expect(() => subjectConfigFromYaml('not a map'), throwsFormatException);
-      expect(() => subjectConfigFromYaml('id: x'), throwsFormatException);
+      expect(() => deckTemplateFromYaml('not a map'), throwsFormatException);
+      expect(() => deckTemplateFromYaml('id: x'), throwsFormatException);
       expect(
-        () => subjectConfigFromYaml(
+        () => deckTemplateFromYaml(
             'id: x\ntarget: {levels: [], contexts: [{id: c}], tracks: [{id: t}]}'),
         throwsFormatException,
       );
@@ -110,13 +110,13 @@ target:
 
   group('vocabulary + parse profile (G3/G4)', () {
     test('absent blocks → neutral vocabulary + standard parse profile', () {
-      final cfg = subjectConfigFromYaml(_demoYaml);
+      final cfg = deckTemplateFromYaml(_demoYaml);
       expect(cfg.vocabulary, same(Vocabulary.neutral));
       expect(cfg.parseProfile, same(ParseProfile.standard));
     });
 
     test('declared vocabulary + parse block parse into the config', () {
-      final cfg = subjectConfigFromYaml('''
+      final cfg = deckTemplateFromYaml('''
 id: x
 target:
   levels: [{id: only}]
@@ -144,7 +144,7 @@ parse:
     });
 
     test('out-of-range level + empty extensions fall back to defaults', () {
-      final cfg = subjectConfigFromYaml('''
+      final cfg = deckTemplateFromYaml('''
 id: x
 target:
   levels: [{id: only}]

@@ -14,8 +14,8 @@
 library;
 
 import 'dart:convert';
-import '../subject/active_subject.dart';
-import '../subject/subject_config.dart';
+import '../template/active_template.dart';
+import '../template/deck_template.dart';
 import '../util.dart';
 
 enum SeniorityLevel { newGrad, mid, senior, staff }
@@ -97,7 +97,7 @@ class ReadinessTarget {
 
   /// The [TargetSpec] to score against — the goal's template, or the active
   /// subject's when unset.
-  TargetSpec get spec => templateTarget ?? activeSubject.target;
+  TargetSpec get spec => templateTarget ?? activeTemplate.target;
 
   static const fallback = ReadinessTarget(
     levelId: 'mid',
@@ -221,7 +221,7 @@ double domainWeight(ReadinessTarget target, String domain) =>
 /// applied/transfer dimension, not here. Now read from the active subject's
 /// **level** slot (tier curves) — see #30 Phase 1.
 double tierRelevance(SeniorityLevel level, int? tier) =>
-    activeSubject.target.tierRelevance(level.name, tier);
+    activeTemplate.target.tierRelevance(level.name, tier);
 
 /// The tier→weight map for a [target]'s level, covering tiers 1..[maxTier].
 /// Passed to `computeReadiness` so coverage + strength are relevance-weighted.

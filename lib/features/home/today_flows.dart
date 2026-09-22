@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/plan/daily_plan.dart';
 import '../../core/plan/practice_plan.dart';
-import '../../core/subject/active_subject.dart';
+import '../../core/template/active_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
@@ -219,13 +219,13 @@ const _trackMetaById = <String, _TrackMeta>{
 /// Resolve a planned track's icon/route/noun. The four built-in SWE tracks keep
 /// their fixed [_trackMetaById] entries exactly as before. A track that ISN'T one
 /// of those but IS a **config practice flow** (a vault-authored flow in
-/// `activeSubject.flows` with an AI `skill`) routes to the generic FlowRunner,
+/// `activeTemplate.flows` with an AI `skill`) routes to the generic FlowRunner,
 /// pushed full-screen at its first unit. Everything else falls back to review.
 _TrackMeta _metaFor(PlannedTrack track) {
   final builtin = _trackMetaById[track.track];
   if (builtin != null) return builtin;
 
-  final flow = activeSubject.flowForType(track.track);
+  final flow = activeTemplate.flowForType(track.track);
   if (flow != null && flow.skill != null && track.units.isNotEmpty) {
     return _TrackMeta(
       flowIcon(flow.iconKey),

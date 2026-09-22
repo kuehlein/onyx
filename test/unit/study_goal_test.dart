@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/goal/study_goal.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/shared/models/card.dart';
 
 Card _card(String id, {List<String> tags = const [], String? path}) => Card(
@@ -15,7 +15,7 @@ Card _card(String id, {List<String> tags = const [], String? path}) => Card(
       filePath: path ?? '$id.md',
     );
 
-const _template = SubjectConfig(
+const _template = DeckTemplate(
   id: 'demo',
   target: TargetSpec(
     levels: [

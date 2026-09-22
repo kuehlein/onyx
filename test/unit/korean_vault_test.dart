@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/dependency_gating.dart';
-import 'package:onyx/core/subject/flow_access.dart';
-import 'package:onyx/core/subject/flow_prompt.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/dependency_gating.dart';
+import 'package:onyx/core/template/flow_access.dart';
+import 'package:onyx/core/template/flow_prompt.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -18,7 +18,7 @@ void main() {
   late List<Card> cards;
 
   setUp(() async {
-    activeSubject = subjectConfigFromYaml((await source.readMeta(
+    activeTemplate = deckTemplateFromYaml((await source.readMeta(
       'onyx-subject.yaml',
     ))!);
     cards = [
@@ -29,15 +29,15 @@ void main() {
           c,
     ];
   });
-  tearDown(() => activeSubject = softwareInterviewsConfig);
+  tearDown(() => activeTemplate = softwareInterviewsTemplate);
 
   test('the vault loads as a config-only Korean subject', () {
-    expect(activeSubject.id, 'korean');
-    expect(activeSubject.target.levels.map((l) => l.id),
+    expect(activeTemplate.id, 'korean');
+    expect(activeTemplate.target.levels.map((l) => l.id),
         ['beginner', 'elementary']);
-    expect(activeSubject.target.contexts.map((c) => c.label),
+    expect(activeTemplate.target.contexts.map((c) => c.label),
         ['Casual', 'TOPIK exam']);
-    expect(activeSubject.flows.map((f) => f.cardType),
+    expect(activeTemplate.flows.map((f) => f.cardType),
         ['flashcard', 'conversation']);
     // The skill file (no `type:`) is not indexed as a card.
     expect(cards.map((c) => c.id), isNot(contains('order-water-skill')));
@@ -94,7 +94,7 @@ void main() {
     expect(frontier, {'word-hello', 'word-water'});
 
     final skill = await loadFlowSkill(
-        source.readCard, activeSubject.flowForType('conversation')!.skill);
+        source.readCard, activeTemplate.flowForType('conversation')!.skill);
     expect(skill, contains('Korean café server'));
 
     final prompt = assembleFlowPrompt(

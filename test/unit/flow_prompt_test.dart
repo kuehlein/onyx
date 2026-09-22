@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/flow_prompt.dart';
+import 'package:onyx/core/template/flow_prompt.dart';
 
 void main() {
   group('assembleFlowPrompt', () {

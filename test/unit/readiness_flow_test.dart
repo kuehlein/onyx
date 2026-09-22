@@ -5,8 +5,8 @@ import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/goal/study_goal.dart';
 import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
@@ -14,7 +14,7 @@ import 'package:onyx/shared/providers/interview.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/study_goals.dart';
-import 'package:onyx/shared/providers/subject.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -82,8 +82,8 @@ void main() {
         srsStatesProvider.overrideWith((ref) async => states),
         // This test asserts SWE track-weighting (ds-a vs system-design), so pin
         // the SWE subject — the config-less default is now neutral (G7f).
-        subjectRegistryProvider.overrideWith(
-            (ref) async => SubjectRegistry.single(softwareInterviewsConfig)),
+        templateRegistryProvider.overrideWith(
+            (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
         // Pin the study goals (whole-vault default) so readiness doesn't scan the
         // real dev vault to discover subjects/goals (task #30d).
         studyGoalsProvider.overrideWith(() => _FixedGoals(

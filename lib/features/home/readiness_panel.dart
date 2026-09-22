@@ -7,11 +7,11 @@ import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/subject_config.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/deck_template.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../insights/weak_area_sheet.dart';
 import 'target_sheet.dart';
 
@@ -42,8 +42,8 @@ class ReadinessPanel extends ConsumerWidget {
         ref.watch(appliedSummaryProvider).asData?.value ?? const {};
     // The active goal's assessment vocabulary (fall back to the primary while it
     // loads) so a non-SWE goal never reads "interview" copy (G7).
-    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
+    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
     final anyStudied = r.domains.any((d) => d.studied > 0);
     // A no-loss "last 7 days" activity indicator (never a streak/guilt cue —
     // design-system §4.10, readiness-dashboard §6). Shown once there's activity.

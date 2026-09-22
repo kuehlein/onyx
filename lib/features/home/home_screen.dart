@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/clock.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/subject_config.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/deck_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/backup.dart';
@@ -13,7 +13,7 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/drafts.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
@@ -231,8 +231,8 @@ class _TargetCard extends ConsumerWidget {
     final clock = ref.watch(clockProvider).asData?.value;
     // Read the ACTIVE GOAL's template vocabulary (fall back to the primary while
     // it loads) so a non-SWE goal is never told to "set your interview target".
-    final goalSubject = ref.watch(activeGoalSubjectProvider).asData?.value;
-    final vocab = goalSubject?.vocabulary ?? activeSubject.vocabulary;
+    final goalSubject = ref.watch(activeGoalTemplateProvider).asData?.value;
+    final vocab = goalSubject?.vocabulary ?? activeTemplate.vocabulary;
     final goal = ref.watch(activeStudyGoalProvider).asData?.value;
     // "Unset" = the goal has no explicitly-chosen target (activeTarget always
     // fills template fallbacks, so it can't be the signal).

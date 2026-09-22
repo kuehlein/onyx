@@ -12,7 +12,7 @@ import '../../core/interview/assessment.dart'
         sweRubricDimensions,
         systemDesignRubricDimensions;
 import '../../core/readiness/readiness.dart' show prettyDomain;
-import '../../core/subject/active_subject.dart';
+import '../../core/template/active_template.dart';
 import '../../shared/models/card.dart'
     show
         kTypeAlgorithm,
@@ -23,7 +23,7 @@ import '../../shared/providers/algo.dart';
 import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/readiness_panel.dart';
 
@@ -136,7 +136,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     // when the active subject declares its matching flow, so a non-SWE subject
     // sees none (task #88 / G7d). SWE declares all five → the group is unchanged.
     final subject =
-        ref.watch(activeGoalSubjectProvider).asData?.value ?? activeSubject;
+        ref.watch(activeGoalTemplateProvider).asData?.value ?? activeTemplate;
     final appliedKeys =
         appliedSectionKeys({for (final f in subject.flows) f.cardType});
 

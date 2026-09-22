@@ -223,8 +223,8 @@ class ParseProfile {
 /// A configured study subject. Grows across the #30 phases; currently [id],
 /// [target] (Phase 0/2), [flows] (Phase 3), [vocabulary] (G3), and
 /// [parseProfile] (G4).
-class SubjectConfig {
-  const SubjectConfig({
+class DeckTemplate {
+  const DeckTemplate({
     required this.id,
     required this.target,
     this.flows = const [],

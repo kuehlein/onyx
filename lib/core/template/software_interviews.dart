@@ -1,4 +1,4 @@
-import 'subject_config.dart';
+import 'deck_template.dart';
 
 /// The SWE card-type values — the single source of truth so `system-design` vs
 /// `behavioral` comparisons in the SWE-specific providers can't be mistyped as
@@ -18,7 +18,7 @@ const kTypeBehavioral = 'behavioral';
 /// The slot `id`s deliberately equal the legacy enum `.name`s
 /// (`SeniorityLevel`/`CompanyTier`/`Track`) so persisted `onyx-target.json` /
 /// `onyx-goals.json` values resolve unchanged.
-const softwareInterviewsConfig = SubjectConfig(
+const softwareInterviewsTemplate = DeckTemplate(
   id: 'software-interviews',
   // The SWE domain augmentation lives in the shipped vault's `_meta/coach.md`
   // (read via readMeta, parsed by coachSkillFromMarkdown); absent → the

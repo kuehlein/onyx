@@ -11,7 +11,7 @@ import 'readiness.dart';
 import 'settings.dart';
 import 'srs.dart';
 import 'study_goals.dart';
-import 'subject.dart';
+import 'template.dart';
 
 part 'coach_update.g.dart';
 
@@ -24,7 +24,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   // Register synchronously (before the first await) so a mid-flight goal edit
   // rebuilding studyGoals can't leave us using a disposed ref after the gap.
   final goalF = ref.watch(activeStudyGoalProvider.future);
-  final subjectF = ref.watch(activeGoalSubjectProvider.future);
+  final subjectF = ref.watch(activeGoalTemplateProvider.future);
   final readiness = await ref.watch(readinessProvider.future);
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 

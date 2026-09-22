@@ -9,8 +9,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
-import '../../core/subject/active_subject.dart';
-import '../../core/subject/subject_config.dart';
+import '../../core/template/active_template.dart';
+import '../../core/template/deck_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/srs.dart';
@@ -313,7 +313,7 @@ class _ActiveFilters extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Dim.space3),
         children: [
           for (final t in filter.types)
-            _chip(context, activeSubject.flowForType(t)?.displayLabel ?? t,
+            _chip(context, activeTemplate.flowForType(t)?.displayLabel ?? t,
                 () => onRemoveType(t)),
           for (final d in filter.domains)
             _chip(context, d, () => onRemoveDomain(d)),
@@ -375,7 +375,7 @@ class _CardTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // One flow lookup per tile; icon/hue/label come from its display keys so a
     // card reads the same everywhere (concept deck vs each practice track).
-    final flow = activeSubject.flowForType(card.type);
+    final flow = activeTemplate.flowForType(card.type);
     final color = SubjectColor.forKey(flow?.colorKey);
     final sectionCount = card.quizzableSections.length;
 

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/ai/coach.dart' show CoachRole;
 import '../../core/interview/assessment.dart' show flowRubricDimensions;
 import '../../core/practice/mock_session.dart';
-import '../../core/subject/flow_spec.dart';
+import '../../core/template/flow_spec.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/flow_runner.dart';

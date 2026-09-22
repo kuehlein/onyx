@@ -11,7 +11,7 @@ import 'dart:convert';
 import '../dev.dart';
 import '../util.dart';
 import '../readiness/target.dart';
-import '../subject/subject_config.dart';
+import '../template/deck_template.dart';
 import '../vault/vault_source.dart';
 import 'study_goal.dart';
 
@@ -19,7 +19,7 @@ import 'study_goal.dart';
 /// from [baseTarget] (null → the template fallbacks stand); the interviews from
 /// [interviews]. With no legacy data this equals `defaultGoalFor(template)`.
 StudyGoal migratedDefaultGoal(
-  SubjectConfig template, {
+  DeckTemplate template, {
   ReadinessTarget? baseTarget,
   List<InterviewAim> interviews = const [],
 }) =>

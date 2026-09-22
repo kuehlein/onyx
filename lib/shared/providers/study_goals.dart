@@ -4,7 +4,7 @@ import '../../core/goal/aim_migration.dart';
 import '../../core/goal/goal_store.dart';
 import '../../core/goal/study_goal.dart';
 import '../../core/readiness/target_service.dart';
-import 'subject.dart';
+import 'template.dart';
 import 'vault.dart';
 
 part 'study_goals.g.dart';
@@ -25,7 +25,7 @@ part 'study_goals.g.dart';
 class StudyGoals extends _$StudyGoals {
   @override
   Future<List<StudyGoal>> build() async {
-    final registry = await ref.watch(subjectRegistryProvider.future);
+    final registry = await ref.watch(templateRegistryProvider.future);
     final source = ref.watch(vaultSourceProvider);
     final loaded =
         source == null ? const <StudyGoal>[] : await GoalStore(source).load();

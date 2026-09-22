@@ -6,7 +6,7 @@ import '../../core/readiness/projection.dart';
 import '../../core/readiness/target.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/study_goals.dart';
-import '../../shared/providers/subject.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import 'interview_actions.dart';
 import 'interview_sheet.dart';
@@ -30,7 +30,7 @@ class InterviewCard extends ConsumerWidget {
     final ended = aim.status.isEnded;
     // The interview's role dimensions come from the parent goal's target (Phase
     // B — level/context/track live on the goal, not the interview).
-    final registry = ref.watch(subjectRegistryProvider).asData?.value;
+    final registry = ref.watch(templateRegistryProvider).asData?.value;
     final target = registry == null
         ? null
         : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);

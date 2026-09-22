@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/goal/goal_store.dart';
 import 'package:onyx/core/goal/study_goal.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_source.dart';
 import 'package:onyx/shared/providers/study_goals.dart';
 import 'package:onyx/shared/providers/vault.dart';
@@ -90,8 +90,8 @@ void main() {
 
   group('studyGoalsProvider', () {
     tearDown(() {
-      activeSubject = softwareInterviewsConfig;
-      activeRegistry = SubjectRegistry.single(softwareInterviewsConfig);
+      activeTemplate = softwareInterviewsTemplate;
+      activeRegistry = TemplateRegistry.single(softwareInterviewsTemplate);
     });
 
     test('no stored goals → just the synthesized default', () async {

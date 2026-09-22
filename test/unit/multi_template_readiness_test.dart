@@ -3,15 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/goal/study_goal.dart';
-import 'package:onyx/core/subject/subject_config.dart';
-import 'package:onyx/core/subject/subject_registry.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/study_goals.dart';
-import 'package:onyx/shared/providers/subject.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -25,7 +25,7 @@ final bool _sqliteAvailable = () {
   }
 }();
 
-SubjectConfig _template(String id, double stabilityDays) => SubjectConfig(
+DeckTemplate _template(String id, double stabilityDays) => DeckTemplate(
       id: id,
       target: TargetSpec(
         levels: const [
@@ -51,9 +51,9 @@ class _FixedGoals extends StudyGoals {
 
 void main() {
   // Two templates with very different durability bars; one goal on each.
-  final registry = SubjectRegistry(entries: [
-    SubjectEntry(rootDir: '', config: _template('short', 20)),
-    SubjectEntry(rootDir: 'x', config: _template('long', 200)),
+  final registry = TemplateRegistry(entries: [
+    TemplateEntry(rootDir: '', config: _template('short', 20)),
+    TemplateEntry(rootDir: 'x', config: _template('long', 200)),
   ], primaryId: 'short');
 
   const index = IndexResult(
@@ -99,7 +99,7 @@ void main() {
       }),
       vaultIndexProvider.overrideWith((ref) async => index),
       srsStatesProvider.overrideWith((ref) async => states),
-      subjectRegistryProvider.overrideWith((ref) async => registry),
+      templateRegistryProvider.overrideWith((ref) async => registry),
       studyGoalsProvider.overrideWith(() => _FixedGoals(const [
             StudyGoal(id: 'g-short', name: 'S', templateId: 'short'),
             StudyGoal(id: 'g-long', name: 'L', templateId: 'long'),

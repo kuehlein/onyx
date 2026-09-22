@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/features/insights/insights_screen.dart';
 
 /// G7d: the Insights "Applied performance" group renders a SWE applied section
@@ -7,7 +7,9 @@ import 'package:onyx/features/insights/insights_screen.dart';
 /// unchanged; a neutral subject gets none (so the group is hidden).
 void main() {
   test('SWE declares all five applied sections (byte-identical order)', () {
-    final types = {for (final f in softwareInterviewsConfig.flows) f.cardType};
+    final types = {
+      for (final f in softwareInterviewsTemplate.flows) f.cardType
+    };
     expect(appliedSectionKeys(types),
         ['mock', 'systemDesign', 'behavioral', 'algo', 'patterns']);
   });

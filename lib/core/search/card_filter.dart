@@ -1,5 +1,5 @@
 import '../../shared/models/card.dart'; // re-exports the kType* value constants
-import '../subject/active_subject.dart';
+import '../template/active_template.dart';
 
 /// Study-state buckets a card can fall into, derived from its sections' FSRS
 /// schedule.
@@ -186,7 +186,7 @@ String? _parseType(String v) => switch (v) {
       // A raw value that is itself a configured flow id (e.g. a subject's own
       // `conversation`) filters by it; anything else is null so the token falls
       // through to free-text search (preserving the pre-#30 behavior).
-      _ => activeSubject.isCardType(v) ? v : null,
+      _ => activeTemplate.isCardType(v) ? v : null,
     };
 
 MasteryFilter? _parseMastery(String v) => switch (v) {

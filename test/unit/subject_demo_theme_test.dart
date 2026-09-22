@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/readiness/ladder.dart';
 import 'package:onyx/core/readiness/target.dart';
-import 'package:onyx/core/subject/active_subject.dart';
-import 'package:onyx/core/subject/software_interviews.dart';
-import 'package:onyx/core/subject/subject_config_yaml.dart';
+import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/deck_template_yaml.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 
 /// #30 Phase 6 — acceptance test: a throwaway subject defined ENTIRELY in config
@@ -29,9 +29,9 @@ flows:
 ''';
 
 void main() {
-  setUp(() => activeSubject = subjectConfigFromYaml(_demoYaml));
+  setUp(() => activeTemplate = deckTemplateFromYaml(_demoYaml));
   tearDown(
-      () => activeSubject = softwareInterviewsConfig); // no cross-test leak
+      () => activeTemplate = softwareInterviewsTemplate); // no cross-test leak
 
   test('readiness ladder is generated from the demo subject, not SWE', () {
     expect(readinessLadder.map((r) => r.label),
@@ -80,4 +80,4 @@ Other greetings.
 /// tierRelevance takes the SWE enum; for the demo we assert via the config
 /// directly (the enum getter would map an unknown id to the fallback).
 double tierRelevanceForTest(String levelId) =>
-    activeSubject.target.tierRelevance(levelId, 2);
+    activeTemplate.target.tierRelevance(levelId, 2);

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/subject/subject_config.dart';
+import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/features/home/home_screen.dart';
 
 /// G7b: the Home target card draws its copy from the active goal's [Vocabulary].
