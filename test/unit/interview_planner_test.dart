@@ -169,8 +169,8 @@ void main() {
 
     // It landed on the active study goal and will drive the targeting layer.
     final goal = await c.read(activeDeckProvider.future);
-    expect(goal.interviews.map((iv) => iv.companyName), ['Google']);
-    expect(goal.interviews.single.domainWeights['system-design'], 1.6);
+    expect(goal.aims.map((iv) => iv.companyName), ['Google']);
+    expect(goal.aims.single.domainWeights['system-design'], 1.6);
     // The plan seeded the goal's target slots (previously unset) + deadline.
     expect(goal.levelId, 'senior');
     expect(goal.trackId, 'backend');

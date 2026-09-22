@@ -36,7 +36,7 @@ class Deck {
     this.deadline,
     this.budgetWeight = 1.0,
     this.state = DeckState.active,
-    this.interviews = const [],
+    this.aims = const [],
   });
 
   /// Stable id — the key under which this goal's state persists (`_meta/`).
@@ -67,11 +67,13 @@ class Deck {
 
   final DeckState state;
 
-  /// The interviews this goal is prepping for (Phase B aim unification) — a
-  /// subject can hold several at once (Google + Amazon), which the targeting
-  /// layer blends. Empty → a plain study goal (open-ended, or a dated exam
-  /// without an interview loop). All share the goal's level/context/track slots.
-  final List<Aim> interviews;
+  /// The aims this deck points at (Phase B aim unification) — a deck can hold
+  /// several at once (e.g. Google + Amazon interviews, or a comp-test + a jury),
+  /// which the targeting layer blends. Empty → a plain study deck (open-ended, or
+  /// a dated exam without a rounds loop). All share the deck's level/context/track
+  /// slots today; S1 lifts those knobs onto each aim. Persisted under the legacy
+  /// `interviews` JSON key for vault back-compat.
+  final List<Aim> aims;
 
   bool get isActive => state == DeckState.active;
 
@@ -109,8 +111,7 @@ class Deck {
         if (deadline != null) 'deadline': deadline!.toIso8601String(),
         'budgetWeight': budgetWeight,
         'state': state.name,
-        if (interviews.isNotEmpty)
-          'interviews': [for (final i in interviews) i.toJson()],
+        if (aims.isNotEmpty) 'interviews': [for (final i in aims) i.toJson()],
       };
 
   static Deck fromJson(Map<String, dynamic> m) => Deck(
@@ -132,7 +133,7 @@ class Deck {
           (s) => s.name == m['state'],
           orElse: () => DeckState.active,
         ),
-        interviews: m['interviews'] is List
+        aims: m['interviews'] is List
             ? [
                 for (final e in m['interviews'] as List)
                   if (e is Map) Aim.fromJson(e.cast<String, dynamic>()),
@@ -153,7 +154,7 @@ class Deck {
     Object? deadline = _unset,
     double? budgetWeight,
     DeckState? state,
-    List<Aim>? interviews,
+    List<Aim>? aims,
   }) =>
       Deck(
         id: id,
@@ -166,7 +167,7 @@ class Deck {
         deadline: deadline == _unset ? this.deadline : deadline as DateTime?,
         budgetWeight: budgetWeight ?? this.budgetWeight,
         state: state ?? this.state,
-        interviews: interviews ?? this.interviews,
+        aims: aims ?? this.aims,
       );
 }
 

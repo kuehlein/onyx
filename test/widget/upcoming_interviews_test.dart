@@ -21,7 +21,7 @@ class _FakeGoals extends Decks {
           id: defaultDeckId,
           name: 'default',
           templateId: 'software-interviews',
-          interviews: _interviews,
+          aims: _interviews,
         ),
       ];
 }

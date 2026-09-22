@@ -135,7 +135,7 @@ class InterviewPlanner extends _$InterviewPlanner {
           // raw plan.date) so a dropped past date doesn't file the goal in the past.
           deadline: goal.deadline ??
               (aim.rounds.isNotEmpty ? aim.rounds.first.date : null),
-          interviews: [...goal.interviews, aim],
+          aims: [...goal.aims, aim],
         ));
     return aim;
   }

@@ -118,7 +118,7 @@ class InterviewRound {
   }
 }
 
-/// One interview attached to a [Deck] via `Deck.interviews` (a goal can
+/// One interview attached to a [Deck] via `Deck.aims` (a goal can
 /// hold several, which the targeting layer blends).
 class Aim {
   const Aim({
@@ -134,7 +134,7 @@ class Aim {
     this.planNotes,
   });
 
-  /// Stable id, unique within the parent goal's [Deck.interviews] — the key
+  /// Stable id, unique within the parent goal's [Deck.aims] — the key
   /// the UI upserts/removes/mutes by, and what the debrief flow looks up. Migrated
   /// from the legacy `PrepGoal.id`; empty only on a not-yet-persisted draft.
   final String id;

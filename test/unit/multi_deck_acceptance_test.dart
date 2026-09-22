@@ -220,8 +220,8 @@ void main() {
     expect(g.id, defaultDeckId);
     expect([g.levelId, g.contextId, g.trackId], ['senior', 'faang', 'backend']);
     expect(g.deadline, DateTime(2026, 6, 1));
-    expect(g.interviews.single.companyName, 'Google');
-    expect(g.interviews.single.domainWeights['system-design'], 1.3);
+    expect(g.aims.single.companyName, 'Google');
+    expect(g.aims.single.domainWeights['system-design'], 1.3);
 
     // B5 write-through: the migration durably persists the folded default so the
     // legacy files are no longer needed. Wait for the fire-and-forget save.
@@ -262,7 +262,7 @@ void main() {
     addTearDown(c.dispose);
     c.listen(decksProvider, (_, __) {});
     final migrated = (await c.read(decksProvider.future)).single;
-    expect(migrated.interviews.single.id, 'g1');
+    expect(migrated.aims.single.id, 'g1');
     await _awaitFile(storeFile);
 
     // Add a second interview → the persisted default is updated.
@@ -277,7 +277,7 @@ void main() {
     addTearDown(c2.dispose);
     final stored = (await c2.read(decksProvider.future)).single;
     expect(stored.id, defaultDeckId);
-    expect(stored.interviews.map((iv) => iv.id).toSet(), {'g1', 'amzn'});
+    expect(stored.aims.map((iv) => iv.id).toSet(), {'g1', 'amzn'});
     // Slots survived the cutover too.
     expect([stored.levelId, stored.contextId, stored.trackId],
         ['senior', 'faang', 'backend']);

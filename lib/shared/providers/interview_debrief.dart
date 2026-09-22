@@ -60,7 +60,7 @@ class InterviewDebrief extends _$InterviewDebrief {
   /// (Phase B). [deckId] is the [Aim.id].
   Future<Aim?> _aim() async {
     final goal = await ref.read(activeDeckProvider.future);
-    for (final iv in goal.interviews) {
+    for (final iv in goal.aims) {
       if (iv.id == deckId) return iv;
     }
     return null;

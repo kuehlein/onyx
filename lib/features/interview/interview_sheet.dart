@@ -34,7 +34,7 @@ class _InterviewSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(activeDeckProvider).asData?.value;
     if (goal == null) return const SizedBox.shrink();
-    final aim0 = goal.interviews.where((iv) => iv.id == aimId).firstOrNull;
+    final aim0 = goal.aims.where((iv) => iv.id == aimId).firstOrNull;
     if (aim0 == null) return const SizedBox.shrink();
     // A migrated interview can have no stored rounds but a synthetic current round
     // seeded from the goal deadline; materialize it so the round transitions

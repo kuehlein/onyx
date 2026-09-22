@@ -147,8 +147,8 @@ Future<Targeting> targetingForDeck(Ref ref, String deckId) async {
   final base = await targetF;
   return Targeting(
     base: base,
-    interviews: [
-      for (final iv in goal.interviews)
+    aims: [
+      for (final iv in goal.aims)
         if (iv.active) iv,
     ],
     deckId: goal.id,

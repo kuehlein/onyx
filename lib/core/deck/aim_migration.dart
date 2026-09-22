@@ -15,13 +15,13 @@ import '../template/deck_template.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
-/// The whole-vault default goal, enriched from the legacy aim data. Slots/deadline
-/// from [baseTarget] (null → the template fallbacks stand); the interviews from
-/// [interviews]. With no legacy data this equals `defaultDeckFor(template)`.
+/// The whole-vault default deck, enriched from the legacy aim data. Slots/deadline
+/// from [baseTarget] (null → the template fallbacks stand); the aims from [aims].
+/// With no legacy data this equals `defaultDeckFor(template)`.
 Deck migratedDefaultDeck(
   DeckTemplate template, {
   ReadinessTarget? baseTarget,
-  List<Aim> interviews = const [],
+  List<Aim> aims = const [],
 }) =>
     Deck(
       id: defaultDeckId,
@@ -31,7 +31,7 @@ Deck migratedDefaultDeck(
       contextId: baseTarget?.contextId,
       trackId: baseTarget?.trackId,
       deadline: baseTarget?.interviewDate,
-      interviews: interviews,
+      aims: aims,
     );
 
 /// The dev-gated legacy interview file (mirrors the deleted `GoalsService`'s

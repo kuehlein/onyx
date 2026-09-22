@@ -50,7 +50,7 @@ class Decks extends _$Decks {
     final baseTarget = await TargetService(source).load();
     final interviews = await legacyInterviews(source);
     final migrated = migratedDefaultDeck(registry.primary,
-        baseTarget: baseTarget, interviews: interviews);
+        baseTarget: baseTarget, aims: interviews);
     // Write-through: durably persist the folded default so the legacy files are no
     // longer needed (only when there IS legacy data — never persist a bare default).
     // Preserve any graduated explicit goals alongside it (they're hidden here but
@@ -110,22 +110,22 @@ class Decks extends _$Decks {
   Future<void> upsertAim(String deckId, Aim aim) async {
     final goal = _current(deckId);
     if (goal == null) return;
-    final interviews = [...goal.interviews];
+    final interviews = [...goal.aims];
     final i = interviews.indexWhere((iv) => iv.id == aim.id);
     if (i >= 0) {
       interviews[i] = aim;
     } else {
       interviews.add(aim);
     }
-    await upsert(goal.copyWith(interviews: interviews));
+    await upsert(goal.copyWith(aims: interviews));
   }
 
   /// Remove an interview (by id) from a goal.
   Future<void> removeAim(String deckId, String aimId) async {
     final goal = _current(deckId);
     if (goal == null) return;
-    await upsert(goal.copyWith(interviews: [
-      for (final iv in goal.interviews)
+    await upsert(goal.copyWith(aims: [
+      for (final iv in goal.aims)
         if (iv.id != aimId) iv,
     ]));
   }
@@ -135,8 +135,8 @@ class Decks extends _$Decks {
   Future<void> setAimActive(String deckId, String aimId, bool active) async {
     final goal = _current(deckId);
     if (goal == null) return;
-    await upsert(goal.copyWith(interviews: [
-      for (final iv in goal.interviews)
+    await upsert(goal.copyWith(aims: [
+      for (final iv in goal.aims)
         if (iv.id == aimId) iv.copyWith(active: active) else iv,
     ]));
   }

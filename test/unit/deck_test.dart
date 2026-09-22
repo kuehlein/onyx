@@ -155,12 +155,12 @@ void main() {
         name: 'Acme',
         templateId: 'demo',
         deadline: DateTime(2026, 5, 1),
-        interviews: [aim],
+        aims: [aim],
       );
 
       final back = Deck.fromJson(goal.toJson());
-      expect(back.interviews.length, 1);
-      final iv = back.interviews.single;
+      expect(back.aims.length, 1);
+      final iv = back.aims.single;
       expect(iv.companyName, 'Acme');
       expect(iv.rounds.length, 2);
       expect(iv.domainWeights['arrays'], 1.5);
@@ -170,7 +170,7 @@ void main() {
       expect(iv.pastRounds(deckId, back.deadline).map((r) => r.id), ['r1']);
 
       // A plain study goal has no interviews.
-      expect(defaultDeckFor(_template).interviews, isEmpty);
+      expect(defaultDeckFor(_template).aims, isEmpty);
     });
   });
 }

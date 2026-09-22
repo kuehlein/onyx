@@ -87,7 +87,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   // goal's ACTIVE interviews (Phase B — interviews live on the study goal now;
   // [goal] is watched above, before the first await).
   final interviews = [
-    for (final iv in goal.interviews)
+    for (final iv in goal.aims)
       if (iv.active) iv
   ];
   final today = DateTime(now.year, now.month, now.day);

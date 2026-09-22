@@ -16,7 +16,7 @@ import 'target.dart';
 class Targeting {
   const Targeting({
     required this.base,
-    this.interviews = const [],
+    this.aims = const [],
     this.deckId = '',
     this.deadline,
   });
@@ -24,8 +24,8 @@ class Targeting {
   /// The goal's aim — supplies level/track and the readiness stability bar.
   final ReadinessTarget base;
 
-  /// The goal's ACTIVE interviews (the caller filters out muted ones).
-  final List<Aim> interviews;
+  /// The deck's ACTIVE aims (the caller filters out muted ones).
+  final List<Aim> aims;
 
   /// The goal's id + due date — seed a single-date interview's synthetic round.
   final String deckId;
@@ -37,7 +37,7 @@ class Targeting {
   double weightForDomain(String domain) {
     final baseW = domainWeight(base, domain);
     var w = baseW;
-    for (final iv in interviews) {
+    for (final iv in aims) {
       final gw = baseW + (iv.domainWeights[domain] ?? 0);
       if (gw > w) w = gw;
     }
@@ -49,7 +49,7 @@ class Targeting {
   double weightForCard(Card card) {
     final w = weightForDomain(card.domain ?? '');
     var boost = 0.0;
-    for (final iv in interviews) {
+    for (final iv in aims) {
       if (iv.conceptWeights.isEmpty) continue;
       for (final c in card.concepts) {
         final b = iv.conceptWeights[c];
@@ -63,7 +63,7 @@ class Targeting {
   /// date pace/urgency should reason about. Null when nothing is scheduled.
   DateTime? get governingDate {
     DateTime? soonest = base.interviewDate;
-    for (final iv in interviews) {
+    for (final iv in aims) {
       for (final d in iv.roundDates(deckId, deadline)) {
         if (soonest == null || d.isBefore(soonest)) soonest = d;
       }
@@ -89,7 +89,7 @@ class Targeting {
   double desiredRetentionForCard(Card card, {required DateTime today}) {
     final base = card.priority.desiredRetention;
     var best = base;
-    for (final iv in interviews) {
+    for (final iv in aims) {
       // Ramp retention toward the NEXT upcoming round — as round 1 passes, the
       // focus shifts to round 2, etc.
       final date = iv.nextRoundDate(deckId, deadline, today);

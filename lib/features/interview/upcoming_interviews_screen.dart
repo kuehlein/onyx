@@ -34,7 +34,7 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
         loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (goal) {
-          final interviews = goal.interviews;
+          final interviews = goal.aims;
           if (interviews.isEmpty) return const _Empty();
           final active = [
             for (final iv in interviews)

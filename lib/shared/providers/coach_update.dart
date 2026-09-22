@@ -61,7 +61,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   final goal = await deckF;
   final subject = await subjectF;
   final interviews = [
-    for (final iv in goal.interviews)
+    for (final iv in goal.aims)
       if (iv.active) iv
   ];
   int? daysToInterview;

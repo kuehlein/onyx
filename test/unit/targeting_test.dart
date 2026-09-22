@@ -47,7 +47,7 @@ void main() {
         'an active interview raises the weight of a domain it boosts (max, not sum)',
         () {
       const iv = Aim(domainWeights: {'ds-a': 5.0});
-      final t = Targeting(base: _base, interviews: [iv]);
+      final t = Targeting(base: _base, aims: [iv]);
       // base ds-a weight is modest; the interview's +5 boost dominates.
       expect(t.weightForDomain('ds-a'),
           greaterThan(domainWeight(_base, 'ds-a') + 4));
@@ -61,7 +61,7 @@ void main() {
         () {
       const iv =
           Aim(conceptWeights: {'consistent-hashing': 3.0, 'irrelevant': 1.0});
-      final t = Targeting(base: _base, interviews: [iv]);
+      final t = Targeting(base: _base, aims: [iv]);
       final w = t.weightForCard(
           _card('ds-a', concepts: ['consistent-hashing', 'irrelevant']));
       // domain weight + the max matching concept boost (3.0, not 1.0, not 4.0).
@@ -72,7 +72,7 @@ void main() {
 
     test('governingDate is the soonest across base + interviews', () {
       final base = _base.copyWith(interviewDate: DateTime(2026, 10, 1));
-      final t = Targeting(base: base, interviews: [
+      final t = Targeting(base: base, aims: [
         _on(DateTime(2026, 11, 1)),
         _on(DateTime(2026, 9, 20)),
       ]);
@@ -89,7 +89,7 @@ void main() {
         InterviewRound(id: 'r1', number: 1, date: DateTime(2026, 9, 25)),
         InterviewRound(id: 'r2', number: 2, date: DateTime(2026, 9, 10)),
       ]);
-      final t = Targeting(base: _base, interviews: [loop]);
+      final t = Targeting(base: _base, aims: [loop]);
       expect(t.governingDate, DateTime(2026, 9, 10));
     });
 
@@ -98,7 +98,7 @@ void main() {
       const iv = Aim(domainWeights: {'ds-a': 5.0});
       final t = Targeting(
         base: _base,
-        interviews: [iv],
+        aims: [iv],
         deckId: 'g',
         deadline: DateTime(2026, 9, 15),
       );
@@ -118,7 +118,7 @@ void main() {
 
     test('a near-term interview on the day pushes a targeted card to the cap',
         () {
-      final t = Targeting(base: _base, interviews: [
+      final t = Targeting(base: _base, aims: [
         _on(today, domainWeights: {'ds-a': 5.0})
       ]);
       expect(t.desiredRetentionForCard(_card('ds-a'), today: today),
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('the bump ramps with proximity (partway between base and cap)', () {
-      final t = Targeting(base: _base, interviews: [
+      final t = Targeting(base: _base, aims: [
         _on(today.add(const Duration(days: 10)), domainWeights: {'ds-a': 5.0}),
       ]);
       final r = t.desiredRetentionForCard(_card('ds-a'), today: today);
@@ -135,10 +135,10 @@ void main() {
     });
 
     test('outside the window (too far, or past) → base, no bump', () {
-      final far = Targeting(base: _base, interviews: [
+      final far = Targeting(base: _base, aims: [
         _on(today.add(const Duration(days: 40)), domainWeights: {'ds-a': 5.0}),
       ]);
-      final past = Targeting(base: _base, interviews: [
+      final past = Targeting(base: _base, aims: [
         _on(today.subtract(const Duration(days: 1)),
             domainWeights: {'ds-a': 5.0}),
       ]);
@@ -147,7 +147,7 @@ void main() {
     });
 
     test('a card the interview does not emphasize is not bumped', () {
-      final t = Targeting(base: _base, interviews: [
+      final t = Targeting(base: _base, aims: [
         _on(today, domainWeights: {'ds-a': 5.0})
       ]);
       // system-design isn't boosted and the role weights it same as base.
@@ -156,7 +156,7 @@ void main() {
     });
 
     test('never exceeds the cap and never drops below base', () {
-      final t = Targeting(base: _base, interviews: [
+      final t = Targeting(base: _base, aims: [
         _on(today, domainWeights: {'ds-a': 5.0})
       ]);
       final r = t.desiredRetentionForCard(_card('ds-a'), today: today);

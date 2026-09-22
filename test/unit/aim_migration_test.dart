@@ -78,7 +78,7 @@ void main() {
       );
 
       final goal = migratedDefaultDeck(softwareInterviewsTemplate,
-          baseTarget: base, interviews: interviews);
+          baseTarget: base, aims: interviews);
 
       // Default goal carries the base target's slots + deadline (ids == enum
       // names).
@@ -88,8 +88,8 @@ void main() {
       expect(goal.deadline, DateTime(2026, 6, 1));
 
       // Each legacy interview → an Aim, preserving its facets + date.
-      expect(goal.interviews.length, 1);
-      final iv = goal.interviews.single;
+      expect(goal.aims.length, 1);
+      final iv = goal.aims.single;
       expect(iv.companyName, 'Google');
       expect(iv.active, isFalse);
       expect(iv.domainWeights['system-design'], 1.3);
@@ -101,7 +101,7 @@ void main() {
       final bare = migratedDefaultDeck(softwareInterviewsTemplate);
       expect(bare.levelId, isNull);
       expect(bare.deadline, isNull);
-      expect(bare.interviews, isEmpty);
+      expect(bare.aims, isEmpty);
     });
   });
 }

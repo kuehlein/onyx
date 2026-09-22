@@ -100,7 +100,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     // shown); a neutral subject reads neutrally and hides the interview loop (G7).
     final deckTemplate = ref.watch(activeDeckTemplateProvider).asData?.value;
     final vocab = deckTemplate?.vocabulary ?? activeTemplate.vocabulary;
-    final interviews = goal?.interviews ?? const <Aim>[];
+    final interviews = goal?.aims ?? const <Aim>[];
     // Active interviews with an upcoming round — ended/archived loops drop out
     // of the target list + calendar (they live on the Interviews screen).
     final scheduled = goal == null
@@ -293,7 +293,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 // only for a subject that has the interview loop (G7).
                 if (goal != null && vocab.hasAssessment)
                   _ScheduledSection(
-                    interviews: scheduled,
+                    aims: scheduled,
                     goal: goal,
                     today: today,
                     onAdd: openPlanner,
@@ -875,13 +875,13 @@ bool _hasUpcomingRound(Aim a, Deck goal, DateTime today) {
 /// list shows the 3 soonest with a 'show all' expander.
 class _ScheduledSection extends ConsumerStatefulWidget {
   const _ScheduledSection({
-    required this.interviews,
+    required this.aims,
     required this.goal,
     required this.today,
     required this.onAdd,
   });
 
-  final List<Aim> interviews; // sorted by soonest round first
+  final List<Aim> aims; // sorted by soonest round first
   final Deck goal;
   final DateTime today;
   final VoidCallback onAdd;
@@ -898,7 +898,7 @@ class _ScheduledSectionState extends ConsumerState<_ScheduledSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final interviews = widget.interviews;
+    final interviews = widget.aims;
     final capped = interviews.length > _cap;
     final visible =
         (_showAll || !capped) ? interviews : interviews.take(_cap).toList();
