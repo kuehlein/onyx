@@ -35,11 +35,33 @@ model before we add features, so we build on the right shape.
       keep on-disk `onyx-subject.yaml` + built-in ids); **R2** `InterviewAim→Aim`; **R3**
       `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
       **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
-    - **② Structural (behavior):** **S1** lift the 4 knobs onto each `Aim` (today shared on the deck);
-      **S2** readiness **weakest-link across aims** (today a mean across domains, one target); **S3**
-      daily-plan **allocation across aims** (today one nearest-date + merged weights); **S4** per-aim
-      pace/forecast; **S5** the unified **Aims surface** (merges Your Target + scheduler + interview
-      list; wires/retires #90 debrief — *subsumes 1c*).
+    - **② Structural (behavior) — "target lives on the aim".** Key finding (2026-09-22 investigation,
+      3-agent map): the system is consistent *today* only because every aim inherits the deck's slots.
+      So the safe order is **make every reader honor per-aim first (while aims still inherit →
+      byte-identical), then flip the writers + migrate + delete the deck slots.** Deck-slot removal
+      therefore lands in **S5**, not earlier. "S2b" as a standalone slice dissolved into S3/S4/S5.
+      - **S1 ✅** aims carry the 4 knobs (`Aim.levelId/contextId/trackId` + date via rounds) +
+        `ReadinessTarget.forAim`.
+      - **S2 ✅** readiness rolls up **weakest-link across active aims** (per-aim via forAim, headline =
+        the binding aim; single-aim byte-identical). Aim knobs fall back to deck slots transitionally.
+      - **S3** daily-plan **allocation across aims** (split the deck budget by urgency/deadline —
+        dated pull more, open-ended hold a baseline) **+ the `activeTargeting`→per-aim fix** (learn-
+        ordering, plan weights, per-card retention currently use one blended track/durability).
+      - **S4** per-aim **pace / forecast / ladder**: a shared **binding-aim resolver** (from
+        deckReadiness) so ladder + single-forecast wrappers agree with the headline; forecast per-aim +
+        weakest-link ready-by; coverage-pace per dated aim; **open-ended aims → coverage, no ready-by**;
+        fix the SWE 2-contexts-per-level hardcode. Reads per-aim while aims still inherit (byte-identical).
+      - **S5** the unified **Aims surface** (your_target + scheduler, all Accepted) — the **writer flip**
+        + payoff: per-aim knob **editing**; planner seeds the **aim's** knobs; **one-shot migration**
+        folding each deck's target → its aims (preserve invariant #8); **delete `Deck` level/context/
+        track + `toTarget`**; `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only**;
+        decouple deck-editor (drop `deadline`); the `deadline` round-arg sweep; wire-or-retire **#90**.
+        *Subsumes 1c.*
+      - **P0 (before S5's migration): deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilds
+        `Deck(...)` from scratch, silently dropping `aims` + target slots on every edit of an existing
+        deck. Switch to `existing.copyWith(...)`. (#102)
+      - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
+        aims round-shaped until decided; don't build ahead.
     - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,
       never a domain-weight swing (a documented past inversion).
     - *Competing aims* (e.g. backend general aim + frontend interviews): weakest-link readiness (never
