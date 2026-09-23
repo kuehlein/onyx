@@ -1,10 +1,10 @@
-# ADR 0005 — Deck as a lens; the target lives on the aim
+# ADR 0006 — Deck as a lens; the target lives on the aim
 
 - **Status:** Accepted
 - **Date:** 2026-09-22
 - **Deciders:** Kyle Uehlein
-- **Related:** ADR-0003 (card status & deck seam — the *other* `deckId`), ADR-0006
-  (allocation across aims), ADR-0007 (cram-vs-durable); `docs/roadmap.md` §Phase 1a
+- **Related:** ADR-0003 (card status & deck seam — the *other* `deckId`), ADR-0007
+  (allocation across aims), ADR-0008 (cram-vs-durable); `docs/roadmap.md` §Phase 1a
   ②; `docs/user_stories/index.md` (competing-aims), `your_target.md`, `scheduler.md`;
   code `lib/core/deck/{deck,aim}.dart`, `lib/core/readiness/{target,targeting,
   readiness,feasibility}.dart`, `lib/shared/providers/readiness.dart`; tasks

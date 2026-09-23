@@ -81,7 +81,7 @@ class Targeting {
   /// (see fsrs-exam-targeting). We never push a card past this.
   static const retentionCap = 0.95;
 
-  /// The FSRS-safe interview lever (cram-vs-durable, n007): the card's base
+  /// The FSRS-safe interview lever (cram-vs-durable, n008): the card's base
   /// desired-retention raised toward [retentionCap] for cards a NEAR-TERM active
   /// interview emphasizes, ramping up as the interview nears. This ONLY changes
   /// scheduling (shorter intervals → fresher on the date), never the fitted

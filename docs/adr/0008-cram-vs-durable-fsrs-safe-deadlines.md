@@ -1,9 +1,9 @@
-# ADR 0007 — Cram-vs-durable: honor deadlines without corrupting FSRS
+# ADR 0008 — Cram-vs-durable: honor deadlines without corrupting FSRS
 
 - **Status:** Accepted (model); implementation across S5 + #103/#104
 - **Date:** 2026-09-22
 - **Deciders:** Kyle Uehlein
-- **Related:** ADR-0005 (deck/aims model), ADR-0006 (allocation); `docs/roadmap.md`
+- **Related:** ADR-0006 (deck/aims model), ADR-0007 (allocation); `docs/roadmap.md`
   §Phase 1a cram-vs-durable; `docs/learning-science.md` "Study cadence, deadlines &
   the coach"; memory `fsrs-exam-targeting`; code `lib/core/readiness/targeting.dart`
   (`desiredRetentionForCard`), `lib/core/srs/srs_scheduler.dart`; tasks #32, #103, #104.
@@ -30,7 +30,7 @@ all — it needs a different surface.
 ## Decision
 
 1. **"How long you need it" is the durability-bar knob** — the aim's `contextId`
-   (ADR-0005), which sets `stabilityTarget`. Cram = a low durability bar (ready = "I
+   (ADR-0006), which sets `stabilityTarget`. Cram = a low durability bar (ready = "I
    can recall it on the day"); durable = a high bar (ready = "it's locked in"). This
    is a *readiness* choice, and it already flows through the readiness/forecast/
    feasibility engines per-aim.
@@ -45,7 +45,7 @@ all — it needs a different surface.
    + at-risk cards **without writing FSRS reviews** — reusing the existing non-grading
    session infrastructure (gym / practice). It is additive and leaves the fitted
    state untouched.
-4. **The coach proposes, never overrides.** When an aim is `infeasible` (ADR-0006),
+4. **The coach proposes, never overrides.** When an aim is `infeasible` (ADR-0007),
    the coach flags the incoherent cram with options (move the date / cut scope / lower
    the durability bar / accept it fades) — with rationale, never an auto-override.
 

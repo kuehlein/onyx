@@ -1,9 +1,9 @@
-# ADR 0006 — Daily-plan allocation across aims: feasibility urgency, soft fair-queuing
+# ADR 0007 — Daily-plan allocation across aims: feasibility urgency, soft fair-queuing
 
 - **Status:** Accepted (model); implementation = roadmap **S3** (#99, in progress)
 - **Date:** 2026-09-22
 - **Deciders:** Kyle Uehlein
-- **Related:** ADR-0005 (deck/aims model), ADR-0007 (cram-vs-durable); `docs/roadmap.md`
+- **Related:** ADR-0006 (deck/aims model), ADR-0008 (cram-vs-durable); `docs/roadmap.md`
   §Phase 1a S3; `docs/learning-science.md` "Study cadence, deadlines & the coach";
   memory `pace-models`; code `lib/core/plan/daily_plan.dart` (`buildDailyPlan`),
   `lib/shared/providers/daily_plan.dart`, `lib/core/readiness/feasibility.dart`
@@ -11,7 +11,7 @@
 
 ## Context
 
-A deck can hold several concurrent aims (ADR-0005) that compete for one shared daily
+A deck can hold several concurrent aims (ADR-0006) that compete for one shared daily
 time budget. Today `dailyPlan` folds aims in but **blended**: it reads
 `activeTargeting`, which takes the **max** domain-weight across *all* aims and the
 **nearest** date for the learn-taper. So a desperately-behind aim and a comfortably-
@@ -25,7 +25,7 @@ Two design questions must be pinned before building S3:
    shouldn't be ramped just because a date is close; one far behind with lots left
    should pull hard even if the date is further out.
 2. **How is the budget allocated across aims?** Aims are lenses over the *same*
-   cards (ADR-0005), and real study units are **indivisible and lumpy** — a review
+   cards (ADR-0006), and real study units are **indivisible and lumpy** — a review
    card is ~1.5 min but a first-time system-design problem is ~40 min. Any fine-
    grained split (even a "fair" one) is broken the moment the highest-priority
    remaining item is bigger than the slice left for it.
@@ -40,7 +40,7 @@ precomputed, so packing never re-parses the vault.
 ## Decision
 
 1. **Urgency = feasibility, not a time-ramp.** Per active aim, derive a 0..1 urgency
-   from `deckAimFeasibility` (ADR-0005 / S4): `infeasible` ≈ 1.0 (but coach-flagged,
+   from `deckAimFeasibility` (ADR-0006 / S4): `infeasible` ≈ 1.0 (but coach-flagged,
    capped so it can't nuke the day), `behind` high and rising as the date nears,
    `onTrack` low, `ready` ≈ 0, **`open-ended` = a flat baseline** (steady, never
    spikes or starves). Scale by date proximity. This is "required-pace vs actual-pace
