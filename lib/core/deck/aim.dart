@@ -176,44 +176,32 @@ class Aim {
   final String? contextId;
   final String? trackId;
 
-  /// Rounds as the source of truth, migrating the goal's single [deadline] into a
-  /// synthetic round 1 when no rounds are stored. [deckId] seeds the round id.
-  List<InterviewRound> effectiveRounds(String deckId, DateTime? deadline) =>
-      rounds.isNotEmpty
-          ? rounds
-          : (deadline != null
-              ? [
-                  InterviewRound(
-                      id: '${id.isNotEmpty ? id : deckId}-r1',
-                      number: 1,
-                      date: deadline)
-                ]
-              : const []);
-
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
-  InterviewRound? currentRound(String deckId, DateTime? deadline) {
-    for (final r in effectiveRounds(deckId, deadline)) {
+  /// [rounds] is the source of truth now (S5c — the deck-level deadline fallback is
+  /// gone; the migration folded any deck deadline into an explicit round).
+  InterviewRound? currentRound() {
+    for (final r in rounds) {
       if (r.outcome == AimOutcome.pending) return r;
     }
     return null;
   }
 
   /// Resolved rounds, oldest first — the history behind [currentRound].
-  List<InterviewRound> pastRounds(String deckId, DateTime? deadline) => [
-        for (final r in effectiveRounds(deckId, deadline))
+  List<InterviewRound> pastRounds() => [
+        for (final r in rounds)
           if (r.outcome != AimOutcome.pending) r,
       ];
 
   /// All scheduled round dates (date-only), for calendar flags.
-  List<DateTime> roundDates(String deckId, DateTime? deadline) => [
-        for (final r in effectiveRounds(deckId, deadline))
+  List<DateTime> roundDates() => [
+        for (final r in rounds)
           if (r.date != null)
             DateTime(r.date!.year, r.date!.month, r.date!.day),
       ];
 
   /// The soonest round on/after [from] (else the earliest scheduled), or null.
-  DateTime? nextRoundDate(String deckId, DateTime? deadline, [DateTime? from]) {
-    final dates = roundDates(deckId, deadline)..sort();
+  DateTime? nextRoundDate([DateTime? from]) {
+    final dates = roundDates()..sort();
     if (dates.isEmpty) return null;
     if (from == null) return dates.first;
     return dates.firstWhere((d) => !d.isBefore(from), orElse: () => dates.last);

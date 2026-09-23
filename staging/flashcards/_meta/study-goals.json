@@ -1,18 +1,1 @@
-[
-  {
-    "id": "algorithms",
-    "name": "Algorithms (DS&A)",
-    "templateId": "software-interviews",
-    "membership": {"kind": "tag", "value": "ds-a"},
-    "budgetWeight": 2.0,
-    "state": "active"
-  },
-  {
-    "id": "korean",
-    "name": "Korean",
-    "templateId": "software-interviews",
-    "membership": {"kind": "folder", "value": "korean"},
-    "budgetWeight": 1.0,
-    "state": "active"
-  }
-]
+[{"id":"korean","name":"Korean","templateId":"software-interviews","membership":{"kind":"folder","value":"korean"},"budgetWeight":1.0,"state":"paused"}]

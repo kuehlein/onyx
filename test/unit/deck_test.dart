@@ -166,8 +166,8 @@ void main() {
       expect(iv.domainWeights['arrays'], 1.5);
 
       // The upcoming round is the first pending one; the passed one is history.
-      expect(iv.currentRound(deckId, back.deadline)?.id, 'r2');
-      expect(iv.pastRounds(deckId, back.deadline).map((r) => r.id), ['r1']);
+      expect(iv.currentRound()?.id, 'r2');
+      expect(iv.pastRounds().map((r) => r.id), ['r1']);
 
       // A plain study goal has no interviews.
       expect(defaultDeckFor(_template).aims, isEmpty);

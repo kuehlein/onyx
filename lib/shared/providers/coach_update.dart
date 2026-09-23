@@ -67,7 +67,7 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   int? daysToInterview;
   for (final iv in interviews) {
     if (iv.status.isEnded) continue;
-    final d = iv.currentRound(goal.id, goal.deadline)?.date;
+    final d = iv.currentRound()?.date;
     if (d == null) continue;
     final days = DateTime(d.year, d.month, d.day).difference(today).inDays;
     if (days >= 0 && (daysToInterview == null || days < daysToInterview)) {

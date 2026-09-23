@@ -108,15 +108,14 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
         : ([
             for (final iv in interviews)
               if (!iv.status.isEnded && _hasUpcomingRound(iv, goal, today)) iv,
-          ]..sort((a, b) => a
-            .nextRoundDate(goal.id, goal.deadline, today)!
-            .compareTo(b.nextRoundDate(goal.id, goal.deadline, today)!)));
+          ]..sort((a, b) =>
+            a.nextRoundDate(today)!.compareTo(b.nextRoundDate(today)!)));
     // Every round date → the labels of the round(s) on that day (for the
     // calendar flags + their long-press tooltip).
     final roundsByDate = <DateTime, List<String>>{};
     if (goal != null) {
       for (final iv in scheduled) {
-        for (final r in iv.effectiveRounds(goal.id, goal.deadline)) {
+        for (final r in iv.rounds) {
           final rd = r.date;
           if (rd == null) continue;
           final d = DateTime(rd.year, rd.month, rd.day);
@@ -131,7 +130,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
       // the sheet picks it up; focus the calendar on its date if it set one.
       final added = await showInterviewPlannerSheet(context);
       if (!mounted) return;
-      final d = added?.nextRoundDate(goal?.id ?? '', null);
+      final d = added?.nextRoundDate();
       if (d != null) {
         _set(_t.copyWith(interviewDate: d));
       }
@@ -852,7 +851,7 @@ class _CalendarLegend extends StatelessWidget {
 /// Whether [a] has any round on or after [today] — i.e. the loop isn't fully in
 /// the past. Fully-past interviews drop out of the sheet's list + calendar.
 bool _hasUpcomingRound(Aim a, Deck goal, DateTime today) {
-  final dates = a.roundDates(goal.id, goal.deadline);
+  final dates = a.roundDates();
   if (dates.isEmpty) return false;
   final t = DateTime(today.year, today.month, today.day);
   return dates.any((d) => !d.isBefore(t));

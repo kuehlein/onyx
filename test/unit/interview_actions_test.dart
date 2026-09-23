@@ -27,17 +27,12 @@ void main() {
         InterviewRound(id: 'b', number: 2, date: DateTime(2026, 9, 20)),
       ]);
       expect(currentRoundOf(a)?.id, 'b');
-      expect(a.pastRounds('g', null).map((r) => r.id), ['a']);
+      expect(a.pastRounds().map((r) => r.id), ['a']);
     });
 
-    test('a legacy single deadline migrates to a pending current round', () {
-      // The interview holds no rounds; the parent goal's deadline seeds a
-      // synthetic round 1 via effectiveRounds/currentRound.
-      const a = Aim(id: 'x', companyName: 'Stripe');
-      expect(a.currentRound('x', DateTime(2026, 10, 1))?.date,
-          DateTime(2026, 10, 1));
-      expect(a.pastRounds('x', DateTime(2026, 10, 1)), isEmpty);
-    });
+    // (Removed S5c: the legacy deck-deadline → synthetic round-1 fallback is gone;
+    // the migration folds a deck deadline into an explicit round — see
+    // aim_migration_test's foldDeckSlotsIntoAims cases.)
   });
 
   group('passAndScheduleNext', () {
@@ -50,8 +45,8 @@ void main() {
           date: DateTime(2026, 10, 5));
       final out = passAndScheduleNext(a, next);
       expect(out.status, InterviewStatus.active);
-      expect(out.pastRounds('g', null).length, 1);
-      expect(out.pastRounds('g', null).first.outcome, AimOutcome.passed);
+      expect(out.pastRounds().length, 1);
+      expect(out.pastRounds().first.outcome, AimOutcome.passed);
       expect(currentRoundOf(out)?.id, 'g-r2');
       expect(currentRoundOf(out)?.type, InterviewRoundType.onsite);
     });

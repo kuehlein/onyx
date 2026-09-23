@@ -17,19 +17,14 @@ class Targeting {
   const Targeting({
     required this.base,
     this.aims = const [],
-    this.deckId = '',
-    this.deadline,
   });
 
   /// The goal's aim — supplies level/track and the readiness stability bar.
   final ReadinessTarget base;
 
-  /// The deck's ACTIVE aims (the caller filters out muted ones).
+  /// The deck's ACTIVE aims (the caller filters out muted ones). Each aim carries
+  /// its own dates via [Aim.rounds] now (S5c — no deck-level deadline).
   final List<Aim> aims;
-
-  /// The goal's id + due date — seed a single-date interview's synthetic round.
-  final String deckId;
-  final DateTime? deadline;
 
   /// Effective per-domain weight: the base heuristic, raised by whichever active
   /// interview boosts the domain most (max, not sum — one urgent interview
@@ -73,7 +68,7 @@ class Targeting {
   DateTime? get governingDate {
     DateTime? soonest = base.interviewDate;
     for (final iv in aims) {
-      for (final d in iv.roundDates(deckId, deadline)) {
+      for (final d in iv.roundDates()) {
         if (soonest == null || d.isBefore(soonest)) soonest = d;
       }
     }
@@ -102,7 +97,7 @@ class Targeting {
     for (final iv in aims) {
       // Ramp retention toward the NEXT upcoming round — as round 1 passes, the
       // focus shifts to round 2, etc.
-      final date = iv.nextRoundDate(deckId, deadline, today);
+      final date = iv.nextRoundDate(today);
       if (date == null) continue;
       final daysLeft =
           DateTime(date.year, date.month, date.day).difference(today).inDays;

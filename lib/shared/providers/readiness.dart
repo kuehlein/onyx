@@ -165,8 +165,6 @@ Future<Targeting> targetingForDeck(Ref ref, String deckId) async {
       for (final iv in goal.aims)
         if (iv.active) iv,
     ],
-    deckId: goal.id,
-    deadline: goal.deadline,
   );
 }
 
@@ -240,8 +238,6 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
     final tg = Targeting(
       base: base,
       aims: aim == null ? const [] : [aim],
-      deckId: goal.id,
-      deadline: goal.deadline,
     );
     return computeReadiness(
       cards: conceptCards,
@@ -454,7 +450,7 @@ Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
   final out = <({Aim aim, AimFeasibility feasibility})>[];
   for (final aim in goal.aims) {
     if (!aim.active) continue;
-    final date = aim.currentRound(goal.id, goal.deadline)?.date;
+    final date = aim.currentRound()?.date;
     if (date == null) {
       // Open-ended aim → coverage, not a ready-by (no forecast needed).
       out.add((aim: aim, feasibility: classifyAimFeasibility(date: null)));

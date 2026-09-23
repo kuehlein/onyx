@@ -111,9 +111,9 @@ class InterviewCard extends ConsumerWidget {
 
   String? _subtitle(bool ended) {
     if (ended) return aim.status.label;
-    final cur = aim.currentRound(goal.id, goal.deadline);
+    final cur = aim.currentRound();
     if (cur == null) return 'No upcoming round';
-    final n = aim.effectiveRounds(goal.id, goal.deadline).length;
+    final n = aim.rounds.length;
     final roundNote = n > 1 ? '  ·  round $n' : '';
     final d = cur.date;
     if (d == null) return '${cur.type.label} · no date yet$roundNote';
@@ -127,7 +127,7 @@ class InterviewCard extends ConsumerWidget {
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant));
     }
-    final cur = aim.currentRound(goal.id, goal.deadline);
+    final cur = aim.currentRound();
     if (cur?.date == null || target == null) return const SizedBox.shrink();
     final forecast = ref
         .watch(readinessForecastForProvider((

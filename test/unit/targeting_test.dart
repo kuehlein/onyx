@@ -108,18 +108,9 @@ void main() {
       expect(t.governingDate, DateTime(2026, 9, 10));
     });
 
-    test('a roundless interview falls back to the goal deadline (new path)',
-        () {
-      const iv = Aim(domainWeights: {'ds-a': 5.0});
-      final t = Targeting(
-        base: _base,
-        aims: [iv],
-        deckId: 'g',
-        deadline: DateTime(2026, 9, 15),
-      );
-      // No rounds → the goal's deadline seeds a synthetic round-1 date.
-      expect(t.governingDate, DateTime(2026, 9, 15));
-    });
+    // (Removed S5c: no deck-level deadline on Targeting; a roundless aim has no
+    // governing date. The migration folds a deck deadline into an aim round — see
+    // aim_migration_test.)
   });
 
   group('desiredRetentionForCard (FSRS-safe interview lever)', () {

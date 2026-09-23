@@ -39,7 +39,7 @@ class _InterviewSheet extends ConsumerWidget {
     // A migrated interview can have no stored rounds but a synthetic current round
     // seeded from the goal deadline; materialize it so the round transitions
     // (which read stored rounds) act on it instead of silently no-op'ing.
-    final eff = aim0.effectiveRounds(goal.id, goal.deadline);
+    final eff = aim0.rounds;
     final aim = aim0.rounds.isEmpty && eff.isNotEmpty
         ? aim0.copyWith(rounds: eff)
         : aim0;
@@ -55,7 +55,7 @@ class _InterviewSheet extends ConsumerWidget {
         : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
     final role = target?.label ?? '';
     final ended = aim.status.isEnded;
-    final cur = aim.currentRound(goal.id, goal.deadline);
+    final cur = aim.currentRound();
     // "Occurred" = the round's day has arrived; only then can you log a result.
     final occurred = cur?.date != null && !cur!.date!.isAfter(refDate);
 
@@ -380,8 +380,8 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final past = aim.pastRounds(goal.id, goal.deadline);
-    final current = aim.currentRound(goal.id, goal.deadline);
+    final past = aim.pastRounds();
+    final current = aim.currentRound();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

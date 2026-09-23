@@ -79,9 +79,9 @@ class UpcomingInterviewsScreen extends ConsumerWidget {
   }
 
   DateTime? _sortDate(Aim a, Deck goal) {
-    final cur = a.currentRound(goal.id, goal.deadline)?.date;
+    final cur = a.currentRound()?.date;
     if (cur != null) return cur;
-    final dates = a.roundDates(goal.id, goal.deadline);
+    final dates = a.roundDates();
     return dates.isEmpty
         ? null
         : dates.reduce((x, y) => x.isAfter(y) ? x : y); // latest
