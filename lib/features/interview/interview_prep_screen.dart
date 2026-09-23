@@ -9,7 +9,6 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/story.dart';
 import '../../shared/design/onyx_design.dart';
-import '../home/target_sheet.dart';
 
 /// The "Interview prep" hub — everything about a *specific* interview you're
 /// targeting, gathered in one place: your target, the interviews you've scheduled,
@@ -44,33 +43,20 @@ class InterviewPrepScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(
                 Dim.space5, Dim.space3, Dim.space5, Dim.space6),
             children: [
-              const _SectionHeader('Your target'),
+              const _SectionHeader('Your aims'),
               Card(
                 margin: EdgeInsets.zero,
                 color: theme.colorScheme.surfaceContainerHigh,
                 child: ListTile(
                   leading: Icon(Icons.flag_outlined,
                       color: theme.colorScheme.primary),
-                  title:
-                      Text(unset ? 'Set your interview target' : target.label),
-                  subtitle: Text(countdown ?? 'level · company · track · date'),
-                  trailing: const Icon(Icons.edit_outlined),
-                  onTap: () => showTargetSheet(context),
-                ),
-              ),
-              const SizedBox(height: Dim.space5),
-              const _SectionHeader('Scheduled interviews'),
-              Card(
-                margin: EdgeInsets.zero,
-                color: theme.colorScheme.surfaceContainerHigh,
-                child: ListTile(
-                  leading: Icon(Icons.event_note_outlined,
-                      color: theme.colorScheme.primary),
-                  title: const Text('Manage interviews'),
-                  subtitle: const Text(
-                      'Add or edit the interviews you\'re prepping for.'),
+                  title: Text(target == null || unset
+                      ? 'Set your target + interviews'
+                      : target.label),
+                  subtitle: Text(countdown ??
+                      'Your target, interviews + readiness — all in one place.'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/interviews'),
+                  onTap: () => context.push('/aims'),
                 ),
               ),
               const SizedBox(height: Dim.space5),

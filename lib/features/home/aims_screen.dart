@@ -11,6 +11,7 @@ import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/status_pill.dart';
+import '../interview/interview_planner_sheet.dart';
 import '../interview/interview_sheet.dart';
 import 'target_sheet.dart';
 
@@ -45,6 +46,16 @@ class AimsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      // Assessment subjects (SWE) can plan a specific dated interview via the AI
+      // planner; the AppBar "+" adds a general/target aim. Neutral subjects have
+      // no assessment loop, so only the "+".
+      floatingActionButton: vocab.hasAssessment
+          ? FloatingActionButton.extended(
+              onPressed: () => showInterviewPlannerSheet(context),
+              icon: const Icon(Icons.add),
+              label: Text('Plan ${_withArticle(vocab.assessmentNoun!)}'),
+            )
+          : null,
       body: deckAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -393,6 +404,12 @@ class _PastAimsState extends State<_PastAims> {
 
 const _listPadding =
     EdgeInsets.fromLTRB(Dim.space3, Dim.space3, Dim.space3, 96);
+
+/// "interview" → "an interview", "recital" → "a recital" — for the plan-a-… CTA.
+String _withArticle(String noun) {
+  final vowel = noun.isNotEmpty && 'aeiou'.contains(noun[0].toLowerCase());
+  return '${vowel ? 'an' : 'a'} $noun';
+}
 
 String _fmtDate(DateTime d) {
   const months = [

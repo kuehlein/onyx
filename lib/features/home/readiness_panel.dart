@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/status_pill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,6 @@ import '../../shared/providers/analytics.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/template.dart';
 import '../insights/weak_area_sheet.dart';
-import 'target_sheet.dart';
 
 /// Home dashboard panel: a compact readiness summary — a headline % toward the
 /// chosen target (recall-only until mock evidence graduates it to
@@ -228,7 +228,7 @@ class _Headline extends StatelessWidget {
             borderRadius: Dim.brChip,
             child: InkWell(
               borderRadius: Dim.brChip,
-              onTap: () => showTargetSheet(context),
+              onTap: () => context.push('/aims'),
               child: Container(
                 // ≥48dp tap target (a11y); left-aligned so it reads as a
                 // tappable form field rather than a centered chip.

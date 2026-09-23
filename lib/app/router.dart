@@ -15,7 +15,6 @@ import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
 import '../features/interview/interview_prep_screen.dart';
-import '../features/interview/upcoming_interviews_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
 import '../features/practice/flow_runner_screen.dart';
@@ -123,11 +122,8 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         // The AI interview-readiness report, launched from Home.
         GoRoute(
             path: '/report', builder: (_, __) => const ReadinessReportScreen()),
-        // The upcoming-interviews list — toggle/remove/practice for prep goals.
-        GoRoute(
-            path: '/interviews',
-            builder: (_, __) => const UpcomingInterviewsScreen()),
-        // The unified per-deck Aims surface (S5e) — weakest-link readiness + aims.
+        // The unified per-deck Aims surface (S5e) — weakest-link readiness, the
+        // aims list (subsumes the old upcoming-interviews screen), + the planner.
         GoRoute(path: '/aims', builder: (_, __) => const AimsScreen()),
         // Post-interview debrief for one goal (`/debrief/goal-123`).
         GoRoute(
