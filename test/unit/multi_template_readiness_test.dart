@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/deck/deck.dart';
+import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
@@ -145,7 +146,7 @@ void main() {
       ),
     ], primaryId: 'swe');
 
-    Future<double> overallFor(List<Aim> aims) async {
+    Future<Readiness> readinessFor(List<Aim> aims) async {
       final c = ProviderContainer(overrides: [
         appDatabaseProvider.overrideWith((ref) {
           final db = AppDatabase.withExecutor(NativeDatabase.memory());
@@ -161,18 +162,21 @@ void main() {
       ]);
       addTearDown(c.dispose);
       c.listen(deckReadinessProvider('g'), (_, __) {});
-      return (await c.read(deckReadinessProvider('g').future)).overall;
+      return c.read(deckReadinessProvider('g').future);
     }
 
-    final easy = await overallFor(const [Aim(id: 'e', contextId: 'easy')]);
-    final hard = await overallFor(const [Aim(id: 'h', contextId: 'hard')]);
-    final both = await overallFor(const [
+    final easy = await readinessFor(const [Aim(id: 'e', contextId: 'easy')]);
+    final hard = await readinessFor(const [Aim(id: 'h', contextId: 'hard')]);
+    final both = await readinessFor(const [
       Aim(id: 'e', contextId: 'easy'),
       Aim(id: 'h', contextId: 'hard')
     ]);
 
-    expect(hard, lessThan(easy)); // a higher durability bar reads less ready
+    expect(hard.overall, lessThan(easy.overall)); // higher bar → less ready
     // Two aims → the deck binds to the HARDER one (weakest-link), not an average.
-    expect(both, hard);
+    expect(both.overall, hard.overall);
+    // S4: the binding aim is surfaced (the harder one) so ladder/forecast follow it.
+    expect(both.bindingAimId, 'h');
+    expect(hard.bindingAimId, 'h'); // a single aim binds to itself
   });
 }

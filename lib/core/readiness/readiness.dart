@@ -73,6 +73,7 @@ class Readiness {
     required this.low,
     required this.high,
     this.interview = false,
+    this.bindingAimId,
   });
 
   /// Per-domain, sorted weakest-first (so the UI can flag "focus here").
@@ -85,10 +86,26 @@ class Readiness {
   /// the headline has graduated from "knowledge-base" to "interview" readiness.
   final bool interview;
 
+  /// The **binding aim** — the active aim whose weakest-link [overall] is this
+  /// deck headline (S2/S4). Null when the deck has no active aim (headline is its
+  /// base target) or for a single-target [computeReadiness] result. The ladder +
+  /// forecast follow this aim so they agree with the headline.
+  final String? bindingAimId;
+
   bool get isEmpty => domains.isEmpty;
 
   /// The weakest domain by score, or null if none.
   String? get weakestDomain => domains.isEmpty ? null : domains.first.domain;
+
+  /// A copy tagged with the [bindingAimId] (the rest is unchanged).
+  Readiness withBindingAim(String? aimId) => Readiness(
+        domains: domains,
+        overall: overall,
+        low: low,
+        high: high,
+        interview: interview,
+        bindingAimId: aimId,
+      );
 }
 
 /// Maps FSRS stability (days-to-90%-retention) to a 0..1 durability. Uses

@@ -245,6 +245,7 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   if (activeAims.isEmpty) return scoreFor(await targetF, null);
 
   Readiness? binding;
+  Aim? bindingAim;
   for (final aim in activeAims) {
     // The aim's own knobs, falling back to the deck's slots (transitional until
     // the slots move onto aims) then the template — so a single inherited aim
@@ -258,9 +259,14 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
       template,
     );
     final r = scoreFor(base, aim);
-    if (binding == null || r.overall < binding.overall) binding = r;
+    if (binding == null || r.overall < binding.overall) {
+      binding = r;
+      bindingAim = aim;
+    }
   }
-  return binding!;
+  // Tag the headline with the binding (weakest-link) aim so the ladder + forecast
+  // can follow it and agree with this number (S4).
+  return binding!.withBindingAim(bindingAim!.id);
 }
 
 /// Knowledge-base readiness for the ACTIVE goal — see [deckReadiness].
