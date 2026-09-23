@@ -65,14 +65,17 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
   final availF = ref.watch(practiceAvailabilityProvider.future);
   final indexF = ref.watch(vaultIndexProvider.future);
   final statesF = ref.watch(srsStatesProvider.future);
-  final targetingF = ref.watch(activeTargetingProvider.future);
+  // Urgency-weighted per-domain emphasis (S3 / ADR-0007) — replaces the blended
+  // activeTargeting.weightForDomain: each active aim's own-track emphasis, weighted
+  // by its feasibility urgency. Byte-identical for a single/no-aim deck.
+  final planWeightsF = ref.watch(activePlanDomainWeightsProvider.future);
   final clockF = ref.watch(clockProvider.future);
   final deckF = ref.watch(activeDeckProvider.future);
   final budgetsF = ref.watch(deckBudgetsProvider.future);
   final availRaw = await availF;
   final index = await indexF;
   final states = await statesF;
-  final targeting = await targetingF;
+  final planWeights = await planWeightsF;
   final clock = await clockF;
   final now = clock.now();
   // The active goal's slice of the shared budget. A single active goal owns the
@@ -159,7 +162,7 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
     for (final a in gated)
       if (!isRecall(a.track))
         a.track: switch (flowByType[a.track]?.weightDomain) {
-          final d? => targeting.weightForDomain(d),
+          final d? => planWeights[d] ?? 1.0,
           _ => 1.0,
         },
   };
