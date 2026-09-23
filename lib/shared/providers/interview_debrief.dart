@@ -5,6 +5,7 @@ import '../../core/ai/coach_update_chat.dart'
     show CoachMessage, CoachRole, coachChatTurns;
 import '../../core/ai/interview_debrief.dart';
 import '../../core/deck/aim.dart';
+import '../../core/readiness/target.dart';
 import 'ai.dart';
 import 'decks.dart';
 import 'template.dart';
@@ -86,12 +87,12 @@ class InterviewDebrief extends _$InterviewDebrief {
 
     try {
       final index = await ref.read(vaultIndexProvider.future);
-      // Label the interview by its company (falling back to the goal's target
-      // role) for the prompt's "debriefing for: …" line.
+      // Label the interview by its company (falling back to the AIM's target
+      // role, S5) for the prompt's "debriefing for: …" line.
       final goal = await ref.read(activeDeckProvider.future);
       final registry = await ref.read(templateRegistryProvider.future);
-      final role = goal
-          .toTarget(registry.byId(goal.templateId) ?? registry.primary)
+      final role = ReadinessTarget.forAim(
+              aim, registry.byId(goal.templateId) ?? registry.primary)
           .label;
       final goalLabel =
           aim.companyName.isEmpty ? role : '${aim.companyName} · $role';

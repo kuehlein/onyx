@@ -108,11 +108,11 @@ class InterviewPlanner extends _$InterviewPlanner {
     }
   }
 
-  /// Accept the current plan: attach it as an active [Aim] on the active
-  /// study goal (which the targeting layer then applies to study). Fills the
-  /// goal's target slots + deadline ONLY if unset, so an accepted plan doesn't
-  /// clobber a target the user already chose. Returns the saved interview, or
-  /// null if there's no plan to accept.
+  /// Accept the current plan: attach it as an active [Aim] on the active study
+  /// goal (which the targeting layer then applies to study). The aim carries its
+  /// OWN target knobs + date now (S5 — the deck is a pure lens), so we just append
+  /// it; no deck slots to seed. Returns the saved interview, or null if there's no
+  /// plan to accept.
   Future<Aim?> accept() async {
     final plan = state.plan;
     if (plan == null) return null;
@@ -123,20 +123,9 @@ class InterviewPlanner extends _$InterviewPlanner {
     final aim = plan.toInterview('goal-${now.microsecondsSinceEpoch}',
         notBefore: clock.today());
     final goal = await ref.read(activeDeckProvider.future);
-    // Seed the goal's target slots from the plan only when the user hasn't set
-    // one yet (a plain slot is null on the goal). One upsert carries the new
-    // interview + any seeded slots + the deadline.
-    final unset = goal.levelId == null;
-    await ref.read(decksProvider.notifier).upsert(goal.copyWith(
-          levelId: unset ? plan.level.name : goal.levelId,
-          contextId: unset ? plan.tier.name : goal.contextId,
-          trackId: unset ? plan.track.name : goal.trackId,
-          // The aim's round carries the notBefore-guarded date; use it (not the
-          // raw plan.date) so a dropped past date doesn't file the goal in the past.
-          deadline: goal.deadline ??
-              (aim.rounds.isNotEmpty ? aim.rounds.first.date : null),
-          aims: [...goal.aims, aim],
-        ));
+    await ref
+        .read(decksProvider.notifier)
+        .upsert(goal.copyWith(aims: [...goal.aims, aim]));
     return aim;
   }
 }

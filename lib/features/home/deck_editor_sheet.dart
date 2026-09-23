@@ -8,7 +8,7 @@ import '../../shared/providers/template.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Create or edit a [Deck] (task #30d, G6) — name, template, membership
-/// query, deadline, and budget weight, plus graduate/delete for an existing goal.
+/// query, and budget weight, plus graduate/delete for an existing goal.
 /// This is the in-app path to defining the concurrent goals the lanes hub shows.
 Future<void> showDeckEditor(BuildContext context, {Deck? goal}) =>
     showOnyxSheet<void>(
@@ -97,7 +97,6 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
     FolderMembership() => _Kind.folder,
     _ => _Kind.all,
   };
-  late DateTime? _deadline = widget.goal?.deadline;
   late double _weight = widget.goal?.budgetWeight ?? 1.0;
 
   @override
@@ -134,29 +133,16 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
             name: name,
             templateId: _templateId ?? '',
             membership: membership,
-            deadline: _deadline,
             budgetWeight: _weight,
           )
         : existing.copyWith(
             name: name,
             templateId: _templateId ?? '',
             membership: membership,
-            deadline: _deadline,
             budgetWeight: _weight,
           );
     ref.read(decksProvider.notifier).upsert(deck);
     Navigator.of(context).pop();
-  }
-
-  Future<void> _pickDeadline() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _deadline ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 6),
-    );
-    if (picked != null) setState(() => _deadline = picked);
   }
 
   @override
@@ -225,23 +211,6 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                 ),
               ],
               const SizedBox(height: Dim.space5),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event_outlined),
-                title: Text(_deadline == null
-                    ? 'No deadline'
-                    : 'Due ${_deadline!.year}-${_deadline!.month.toString().padLeft(2, '0')}-${_deadline!.day.toString().padLeft(2, '0')}'),
-                trailing: _deadline == null
-                    ? TextButton(
-                        onPressed: _pickDeadline, child: const Text('Set'))
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Clear deadline',
-                        onPressed: () => setState(() => _deadline = null),
-                      ),
-                onTap: _pickDeadline,
-              ),
-              const SizedBox(height: Dim.space2),
               Text('Share of daily time  ·  ${_weight.toStringAsFixed(1)}×',
                   style: theme.textTheme.labelLarge),
               Slider(

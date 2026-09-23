@@ -28,12 +28,13 @@ class InterviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final ended = aim.status.isEnded;
-    // The interview's role dimensions come from the parent goal's target (Phase
-    // B — level/context/track live on the goal, not the interview).
+    // The interview's role dimensions come from the AIM's own target (S5 —
+    // level/context/track live on the aim, not the deck).
     final registry = ref.watch(templateRegistryProvider).asData?.value;
     final target = registry == null
         ? null
-        : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
+        : ReadinessTarget.forAim(
+            aim, registry.byId(goal.templateId) ?? registry.primary);
 
     final row = InkWell(
       onTap: () => showInterviewSheet(context, aim.id),

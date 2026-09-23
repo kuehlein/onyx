@@ -34,15 +34,8 @@ class _InterviewSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(activeDeckProvider).asData?.value;
     if (goal == null) return const SizedBox.shrink();
-    final aim0 = goal.aims.where((iv) => iv.id == aimId).firstOrNull;
-    if (aim0 == null) return const SizedBox.shrink();
-    // A migrated interview can have no stored rounds but a synthetic current round
-    // seeded from the goal deadline; materialize it so the round transitions
-    // (which read stored rounds) act on it instead of silently no-op'ing.
-    final eff = aim0.rounds;
-    final aim = aim0.rounds.isEmpty && eff.isNotEmpty
-        ? aim0.copyWith(rounds: eff)
-        : aim0;
+    final aim = goal.aims.where((iv) => iv.id == aimId).firstOrNull;
+    if (aim == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final today =
@@ -50,9 +43,11 @@ class _InterviewSheet extends ConsumerWidget {
     final refDate = DateTime(today.year, today.month, today.day);
     final notifier = ref.read(decksProvider.notifier);
     final registry = ref.watch(templateRegistryProvider).asData?.value;
+    // The interview's role is the AIM's own target now (S5 — the deck is a lens).
     final target = registry == null
         ? null
-        : goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
+        : ReadinessTarget.forAim(
+            aim, registry.byId(goal.templateId) ?? registry.primary);
     final role = target?.label ?? '';
     final ended = aim.status.isEnded;
     final cur = aim.currentRound();

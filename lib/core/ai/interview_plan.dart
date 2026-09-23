@@ -59,11 +59,11 @@ class InterviewPlan {
   /// The human-readable plan / rationale (Markdown).
   final String summary;
 
-  /// Convert to a persistable [Aim] (active) — the Phase B unified
-  /// facet attached to a [Deck]. The target (level/context/track/deadline)
-  /// lives on the parent goal now, so only the interview-specific facets carry
-  /// over. [id] is caller-supplied. [notBefore] drops a past date (usually a
-  /// wrong-year slip) so the interview is simply unscheduled rather than filed in
+  /// Convert to a persistable [Aim] (active) — the Phase B unified facet attached
+  /// to a [Deck]. The aim carries its OWN target knobs now (S5 — the deck is a pure
+  /// lens): the plan's inferred level/tier/track become the aim's slots, and its
+  /// date its round. [id] is caller-supplied. [notBefore] drops a past date (usually
+  /// a wrong-year slip) so the interview is simply unscheduled rather than filed in
   /// the past.
   Aim toInterview(String id, {DateTime? notBefore}) {
     final safeDate =
@@ -73,6 +73,9 @@ class InterviewPlan {
     return Aim(
       id: id,
       companyName: company,
+      levelId: level.name,
+      contextId: tier.name,
+      trackId: track.name,
       domainWeights: domainWeights,
       conceptWeights: conceptWeights,
       planNotes: summary.isEmpty ? null : summary,
