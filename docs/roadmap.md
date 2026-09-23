@@ -127,6 +127,11 @@ The MVP-tagged stories, cloud still absent:
   comprehension, #25 AI study suggestions.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
+- **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
+  **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
+  them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
+  gym/practice non-grading session infra, fed by the durability bar + feasibility. Keep the
+  non-grading session path reusable in S4/S5 so this drops in cleanly later. (#104)
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;
