@@ -4,6 +4,10 @@ Onyx is a calm, local-first study app (Flutter/Dart). This guide is the entry
 point for a human maintainer or reviewer. Start with **[`docs/product-direction.md`](docs/product-direction.md)**
 (what Onyx is) and **[`docs/INDEX.md`](docs/INDEX.md)** (the doc map and reading order).
 
+> **AI coding agents:** start with **[`AGENTS.md`](AGENTS.md)** — the terse agent-facing
+> entry (commands, boundaries, working norms) that all agent tools read; it links back
+> here for the full conventions.
+
 ## Getting started
 
 The toolchain is pinned with a Nix flake (Flutter, Dart, lefthook, sqlite, and a
