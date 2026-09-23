@@ -127,10 +127,23 @@ model before we add features, so we build on the right shape.
           byte-identical, ~9 files). **S5d** the **peripheral writers + label-readers** — deck-editor
           drops the `deadline` field; the planner stops seeding deck slots (just appends the aim);
           `interview_card/sheet/debrief` use `ReadinessTarget.forAim` not `goal.toTarget()` (leaves only
-          `target_sheet`'s Save on the slots). **S5e** the **Aims surface merge** (your_target +
-          scheduler + interview list → one per-deck surface, *subsumes 1c*, Accepted): flip the Save to
-          write the target **aim**, render open-ended aims as the target, merge the duplicated
-          interview lists, wire-or-retire **#90** (route param mis-named `:deckId` for an aim id). **S5f**
+          `target_sheet`'s Save on the slots). **S5e** the **Aims surface** (your_target + scheduler +
+          interview list → one per-deck surface, *subsumes 1c*; design locked in
+          [ADR-0009](adr/0009-aims-surface-design.md) after a 3-front investigation + web research):
+          a **full screen** — weakest-link headline band + a list of calm **aim rows** (name · status ·
+          readiness/coverage bar · feasibility `StatusPill` · date) + collapsed calendar/past; the
+          per-aim **editor is a sheet** = today's `target_sheet` body repurposed, **Save → `upsertAim`**
+          (the writer flip). Open-ended aims render as **coverage** (not a ready-by); a 0-aim deck shows a
+          "building coverage" state (no phantom interview). **Faithful-MVP reuse** (`StatusPill` /
+          `_TickedBar` / `_ZoneCalendar` / `_ForecastBlock` / pickers + one aim row) — defer new dataviz
+          (`CoverageBar`/`ForecastBand`), the multi-aim zone overlay, and the cram↔durable slider.
+          **Neutral knob titles** (Difficulty/Emphasis/Durability) via the `Vocabulary` seam. Feasibility
+          = informational + options (move date / lower durability / cram), never a countdown or red-alarm
+          (learning-science). Merge `upcoming_interviews`; wire **#90** debrief (route param mis-named
+          `:deckId` for an aim id); Home "target" card → "aims" card. Build order: **S5e-1** screen +
+          aim rows (additive, read-only) → **S5e-2** the editor + Save→`upsertAim` (the writer flip) +
+          neutral terminology → **S5e-3** merge/retire old surfaces + #90 + Home card → **S5e-4** 0-aim
+          coverage + open-ended polish. Hold #8 (single-aim same *data*; the UI is intentionally new). **S5f**
           the **deletion** — remove `Deck.level/context/track/deadline` + `toTarget`;
           `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only** (template fallbacks); +
           **split `readiness.dart`**. Pure dead-code removal (engine already off them).
