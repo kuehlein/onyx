@@ -6,10 +6,12 @@ import 'package:onyx/core/clock.dart';
 import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/readiness/feasibility.dart';
 import 'package:onyx/core/readiness/readiness.dart';
+import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/features/home/aims_screen.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/readiness.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
 /// A fake decks notifier holding one default deck whose [aims] are under test.
@@ -73,6 +75,11 @@ Widget _app({
         vaultSourceProvider.overrideWithValue(null),
         readinessProvider.overrideWith((ref) async => readiness),
         aimFeasibilityProvider.overrideWith((ref) async => feas),
+        // The aim editor (opened on a row tap) reads the forecast + template;
+        // stub the forecast and pin the template to SWE for stable axis titles.
+        readinessForecastForProvider.overrideWith((ref, dims) async => null),
+        activeDeckTemplateProvider
+            .overrideWith((ref) async => softwareInterviewsTemplate),
       ],
       child: MaterialApp(theme: OnyxTheme.dark(), home: const AimsScreen()),
     );
@@ -118,6 +125,27 @@ void main() {
     // Soonest-dated aim sorts above the later one.
     expect(tester.getTopLeft(find.text('Google')).dy,
         lessThan(tester.getTopLeft(find.text('Amazon')).dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a live aim opens its knob editor', (tester) async {
+    final google = _aim('g', 'Google', date: DateTime(2099, 1, 1));
+    await tester.pumpWidget(_app(
+      aims: [google],
+      feas: [
+        (
+          aim: google,
+          feasibility: const AimFeasibility(status: FeasibilityStatus.onTrack)
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Google'));
+    await tester.pumpAndSettle();
+
+    // The aim editor sheet is open — its Save button + axis pickers are shown.
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.text('Level'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

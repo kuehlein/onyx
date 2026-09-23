@@ -11,6 +11,7 @@ import '../../shared/providers/readiness.dart';
 import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/design/onyx_design.dart';
+import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/sheet_header.dart';
 import '../interview/interview_card.dart';
 import '../interview/interview_planner_sheet.dart';
@@ -318,6 +319,198 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                             if (context.mounted) Navigator.of(context).pop();
                           },
                     child: const Text('Save target'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the **per-aim editor** (S5e-2 / ADR-0009): edit ONE aim's four knobs —
+/// difficulty (`levelId`) · durability (`contextId`) · emphasis (`trackId`) · date
+/// (its pending round) — and **Save → `upsertAim`**, the writer flip off the deck
+/// slots. [aimId] null opens a fresh aim on the active deck. The aims LIST + the
+/// planner live on the Aims screen, not here (this is a focused editor sheet).
+Future<void> showAimEditorSheet(BuildContext context, {String? aimId}) {
+  final size = MediaQuery.of(context).size;
+  return showOnyxSheet<void>(
+    context,
+    constraints: BoxConstraints(
+      maxHeight: size.height * 0.92,
+      maxWidth: size.width - _sheetEdgeInset < _sheetMaxWidth
+          ? size.width - _sheetEdgeInset
+          : _sheetMaxWidth,
+    ),
+    builder: (_) => _AimEditorSheet(aimId: aimId),
+  );
+}
+
+class _AimEditorSheet extends ConsumerStatefulWidget {
+  const _AimEditorSheet({this.aimId});
+
+  /// The aim to edit, or null to create a new one on the active deck.
+  final String? aimId;
+
+  @override
+  ConsumerState<_AimEditorSheet> createState() => _AimEditorSheetState();
+}
+
+class _AimEditorSheetState extends ConsumerState<_AimEditorSheet> {
+  Aim? _draft;
+  String? _mintedId;
+
+  void _set(Aim next) => setState(() => _draft = next);
+
+  /// The aim being edited: the draft once touched, else the loaded aim, else a
+  /// freshly-minted empty aim (new). The id is minted once so rebuilds are stable.
+  Aim _initial(Deck goal, DateTime now) {
+    final id = widget.aimId;
+    if (id != null) {
+      for (final a in goal.aims) {
+        if (a.id == id) return a;
+      }
+    }
+    _mintedId ??= 'aim-${now.microsecondsSinceEpoch}';
+    return Aim(id: _mintedId!);
+  }
+
+  /// Set (or clear) the aim's primary date on its one **pending** round, leaving
+  /// any resolved history untouched — the date knob is carried by [Aim.rounds].
+  Aim _withDate(Aim aim, DateTime? date) {
+    final rounds = [...aim.rounds];
+    final i = rounds.indexWhere((r) => r.outcome == AimOutcome.pending);
+    if (date == null) {
+      if (i >= 0) rounds.removeAt(i);
+      return aim.copyWith(rounds: rounds);
+    }
+    if (i >= 0) {
+      rounds[i] = rounds[i].copyWith(date: date);
+    } else {
+      final n = rounds.length + 1;
+      rounds.add(InterviewRound(id: '${aim.id}-r$n', number: n, date: date));
+    }
+    return aim.copyWith(rounds: rounds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final goal = ref.watch(activeDeckProvider).asData?.value;
+    final deckTemplate = ref.watch(activeDeckTemplateProvider).asData?.value;
+    final template = deckTemplate ?? activeTemplate;
+    final vocab = template.vocabulary;
+    final now =
+        ref.watch(clockProvider).asData?.value.today() ?? DateTime.now();
+
+    if (goal == null) {
+      return const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(Dim.space6),
+          child: LoadingView(),
+        ),
+      );
+    }
+
+    final aim = _draft ?? _initial(goal, now);
+    // Resolve knob ids through the template fallbacks so a new aim shows sensible
+    // defaults; the forecast + calendar follow the DRAFT dims live.
+    final rt =
+        ReadinessTarget.forAim(aim, template, date: aim.currentRound()?.date);
+    final date = rt.interviewDate;
+    final dims = (level: rt.level, company: rt.company, track: rt.track);
+    final forecast =
+        ref.watch(readinessForecastForProvider(dims)).asData?.value;
+
+    // This aim's own dated rounds → calendar flags.
+    final roundsByDate = <DateTime, List<String>>{};
+    for (final r in aim.rounds) {
+      final rd = r.date;
+      if (rd == null) continue;
+      roundsByDate
+          .putIfAbsent(DateTime(rd.year, rd.month, rd.day), () => [])
+          .add(r.label);
+    }
+
+    final title = aim.companyName.isEmpty ? 'Your target' : aim.companyName;
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SheetHeader(title: title),
+          SheetScrollBody(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // The three categorical knobs — titles are subject-neutral via the
+                // Vocabulary seam (SWE overrides to Level / Company / Track).
+                _ChipGroup<LevelValue>(
+                  label: vocab.levelAxisTitle,
+                  values: template.target.levels,
+                  selected: template.target.levelById(rt.levelId),
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(aim.copyWith(levelId: v.id)),
+                ),
+                _ChipGroup<ContextValue>(
+                  label: vocab.contextAxisTitle,
+                  values: template.target.contexts,
+                  selected: template.target.contextById(rt.contextId),
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(aim.copyWith(contextId: v.id)),
+                ),
+                _ChipGroup<TrackValue>(
+                  label: vocab.trackAxisTitle,
+                  values: template.target.tracks,
+                  selected: template.target.trackById(rt.trackId),
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(aim.copyWith(trackId: v.id)),
+                ),
+                const SizedBox(height: Dim.space3),
+                // Forecast readout ABOVE the calendar (the headline outcome).
+                _ForecastBlock(chosenDate: date, dims: dims),
+                const SizedBox(height: Dim.space4),
+                Row(
+                  children: [
+                    Text(targetDateLabel(vocab),
+                        style:
+                            theme.textTheme.labelLarge?.copyWith(color: muted)),
+                    const Spacer(),
+                    if (date != null)
+                      TextButton(
+                        onPressed: () => _set(_withDate(aim, null)),
+                        child: const Text('Clear'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: Dim.space1),
+                _ZoneCalendar(
+                  forecast: forecast,
+                  selected: date,
+                  roundsByDate: roundsByDate,
+                  onSelect: (d) => _set(_withDate(aim, d)),
+                ),
+                const SizedBox(height: Dim.space2),
+                _CalendarLegend(assessmentNoun: vocab.assessmentNoun),
+                const SizedBox(height: Dim.space4),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      // The writer flip: the knobs + date persist onto the AIM
+                      // (n006 — the deck is a pure lens), not the deck slots.
+                      await ref
+                          .read(decksProvider.notifier)
+                          .upsertAim(goal.id, aim);
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+                    child: const Text('Save'),
                   ),
                 ),
               ],

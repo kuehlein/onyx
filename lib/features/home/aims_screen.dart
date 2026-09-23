@@ -12,6 +12,7 @@ import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../interview/interview_sheet.dart';
+import 'target_sheet.dart';
 
 /// The per-deck **Aims surface** (S5e / ADR-0009) — one calm place to see the
 /// deck's aims: a weakest-link readiness band, then a list of aim rows (each with
@@ -34,7 +35,16 @@ class AimsScreen extends ConsumerWidget {
     final assessment = vocab.assessmentNounTitle ?? 'Target';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your aims')),
+      appBar: AppBar(
+        title: const Text('Your aims'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add an aim',
+            onPressed: () => showAimEditorSheet(context),
+          ),
+        ],
+      ),
       body: deckAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -163,7 +173,10 @@ class _AimRow extends StatelessWidget {
     final sub = _subtitle();
 
     return InkWell(
-      onTap: () => showInterviewSheet(context, aim.id),
+      // A live aim → edit its knobs; an ended one → its outcome/debrief history.
+      onTap: () => aim.status.isEnded
+          ? showInterviewSheet(context, aim.id)
+          : showAimEditorSheet(context, aimId: aim.id),
       borderRadius: Dim.brCard,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -315,6 +328,14 @@ class _CoverageState extends StatelessWidget {
                   : 'No aim set — $pct% of the deck seen, learning at a steady pace.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(color: muted),
+            ),
+            const SizedBox(height: Dim.space4),
+            Align(
+              child: FilledButton.tonalIcon(
+                onPressed: () => showAimEditorSheet(context),
+                icon: const Icon(Icons.add),
+                label: const Text('Set an aim'),
+              ),
             ),
           ],
         ),
