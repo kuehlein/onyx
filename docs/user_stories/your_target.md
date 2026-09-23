@@ -18,7 +18,8 @@ concurrent aims: MVP-ish → full.
 - **Per aim, set the four knobs:** [MVP for one aim]
   - **difficulty / depth** — how far into advanced material you're held to (was "seniority"),
   - **domain emphasis** — which parts of the deck weigh more (was "track"),
-  - **durability bar** — how locked-in recall must be (was "company tier"),
+  - **durability bar** — how locked-in recall must be = **how long you need it** (cram / short-term
+    ↔ durable / long-term) (was "company tier"),
   - **date** — a target date, or open-ended.
 - **Manage the set** — add / edit / pause / remove aims; a deck can hold several at once (the
   music deck's composition test + improv jury + general fluency). [full]
@@ -49,6 +50,17 @@ concurrent aims: MVP-ish → full.
   thing — the deck's aim set. Merge into **one per-deck Aims surface**: a list of aims (each
   with its knobs, date, and status) plus a calendar view of the dated ones.
   **Status.** Accepted
+
+- **Cram vs durable, and "can I even make it?"** (added 2026-09-22)
+  **Rec.** The **durability bar IS the cram↔durable knob** (low = short-term, sharp on the day, fades
+  after; high = durable mastery). Per dated aim, show a **feasibility** readout (required-vs-actual
+  pace), and when an aim can't be reached in time, a **coach warning** with honest options — move the
+  date, narrow scope, lower the bar, or accept a cram that fades. Honor deadlines the **FSRS-safe way**
+  (raise desired retention toward the date; never schedule-hack). This is **orthogonal** to the
+  ease-in → ramp → coach-load model (that sizes the day; aims slice it) — research-confirmed
+  (learning-science.md "Study cadence").
+  **Status.** Accepted. Mechanism: S4 feasibility → S3 allocation (above a retention floor) → S5 UI +
+  a coach cram-coherence nudge (#103); the FSRS-safe deadline ramp overlaps #32.
 
 ## View accessed from
 Home. (Post-merge: the single entry point for aims, scheduling, and the test/interview list.)

@@ -313,3 +313,55 @@ and the one Onyx follows. If in-body concept links are ever added (the
 navigation on a stray tap, connection revealed on explicit long-press/expand —
 rather than bright inline jumps. (Note: card wikilinks currently render as inert
 `[[slug]]` text in the body; making them interactive is exactly this decision.)
+
+---
+
+## Study cadence, deadlines & the coach (research pass, 2026-09-22)
+
+Confirms the **ease-in → ramp → coach-adjusts** model and the **per-aim, deadline-weighted
+allocation** are compatible and evidence-based. They are orthogonal: the ramp/coach set the *size*
+of the day; aims set the *mix* within it.
+
+### Ease in, then ramp up — SUPPORTED
+Habit strength builds along an asymptotic curve and simpler behaviors automate faster (Lally 2010,
+ejsp.674) — argue for a small starting load. Early **consistency** predicts long-term adherence far
+more than early **volume** (large beginner-app cohort: first-28-day consistency the strongest
+predictor of retention; longer sessions not protective without frequency — PMC13500638). Overloading
+a novice raises cognitive load and drops engagement (Sweller). **Implication:** the ramp's job is to
+keep the daily target *completable every day*; escalate gently (≈10%/wk-style), gated on adherence.
+
+### Deadline-weighted allocation across concurrent aims — WORKABLE, with two guardrails
+- **Interleaving related aims over one deck is a *desirable difficulty*** (Taylor & Rohrer 2010 —
+  mixing roughly doubled delayed-test scores), *provided* the material is similar/confusable (it is —
+  one deck). Don't force-mix unrelated content just to interleave.
+- **Prioritizing by deadline is legitimate self-regulation** — agenda-based regulation (deadlines/
+  constraints override pure difficulty selection) + region-of-proximal-learning (spend effort on
+  not-yet-known-but-reachable items; diminishing returns on mastered or too-far items). This is why
+  urgency = **feasibility** (required-vs-actual pace), not a naive time-ramp: it's the "weakest-link
+  that's still reachable."
+- **Guardrail 1 — spacing scales with the horizon, so a nearer deadline legitimately compresses
+  spacing, but never to massing.** Distributed practice beats cramming for durable retention (Cepeda
+  2006, 317 experiments); optimal gap ≈ 10–20% of the retention interval. Honor a deadline the
+  **FSRS-safe way** (raise desired retention toward the date + a final pre-date review; don't hack the
+  schedule) — [[fsrs-exam-targeting]].
+- **Guardrail 2 — a per-aim retention floor.** De-prioritized material decays below its spacing
+  cadence (forgetting curve). Urgency reallocates *new-learning emphasis* above a **minimum due-review
+  floor** per active dated aim; it must not starve one to zero.
+- Multiple goals are fine when they don't compete incoherently (goal-setting theory: conflicting
+  goals hurt) — a single shared time budget + explicit feasibility-weighted allocation is the coherence
+  mechanism.
+
+### Coach adjusting load from data + self-report — SUPPORTED, with guardrails
+- **Preserve autonomy** (SDT autonomy-support meta-analysis, 378 effect sizes): propose changes *with
+  rationale* + real choice; avoid controlling tone and performance-contingent pressure. Structure and
+  autonomy are complements — a clear recommended load offered supportively is pro-autonomy.
+- **Fuse three signals; distrust self-report alone** — adherence/completion + retrieval-practice
+  accuracy (the reliable competence signal — testing-effect g≈0.5–0.6) + self-reported load.
+  Self-monitoring is biased, worst for at-risk learners (calibration/overconfidence research).
+- **Adjust gently; don't over-guide.** Trigger on a data signal, not preemptively; small steps;
+  avoid over-scaffolding + always-accept defaults that invite gaming (assistance-dilemma research).
+  Onyx's one-tap-nudge + conversational-apply shape already matches.
+
+**Net:** the cadence model holds up unchanged in shape; aims layer beneath it. The two things the
+research *adds* to the build are the **retention floor** and the **FSRS-safe cram** (with an honest
+coach warning when an aim is infeasible / the cram is incoherent).

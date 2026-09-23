@@ -44,13 +44,26 @@ model before we add features, so we build on the right shape.
         `ReadinessTarget.forAim`.
       - **S2 ✅** readiness rolls up **weakest-link across active aims** (per-aim via forAim, headline =
         the binding aim; single-aim byte-identical). Aim knobs fall back to deck slots transitionally.
-      - **S3** daily-plan **allocation across aims** (split the deck budget by urgency/deadline —
-        dated pull more, open-ended hold a baseline) **+ the `activeTargeting`→per-aim fix** (learn-
-        ordering, plan weights, per-card retention currently use one blended track/durability).
-      - **S4** per-aim **pace / forecast / ladder**: a shared **binding-aim resolver** (from
-        deckReadiness) so ladder + single-forecast wrappers agree with the headline; forecast per-aim +
-        weakest-link ready-by; coverage-pace per dated aim; **open-ended aims → coverage, no ready-by**;
-        fix the SWE 2-contexts-per-level hardcode. Reads per-aim while aims still inherit (byte-identical).
+      - **S4 (sequenced BEFORE S3)** per-aim **pace / forecast / ladder + the FEASIBILITY signal**:
+        a shared **binding-aim resolver** (from deckReadiness) so ladder + single-forecast wrappers
+        agree with the headline; forecast per-aim + weakest-link (latest) ready-by; coverage-pace per
+        dated aim; **open-ended aims → coverage, no ready-by**; and per aim **required-pace vs
+        actual-pace** ("can you be ready in time?") — the substrate S3 allocates on. Fix the SWE
+        2-contexts-per-level hardcode. Reads per-aim while aims still inherit (byte-identical).
+      - **S3** daily-plan **allocation by FEASIBILITY** (not a naive time-ramp): an aim's urgency =
+        how far behind it is (required-vs-actual pace, from S4) + date proximity — behind+soon pulls
+        more, comfortably-ahead less even if its date is sooner, **open-ended = baseline** — kept
+        **above a per-aim retention floor** (never starve a dated aim's due reviews). **+ the
+        `activeTargeting`→per-aim fix** (learn-ordering, plan weights, per-card retention drop the one
+        blended track/durability). Byte-identical single-aim.
+      - **Cram-vs-durable + feasibility coaching (cross-cutting, added 2026-09-22).** "How long you
+        need it" = the **durability-bar knob** (S1 field; S5 frames/edits it as cram↔durable). Honor
+        deadlines the **FSRS-safe way** (raise desired retention toward the date — overlaps **#32**),
+        never schedule-hack. A **coach cram-coherence nudge** warns when an aim is infeasible / the cram
+        is incoherent (move the date / cut scope / lower the bar / accept it fades) —
+        propose-with-rationale, no auto-override. Research-confirmed (learning-science.md "Study
+        cadence"): does NOT contradict the ease-in→ramp→coach model — it's orthogonal (the ramp sizes
+        the day; aims slice it).
       - **S5** the unified **Aims surface** (your_target + scheduler, all Accepted) — the **writer flip**
         + payoff: per-aim knob **editing**; planner seeds the **aim's** knobs; **one-shot migration**
         folding each deck's target → its aims (preserve invariant #8); **delete `Deck` level/context/

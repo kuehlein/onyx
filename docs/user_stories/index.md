@@ -85,13 +85,25 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
   storage of *app data* (not content) still worth its cost? → **resolve before the cloud/registry
   track.**
 - **Competing aims** (tension between concurrent aims — e.g. a general *backend* aim + two *frontend*
-  interviews). **Rec (shape agreed 2026-09-22; refine the mechanism in S2/S3):** readiness **never
-  averages** — score each aim on its own terms, show per-aim, deck headline = **weakest-link**; the
-  daily plan **allocates by urgency/deadline** (dated aims nearing their date pull more; open-ended
-  aims hold a baseline) — not a naive split, not an automatic override; **pause is the user's lever**
-  (the existing active/mute toggle) — no auto-override (preserves autonomy, avoids silently abandoning
-  a goal); the **coach may detect low emphasis-overlap and gently suggest** focusing one, never
-  auto-pause. Mechanism deferred → S2 (rollup) + S3 (allocation) + a coach nudge slice.
+  interviews). **Rec (shape agreed 2026-09-22; refined 2026-09-22):**
+  - **Readiness never averages** — score each aim on its own knobs, show per-aim, deck headline =
+    **weakest-link** (done, S2).
+  - **Allocation is by FEASIBILITY, not a naive time-ramp.** An aim's urgency = how far behind it is
+    relative to what it needs: **required-pace (remaining work ÷ time left, where work scales with
+    content volume × the durability bar) vs actual-pace.** Behind + soon pulls more; comfortably-ahead
+    pulls less *even if its date is sooner*; **open-ended aims hold a baseline** (steady coverage).
+    (Region-of-proximal-learning + agenda-based regulation — see learning-science.md.) Urgency is a
+    per-aim **forecast** output ⇒ **S4 (feasibility) sequences before S3 (allocation).**
+  - **Retention floor (anti-starvation).** Urgency reallocates *new-learning emphasis* above a
+    minimum; it **never drops a dated aim's due-review cadence** (else the de-prioritized aim rots).
+  - **Cram vs durable = the durability-bar knob** (already modelled) + the FSRS-safe deadline ramp
+    (raise desired retention toward the date; **never** hack the schedule / mass-practice —
+    fsrs-exam-targeting). A crammer sets a low durability bar; the app keeps them honest.
+  - **Coach warns on infeasibility / incoherent cram** — "at your pace you won't be durably ready
+    for [aim] by [date]; move the date, narrow scope, lower the durability bar, or accept it fades."
+    Propose-with-rationale; **pause is the user's lever**; no auto-override.
+  - Mechanism: **S4** (per-aim feasibility) → **S3** (urgency allocation + retention floor) → **S5**
+    (cram-vs-durable UI) + a **coach cram-coherence nudge**; the FSRS-safe deadline ramp overlaps #32.
 - Per-file **Pending / New** questions: onboarding (QR quick-setup), home ("Today" naming), browse
   (whole-vault), scheduler (vault-level calendar), card (editing already-learned cards; per-section
   test exclusion), plus the refinements noted in deck_selection / deck_creation / settings.
