@@ -104,4 +104,90 @@ void main() {
       expect(bare.aims, isEmpty);
     });
   });
+
+  group('foldDeckSlotsIntoAims (S5a writer-flip prep)', () {
+    Deck deck({
+      String? levelId,
+      String? contextId,
+      String? trackId,
+      DateTime? deadline,
+      List<Aim> aims = const [],
+    }) =>
+        Deck(
+          id: 'd',
+          name: 'D',
+          templateId: 'swe',
+          levelId: levelId,
+          contextId: contextId,
+          trackId: trackId,
+          deadline: deadline,
+          aims: aims,
+        );
+
+    test('a target-less deck (no slots, no deadline) is returned unchanged',
+        () {
+      final d = deck(aims: const [Aim(id: 'a')]);
+      expect(identical(foldDeckSlotsIntoAims(d), d), isTrue);
+    });
+
+    test('an aim inherits the deck slots explicitly (byte-identical)', () {
+      final f = foldDeckSlotsIntoAims(deck(
+        levelId: 'senior',
+        contextId: 'faang',
+        trackId: 'backend',
+        aims: const [Aim(id: 'a')],
+      ));
+      final a = f.aims.single;
+      expect(
+          [a.levelId, a.contextId, a.trackId], ['senior', 'faang', 'backend']);
+      expect(a.rounds, isEmpty); // no deadline → no synthetic round
+    });
+
+    test('a round-less aim gets the deck deadline as an explicit round 1', () {
+      final f = foldDeckSlotsIntoAims(deck(
+        levelId: 'senior',
+        deadline: DateTime(2026, 6, 1),
+        aims: const [Aim(id: 'a')],
+      ));
+      final r = f.aims.single.rounds.single;
+      expect(r.id, 'a-r1');
+      expect(r.number, 1);
+      expect(r.date, DateTime(2026, 6, 1));
+    });
+
+    test('a deck with an explicit target but NO aims gets one coverage aim',
+        () {
+      final f = foldDeckSlotsIntoAims(deck(
+        levelId: 'senior',
+        contextId: 'faang',
+        trackId: 'backend',
+        deadline: DateTime(2026, 6, 1),
+      ));
+      expect(f.aims.length, 1);
+      final a = f.aims.single;
+      expect(a.id, 'target');
+      expect(
+          [a.levelId, a.contextId, a.trackId], ['senior', 'faang', 'backend']);
+      expect(a.rounds.single.date, DateTime(2026, 6, 1));
+    });
+
+    test('an aim keeps its OWN slots; only null-slot aims inherit', () {
+      final f = foldDeckSlotsIntoAims(deck(
+        levelId: 'senior',
+        aims: const [Aim(id: 'a', levelId: 'staff'), Aim(id: 'b')],
+      ));
+      expect(f.aims[0].levelId, 'staff'); // its own, untouched
+      expect(f.aims[1].levelId, 'senior'); // inherited from the deck
+    });
+
+    test('idempotent — a second fold is a no-op (same instance)', () {
+      final once = foldDeckSlotsIntoAims(deck(
+        levelId: 'senior',
+        deadline: DateTime(2026, 6, 1),
+        aims: const [Aim(id: 'a')],
+      ));
+      expect(identical(foldDeckSlotsIntoAims(once), once), isTrue);
+      expect(once.aims.single.rounds.length, 1); // round not duplicated
+    });
+  });
 }
