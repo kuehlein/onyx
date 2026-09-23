@@ -98,18 +98,23 @@ void main() {
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     addTearDown(() => db.close());
 
-    // The default goal owns its own level/context/track now (Phase B — the aim
-    // moved off the legacy controller onto the Deck), so drive the target
-    // through the goal's slots. A container per read keeps each goal pinned.
+    // The target lives on the AIM now (S5 — the deck is a pure lens), so drive it
+    // through a single active aim carrying the knobs. A container per read keeps
+    // each goal pinned.
     Future<double> read(SeniorityLevel level, Track track) async {
       final c = make(db, goals: [
         Deck(
           id: 'default',
           name: 'All',
           templateId: 'swe',
-          levelId: level.name,
-          contextId: CompanyTier.faang.name,
-          trackId: track.name,
+          aims: [
+            Aim(
+              id: 'a',
+              levelId: level.name,
+              contextId: CompanyTier.faang.name,
+              trackId: track.name,
+            ),
+          ],
         ),
       ]);
       addTearDown(c.dispose);

@@ -114,50 +114,28 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
 Deck _pick(List<Deck> goals, String deckId) =>
     goals.firstWhere((g) => g.id == deckId, orElse: () => goals.first);
 
-/// A single [aim]'s effective [ReadinessTarget] within [goal]: the aim's own knobs
-/// (S1), falling back to the deck's slots (transitional until the slots move onto
-/// aims in S5) then the template's fallbacks — so a lone inherited aim resolves
-/// exactly as the deck's own target did. Readiness, the ready-date forecast, and
-/// feasibility all resolve an aim through here, so the headline number, the ladder,
-/// and the forecast describe the SAME aim (S4).
-ReadinessTarget _aimTarget(Aim aim, Deck goal, DeckTemplate template) =>
-    ReadinessTarget.forAim(
-      aim.copyWith(
-        levelId: aim.levelId ?? goal.levelId,
-        contextId: aim.contextId ?? goal.contextId,
-        trackId: aim.trackId ?? goal.trackId,
-      ),
-      template,
-    );
-
 /// The [ReadinessTarget] of the deck's **binding** (weakest-link) aim — the aim
 /// the headline readiness reflects (S2/S4) — so the ladder + ready-date forecast
-/// describe the SAME aim as the number. Falls back to [fallback] (the deck's own
-/// target) when no aim binds (a coverage-only deck), so a single/no-aim deck is
-/// byte-identical (invariant #8).
+/// describe the SAME aim as the number. Each aim carries its own knobs now (S5a),
+/// resolved via [ReadinessTarget.forAim] (aim slot → template fallback). Falls back
+/// to [fallback] (the deck's coverage target) when no aim binds, so a single/no-aim
+/// deck is byte-identical (invariant #8).
 ReadinessTarget _bindingTarget(Deck goal, Readiness readiness,
     DeckTemplate template, ReadinessTarget fallback) {
   final id = readiness.bindingAimId;
   if (id != null) {
     for (final a in goal.aims) {
-      if (a.id == id) return _aimTarget(a, goal, template);
+      if (a.id == id) return ReadinessTarget.forAim(a, template);
     }
   }
   return fallback;
 }
 
-/// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
-/// whole-vault default — carries its own level/context/track (+ deadline); the
-/// default's were seeded from the legacy saved target on first run
-/// ([migratedDefaultDeck]) and are edited through [Decks] like any goal's.
-///
-/// NOTE (#30d multi-template): [deckReadiness] now scores each goal against its
-/// OWN template (durability bar + domain weights). The remaining sliver:
-/// readinessLadderPosition/readinessForecast/readinessPace (single-goal-Home
-/// surfaces, via ladder.dart + projection.dart) still read the process-global
-/// activeTemplate — correct for the default/active goal on the primary template;
-/// thread the goal's DeckTemplate there too when a focused non-default goal needs
-/// its own ladder/forecast.
+/// A deck's **coverage** [ReadinessTarget] — the template's fallback
+/// level/context/track, no date. It's the base a deck scores against when no aim
+/// is bound (a 0-aim coverage deck); a deck with aims resolves each aim's OWN
+/// target instead (S5 — the target lives on the aim, ADR-0006). Byte-identical for
+/// a target-less deck, whose slots were always the template fallbacks anyway.
 @riverpod
 Future<ReadinessTarget> targetForDeck(Ref ref, String deckId) async {
   // Register every dependency synchronously, before any await, so a mid-flight
@@ -167,7 +145,8 @@ Future<ReadinessTarget> targetForDeck(Ref ref, String deckId) async {
   final registryF = ref.watch(templateRegistryProvider.future);
   final goal = _pick(await goalsF, deckId);
   final registry = await registryF;
-  return goal.toTarget(registry.byId(goal.templateId) ?? registry.primary);
+  return ReadinessTarget.forAim(
+      const Aim(), registry.byId(goal.templateId) ?? registry.primary);
 }
 
 /// A given goal's effective [Targeting]: its base target combined with its ACTIVE
@@ -282,7 +261,7 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   Readiness? binding;
   Aim? bindingAim;
   for (final aim in activeAims) {
-    final r = scoreFor(_aimTarget(aim, goal, template), aim);
+    final r = scoreFor(ReadinessTarget.forAim(aim, template), aim);
     if (binding == null || r.overall < binding.overall) {
       binding = r;
       bindingAim = aim;
@@ -481,7 +460,7 @@ Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
       out.add((aim: aim, feasibility: classifyAimFeasibility(date: null)));
       continue;
     }
-    final t = _aimTarget(aim, goal, template);
+    final t = ReadinessTarget.forAim(aim, template);
     final forecast = await ref.watch(readinessForecastForProvider((
       level: t.level,
       company: t.company,
@@ -537,7 +516,7 @@ Future<Map<String, double>> deckPlanDomainWeights(
 
   // No active aim → the deck's base target emphasis (byte-identical to pre-S3).
   if (feas.isEmpty) {
-    final base = goal.toTarget(template);
+    final base = ReadinessTarget.forAim(const Aim(), template);
     return {for (final d in domains) d: domainWeight(base, d)};
   }
 
@@ -548,7 +527,9 @@ Future<Map<String, double>> deckPlanDomainWeights(
   final shares = total > 0
       ? [for (final u in urg) u / total]
       : [for (final _ in urg) 1 / urg.length];
-  final targets = [for (final e in feas) _aimTarget(e.aim, goal, template)];
+  final targets = [
+    for (final e in feas) ReadinessTarget.forAim(e.aim, template)
+  ];
 
   final out = <String, double>{};
   for (final d in domains) {
