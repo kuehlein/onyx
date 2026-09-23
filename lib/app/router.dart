@@ -10,6 +10,7 @@ import '../features/browse/browse_screen.dart';
 import '../features/browse/card_detail_screen.dart';
 import '../features/browse/unresolved_links_screen.dart';
 import '../features/drafts/draft_review_screen.dart';
+import '../features/home/aims_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
@@ -126,6 +127,8 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         GoRoute(
             path: '/interviews',
             builder: (_, __) => const UpcomingInterviewsScreen()),
+        // The unified per-deck Aims surface (S5e) — weakest-link readiness + aims.
+        GoRoute(path: '/aims', builder: (_, __) => const AimsScreen()),
         // Post-interview debrief for one goal (`/debrief/goal-123`).
         GoRoute(
           path: '/debrief/:deckId',
