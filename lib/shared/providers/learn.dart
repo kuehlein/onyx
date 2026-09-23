@@ -40,6 +40,9 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
   final remaining = await ref.watch(dailyNewRemainingProvider.future);
   if (remaining <= 0) return const [];
   final targeting = await ref.watch(activeTargetingProvider.future);
+  // Urgency-weighted per-domain emphasis (S3d): order new material by per-aim
+  // urgency, not the blended base track. Byte-identical single-aim.
+  final planWeights = await ref.watch(activePlanDomainWeightsProvider.future);
   final goal = await deckF;
   // Scope to the active goal's cards (task #30d, G5+) so a lane learns its own
   // material; the whole-vault default goal selects everything (unchanged).
@@ -54,10 +57,10 @@ Future<List<LearnItem>> learnQueue(Ref ref) async {
     seededKeys: states.keys.toSet(),
     adjacency: _buildAdjacency(scoped),
     newSectionLimit: remaining,
-    // Bias new material toward the domains/concepts the active target + prep
-    // goals weight most (secondary to foundational-first), so what matters for
-    // the interview(s) surfaces sooner.
-    priorityOf: targeting.weightForCard,
+    // Bias new material toward the domains/concepts the active aims weight most,
+    // now scaled by each aim's feasibility urgency (S3d) — a behind aim's domains
+    // surface sooner (secondary to foundational-first).
+    priorityOf: (c) => targeting.weightForCard(c, domainWeights: planWeights),
   );
 }
 

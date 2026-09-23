@@ -46,8 +46,17 @@ class Targeting {
 
   /// Card-level weight: its domain weight plus the strongest concept boost any
   /// active interview places on one of the card's concepts. Drives learn ordering.
-  double weightForCard(Card card) {
-    final w = weightForDomain(card.domain ?? '');
+  ///
+  /// Pass [domainWeights] — the urgency-weighted plan emphasis (`deckPlanDomainWeights`,
+  /// S3d) — to order new material by per-aim urgency (a behind aim's domains surface
+  /// sooner); omit it to use the blended base domain weight. Byte-identical when the
+  /// override equals the base (single/no-aim), since then `domainWeights[d]` ==
+  /// `weightForDomain(d)`. The concept boost stays a max across aims (a minor,
+  /// usually-empty lever kept simple).
+  double weightForCard(Card card, {Map<String, double>? domainWeights}) {
+    final d = card.domain ?? '';
+    final w =
+        domainWeights != null ? (domainWeights[d] ?? 1.0) : weightForDomain(d);
     var boost = 0.0;
     for (final iv in aims) {
       if (iv.conceptWeights.isEmpty) continue;

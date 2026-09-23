@@ -70,6 +70,21 @@ void main() {
       expect(t.weightForCard(_card('ds-a')), domainWeight(_base, 'ds-a'));
     });
 
+    test('weightForCard uses the urgency-weighted domain override (S3d)', () {
+      const iv = Aim(conceptWeights: {'consistent-hashing': 3.0});
+      final t = Targeting(base: _base, aims: [iv]);
+      final card = _card('ds-a', concepts: ['consistent-hashing']);
+      // The override supplies the domain part (learn-ordering by per-aim urgency);
+      // the concept boost still adds on top.
+      expect(t.weightForCard(card, domainWeights: {'ds-a': 9.0}),
+          closeTo(9.0 + 3.0, 1e-9));
+      // An override equal to the base domain weight is byte-identical to omitting it.
+      expect(
+          t.weightForCard(card,
+              domainWeights: {'ds-a': domainWeight(_base, 'ds-a')}),
+          closeTo(t.weightForCard(card), 1e-9));
+    });
+
     test('governingDate is the soonest across base + interviews', () {
       final base = _base.copyWith(interviewDate: DateTime(2026, 10, 1));
       final t = Targeting(base: base, aims: [
