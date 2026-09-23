@@ -64,6 +64,13 @@ model before we add features, so we build on the right shape.
         propose-with-rationale, no auto-override. Research-confirmed (learning-science.md "Study
         cadence"): does NOT contradict the ease-in→ramp→coach model — it's orthogonal (the ramp sizes
         the day; aims slice it).
+        - *How a cram surfaces cards (design note):* FSRS won't minutes-space a MATURE card (by
+          design — that's massing). A cram uses (a) raised desired-retention toward the date (pulls
+          intervals in, days→sooner) **+** (b) a dedicated **cram / final-review session** that
+          rapidly re-exposes the aim's due + at-risk cards **without writing FSRS reviews**
+          (non-rescheduling — fsrs-exam-targeting), reusing the existing non-grading session infra
+          (gym / practice). This is how "see them again and again today" is served FSRS-safely.
+          Not built yet; lands with the cram-vs-durable work (S5 + #103).
       - **S5** the unified **Aims surface** (your_target + scheduler, all Accepted) — the **writer flip**
         + payoff: per-aim knob **editing**; planner seeds the **aim's** knobs; **one-shot migration**
         folding each deck's target → its aims (preserve invariant #8); **delete `Deck` level/context/
@@ -133,6 +140,9 @@ The MVP-tagged stories, cloud still absent:
   public deck tier (moderation/takedown), managed AI for minors (COPPA/FERPA).
 - QR class/org quick-setup (→ onboarding, merge-not-overwrite); PDF/camera card authoring
   (→ deck_creation).
+- **Focus / Do-Not-Disturb while studying** (opt-in, Settings toggle) — trigger the OS Focus/DND for
+  the duration of a study session to cut distractions, restore on exit. Platform-specific (iOS Focus
+  filters / Android DND access, permission-gated); a post-MVP nicety, capability-gated where absent.
 
 ## Old-backlog mapping (#NN)
 - **Reframed into Phase 1:** #30 / #88 / G7 (→ 1a), #85 (→ 1d), #86 (resolved → 1e), #68 (aims),
