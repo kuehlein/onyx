@@ -67,9 +67,19 @@ precomputed, so packing never re-parses the vault.
    escalates to the **coach nudge (#103) → cram session (#104)** — a mode switch — not
    to ever-more-aggressive plan weighting. Urgency-weighting and cram are complementary
    (allocation across aims vs. the single-aim endgame format), not redundant.
-4. **Retention floor.** Reviews stay reserved with a minimum cadence; urgency only
-   reallocates *new-learning* emphasis **above** that floor. A behind aim can pull
-   more new learning but can never starve a dated aim's due reviews.
+4. **Retention floor — met structurally.** Urgency reallocates *new-learning*
+   emphasis only: it moves practice-track domain weights (`deckPlanDomainWeights`),
+   never the review track (fixed weight + `reserved`). And because the combination is
+   a normalized **average** (not a sum), practice weights stay bounded as aims are
+   added, so review's fair share holds (~stable single-aim vs multi-aim). So a behind
+   aim can pull more new learning but cannot starve a dated aim's due reviews. This is
+   provably byte-identical single-aim (the mechanism is untouched for one aim).
+   - **Deferred: a *stronger* capped floor.** "Clear due reviews first, up to a cap"
+     (so heavy-review days never let retention drift, nor let reviews eat the day) is
+     a genuine improvement but is NOT byte-identical (it rewrites the pure packer's
+     fair-queuing for the single deck too) and is pre-existing (not aims-caused). It's
+     filed as a daily-plan task (#106), done *with* the est-minutes fidelity that lets
+     the cap size the due queue accurately. Not built here.
 
 ## Alternatives considered
 

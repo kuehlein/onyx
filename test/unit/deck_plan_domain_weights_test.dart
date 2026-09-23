@@ -152,4 +152,25 @@ void main() {
     expect(w['sd'], 1.0);
     expect(w['ui'], 1.0);
   });
+
+  test('weights AVERAGE (not sum) — the retention-floor mechanism (S3c)',
+      () async {
+    // Two aims both boosting sd → the effective weight is still base(1)+boost(1)=2,
+    // NOT 3. Bounded (averaged) weights stop totalPri ballooning as aims are added,
+    // so the review track's fair share holds — reviews aren't starved by urgency.
+    final c = container([
+      (
+        aim: const Aim(id: 'a', domainWeights: {'sd': 1.0}),
+        feasibility:
+            AimFeasibility(status: FeasibilityStatus.behind, date: farDate)
+      ),
+      (
+        aim: const Aim(id: 'b', domainWeights: {'sd': 1.0}),
+        feasibility:
+            AimFeasibility(status: FeasibilityStatus.behind, date: farDate)
+      ),
+    ]);
+    final w = await c.read(deckPlanDomainWeightsProvider('g').future);
+    expect(w['sd'], 2.0); // averaged, not summed to 3.0
+  });
 }

@@ -62,7 +62,9 @@ model before we add features, so we build on the right shape.
       - **S3** daily-plan **allocation by FEASIBILITY** (not a naive time-ramp): an aim's urgency =
         how far behind it is (required-vs-actual pace, from S4) + date proximity — behind+soon pulls
         more, comfortably-ahead less even if its date is sooner, **open-ended = baseline** — kept
-        **above a per-aim retention floor** (never starve a dated aim's due reviews). **+ the
+        **above a per-aim retention floor** (never starve a dated aim's due reviews; met *structurally*
+        via (a) averaging + review's urgency-independence — the stronger capped floor is follow-up
+        (iii)). **+ the
         `activeTargeting`→per-aim fix** (learn-ordering, plan weights, per-card retention drop the one
         blended track/durability). Byte-identical single-aim. **Mechanism (decided — see
         [ADR-0007](adr/0007-daily-plan-allocation-across-aims.md)):** urgency-weighted *emphasis* fed
@@ -77,6 +79,14 @@ model before we add features, so we build on the right shape.
           **(ii) leftover-budget backfill** — big blocky chunks that don't fit defer, and review/learn
           (small, divisible) naturally soak up the remainder; backfilling with *extra* re-exposure
           beyond due when the day under-fills is **#58** (overflow) + **#104** (cram session) territory.
+          **(iii) capped retention floor (#106)** — S3's retention floor is met *structurally* today
+          (urgency touches only practice-track domain weights, never review's fixed weight + `reserved`;
+          and (a) averaging keeps weights bounded so review's ~fair share holds even as urgent aims
+          pull — see ADR-0007). The *stronger* guarantee — **clear due reviews first, up to a cap**, so
+          heavy-review days never let retention drift (nor let reviews eat the whole day) — is NOT
+          byte-identical (it rewrites the packer's fair-queuing for the single deck too) and is
+          pre-existing (not aims-caused), so it's a deliberate daily-plan improvement done *with* (i)
+          est-minutes fidelity (the cap needs accurate due-queue sizing). Near **#32/#57**.
       - **Cram-vs-durable + feasibility coaching (cross-cutting, added 2026-09-22; see
         [ADR-0008](adr/0008-cram-vs-durable-fsrs-safe-deadlines.md)).** "How long you
         need it" = the **durability-bar knob** (S1 field; S5 frames/edits it as cram↔durable). Honor
