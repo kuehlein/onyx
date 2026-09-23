@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/interview/critic.dart';
 import '../../core/interview/transfer.dart';
+import '../../core/readiness/feasibility.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/projection.dart';
@@ -9,6 +10,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/targeting.dart';
 import '../../core/deck/deck.dart';
+import '../../core/template/deck_template.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'srs.dart';
@@ -110,6 +112,22 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
 /// there's no ref use after an await; see the note on [deckReadiness].)
 Deck _pick(List<Deck> goals, String deckId) =>
     goals.firstWhere((g) => g.id == deckId, orElse: () => goals.first);
+
+/// A single [aim]'s effective [ReadinessTarget] within [goal]: the aim's own knobs
+/// (S1), falling back to the deck's slots (transitional until the slots move onto
+/// aims in S5) then the template's fallbacks — so a lone inherited aim resolves
+/// exactly as the deck's own target did. Readiness, the ready-date forecast, and
+/// feasibility all resolve an aim through here, so the headline number, the ladder,
+/// and the forecast describe the SAME aim (S4).
+ReadinessTarget _aimTarget(Aim aim, Deck goal, DeckTemplate template) =>
+    ReadinessTarget.forAim(
+      aim.copyWith(
+        levelId: aim.levelId ?? goal.levelId,
+        contextId: aim.contextId ?? goal.contextId,
+        trackId: aim.trackId ?? goal.trackId,
+      ),
+      template,
+    );
 
 /// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
 /// whole-vault default — carries its own level/context/track (+ deadline); the
@@ -247,18 +265,7 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   Readiness? binding;
   Aim? bindingAim;
   for (final aim in activeAims) {
-    // The aim's own knobs, falling back to the deck's slots (transitional until
-    // the slots move onto aims) then the template — so a single inherited aim
-    // scores exactly as the deck's target did.
-    final base = ReadinessTarget.forAim(
-      aim.copyWith(
-        levelId: aim.levelId ?? goal.levelId,
-        contextId: aim.contextId ?? goal.contextId,
-        trackId: aim.trackId ?? goal.trackId,
-      ),
-      template,
-    );
-    final r = scoreFor(base, aim);
+    final r = scoreFor(_aimTarget(aim, goal, template), aim);
     if (binding == null || r.overall < binding.overall) {
       binding = r;
       bindingAim = aim;
@@ -316,7 +323,31 @@ typedef ForecastDims = ({
 /// the same engine.
 @riverpod
 Future<ReadinessForecast?> readinessForecast(Ref ref) async {
-  final target = await ref.watch(activeTargetProvider.future);
+  // Follow the binding (weakest-link) aim so Home's headline readiness and its
+  // ready-date forecast describe the SAME aim (S4) — else "62% ready, ready by
+  // March" could name two different aims. With no active aim (a coverage-only
+  // deck) fall back to the deck's own target role. Degrades byte-identically for a
+  // single/no-aim deck (invariant #8): the binding aim IS the deck's target.
+  // Register deps synchronously; only the final forecast is watched post-await.
+  final goalF = ref.watch(activeDeckProvider.future);
+  final readinessF = ref.watch(readinessProvider.future);
+  final registryF = ref.watch(templateRegistryProvider.future);
+  final targetF = ref.watch(activeTargetProvider.future);
+  final goal = await goalF;
+  final registry = await registryF;
+  final template = registry.byId(goal.templateId) ?? registry.primary;
+  final bindingId = (await readinessF).bindingAimId;
+  Aim? bind;
+  if (bindingId != null) {
+    for (final a in goal.aims) {
+      if (a.id == bindingId) {
+        bind = a;
+        break;
+      }
+    }
+  }
+  final target =
+      bind != null ? _aimTarget(bind, goal, template) : await targetF;
   return ref.watch(readinessForecastForProvider((
     level: target.level,
     company: target.company,
@@ -397,6 +428,62 @@ Future<ReadinessForecast?> readinessForecastFor(
     startReadiness: c.startReadiness,
     threshold: 0.75,
   );
+}
+
+/// Per-aim feasibility (S4b) for a deck's ACTIVE aims — for each dated aim, "can
+/// you be durably ready by its date at the current pace?", classified from the
+/// aim's own [ReadinessForecast] (its role + durability bar) vs that date. An aim
+/// with no scheduled round reports [FeasibilityStatus.openEnded] (judged by
+/// coverage, not a ready-by). Returned in the deck's active-aim order, each paired
+/// with its [Aim] so consumers can name/allocate it. The daily plan weights
+/// urgency on this (S3), the coach warns from it (#103 — infeasible = the
+/// incoherent-cram case), and the Aims surface shows it per aim (S5).
+///
+/// The forecast substrate ([readinessForecastFor]) is scoped to the ACTIVE deck's
+/// cards (the documented single-goal-Home sliver noted on [targetForDeck]), so
+/// this is exact for the active deck; a non-active deck inherits that same sliver
+/// until the forecast is threaded per-deck.
+@riverpod
+Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
+    Ref ref, String deckId) async {
+  final goalsF = ref.watch(decksProvider.future);
+  final registryF = ref.watch(templateRegistryProvider.future);
+  final goal = _pick(await goalsF, deckId);
+  final registry = await registryF;
+  final template = registry.byId(goal.templateId) ?? registry.primary;
+
+  final out = <({Aim aim, AimFeasibility feasibility})>[];
+  for (final aim in goal.aims) {
+    if (!aim.active) continue;
+    final date = aim.currentRound(goal.id, goal.deadline)?.date;
+    if (date == null) {
+      // Open-ended aim → coverage, not a ready-by (no forecast needed).
+      out.add((aim: aim, feasibility: classifyAimFeasibility(date: null)));
+      continue;
+    }
+    final t = _aimTarget(aim, goal, template);
+    final forecast = await ref.watch(readinessForecastForProvider((
+      level: t.level,
+      company: t.company,
+      track: t.track,
+    )).future);
+    out.add((
+      aim: aim,
+      feasibility: classifyAimFeasibility(
+        date: DateTime(date.year, date.month, date.day),
+        forecast: forecast,
+      ),
+    ));
+  }
+  return out;
+}
+
+/// Per-aim feasibility for the ACTIVE deck — see [deckAimFeasibility].
+@riverpod
+Future<List<({Aim aim, AimFeasibility feasibility})>> aimFeasibility(
+    Ref ref) async {
+  final goal = await ref.watch(activeDeckProvider.future);
+  return ref.watch(deckAimFeasibilityProvider(goal.id).future);
 }
 
 /// Coverage pace toward the soonest interview date (the goal's deadline or an
