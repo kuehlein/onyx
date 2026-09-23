@@ -44,12 +44,20 @@ model before we add features, so we build on the right shape.
         `ReadinessTarget.forAim`.
       - **S2 ✅** readiness rolls up **weakest-link across active aims** (per-aim via forAim, headline =
         the binding aim; single-aim byte-identical). Aim knobs fall back to deck slots transitionally.
-      - **S4 (sequenced BEFORE S3)** per-aim **pace / forecast / ladder + the FEASIBILITY signal**:
-        a shared **binding-aim resolver** (from deckReadiness) so ladder + single-forecast wrappers
-        agree with the headline; forecast per-aim + weakest-link (latest) ready-by; coverage-pace per
-        dated aim; **open-ended aims → coverage, no ready-by**; and per aim **required-pace vs
-        actual-pace** ("can you be ready in time?") — the substrate S3 allocates on. Fix the SWE
-        2-contexts-per-level hardcode. Reads per-aim while aims still inherit (byte-identical).
+      - **S4 ✅ (sequenced BEFORE S3)** per-aim **pace / forecast / ladder + the FEASIBILITY signal**.
+        Delivered: a shared **binding-aim resolver** (`_bindingTarget`, from `deckReadiness`) so the
+        **forecast (S4b)** and **ladder (S4c)** follow the binding (weakest-link) aim → agree with the
+        headline; **`deckAimFeasibility` (S4b)** — per aim, **required-pace vs actual-pace** ("can you
+        be ready by its date?"): ready/onTrack/behind/infeasible + **open-ended → coverage, no
+        ready-by** (the substrate S3 allocates on); SWE **2-contexts-per-level hardcode fixed** —
+        milestone chips are config-driven (`LadderPosition.levelLabels`/`contextsPerLevel`). All
+        byte-identical single-aim (#8). *Deferred (YAGNI):* the **weakest-link (latest) ready-by**
+        roll-up + **per-dated-aim coverage-pace breakdown** have no consumer before the **S5** Aims
+        surface, and coverage-pace stays a deck-level "seen-it" lens on Home (nearest-date
+        `governingDate` — pace-models) rather than merging with the forecast; both fold into **S5**.
+        Each per-aim `readyBy` is already exposed on `deckAimFeasibility`, so the roll-up is a one-liner
+        when S5 needs it. *(The `activeTargeting`→per-aim fix for learn-ordering/plan-weights/retention
+        stays in S3, below.)*
       - **S3** daily-plan **allocation by FEASIBILITY** (not a naive time-ramp): an aim's urgency =
         how far behind it is (required-vs-actual pace, from S4) + date proximity — behind+soon pulls
         more, comfortably-ahead less even if its date is sooner, **open-ended = baseline** — kept
