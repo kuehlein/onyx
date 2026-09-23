@@ -105,25 +105,39 @@ model before we add features, so we build on the right shape.
           (non-rescheduling — fsrs-exam-targeting), reusing the existing non-grading session infra
           (gym / practice). This is how "see them again and again today" is served FSRS-safely.
           Not built yet; lands with the cram-vs-durable work (S5 + #103).
-      - **S5 — the writer-flip (NOT YET STARTED; the biggest, most coupled slice).** Surface mapped
-        2026-09-23 (agent sweep). Unlike S1–S4 (pure logic, byte-identical), S5 is **different in
-        kind** and needs a focused run, because:
-        - **It's a one-shot DATA migration** of persisted `study-goals.json` (fold each deck's
-          `level/context/track + deadline` into its aims) — hard to reverse if wrong; write-through +
-          well-tested, land it first.
-        - **Migration + deletion + UI are COUPLED** — can't delete `Deck`'s slots without rewriting
-          every *writer* (`target_sheet` saves `goal.copyWith(levelId…)`, the planner seeds deck
-          slots, the deck-editor edits `deadline`). And the trap: a deck with a **target but no
-          interview** must migrate to an **open-ended aim**, which the current UI renders as a phantom
-          empty "interview" unless the Aims-surface merge lands with it. So S5c/e ship together.
-        - **Decomposition (safe order):** **S5a** migration (add-only, byte-identical) → **S5b** flip
-          writers to per-aim → **S5c** delete `Deck` slots/`toTarget`/`deadline` + the `deadline`
-          round-arg sweep (`effectiveRounds(deckId,deadline)`→pure accessors) → **S5d**
-          `activeTargetIsSet`→"an active aim is set" + **0-aim = coverage-only** (score vs template
-          fallbacks) → **S5e** the **UI merge** (your_target + scheduler + interview list → one
-          per-deck **Aims surface**, *subsumes 1c*; render open-ended aims as the target) → **S5f**
-          planner seeds the **aim's** knobs + **wire-or-retire #90** debrief (its route param is even
-          mis-named `:deckId` for an aim id). Preserve invariant #8 throughout; ADR-0006 is the model.
+      - **S5 — the writer-flip (in progress; the biggest, most coupled slice).** Surface + coupling
+        re-mapped 2026-09-23 (3-agent deep investigation). **S5a ✅** (migration `foldDeckSlotsIntoAims`,
+        byte-identical) + **S5b ✅** (readers resolve per-aim; deck slots UNREAD). **Architecture verdict
+        (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
+        bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
+        feasibility→urgency→plan) is narrow, ADR-pinned, pure-cored, tested. The "recurring couplings"
+        are OLD-model debt surfacing under the readers-first discipline (expected), not new debt. Watch:
+        `readiness.dart` at the size ceiling (18 providers) → **split it when S5f touches it**;
+        `templateTarget`-on-`ReadinessTarget` is a minor leak → defer.
+        - **Coupling reality:** the deletion blast-radius is ~400–500 lines but **mostly parameter
+          sweeps + call-site updates — no algorithmic change** (readiness/plan already read from aims).
+          The real work is (a) `target_sheet.dart` is a **959-line god-widget** (pickers + calendar +
+          interview list + Save-writer + planner) = the exact S5e merge target, so its Save-writer flips
+          **inside** the merge (rebuild, not throwaway); and (b) the target-but-no-interview → open-ended
+          aim must render on the new surface (else a phantom "interview"), so **deletion lands AFTER the
+          merge**.
+        - **Refined order (writer lives in the merge target → merge before delete):**
+          **S5c** the **`deadline` round-arg sweep** — drop `(deckId, deadline)` from the aim round
+          methods + `Targeting`; the deadline-synthesis is dead post-migration (mechanical,
+          byte-identical, ~9 files). **S5d** the **peripheral writers + label-readers** — deck-editor
+          drops the `deadline` field; the planner stops seeding deck slots (just appends the aim);
+          `interview_card/sheet/debrief` use `ReadinessTarget.forAim` not `goal.toTarget()` (leaves only
+          `target_sheet`'s Save on the slots). **S5e** the **Aims surface merge** (your_target +
+          scheduler + interview list → one per-deck surface, *subsumes 1c*, Accepted): flip the Save to
+          write the target **aim**, render open-ended aims as the target, merge the duplicated
+          interview lists, wire-or-retire **#90** (route param mis-named `:deckId` for an aim id). **S5f**
+          the **deletion** — remove `Deck.level/context/track/deadline` + `toTarget`;
+          `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only** (template fallbacks); +
+          **split `readiness.dart`**. Pure dead-code removal (engine already off them).
+        - **Fidelity guardrails (from the SoT audit):** keep aims **round-shaped** — do NOT build past
+          the parked `rounds → milestones` decision; terminology via `Vocabulary` (no hardcoded
+          "interview"); hold **invariant #8** (single-aim byte-identical) and **#6** (weakest-link)
+          every slice; deck stays a **pure lens** (decouple deck-creation from aim-setting, Accepted).
       - **P0 ✅ (#102) deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilt `Deck(...)` from
         scratch, silently dropping `aims` + target slots on every edit; fixed to `existing.copyWith(...)`.
       - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
