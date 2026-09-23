@@ -170,6 +170,11 @@ void main() {
       expect(v.assessmentNoun, 'interview');
       expect(v.assessmentNounTitle, 'Interview');
       expect(v.hasAssessment, isTrue);
+      // S5e-2: SWE overrides the aim-editor axis titles so its copy reads the
+      // familiar Level / Company / Track (not the neutral defaults below).
+      expect(v.levelAxisTitle, 'Level');
+      expect(v.contextAxisTitle, 'Company');
+      expect(v.trackAxisTitle, 'Track');
     });
 
     test('a subject that declares no vocabulary gets the neutral default', () {
@@ -181,6 +186,10 @@ void main() {
       expect(bare.vocabulary.assessmentNoun, isNull);
       expect(bare.vocabulary.assessmentNounTitle, isNull);
       expect(bare.vocabulary.hasAssessment, isFalse);
+      // S5e-2: the neutral aim-editor axis titles are subject-agnostic.
+      expect(bare.vocabulary.levelAxisTitle, 'Difficulty');
+      expect(bare.vocabulary.contextAxisTitle, 'Durability');
+      expect(bare.vocabulary.trackAxisTitle, 'Emphasis');
     });
 
     test('title-casing is safe for an empty noun', () {

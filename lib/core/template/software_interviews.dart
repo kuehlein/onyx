@@ -27,8 +27,15 @@ const softwareInterviewsTemplate = DeckTemplate(
   // SWE's mock grading persona is the "interviewer" and its assessment event is
   // the "interview" — so shared coach/Home/readiness copy reads exactly as before
   // for this subject; other subjects fall back to "examiner" / no assessment (G7).
-  vocabulary:
-      Vocabulary(examinerNoun: 'interviewer', assessmentNoun: 'interview'),
+  vocabulary: Vocabulary(
+    examinerNoun: 'interviewer',
+    assessmentNoun: 'interview',
+    // Keep SWE's aim-editor axis titles natural (the neutral defaults are
+    // Difficulty / Durability / Emphasis — see [Vocabulary]).
+    levelAxisTitle: 'Level',
+    contextAxisTitle: 'Company',
+    trackAxisTitle: 'Track',
+  ),
   // Pretty domain labels the generic title-caser can't produce (SWE-specific);
   // shared readiness/insights copy reads these instead of a hardcoded switch.
   domainLabels: {'ds-a': 'DS & A', 'system-design': 'System design'},

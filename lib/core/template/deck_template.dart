@@ -148,7 +148,13 @@ class TargetSpec {
 /// shared site with a consumer — it grows (assessment noun, verb, whether it has
 /// rounds) when a consumer needs it, not before.
 class Vocabulary {
-  const Vocabulary({this.examinerNoun = 'examiner', this.assessmentNoun});
+  const Vocabulary({
+    this.examinerNoun = 'examiner',
+    this.assessmentNoun,
+    this.levelAxisTitle = 'Difficulty',
+    this.contextAxisTitle = 'Durability',
+    this.trackAxisTitle = 'Emphasis',
+  });
 
   /// What the mock grading persona is CALLED in shared UI. The SWE reference
   /// overrides to "interviewer"; the neutral default ("examiner", matching the
@@ -163,6 +169,16 @@ class Vocabulary {
   /// set, it reads e.g. "$assessmentNoun target" and routes to the assessment hub.
   /// The gate lever for task #88 / G7. Lowercase — see [assessmentNounTitle].
   final String? assessmentNoun;
+
+  /// Display titles for the three readiness-target axes in the aim editor —
+  /// difficulty = the **level** slot, durability = the **context** slot, emphasis =
+  /// the **track** slot. Neutral by default so any subject's editor reads plainly;
+  /// the SWE reference overrides to its natural "Level / Company / Track". Only the
+  /// axis TITLES live here — the slot *values* come from [TargetSpec]. (S5e-2 /
+  /// ADR-0009; the neutral-terminology pass the glossary decision parks in S5.)
+  final String levelAxisTitle;
+  final String contextAxisTitle;
+  final String trackAxisTitle;
 
   /// Whether this subject frames study around a named assessment event at all —
   /// the gate for assessment-specific surfaces (G7).
