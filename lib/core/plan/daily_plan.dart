@@ -170,6 +170,12 @@ String describeDailyPlan(DailyPlan plan) {
 }
 
 /// Build the day's plan. Pure. [budgetMinutes] is the day's time budget.
+///
+/// Weighted fair-queuing bin-packer: proportions (from [PlanContext.baseWeight])
+/// are a soft attractor, not hard quotas — indivisible lumpy units bend them, and
+/// leftover time flows to whoever has a fitting unit. This is the mechanism the
+/// across-aims allocation rides (urgency-weighted emphasis, not per-aim slices —
+/// n006); S3 sets the weights, this packs them.
 DailyPlan buildDailyPlan({
   required List<TrackAvailability> availabilities,
   required double budgetMinutes,

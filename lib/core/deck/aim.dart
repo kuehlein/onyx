@@ -169,8 +169,8 @@ class Aim {
 
   /// This aim's own readiness knobs — slot ids on the deck's template: difficulty
   /// [levelId], durability [contextId], domain-emphasis [trackId]. Null → the
-  /// template's fallback for that slot. Aims OWN these (S1 — the deck is a pure
-  /// lens); the date knob is carried by [rounds]. Resolved via
+  /// template's fallback for that slot. Aims OWN these (the deck/aims model, n005 —
+  /// the deck is a pure lens); the date knob is carried by [rounds]. Resolved via
   /// `ReadinessTarget.forAim`.
   final String? levelId;
   final String? contextId;

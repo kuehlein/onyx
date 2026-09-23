@@ -35,7 +35,8 @@ model before we add features, so we build on the right shape.
       keep on-disk `onyx-subject.yaml` + built-in ids); **R2** `InterviewAim→Aim`; **R3**
       `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
       **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
-    - **② Structural (behavior) — "target lives on the aim".** Key finding (2026-09-22 investigation,
+    - **② Structural (behavior) — "target lives on the aim"** (the model is [ADR-0005](adr/0005-deck-and-aims-model.md)).
+      Key finding (2026-09-22 investigation,
       3-agent map): the system is consistent *today* only because every aim inherits the deck's slots.
       So the safe order is **make every reader honor per-aim first (while aims still inherit →
       byte-identical), then flip the writers + migrate + delete the deck slots.** Deck-slot removal
@@ -63,8 +64,21 @@ model before we add features, so we build on the right shape.
         more, comfortably-ahead less even if its date is sooner, **open-ended = baseline** — kept
         **above a per-aim retention floor** (never starve a dated aim's due reviews). **+ the
         `activeTargeting`→per-aim fix** (learn-ordering, plan weights, per-card retention drop the one
-        blended track/durability). Byte-identical single-aim.
-      - **Cram-vs-durable + feasibility coaching (cross-cutting, added 2026-09-22).** "How long you
+        blended track/durability). Byte-identical single-aim. **Mechanism (decided — see
+        [ADR-0006](adr/0006-daily-plan-allocation-across-aims.md)):** urgency-weighted *emphasis* fed
+        into the existing weighted-fair-queuing packer (**A**), NOT hard per-aim budget slices (**B**) —
+        because indivisible lumpy units (a 40-min SD problem) break hard partitions; soft fair-queuing
+        absorbs that and routes leftover time to the behind aim's *divisible* work.
+        - *Follow-ups surfaced 2026-09-22 (separable from S3, don't fold in):*
+          **(i) time-estimate fidelity** — `PracticeUnit.estMinutes` is flat-per-type (review 1.5 /
+          learn 3 / SD 40 / mock 20, with an optional `est_minutes` per-card override), NOT state-aware;
+          make it reflect item state (mature review ≈ 0.5, first-time algo ≈ 45, familiar re-solve ≈ 15)
+          so bin-packing is tighter for *any* allocation — near **#32**.
+          **(ii) leftover-budget backfill** — big blocky chunks that don't fit defer, and review/learn
+          (small, divisible) naturally soak up the remainder; backfilling with *extra* re-exposure
+          beyond due when the day under-fills is **#58** (overflow) + **#104** (cram session) territory.
+      - **Cram-vs-durable + feasibility coaching (cross-cutting, added 2026-09-22; see
+        [ADR-0007](adr/0007-cram-vs-durable-fsrs-safe-deadlines.md)).** "How long you
         need it" = the **durability-bar knob** (S1 field; S5 frames/edits it as cram↔durable). Honor
         deadlines the **FSRS-safe way** (raise desired retention toward the date — overlaps **#32**),
         never schedule-hack. A **coach cram-coherence nudge** warns when an aim is infeasible / the cram

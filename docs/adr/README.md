@@ -28,3 +28,9 @@ belong in code comments + the PR description, not an ADR.
 | ADR | Title | Status |
 |----|-------|--------|
 | [0001](0001-progress-sync-merge.md) | Progress sync via a convergent snapshot merge | Accepted |
+| [0002](0002-on-device-content-source.md) | On-device content source | Accepted |
+| [0003](0003-card-status-and-deck-seam.md) | Card status & deck seam | Accepted |
+| [0004](0004-ai-provider-seam.md) | AI provider seam | Accepted |
+| [0005](0005-deck-and-aims-model.md) | Deck as a lens; the target lives on the aim | Accepted |
+| [0006](0006-daily-plan-allocation-across-aims.md) | Daily-plan allocation across aims (feasibility urgency, soft fair-queuing) | Accepted |
+| [0007](0007-cram-vs-durable-fsrs-safe-deadlines.md) | Cram-vs-durable: honor deadlines without corrupting FSRS | Accepted |
