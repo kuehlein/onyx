@@ -47,10 +47,27 @@ precomputed, so packing never re-parses the vault.
    + proximity" — the region-of-proximal-learning / agenda-based-regulation model.
 2. **Allocate by urgency-weighted *emphasis*, fed into the existing fair-queuing
    packer (option A), NOT hard per-aim budget slices (option B).** Each aim's
-   domain/concept emphasis is scaled by its urgency and combined into the effective
-   weights that already drive `PlanContext.baseWeight` + learn card-ordering
-   (`weightForCard`). No new partitioning stage.
-3. **Retention floor.** Reviews stay reserved with a minimum cadence; urgency only
+   domain/concept emphasis (from its *own* resolved track, not the deck's one blended
+   base track) is scaled by its urgency and combined into the effective weights that
+   already drive `PlanContext.baseWeight` + learn card-ordering (`weightForCard`).
+   No new partitioning stage.
+   - **Combination rule = normalized urgency-weighted *average*** (chosen over
+     urgency-weighted max, 2026-09-22): a domain's effective weight = Σ(normUrgencyᵢ ·
+     wᵢ) where normUrgencyᵢ = urgencyᵢ / Σurgency. It models "spend the day
+     proportional to urgency" honestly — a domain only a *calm* aim cares about is
+     softened when a *busy* aim also needs the day. Byte-identical single-aim
+     (normUrgency = 1 → the aim's own weight; with transitional inheritance that is
+     the deck's base weight). The old `max` ("don't dilute one urgent interview") was
+     rejected: with urgency shares, dilution *is* the correct expression of a split day.
+3. **Urgency drives the MIDDLE of the curve; the extreme escalates elsewhere.**
+   Cross-aim urgency-weighting is most valuable for everyday multi-aim tilt; it does
+   NOT try to solve the single-aim deadline endgame (where it's low-value — one aim
+   owns the day anyway). The top of the urgency curve is deliberately kept simple
+   (behind 0.6→1.0, infeasible flat 1.0) because a *particularly* high urgency
+   escalates to the **coach nudge (#103) → cram session (#104)** — a mode switch — not
+   to ever-more-aggressive plan weighting. Urgency-weighting and cram are complementary
+   (allocation across aims vs. the single-aim endgame format), not redundant.
+4. **Retention floor.** Reviews stay reserved with a minimum cadence; urgency only
    reallocates *new-learning* emphasis **above** that floor. A behind aim can pull
    more new learning but can never starve a dated aim's due reviews.
 
