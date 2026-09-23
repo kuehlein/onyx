@@ -36,7 +36,8 @@ model before we add features, so we build on the right shape.
       `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
       **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
     - **② Structural (behavior) — "target lives on the aim"** (the model is [ADR-0006](adr/0006-deck-and-aims-model.md)).
-      Key finding (2026-09-22 investigation,
+      **Status: S1–S4 ✅ (readers now honor per-aim, byte-identical; suite 969→981); S5 (writer-flip) is
+      the one remaining slice.** Key finding (2026-09-22 investigation,
       3-agent map): the system is consistent *today* only because every aim inherits the deck's slots.
       So the safe order is **make every reader honor per-aim first (while aims still inherit →
       byte-identical), then flip the writers + migrate + delete the deck slots.** Deck-slot removal
@@ -104,15 +105,27 @@ model before we add features, so we build on the right shape.
           (non-rescheduling — fsrs-exam-targeting), reusing the existing non-grading session infra
           (gym / practice). This is how "see them again and again today" is served FSRS-safely.
           Not built yet; lands with the cram-vs-durable work (S5 + #103).
-      - **S5** the unified **Aims surface** (your_target + scheduler, all Accepted) — the **writer flip**
-        + payoff: per-aim knob **editing**; planner seeds the **aim's** knobs; **one-shot migration**
-        folding each deck's target → its aims (preserve invariant #8); **delete `Deck` level/context/
-        track + `toTarget`**; `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only**;
-        decouple deck-editor (drop `deadline`); the `deadline` round-arg sweep; wire-or-retire **#90**.
-        *Subsumes 1c.*
-      - **P0 (before S5's migration): deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilds
-        `Deck(...)` from scratch, silently dropping `aims` + target slots on every edit of an existing
-        deck. Switch to `existing.copyWith(...)`. (#102)
+      - **S5 — the writer-flip (NOT YET STARTED; the biggest, most coupled slice).** Surface mapped
+        2026-09-23 (agent sweep). Unlike S1–S4 (pure logic, byte-identical), S5 is **different in
+        kind** and needs a focused run, because:
+        - **It's a one-shot DATA migration** of persisted `study-goals.json` (fold each deck's
+          `level/context/track + deadline` into its aims) — hard to reverse if wrong; write-through +
+          well-tested, land it first.
+        - **Migration + deletion + UI are COUPLED** — can't delete `Deck`'s slots without rewriting
+          every *writer* (`target_sheet` saves `goal.copyWith(levelId…)`, the planner seeds deck
+          slots, the deck-editor edits `deadline`). And the trap: a deck with a **target but no
+          interview** must migrate to an **open-ended aim**, which the current UI renders as a phantom
+          empty "interview" unless the Aims-surface merge lands with it. So S5c/e ship together.
+        - **Decomposition (safe order):** **S5a** migration (add-only, byte-identical) → **S5b** flip
+          writers to per-aim → **S5c** delete `Deck` slots/`toTarget`/`deadline` + the `deadline`
+          round-arg sweep (`effectiveRounds(deckId,deadline)`→pure accessors) → **S5d**
+          `activeTargetIsSet`→"an active aim is set" + **0-aim = coverage-only** (score vs template
+          fallbacks) → **S5e** the **UI merge** (your_target + scheduler + interview list → one
+          per-deck **Aims surface**, *subsumes 1c*; render open-ended aims as the target) → **S5f**
+          planner seeds the **aim's** knobs + **wire-or-retire #90** debrief (its route param is even
+          mis-named `:deckId` for an aim id). Preserve invariant #8 throughout; ADR-0006 is the model.
+      - **P0 ✅ (#102) deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilt `Deck(...)` from
+        scratch, silently dropping `aims` + target slots on every edit; fixed to `existing.copyWith(...)`.
       - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
         aims round-shaped until decided; don't build ahead.
     - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,
