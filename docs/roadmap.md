@@ -110,7 +110,9 @@ model before we add features, so we build on the right shape.
         byte-identical) + **S5b ✅** (readers resolve per-aim; deck slots UNREAD) · **S5c ✅** (`deadline`
         round-arg sweep) · **S5d ✅** (peripheral writers + label-readers) · **S5e-1 ✅** (read-only
         Aims screen `/aims`) · **S5e-2 ✅** (per-aim editor + `upsertAim` writer flip + neutral axis-title
-        seam; suite 992). **Architecture verdict
+        seam) · **S5e-3 ✅** (merge/retire old surfaces; last deck-slot writer gone; suite 989). The
+        unified Aims surface (#101's core deliverable) now SHIPS; **S5f** slot-deletion re-scoped as a
+        deferred fold-at-parse migration refactor (see below), **S5e-4** minor polish. **Architecture verdict
         (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
         bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
         feasibility→urgency→plan) is narrow, ADR-pinned, pure-cored, tested. The "recurring couplings"
@@ -147,11 +149,22 @@ model before we add features, so we build on the right shape.
           aim rows (additive, read-only; `aims_screen.dart` + route + 4 widget tests) → **S5e-2 ✅** the
           editor + Save→`upsertAim` (the writer flip; `showAimEditorSheet` co-located in `target_sheet`,
           wired to the Aims screen) + **neutral terminology** (S5e-2a: `Vocabulary` axis titles, SWE keeps
-          Level/Company/Track) → **S5e-3** merge/retire old surfaces + #90 + Home card → **S5e-4** 0-aim
-          coverage + open-ended polish. Hold #8 (single-aim same *data*; the UI is intentionally new). **S5f**
-          the **deletion** — remove `Deck.level/context/track/deadline` + `toTarget`;
-          `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only** (template fallbacks); +
-          **split `readiness.dart`**. Pure dead-code removal (engine already off them).
+          Level/Company/Track) → **S5e-3 ✅** merge/retire old surfaces (Home readiness-chip + interview-prep
+          hub tiles → `/aims`; `/aims` gains the planner FAB; deleted `_TargetSheet`+`_ScheduledSection`
+          +`showTargetSheet` and `upcoming_interviews`+its route — the LAST deck-slot writer is gone,
+          `target_sheet` 1150→765 lines, suite 989. Home target card kept → the prep hub UNCHANGED so
+          behavioral's entry stays reversible pending its design pass; **#90 debrief deferred** to that
+          pass) → **S5e-4** 0-aim coverage + open-ended polish (minor). Hold #8 (single-aim same *data*;
+          the UI is intentionally new).
+        - **S5f — the slot deletion (re-scoped 2026-09-23; NOT pure dead-code).** Remove
+          `Deck.{level,context,track,deadline}` + `toTarget`; `activeTargetIsSet`→"an active aim is set";
+          **0-aim = coverage-only**; + **split `readiness.dart`**. **Finding:** the slots are still
+          **migration I/O**, not dead — `foldDeckSlotsIntoAims` copies them into aims but does NOT clear
+          them, and `Deck.fromJson`/`migratedDefaultDeck` still read/write the legacy keys; `lanes_hub`
+          is the last *live* reader (a lane countdown off `goal.deadline`). So deletion = a **fold-at-parse
+          migration refactor** (move the fold into `fromJson`, drop the redundant slot round-trip, flip
+          `lanes_hub` to the soonest-aim date) with real data-safety stakes — its own careful, tested pass,
+          NOT trivial. Non-blocking: the slots are harmless/redundant post-migration (readers use aims).
         - **Fidelity guardrails (from the SoT audit):** keep aims **round-shaped** — do NOT build past
           the parked `rounds → milestones` decision; terminology via `Vocabulary` (no hardcoded
           "interview"); hold **invariant #8** (single-aim byte-identical) and **#6** (weakest-link)
