@@ -109,7 +109,8 @@ model before we add features, so we build on the right shape.
         re-mapped 2026-09-23 (3-agent deep investigation). **S5a ✅** (migration `foldDeckSlotsIntoAims`,
         byte-identical) + **S5b ✅** (readers resolve per-aim; deck slots UNREAD) · **S5c ✅** (`deadline`
         round-arg sweep) · **S5d ✅** (peripheral writers + label-readers) · **S5e-1 ✅** (read-only
-        Aims screen `/aims` + widget tests; suite 989). **Architecture verdict
+        Aims screen `/aims`) · **S5e-2 ✅** (per-aim editor + `upsertAim` writer flip + neutral axis-title
+        seam; suite 992). **Architecture verdict
         (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
         bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
         feasibility→urgency→plan) is narrow, ADR-pinned, pure-cored, tested. The "recurring couplings"
@@ -143,9 +144,10 @@ model before we add features, so we build on the right shape.
           = informational + options (move date / lower durability / cram), never a countdown or red-alarm
           (learning-science). Merge `upcoming_interviews`; wire **#90** debrief (route param mis-named
           `:deckId` for an aim id); Home "target" card → "aims" card. Build order: **S5e-1 ✅** screen +
-          aim rows (additive, read-only; `aims_screen.dart` + route + 4 widget tests) → **S5e-2** the
-          editor + Save→`upsertAim` (the writer flip) +
-          neutral terminology → **S5e-3** merge/retire old surfaces + #90 + Home card → **S5e-4** 0-aim
+          aim rows (additive, read-only; `aims_screen.dart` + route + 4 widget tests) → **S5e-2 ✅** the
+          editor + Save→`upsertAim` (the writer flip; `showAimEditorSheet` co-located in `target_sheet`,
+          wired to the Aims screen) + **neutral terminology** (S5e-2a: `Vocabulary` axis titles, SWE keeps
+          Level/Company/Track) → **S5e-3** merge/retire old surfaces + #90 + Home card → **S5e-4** 0-aim
           coverage + open-ended polish. Hold #8 (single-aim same *data*; the UI is intentionally new). **S5f**
           the **deletion** — remove `Deck.level/context/track/deadline` + `toTarget`;
           `activeTargetIsSet`→"an active aim is set"; **0-aim = coverage-only** (template fallbacks); +
