@@ -51,6 +51,8 @@ class LadderPosition {
     required this.goalLabel,
     required this.currentLabel,
     required this.rungsToGo,
+    this.levelLabels = const [],
+    this.contextsPerLevel = 1,
   });
 
   /// Overall recall score against each rung, in ladder order.
@@ -75,6 +77,14 @@ class LadderPosition {
 
   /// Rungs between the highest cleared rung and the goal; 0 when at/above goal.
   final int rungsToGo;
+
+  /// The ladder's seniority levels, in order — the milestone-chip labels, taken
+  /// from the goal's template (SWE: New-grad/Mid/Senior/Staff), not hardcoded.
+  final List<String> levelLabels;
+
+  /// Rungs (context/durability values) each level spans — the ladder is
+  /// level-major with this many contexts per level (SWE: 2 = Typical, FAANG). ≥1.
+  final int contextsPerLevel;
 
   bool get atOrAboveGoal => rungsToGo == 0;
 }
@@ -142,6 +152,11 @@ LadderPosition computeLadderPosition({
     goalLabel: ladder[deckIndex].label,
     currentLabel: cleared == 0 ? null : ladder[cleared - 1].label,
     rungsToGo: ((deckIndex + 1) - cleared).clamp(0, n),
+    // The ladder's shape, config-driven from the goal's template (the same spec
+    // that generated the rungs) so the milestone chips aren't SWE-hardcoded.
+    levelLabels: [for (final l in target.spec.levels) l.label],
+    contextsPerLevel:
+        target.spec.contexts.isEmpty ? 1 : target.spec.contexts.length,
   );
 }
 

@@ -45,6 +45,8 @@ void main() {
     goalLabel: 'Senior · FAANG',
     currentLabel: 'Mid · FAANG',
     rungsToGo: 2,
+    levelLabels: const ['New-grad', 'Mid', 'Senior', 'Staff'],
+    contextsPerLevel: 2,
   );
 
   testWidgets(

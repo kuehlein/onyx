@@ -44,6 +44,9 @@ void main() {
       );
       expect(pos.rungScores.length, 2);
       expect(pos.goalLabel, 'B · C');
+      // S4c: the milestone-chip shape is config-driven, not SWE's 4 levels × 2.
+      expect(pos.levelLabels, ['A', 'B']);
+      expect(pos.contextsPerLevel, 1);
     });
 
     test('nothing studied → clears no rung; pin at the floor', () {

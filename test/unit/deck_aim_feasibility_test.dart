@@ -167,6 +167,12 @@ void main() {
             high: 0.6,
             bindingAimId: 'b',
           )),
+      // Fallback target (backend, marker 111) — must NOT be used when an aim binds.
+      activeTargetProvider.overrideWith((ref) async => const ReadinessTarget(
+            levelId: 'senior',
+            contextId: 'faang',
+            trackId: 'backend',
+          )),
       readinessForecastForProvider.overrideWith((ref, dims) async => fc(
             start: 0,
             perDay: dims.track == Track.frontend ? 222 : 111,

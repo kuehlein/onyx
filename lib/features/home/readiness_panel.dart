@@ -477,10 +477,11 @@ class _PaceRow extends StatelessWidget {
 // ── G7: assessment-noun phrasing ────────────────────────────────────────────
 // The SWE reference (`assessmentNoun: 'interview'`) reproduces the original copy
 // byte-identically; a subject with no assessment reads neutral "applied"/"Applied"
-// phrasing instead (task #88 / G7d). Pure → unit-tested. NOTE (G7d-tail, deferred):
-// the "mock" wording (bar legend, domain evidence caption) and the SWE seniority
-// ladder labels (New-grad/Mid/Senior/Staff in `_MilestoneChips`) are tied to the
-// applied-evidence + ladder models — a later generalization, not this pass.
+// phrasing instead (task #88 / G7d). Pure → unit-tested. The ladder labels are now
+// config-driven (`LadderPosition.levelLabels`/`contextsPerLevel`, from the goal's
+// template — S4c), so `_MilestoneChips` is no longer SWE-tied. NOTE (G7d-tail,
+// deferred): the "mock" wording (bar legend, domain evidence caption) is still tied
+// to the applied-evidence model — a later generalization, not this pass.
 
 /// The recall/applied state word under the headline — SWE: "interview-tested" /
 /// "recall only".
@@ -606,13 +607,14 @@ class _MilestoneChips extends StatelessWidget {
 
   final LadderPosition pos;
 
-  static const _levels = ['New-grad', 'Mid', 'Senior', 'Staff'];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final goalLevel = pos.deckIndex ~/ 2; // 2 rungs (Typical, FAANG) per level
+    // Rungs per seniority level + the level labels are config-driven (the goal's
+    // template), so this isn't tied to SWE's 4 levels × 2 contexts.
+    final cpl = pos.contextsPerLevel;
+    final goalLevel = cpl == 0 ? 0 : pos.deckIndex ~/ cpl;
     final goalLabel = pos.goalLabel;
 
     return Column(
@@ -625,13 +627,14 @@ class _MilestoneChips extends StatelessWidget {
           spacing: Dim.space2,
           runSpacing: Dim.space2,
           children: [
-            for (var i = 0; i < _levels.length; i++)
+            for (var i = 0; i < pos.levelLabels.length; i++)
               _LevelChip(
-                label: _levels[i],
-                // Each level owns rungs [2i, 2i+1]; how many are cleared?
-                clearedInLevel: (pos.clearedCount - 2 * i).clamp(0, 2),
-                isFrontier:
-                    pos.clearedCount >= 2 * i && pos.clearedCount < 2 * (i + 1),
+                label: pos.levelLabels[i],
+                // Each level owns rungs [cpl*i, cpl*(i+1)); how many are cleared?
+                clearedInLevel: (pos.clearedCount - cpl * i).clamp(0, cpl),
+                rungsInLevel: cpl,
+                isFrontier: pos.clearedCount >= cpl * i &&
+                    pos.clearedCount < cpl * (i + 1),
                 isGoal: i == goalLevel,
               ),
           ],
@@ -659,12 +662,14 @@ class _LevelChip extends StatelessWidget {
   const _LevelChip({
     required this.label,
     required this.clearedInLevel,
+    required this.rungsInLevel,
     required this.isFrontier,
     required this.isGoal,
   });
 
-  /// 0, 1 or 2 of this level's two rungs cleared.
+  /// How many of this level's [rungsInLevel] rungs are cleared (0..rungsInLevel).
   final int clearedInLevel;
+  final int rungsInLevel;
 
   /// True when this is the level currently being worked on (all below cleared).
   final bool isFrontier;
@@ -673,7 +678,7 @@ class _LevelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cleared = clearedInLevel >= 2;
+    final cleared = clearedInLevel >= rungsInLevel;
     final active = cleared || clearedInLevel >= 1 || isFrontier;
     // Milestone emphasis (not a status): accent for reached/active rungs, muted
     // when locked; filled once cleared, outline while active/locked.

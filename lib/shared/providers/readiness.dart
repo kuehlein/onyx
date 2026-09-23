@@ -129,6 +129,22 @@ ReadinessTarget _aimTarget(Aim aim, Deck goal, DeckTemplate template) =>
       template,
     );
 
+/// The [ReadinessTarget] of the deck's **binding** (weakest-link) aim — the aim
+/// the headline readiness reflects (S2/S4) — so the ladder + ready-date forecast
+/// describe the SAME aim as the number. Falls back to [fallback] (the deck's own
+/// target) when no aim binds (a coverage-only deck), so a single/no-aim deck is
+/// byte-identical (invariant #8).
+ReadinessTarget _bindingTarget(Deck goal, Readiness readiness,
+    DeckTemplate template, ReadinessTarget fallback) {
+  final id = readiness.bindingAimId;
+  if (id != null) {
+    for (final a in goal.aims) {
+      if (a.id == id) return _aimTarget(a, goal, template);
+    }
+  }
+  return fallback;
+}
+
 /// A given goal's base [ReadinessTarget] (task #30d). Every goal — including the
 /// whole-vault default — carries its own level/context/track (+ deadline); the
 /// default's were seeded from the legacy saved target on first run
@@ -285,14 +301,27 @@ Future<Readiness> readiness(Ref ref) async {
 
 /// Where the current knowledge base sits on the level×company ladder relative
 /// to the chosen goal — the "you are here vs. aiming here" gauge. Recomputes
-/// from the same cards + FSRS stability, scored against every rung.
+/// from the same cards + FSRS stability, scored against every rung. Follows the
+/// **binding aim** so the "aiming here" rung agrees with the headline (S4c).
 @riverpod
 Future<LadderPosition> readinessLadderPosition(Ref ref) async {
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
-  final target = await ref.watch(activeTargetProvider.future);
-  final applied = await ref.watch(appliedTransferProvider.future);
-  final goal = await ref.watch(activeDeckProvider.future);
+  // Register deps synchronously (before the first await) so a mid-flight
+  // invalidation can't leave us watching through a disposed ref.
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final statesF = ref.watch(srsStatesProvider.future);
+  final appliedF = ref.watch(appliedTransferProvider.future);
+  final goalF = ref.watch(activeDeckProvider.future);
+  final readinessF = ref.watch(readinessProvider.future);
+  final registryF = ref.watch(templateRegistryProvider.future);
+  final targetF = ref.watch(activeTargetProvider.future);
+  final index = await indexF;
+  final states = await statesF;
+  final applied = await appliedF;
+  final goal = await goalF;
+  final registry = await registryF;
+  final template = registry.byId(goal.templateId) ?? registry.primary;
+  final target =
+      _bindingTarget(goal, await readinessF, template, await targetF);
   final stabilityByKey = {
     for (final e in states.byKey.entries) e.key: e.value.stability,
   };
@@ -336,18 +365,8 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
   final goal = await goalF;
   final registry = await registryF;
   final template = registry.byId(goal.templateId) ?? registry.primary;
-  final bindingId = (await readinessF).bindingAimId;
-  Aim? bind;
-  if (bindingId != null) {
-    for (final a in goal.aims) {
-      if (a.id == bindingId) {
-        bind = a;
-        break;
-      }
-    }
-  }
   final target =
-      bind != null ? _aimTarget(bind, goal, template) : await targetF;
+      _bindingTarget(goal, await readinessF, template, await targetF);
   return ref.watch(readinessForecastForProvider((
     level: target.level,
     company: target.company,
