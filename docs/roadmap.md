@@ -59,7 +59,8 @@ model before we add features, so we build on the right shape.
         Each per-aim `readyBy` is already exposed on `deckAimFeasibility`, so the roll-up is a one-liner
         when S5 needs it. *(The `activeTargeting`→per-aim fix for learn-ordering/plan-weights/retention
         stays in S3, below.)*
-      - **S3** daily-plan **allocation by FEASIBILITY** (not a naive time-ramp): an aim's urgency =
+      - **S3 ✅** (delivered S3a urgency core · S3b plan emphasis · S3c retention floor [structural] ·
+        S3d learn ordering) daily-plan **allocation by FEASIBILITY** (not a naive time-ramp): an aim's urgency =
         how far behind it is (required-vs-actual pace, from S4) + date proximity — behind+soon pulls
         more, comfortably-ahead less even if its date is sooner, **open-ended = baseline** — kept
         **above a per-aim retention floor** (never starve a dated aim's due reviews; met *structurally*
