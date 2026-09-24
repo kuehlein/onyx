@@ -46,6 +46,25 @@ double rampedBudgetMinutes({
   return b.clamp(easeInStartMinutes, targetMinutes);
 }
 
+/// Where a daily study-time budget sits on the sustainability spectrum — the
+/// in-the-moment readout when the user moves the budget dial (ADR-0011, the
+/// "informed override": the user owns the size, so the app *informs* rather than
+/// changes it). Grounded in the deliberate-practice literature: focused, effective
+/// practice tops out ~2–4 h/day, and beyond that quality and retention fall. Pure
+/// → unit-tested; the label + color live in the UI (subject-neutral). This is a
+/// zone, never a red "wrong" — a bigger day is a choice, flagged honestly.
+enum BudgetZone { light, sustainable, ambitious, tooMuch }
+
+/// Classify a daily-budget [minutes] into a [BudgetZone] (see [BudgetZone]).
+/// ~2.5 h (the default target) is squarely sustainable; past ~3.5 h a day is hard
+/// to hold without quality slipping.
+BudgetZone budgetZone(int minutes) {
+  if (minutes < 45) return BudgetZone.light;
+  if (minutes <= 165) return BudgetZone.sustainable;
+  if (minutes <= 210) return BudgetZone.ambitious;
+  return BudgetZone.tooMuch;
+}
+
 /// As an interview nears, taper *new-learning* load (preserve retrieval/mocks).
 /// Returns a 0..1 multiplier for the Learn track's weight — 1.0 when far out or no
 /// date, easing down to [floor] by the interview day.

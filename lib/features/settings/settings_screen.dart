@@ -9,6 +9,7 @@ import '../../core/ai/claude_service.dart';
 import '../../core/clock.dart';
 import '../../core/dev.dart';
 import '../../core/interview/assessment.dart';
+import '../../core/plan/daily_plan.dart' show BudgetZone, budgetZone;
 import '../../core/vault/card_parser.dart' show cardParsingRules;
 import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
@@ -129,11 +130,20 @@ class SettingsScreen extends ConsumerWidget {
                 data: (target) => ListTile(
                   leading: const Icon(Icons.schedule_outlined),
                   title: const Text('Daily study time'),
-                  subtitle: Text(
-                      '${_prettyMinutes(target)} target — the day\'s plan across '
-                      'all tracks. It eases in from shorter sessions and ramps to '
-                      'this as the habit sticks; new learning tapers near an '
-                      'interview.'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${_prettyMinutes(target)} target — the day\'s plan '
+                          'across your decks. It eases in from shorter sessions '
+                          'and ramps to this as the habit sticks; the app derives '
+                          'the mix and eases new material as a deadline nears.'),
+                      const SizedBox(height: Dim.space1),
+                      // The in-the-moment "informed override" readout (ADR-0011):
+                      // an honest sustainability zone as you move the dial. A
+                      // date-shift readout waits on Phase B (budget → new-count).
+                      _BudgetZoneLine(minutes: target),
+                    ],
+                  ),
                   trailing: _Stepper(
                     value: target,
                     min: DailyTargetMinutes.min,
@@ -682,4 +692,38 @@ String _prettyMinutes(int minutes) {
       ? hours.toStringAsFixed(0)
       : hours.toStringAsFixed(1);
   return '$minutes min (~$h h)';
+}
+
+/// The in-the-moment sustainability readout under the daily-budget dial
+/// (ADR-0011's "informed override"): an honest zone as the user moves the dial,
+/// never a red "wrong" — a bigger day is their choice, flagged plainly.
+class _BudgetZoneLine extends StatelessWidget {
+  const _BudgetZoneLine({required this.minutes});
+
+  final int minutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (label, color) = switch (budgetZone(minutes)) {
+      BudgetZone.light => (
+          'Light — easy to keep up',
+          theme.colorScheme.onSurfaceVariant,
+        ),
+      BudgetZone.sustainable => ('Sustainable pace', StatusColor.good),
+      BudgetZone.ambitious => (
+          'Ambitious — sustainable if you can hold it',
+          StatusColor.warn,
+        ),
+      BudgetZone.tooMuch => (
+          'A lot to sustain — focus and recall can slip past ~3.5 h/day',
+          StatusColor.warn,
+        ),
+    };
+    return Text(
+      label,
+      style: theme.textTheme.labelSmall
+          ?.copyWith(color: color, fontWeight: FontWeight.w600),
+    );
+  }
 }

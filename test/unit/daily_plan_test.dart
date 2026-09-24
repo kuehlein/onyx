@@ -233,6 +233,21 @@ void main() {
     });
   });
 
+  group('budgetZone', () {
+    test('classifies the daily budget into sustainability zones', () {
+      expect(budgetZone(30), BudgetZone.light); // slider min
+      expect(budgetZone(44), BudgetZone.light);
+      expect(budgetZone(45), BudgetZone.sustainable);
+      expect(budgetZone(90), BudgetZone.sustainable); // ease-in start
+      expect(budgetZone(150), BudgetZone.sustainable); // default target
+      expect(budgetZone(165), BudgetZone.sustainable);
+      expect(budgetZone(180), BudgetZone.ambitious);
+      expect(budgetZone(210), BudgetZone.ambitious);
+      expect(budgetZone(211), BudgetZone.tooMuch);
+      expect(budgetZone(240), BudgetZone.tooMuch); // slider max
+    });
+  });
+
   group('describeDailyPlan', () {
     test('summarizes tracks, budget, must-do, deferred and locked', () {
       final plan = DailyPlan(
