@@ -2,22 +2,23 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/interview/critic.dart';
 import '../../core/interview/transfer.dart';
-import '../../core/plan/urgency.dart';
-import '../../core/readiness/feasibility.dart';
-import '../../core/readiness/ladder.dart';
-import '../../core/readiness/pace.dart';
-import '../../core/readiness/projection.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/readiness/targeting.dart';
 import '../../core/deck/deck.dart';
-import '../../core/template/deck_template.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'srs.dart';
 import 'decks.dart';
 import 'template.dart';
 import 'vault.dart';
+
+// The readiness providers are split across three files for size (S5f): this hub
+// (applied evidence + the knowledge-base readiness core + targets), the derived
+// ready-date/ladder forecast, and the per-aim feasibility + daily-plan emphasis.
+// The two derived layers are re-exported so callers keep importing `readiness.dart`.
+export 'readiness_forecast.dart';
+export 'readiness_feasibility.dart';
 
 part 'readiness.g.dart';
 
@@ -109,27 +110,11 @@ Future<Map<String, ({int attempts, int contested})>> appliedSummary(
 }
 
 /// Resolve a goal by id from an already-loaded list, falling back to the
-/// default/first. (Pure — the caller watches [decksProvider] up front so
-/// there's no ref use after an await; see the note on [deckReadiness].)
-Deck _pick(List<Deck> goals, String deckId) =>
+/// default/first. Pure — the caller watches [decksProvider] up front so there's no
+/// ref use after an await (see the note on [deckReadiness]). Shared by the split
+/// forecast/feasibility layers (S5f), hence public.
+Deck pickDeck(List<Deck> goals, String deckId) =>
     goals.firstWhere((g) => g.id == deckId, orElse: () => goals.first);
-
-/// The [ReadinessTarget] of the deck's **binding** (weakest-link) aim — the aim
-/// the headline readiness reflects (S2/S4) — so the ladder + ready-date forecast
-/// describe the SAME aim as the number. Each aim carries its own knobs now (S5a),
-/// resolved via [ReadinessTarget.forAim] (aim slot → template fallback). Falls back
-/// to [fallback] (the deck's coverage target) when no aim binds, so a single/no-aim
-/// deck is byte-identical (invariant #8).
-ReadinessTarget _bindingTarget(Deck goal, Readiness readiness,
-    DeckTemplate template, ReadinessTarget fallback) {
-  final id = readiness.bindingAimId;
-  if (id != null) {
-    for (final a in goal.aims) {
-      if (a.id == id) return ReadinessTarget.forAim(a, template);
-    }
-  }
-  return fallback;
-}
 
 /// A deck's **coverage** [ReadinessTarget] — the template's fallback
 /// level/context/track, no date. It's the base a deck scores against when no aim
@@ -143,7 +128,7 @@ Future<ReadinessTarget> targetForDeck(Ref ref, String deckId) async {
   // using a disposed ref after the async gap.
   final goalsF = ref.watch(decksProvider.future);
   final registryF = ref.watch(templateRegistryProvider.future);
-  final goal = _pick(await goalsF, deckId);
+  final goal = pickDeck(await goalsF, deckId);
   final registry = await registryF;
   return ReadinessTarget.forAim(
       const Aim(), registry.byId(goal.templateId) ?? registry.primary);
@@ -157,7 +142,7 @@ Future<ReadinessTarget> targetForDeck(Ref ref, String deckId) async {
 Future<Targeting> targetingForDeck(Ref ref, String deckId) async {
   final goalsF = ref.watch(decksProvider.future);
   final targetF = ref.watch(targetForDeckProvider(deckId).future);
-  final goal = _pick(await goalsF, deckId);
+  final goal = pickDeck(await goalsF, deckId);
   final base = await targetF;
   return Targeting(
     base: base,
@@ -207,7 +192,7 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   final targetF = ref.watch(targetForDeckProvider(deckId).future);
   final registryF = ref.watch(templateRegistryProvider.future);
   final appliedF = ref.watch(appliedTransferProvider.future);
-  final goal = _pick(await goalsF, deckId);
+  final goal = pickDeck(await goalsF, deckId);
   final index = await indexF;
   final states = await statesF;
   final applied = await appliedF;
@@ -274,310 +259,4 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
 Future<Readiness> readiness(Ref ref) async {
   final goal = await ref.watch(activeDeckProvider.future);
   return ref.watch(deckReadinessProvider(goal.id).future);
-}
-
-/// Where the current knowledge base sits on the level×company ladder relative
-/// to the chosen goal — the "you are here vs. aiming here" gauge. Recomputes
-/// from the same cards + FSRS stability, scored against every rung. Follows the
-/// **binding aim** so the "aiming here" rung agrees with the headline (S4c).
-@riverpod
-Future<LadderPosition> readinessLadderPosition(Ref ref) async {
-  // Register deps synchronously (before the first await) so a mid-flight
-  // invalidation can't leave us watching through a disposed ref.
-  final indexF = ref.watch(vaultIndexProvider.future);
-  final statesF = ref.watch(srsStatesProvider.future);
-  final appliedF = ref.watch(appliedTransferProvider.future);
-  final goalF = ref.watch(activeDeckProvider.future);
-  final readinessF = ref.watch(readinessProvider.future);
-  final registryF = ref.watch(templateRegistryProvider.future);
-  final targetF = ref.watch(activeTargetProvider.future);
-  final index = await indexF;
-  final states = await statesF;
-  final applied = await appliedF;
-  final goal = await goalF;
-  final registry = await registryF;
-  final template = registry.byId(goal.templateId) ?? registry.primary;
-  final target =
-      _bindingTarget(goal, await readinessF, template, await targetF);
-  final stabilityByKey = {
-    for (final e in states.byKey.entries) e.key: e.value.stability,
-  };
-  return computeLadderPosition(
-    // The active goal's concept cards — practice tracks feed readiness via
-    // transfer, not coverage (task #30d, G2).
-    cards:
-        goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList(),
-    stabilityByKey: stabilityByKey,
-    target: target,
-    transferByDomain: applied.interview ? applied.byDomain : null,
-  );
-}
-
-/// The role dimensions a forecast is computed against. A value-equal record so
-/// [readinessForecastForProvider] memoises per role — interviews sharing a role
-/// (e.g. two "senior · faang · backend" loops) reuse a single simulation.
-typedef ForecastDims = ({
-  SeniorityLevel level,
-  CompanyTier company,
-  Track track,
-});
-
-/// Projected "ready date" forecast (#49) for the SAVED top-of-form target: at
-/// the recent pace, when relevance-weighted recall readiness crosses the target,
-/// plus chill/current/push scenarios. Delegates to [readinessForecastForProvider]
-/// so the calendar (top target) and per-interview chips (their own role) share
-/// the same engine.
-@riverpod
-Future<ReadinessForecast?> readinessForecast(Ref ref) async {
-  // Follow the binding (weakest-link) aim so Home's headline readiness and its
-  // ready-date forecast describe the SAME aim (S4) — else "62% ready, ready by
-  // March" could name two different aims. With no active aim (a coverage-only
-  // deck) fall back to the deck's own target role. Degrades byte-identically for a
-  // single/no-aim deck (invariant #8): the binding aim IS the deck's target.
-  // Register deps synchronously; only the final forecast is watched post-await.
-  final goalF = ref.watch(activeDeckProvider.future);
-  final readinessF = ref.watch(readinessProvider.future);
-  final registryF = ref.watch(templateRegistryProvider.future);
-  final targetF = ref.watch(activeTargetProvider.future);
-  final goal = await goalF;
-  final registry = await registryF;
-  final template = registry.byId(goal.templateId) ?? registry.primary;
-  final target =
-      _bindingTarget(goal, await readinessF, template, await targetF);
-  return ref.watch(readinessForecastForProvider((
-    level: target.level,
-    company: target.company,
-    track: target.track,
-  )).future);
-}
-
-/// Projected "ready date" forecast for an ARBITRARY role — the per-interview
-/// judgement lever. Same maturation model as above, weighted toward [dims]'s
-/// level/company/track, so a junior · non-faang loop can read "needs a faster
-/// pace" on a date the senior · faang target calls "too soon". Recall-only
-/// maturation (mocks are a separate axis). Returns null with no concept cards.
-/// Heavier than the other providers (a forward FSRS simulation), so it's
-/// memoised per role and only recomputed when its inputs change.
-@riverpod
-Future<ReadinessForecast?> readinessForecastFor(
-    Ref ref, ForecastDims dims) async {
-  final registryF =
-      ref.watch(templateRegistryProvider.future); // register first
-  final index = await ref.watch(vaultIndexProvider.future);
-  final states = await ref.watch(srsStatesProvider.future);
-  final today = (await ref.watch(clockProvider.future)).today();
-  final goal = await ref.watch(activeDeckProvider.future);
-  // Forecast against the active goal's OWN template (#30d multi-template); the
-  // dims record stays role-only so the per-role memoisation + external callers are
-  // unchanged.
-  final registry = await registryF;
-  final target = ReadinessTarget.of(
-    level: dims.level,
-    company: dims.company,
-    track: dims.track,
-    templateTarget: registry.byId(goal.templateId)?.target,
-  );
-
-  // The active goal's concept cards — practice tracks feed readiness via transfer,
-  // not recall coverage (matches the readiness provider; task #30d, G2).
-  final cards =
-      goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList();
-  if (cards.isEmpty) return null;
-
-  final stateByKey = {
-    for (final e in states.byKey.entries)
-      e.key: SectionSrsState(
-        stability: e.value.stability,
-        difficulty: e.value.difficulty,
-        state: e.value.state,
-        step: e.value.step,
-        due: e.value.dueAt,
-        lastReview: e.value.lastReview,
-      ),
-  };
-
-  // Recent new-sections/day, computed like readinessPace. With no history yet,
-  // assume a standard daily plan so we can still show an outlook.
-  const window = 14;
-  final repo = ref.watch(srsRepositoryProvider);
-  final started = await repo
-      .sectionsStartedSince(today.subtract(const Duration(days: window)));
-  final first = await repo.firstLearnDate();
-  final historyDays = first == null
-      ? window
-      : today.difference(DateTime(first.year, first.month, first.day)).inDays;
-  final denom = historyDays.clamp(1, window);
-  var perDay = (started / denom).round();
-  if (perDay < 1) perDay = 8;
-
-  final c = projectPaceCurve(
-    cards: cards,
-    stateByKey: stateByKey,
-    target: target,
-    currentPerDay: perDay,
-    today: today,
-  );
-  return ReadinessForecast(
-    curve: c.curve,
-    currentPerDay: perDay,
-    today: today,
-    startReadiness: c.startReadiness,
-    threshold: 0.75,
-  );
-}
-
-/// Per-aim feasibility (S4b) for a deck's ACTIVE aims — for each dated aim, "can
-/// you be durably ready by its date at the current pace?", classified from the
-/// aim's own [ReadinessForecast] (its role + durability bar) vs that date. An aim
-/// with no scheduled round reports [FeasibilityStatus.openEnded] (judged by
-/// coverage, not a ready-by). Returned in the deck's active-aim order, each paired
-/// with its [Aim] so consumers can name/allocate it. The daily plan weights
-/// urgency on this (S3), the coach warns from it (#103 — infeasible = the
-/// incoherent-cram case), and the Aims surface shows it per aim (S5).
-///
-/// The forecast substrate ([readinessForecastFor]) is scoped to the ACTIVE deck's
-/// cards (the documented single-goal-Home sliver noted on [targetForDeck]), so
-/// this is exact for the active deck; a non-active deck inherits that same sliver
-/// until the forecast is threaded per-deck.
-@riverpod
-Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
-    Ref ref, String deckId) async {
-  final goalsF = ref.watch(decksProvider.future);
-  final registryF = ref.watch(templateRegistryProvider.future);
-  final goal = _pick(await goalsF, deckId);
-  final registry = await registryF;
-  final template = registry.byId(goal.templateId) ?? registry.primary;
-
-  final out = <({Aim aim, AimFeasibility feasibility})>[];
-  for (final aim in goal.aims) {
-    if (!aim.active) continue;
-    final date = aim.currentRound()?.date;
-    if (date == null) {
-      // Open-ended aim → coverage, not a ready-by (no forecast needed).
-      out.add((aim: aim, feasibility: classifyAimFeasibility(date: null)));
-      continue;
-    }
-    final t = ReadinessTarget.forAim(aim, template);
-    final forecast = await ref.watch(readinessForecastForProvider((
-      level: t.level,
-      company: t.company,
-      track: t.track,
-    )).future);
-    out.add((
-      aim: aim,
-      feasibility: classifyAimFeasibility(
-        date: DateTime(date.year, date.month, date.day),
-        forecast: forecast,
-      ),
-    ));
-  }
-  return out;
-}
-
-/// Per-aim feasibility for the ACTIVE deck — see [deckAimFeasibility].
-@riverpod
-Future<List<({Aim aim, AimFeasibility feasibility})>> aimFeasibility(
-    Ref ref) async {
-  final goal = await ref.watch(activeDeckProvider.future);
-  return ref.watch(deckAimFeasibilityProvider(goal.id).future);
-}
-
-/// Urgency-weighted per-domain **emphasis for the daily PLAN** (S3 / ADR-0007):
-/// how much each domain should pull *today*, given the deck's active aims weighted
-/// by their feasibility urgency. This is an ALLOCATION signal — deliberately
-/// distinct from readiness's domain weighting, which must NOT depend on today's
-/// urgency. Each active aim contributes its OWN resolved-track domain weight (+ any
-/// AI-plan boost), combined as a **normalized urgency-weighted average** (ADR-0007):
-/// a domain only a calm aim cares about is softened when a busy aim also needs the
-/// day. No active aim → the deck's base target weights; a single aim → its own
-/// weights (its urgency share is 1, so it cancels) — both byte-identical to pre-S3.
-@riverpod
-Future<Map<String, double>> deckPlanDomainWeights(
-    Ref ref, String deckId) async {
-  final goalsF = ref.watch(decksProvider.future);
-  final registryF = ref.watch(templateRegistryProvider.future);
-  final indexF = ref.watch(vaultIndexProvider.future);
-  final feasF = ref.watch(deckAimFeasibilityProvider(deckId).future);
-  final clockF = ref.watch(clockProvider.future);
-  final goal = _pick(await goalsF, deckId);
-  final registry = await registryF;
-  final index = await indexF;
-  final feas = await feasF;
-  final today = (await clockF).today();
-  final template = registry.byId(goal.templateId) ?? registry.primary;
-
-  final domains = <String>{
-    for (final c in index.studyCards)
-      if (c.domain != null) c.domain!,
-  };
-
-  // No active aim → the deck's base target emphasis (byte-identical to pre-S3).
-  if (feas.isEmpty) {
-    final base = ReadinessTarget.forAim(const Aim(), template);
-    return {for (final d in domains) d: domainWeight(base, d)};
-  }
-
-  // Normalized urgency shares across the active aims. All-ready (Σurgency 0) → equal
-  // shares (a plain average) so the plan still has an emphasis to pack on.
-  final urg = [for (final e in feas) aimUrgency(e.feasibility, today: today)];
-  final total = urg.fold(0.0, (s, u) => s + u);
-  final shares = total > 0
-      ? [for (final u in urg) u / total]
-      : [for (final _ in urg) 1 / urg.length];
-  final targets = [
-    for (final e in feas) ReadinessTarget.forAim(e.aim, template)
-  ];
-
-  final out = <String, double>{};
-  for (final d in domains) {
-    var w = 0.0;
-    for (var i = 0; i < feas.length; i++) {
-      // The aim's own-track domain weight, plus its explicit AI-plan boost.
-      final aw =
-          domainWeight(targets[i], d) + (feas[i].aim.domainWeights[d] ?? 0);
-      w += shares[i] * aw;
-    }
-    out[d] = w;
-  }
-  return out;
-}
-
-/// Plan domain emphasis for the ACTIVE deck — see [deckPlanDomainWeights].
-@riverpod
-Future<Map<String, double>> activePlanDomainWeights(Ref ref) async {
-  final goal = await ref.watch(activeDeckProvider.future);
-  return ref.watch(deckPlanDomainWeightsProvider(goal.id).future);
-}
-
-/// Coverage pace toward the soonest interview date (the goal's deadline or an
-/// active interview round), or null when nothing is scheduled. Projects from the
-/// recent new-sections-per-day rate over a 14-day window.
-@riverpod
-Future<PaceEstimate?> readinessPace(Ref ref) async {
-  final date = (await ref.watch(activeTargetingProvider.future)).governingDate;
-  if (date == null) return null;
-
-  final r = await ref.watch(readinessProvider.future);
-  final remaining = r.domains.fold(0, (a, d) => a + (d.total - d.studied));
-
-  const window = 14;
-  final today = (await ref.watch(clockProvider.future)).today();
-  final repo = ref.watch(srsRepositoryProvider);
-  final started = await repo
-      .sectionsStartedSince(today.subtract(const Duration(days: window)));
-  // Average over the ACTUAL days of history (capped at the window), not a flat
-  // 14 — otherwise a short history (e.g. 5 days in) reads at a fraction of its
-  // real daily rate and falsely trips "behind".
-  final first = await repo.firstLearnDate();
-  final historyDays = first == null
-      ? window
-      : today.difference(DateTime(first.year, first.month, first.day)).inDays;
-  final denom = historyDays.clamp(1, window);
-
-  return computePace(
-    today: today,
-    interviewDate: DateTime(date.year, date.month, date.day),
-    remainingSections: remaining,
-    recentPerDay: started / denom,
-  );
 }
