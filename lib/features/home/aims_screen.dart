@@ -20,8 +20,10 @@ import 'target_sheet.dart';
 /// its status + feasibility signal + date), with ended aims collapsed. A deck with
 /// no aims reads as "building coverage", never a phantom interview.
 ///
-/// S5e-1 is the read-only surface (reuses [aimFeasibility] + [readiness]); the
-/// per-aim editor + the add/plan writers land in S5e-2/3.
+/// Reached at `/aims` (Home's readiness chip + the interview-prep hub). A row taps
+/// into the per-aim editor (live aim) or its outcome/debrief (ended); the AppBar
+/// "+" adds a target aim, and the planner FAB adds a dated interview (assessment
+/// decks only). Open-ended aims read as coverage (steady pace, no ready-by).
 class AimsScreen extends ConsumerWidget {
   const AimsScreen({super.key});
 
@@ -307,7 +309,16 @@ class _CoverageState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final pct = readiness == null ? null : (readiness!.overall * 100).round();
+    // The honest "how much have you seen" for a target-less deck is COVERAGE
+    // (sections studied / in-scope total), not the readiness score — a 0-aim deck
+    // is about breadth-so-far, not a graded bar.
+    var studied = 0, total = 0;
+    for (final d in readiness?.domains ?? const <DomainReadiness>[]) {
+      studied += d.studied;
+      total += d.total;
+    }
+    final coverage = total == 0 ? null : studied / total;
+    final pct = coverage == null ? null : (coverage * 100).round();
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Dim.space6),
@@ -322,11 +333,11 @@ class _CoverageState extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
                 textAlign: TextAlign.center),
             const SizedBox(height: Dim.space3),
-            if (pct != null)
+            if (coverage != null)
               ClipRRect(
                 borderRadius: Dim.brChip,
                 child: LinearProgressIndicator(
-                  value: readiness!.overall.clamp(0.0, 1.0),
+                  value: coverage.clamp(0.0, 1.0),
                   minHeight: 8,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   valueColor: const AlwaysStoppedAnimation(StatusColor.info),

@@ -177,7 +177,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Building coverage'), findsOneWidget);
-    expect(find.textContaining('60% of the deck seen'), findsOneWidget);
+    // Coverage = sections studied / total (10/20), not the readiness score.
+    expect(find.textContaining('50% of the deck seen'), findsOneWidget);
     // No phantom empty interview list.
     expect(find.text('Weakest of'), findsNothing);
     expect(tester.takeException(), isNull);
