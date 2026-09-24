@@ -6,6 +6,7 @@ import '../../core/story/competency.dart';
 import '../../core/story/coverage.dart';
 import '../../shared/providers/behavioral_readiness.dart';
 import '../../shared/providers/clock.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/story.dart';
 import '../../shared/design/onyx_design.dart';
@@ -22,12 +23,17 @@ class InterviewPrepScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final target = ref.watch(activeTargetProvider).asData?.value;
+    final goal = ref.watch(activeDeckProvider).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
     final unset = target == null ||
         ref.watch(activeTargetIsSetProvider).asData?.value != true;
 
     String? countdown;
-    final d = target?.interviewDate;
+    // Dates live on aim rounds now (the base target's interviewDate is
+    // structurally null post-reframe) — count down to the soonest live aim.
+    final d = (goal != null && clock != null)
+        ? goal.soonestAimDate(clock.today())
+        : null;
     if (d != null && clock != null) {
       final days =
           DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
