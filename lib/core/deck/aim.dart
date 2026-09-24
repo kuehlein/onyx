@@ -292,9 +292,11 @@ class Aim {
         domainWeights: _weightMap(m['domainWeights']),
         conceptWeights: _weightMap(m['conceptWeights']),
         planNotes: m['planNotes'] is String ? m['planNotes'] as String : null,
-        levelId: m['levelId'] as String?,
-        contextId: m['contextId'] as String?,
-        trackId: m['trackId'] as String?,
+        // Non-empty string or null — a wrong type / empty "" is a null slot (it'd
+        // otherwise leak a junk id into readiness targeting).
+        levelId: _str(m['levelId']),
+        contextId: _str(m['contextId']),
+        trackId: _str(m['trackId']),
       );
 }
 
@@ -302,6 +304,9 @@ const _unset = Object();
 
 String _fmtDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+/// A non-empty string, or null — coerces a wrong type or empty "" to null.
+String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
 
 DateTime? _parseDate(Object? v) {
   if (v is! String || v.isEmpty) return null;

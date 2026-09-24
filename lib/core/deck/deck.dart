@@ -79,7 +79,14 @@ class Deck {
       };
 
   static Deck fromJson(Map<String, dynamic> m) {
-    final id = m['id'] as String;
+    // A deck with no usable id is unrecoverable — throw so [DeckStore.load] skips
+    // just this entry (not the whole file). Every OTHER read below is type-tolerant
+    // (a hand-edited / sync-corrupted `_meta` file must degrade a bad field, not
+    // throw and take the deck — or the list — down with it).
+    final id = m['id'];
+    if (id is! String || id.isEmpty) {
+      throw const FormatException('Deck JSON missing a string "id"');
+    }
     final rawAims = m['interviews'] is List
         ? [
             for (final e in m['interviews'] as List)
@@ -88,13 +95,14 @@ class Deck {
         : const <Aim>[];
     // Fold any legacy deck target slots into the aims at parse time (S5 — the deck
     // is a pure lens now; the slots are read-and-folded, never stored as fields).
-    // Old files keep the redundant `levelId`/… keys until their next save; ignored
-    // on read. Idempotent for already-folded data (see [foldSlotsIntoAims]).
+    // [_str] treats a wrong type OR an empty string as null. Old files keep the
+    // redundant `levelId`/… keys until their next save; ignored on read. Idempotent
+    // for already-folded data (see [foldSlotsIntoAims]).
     final aims = foldSlotsIntoAims(
       rawAims,
-      levelId: m['levelId'] as String?,
-      contextId: m['contextId'] as String?,
-      trackId: m['trackId'] as String?,
+      levelId: _str(m['levelId']),
+      contextId: _str(m['contextId']),
+      trackId: _str(m['trackId']),
       deadline: m['deadline'] is String
           ? DateTime.tryParse(m['deadline'] as String)
           : null,
@@ -102,13 +110,15 @@ class Deck {
     );
     return Deck(
       id: id,
-      name: (m['name'] ?? m['id']) as String,
-      templateId: (m['templateId'] ?? '') as String,
+      name: m['name'] is String ? m['name'] as String : id,
+      templateId: m['templateId'] is String ? m['templateId'] as String : '',
       membership: m['membership'] is Map
           ? MembershipQuery.fromJson(
               (m['membership'] as Map).cast<String, dynamic>())
           : const AllCards(),
-      budgetWeight: (m['budgetWeight'] as num?)?.toDouble() ?? 1.0,
+      budgetWeight: m['budgetWeight'] is num
+          ? (m['budgetWeight'] as num).toDouble()
+          : 1.0,
       state: DeckState.values.firstWhere(
         (s) => s.name == m['state'],
         orElse: () => DeckState.active,
@@ -148,6 +158,11 @@ Deck defaultDeckFor(DeckTemplate template) => Deck(
       templateId: template.id,
       membership: const AllCards(),
     );
+
+/// A non-empty string, or null — coerces both a wrong type and an empty string to
+/// null, so a hand-edited/corrupted `"levelId": ""` (or a number) doesn't leak a
+/// junk slot id into readiness targeting.
+String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
 
 /// Fold a deck's legacy target **slots** (level/context/track/deadline) into its
 /// [aims] — the S5 migration, applied at **parse time** ([Deck.fromJson]) and in

@@ -133,5 +133,30 @@ void main() {
       // A plain study goal has no interviews.
       expect(defaultDeckFor(_template).aims, isEmpty);
     });
+
+    test('fromJson coerces empty-string / wrong-type slots to null', () {
+      // A hand-edited/corrupted _meta file: '' and a number must not leak junk
+      // slot ids into the folded target aim (they'd mis-resolve readiness).
+      final g = Deck.fromJson({
+        'id': 'd',
+        'name': 'D',
+        'templateId': 't',
+        'levelId': '',
+        'contextId': 42,
+        'trackId': 'senior',
+      });
+      final a = g.aims.single; // only the real 'senior' slot folds
+      expect(a.levelId, isNull); // '' ignored
+      expect(a.contextId, isNull); // 42 ignored
+      expect(a.trackId, 'senior');
+    });
+
+    test('fromJson throws on a missing/blank id (so the store skips just it)',
+        () {
+      expect(() => Deck.fromJson({'name': 'x', 'templateId': 't'}),
+          throwsFormatException);
+      expect(
+          () => Deck.fromJson({'id': '', 'name': 'x'}), throwsFormatException);
+    });
   });
 }

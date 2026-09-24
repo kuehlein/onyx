@@ -95,6 +95,37 @@ void main() {
       src.meta[DeckStore.fileName] = '{not json';
       expect(await store.load(), isEmpty);
     });
+
+    test('one malformed deck is skipped per-entry, not the whole file',
+        () async {
+      // Data-safety regression guard: a single bad/hand-edited row in a synced,
+      // user-editable _meta file must NOT drop every deck (which the next save
+      // would then persist as data loss).
+      final src = _FakeSource({
+        DeckStore.fileName: jsonEncode([
+          {
+            'id': 'korean',
+            'name': 'Korean',
+            'templateId': 'k',
+            'membership': {'kind': 'folder', 'value': 'korean'},
+          },
+          // Wrong-typed fields DEGRADE (don't throw): numeric levelId, string
+          // budgetWeight → ignored/default.
+          {
+            'id': 'okbadfield',
+            'name': 'OK',
+            'templateId': 't',
+            'levelId': 7,
+            'budgetWeight': 'oops',
+          },
+          {'name': 'no-usable-id'}, // throws in fromJson → this entry skipped
+          'not-even-a-map', // skipped
+        ]),
+      });
+      final back = await DeckStore(src).load();
+      expect(back.map((g) => g.id), ['korean', 'okbadfield']);
+      expect(back.firstWhere((g) => g.id == 'okbadfield').budgetWeight, 1.0);
+    });
   });
 
   group('decksProvider', () {
