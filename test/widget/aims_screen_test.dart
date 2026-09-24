@@ -177,6 +177,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets("the interview sheet's Edit aim opens the knob editor",
+      (tester) async {
+    // Open interview → overflow → Edit aim → the editor (one sheet at a time; the
+    // sheet resolves to a signal and the row opens the editor, never stacked).
+    final google = _aim('g', 'Google', date: DateTime(2099, 1, 1));
+    await tester.pumpWidget(_app(
+      aims: [google],
+      feas: [
+        (
+          aim: google,
+          feasibility: const AimFeasibility(status: FeasibilityStatus.onTrack)
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Google'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit aim (difficulty · date)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.text('Level'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an open-ended aim reads as coverage, never a ready-by',
       (tester) async {
     final meta = _aim('m', 'Meta'); // no rounds → open-ended

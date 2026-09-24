@@ -192,10 +192,18 @@ class _AimRow extends StatelessWidget {
         // A scheduled interview (and any ended aim) → the interview sheet to manage
         // its rounds/outcome; a bare target aim → the knob editor (ADR-0009, amended
         // 2026-09-24: interview-shaped aims open the sheet, not the editor — else a
-        // live interview's outcome can never be logged).
-        onTap: () => aim.status.isEnded || aim.isScheduledInterview
-            ? showInterviewSheet(context, aim.id)
-            : showAimEditorSheet(context, aimId: aim.id),
+        // live interview's outcome can never be logged). "Edit aim" in the sheet
+        // resolves it to `true` → open the editor next (never stacked).
+        onTap: () async {
+          if (aim.status.isEnded || aim.isScheduledInterview) {
+            final editNext = await showInterviewSheet(context, aim.id);
+            if (editNext == true && context.mounted) {
+              await showAimEditorSheet(context, aimId: aim.id);
+            }
+          } else {
+            await showAimEditorSheet(context, aimId: aim.id);
+          }
+        },
         borderRadius: Dim.brCard,
         child: Padding(
           padding: const EdgeInsets.symmetric(

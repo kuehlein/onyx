@@ -124,9 +124,9 @@ a P1 that contradicted §3 in practice.
 — names a company, has >1 round, or has any resolved or explicitly-typed round: the
 planner's output or an in-progress loop):
 - a **scheduled interview** (and any **ended** aim) → the **interview sheet** (manage
-  rounds + outcome). The sheet gains an **"Edit aim"** overflow action → the knob
-  editor (pop-then-open — one sheet at a time, never stacked), so an interview's knobs
-  stay editable.
+  rounds + outcome). The sheet gains an **"Edit aim"** overflow action: it resolves the
+  sheet to a signal and the aims row then opens the knob editor — one sheet at a time,
+  never stacked — so an interview's knobs stay editable.
 - a **bare target aim** (knobs + an optional date, no interview loop) → the **knob
   editor**, unchanged.
 

@@ -11,7 +11,6 @@ import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
-import '../home/target_sheet.dart';
 import 'interview_actions.dart';
 import 'round_editing.dart';
 
@@ -20,8 +19,11 @@ import 'round_editing.dart';
 /// before the round you reschedule; after it you log the result (which advances
 /// or ends the loop). Secondary/destructive actions live in the header overflow
 /// to keep the body uncluttered. Watches the active goal's interview live.
-Future<void> showInterviewSheet(BuildContext context, String aimId) =>
-    showOnyxSheet<void>(
+///
+/// Resolves to `true` if the user chose **"Edit aim"** — the caller then opens the
+/// knob editor, so the two are never stacked (ADR-0009, amended 2026-09-24).
+Future<bool?> showInterviewSheet(BuildContext context, String aimId) =>
+    showOnyxSheet<bool>(
       context,
       builder: (_) => _InterviewSheet(aimId: aimId),
     );
@@ -87,14 +89,10 @@ class _InterviewSheet extends ConsumerWidget {
       }
     }
 
-    // Edit this aim's knobs (difficulty/durability/emphasis + date). Leave the
-    // interview overview first, then open the editor — one sheet at a time (the
-    // navigator's own context survives the pop), never stacked (ADR-0009).
-    void editAim() {
-      final navigator = Navigator.of(context);
-      navigator.pop();
-      showAimEditorSheet(navigator.context, aimId: aim.id);
-    }
+    // Edit this aim's knobs (difficulty/durability/emphasis + date): close the
+    // interview overview and signal the aims row to open the editor — one sheet at
+    // a time, never stacked (ADR-0009).
+    void editAim() => Navigator.pop(context, true);
 
     final title = aim.companyName.isEmpty
         ? (target?.label ?? 'Interview')
