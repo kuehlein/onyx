@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/features/browse/browse_screen.dart';
 import 'package:onyx/shared/models/card.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
@@ -26,10 +28,14 @@ Card _card(
       filePath: '$title.md',
     );
 
-Widget _app(IndexResult index) => ProviderScope(
+Widget _app(IndexResult index, {Deck? deck}) => ProviderScope(
       overrides: [
         vaultIndexProvider.overrideWith((ref) async => index),
         srsStatesProvider.overrideWith((ref) async => const SectionStates({})),
+        // Browse is deck-scoped; pin the active deck so tests don't touch the DB.
+        // Default = a whole-vault lens (shows everything, as before).
+        activeDeckProvider.overrideWith((ref) async =>
+            deck ?? const Deck(id: 'default', name: 'All', templateId: 't')),
       ],
       child: const MaterialApp(home: BrowseScreen()),
     );
@@ -47,6 +53,24 @@ void main() {
     malformed: 0,
     skipped: 0,
   );
+
+  testWidgets("Browse is deck-scoped to the active deck's lens (1d)",
+      (tester) async {
+    // A tag-lens deck selects only the ds-a cards; the graph + system-design
+    // cards belong to other lenses and drop out.
+    await tester.pumpWidget(_app(index,
+        deck: Deck(
+            id: 'dsa',
+            name: 'DSA',
+            templateId: 't',
+            membership: TagMembership('ds-a'))));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Binary Search'), findsOneWidget);
+    expect(find.text('Two Pointers'), findsOneWidget);
+    expect(find.text('Dijkstra'), findsNothing);
+    expect(find.text('Design a URL shortener'), findsNothing);
+  });
 
   testWidgets('lists all cards with no query, filters as you type',
       (tester) async {

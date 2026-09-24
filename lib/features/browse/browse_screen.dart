@@ -13,6 +13,7 @@ import '../../core/template/active_template.dart';
 import '../../core/template/deck_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/decks.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../editor/card_editor_screen.dart';
@@ -64,6 +65,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider);
     final states = ref.watch(srsStatesProvider).asData?.value;
+    // Browse is **deck-scoped** (browse.md): show only the active deck's members
+    // (its lens), not the whole vault. The whole-vault default deck selects
+    // everything, so a single-deck user sees no change.
+    final deck = ref.watch(activeDeckProvider).asData?.value;
     // Distinct dangling `[[link]]` targets — the action shows only when there
     // are some to fix (task #20), staying out of the way when the graph is tidy.
     final unresolvedTargets = index.asData?.value.unresolvedLinks
@@ -114,7 +119,16 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
               message: 'Configure a vault in Settings.',
             );
           }
-          return _body(result.cards, states);
+          final cards =
+              deck == null ? result.cards : deck.select(result.cards).toList();
+          if (cards.isEmpty) {
+            return const EmptyState(
+              icon: Icons.filter_alt_outlined,
+              title: 'No cards in this deck',
+              message: "This deck's lens matches no cards yet.",
+            );
+          }
+          return _body(cards, states);
         },
       ),
     );
