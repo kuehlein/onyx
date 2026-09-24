@@ -59,7 +59,10 @@ class _StudyLoadHelp extends StatelessWidget {
                     'Interview prep — set a target/date so the rest aims at it.'),
                 const SizedBox(height: Dim.space5),
                 const _H('A start-slow ramp'),
-                _P('Only step up when the week felt fine (see the guardrail below).',
+                _P(
+                    'The app eases you in and ramps automatically as the week '
+                    'holds (see the guardrail) — you set the daily budget, it '
+                    'grows the load. The shape it targets:',
                     muted),
                 const SizedBox(height: Dim.space3),
                 const _RampTable(),
@@ -75,9 +78,11 @@ class _StudyLoadHelp extends StatelessWidget {
                     muted),
                 const SizedBox(height: Dim.space4),
                 _P(
-                    'New cards are the lever to ramp slowly — everything else mostly '
-                    'follows from them. The coach on Home watches these signals and '
-                    'will suggest an adjustment when it sees room (or strain).',
+                    'You set only the daily budget + each deck’s share; the app '
+                    'derives the mix (new vs. review vs. practice) from your aims, '
+                    'FSRS, and urgency, and ramps new material as your reviews '
+                    'hold. The coach on Home watches these signals and flags room '
+                    'or strain.',
                     muted),
               ],
             ),

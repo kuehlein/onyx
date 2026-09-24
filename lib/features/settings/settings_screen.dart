@@ -158,36 +158,9 @@ class SettingsScreen extends ConsumerWidget {
                       ref.read(loadCheckInProvider.notifier).setEnabled(v),
                 ),
               ),
-          ref.watch(newCardLimitProvider).when(
-                loading: () => const ListTile(
-                  leading: Icon(Icons.auto_stories_outlined),
-                  title: Text('New sections per day'),
-                  subtitle: Text('Loading…'),
-                ),
-                error: (e, _) => ListTile(
-                  leading: const Icon(Icons.auto_stories_outlined),
-                  title: const Text('New sections per day'),
-                  subtitle: Text('Error: $e'),
-                ),
-                data: (limit) => ListTile(
-                  leading: const Icon(Icons.auto_stories_outlined),
-                  title: const Text('New sections per day'),
-                  subtitle: Text(
-                      '$limit new per day — ${_loadLabel(limit)}. Once you\'ve '
-                      'learned this many, new material waits until tomorrow. '
-                      'Fewer means stronger retention; more covers ground faster '
-                      'but raises cognitive load.'),
-                  trailing: _Stepper(
-                    value: limit,
-                    onChanged: (v) =>
-                        ref.read(newCardLimitProvider.notifier).set(v),
-                  ),
-                ),
-              ),
-          const _SectionHeader('Pace planner'),
-          const _PacePlanner(),
-          const _SectionHeader('Algorithms'),
-          const _AlgoDailySetting(),
+          // Workload knobs (new-sections/day, algorithm min/max, the pace-planner)
+          // were removed — the engine derives the study mix from the budget + aims
+          // + FSRS + urgency (ADR-0010). The daily budget above is the one dial.
           const _SectionHeader('Gym mode'),
           ...ref.watch(gymModeProvider).when(
                 loading: () => const [
@@ -700,14 +673,6 @@ class SettingsScreen extends ConsumerWidget {
       );
     }
   }
-}
-
-/// A plain-language read on how heavy a given new-sections count is, so the
-/// number isn't abstract.
-String _loadLabel(int sections) {
-  if (sections <= 10) return 'a light load';
-  if (sections <= 25) return 'a moderate load';
-  return 'a heavy load';
 }
 
 /// Minutes as a friendly "90 min (~1.5 h)" label for the daily-time setting.
