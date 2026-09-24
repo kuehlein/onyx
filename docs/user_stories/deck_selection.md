@@ -17,11 +17,22 @@ From here the user can:
 - **Add a deck** → the [deck_creation](deck_creation.md) flow. [MVP]
 - **Pause a deck** — stop allocating study time to its lens (kept, just idle). [MVP]
 - **Archive a deck** — hide it without losing work. [later]
-- **Manage study-time allocation** across active decks (proportions of the daily budget), with
-  warnings for too-little-time / too-many-subjects. [MVP-ish] A global calendar of upcoming
-  tests across all decks is [later, tricky].
+- **Manage study-time allocation** across active decks (each deck's **proportion** of the daily
+  budget). **Warn on too-little-time**: a share that leaves a deck too few minutes to learn or retain
+  anything, or below its **heaviest flow's unit cost** — e.g. a 40-min system-design session can never
+  run in a deck allotted < 40 min/day — and on too-many-subjects. [MVP-ish] A global calendar of
+  upcoming tests across all decks is [later, tricky].
 
 ## Open questions → recommendations
+- **Should the app recommend each deck's proportion (from deadlines / aims / coverage)?**
+  **Rec.** Eventually yes — suggest shares from each deck's **feasibility** (deadline pressure,
+  coverage remaining, aim urgency) — but **only as suggestions the user can override.** The app can't
+  model real-world urgency: learning Korean may have no "test" yet be the most urgent thing (a
+  grandparent is dying and the user wants to speak with them), outweighing an SWE loop they aren't even
+  sure they want. So surface the recommendation + the too-little-time warning, but **the user's set
+  share always wins** (autonomy-supporting, SDT — like the coach: propose-with-rationale, never
+  auto-override). MVP ships manual shares + warnings; recommended shares are a later layer.
+  **Status.** Accepted (suggestions-only, later).
 - **Archive semantics — lens only? cards too? mark + hide? or delete?**
   **Rec.** Archive the **lens only, never the cards.** Cards belong to the vault and may be
   shared across decks, so deleting them here would be surprising + destructive. Mark the deck
