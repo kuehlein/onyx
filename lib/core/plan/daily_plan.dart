@@ -71,6 +71,17 @@ const double kDefaultBaseWeight = 0.5;
 /// recencyLoad=1 a track's priority is cut by this fraction.
 const double kRecencyPenalty = 0.6;
 
+/// The default share of the day the retention floor (due reviews) may claim before
+/// the remainder is fair-queued to new/practice — the retention-floor cap
+/// (ADR-0010 Phase B / #106). Due reviews clear FIRST up to this fraction, so
+/// retrieval never loses to new material; the cap keeps a heavy backlog from eating
+/// the whole day (a slice always remains for practice/new). Any budget no other
+/// track can use still flows back to reviews (they're never dropped to waste time),
+/// so on a normal day — due-load well under the cap — this changes nothing. 0.8
+/// mirrors the field consensus: reviews are the priority, but a backlog is shed at
+/// the *new* lever, not by letting reviews consume every minute.
+const double kRetentionFloorCap = 0.8;
+
 /// Inputs to [buildDailyPlan] beyond raw availability. Populated later phases from
 /// readiness (level/domain weights), recent activity, and cadence; injected here
 /// so the scheduler stays pure and testable.
@@ -79,6 +90,8 @@ class PlanContext {
     this.baseWeight = const {},
     this.recencyLoad = const {},
     this.reserved = const {},
+    this.floor = const {},
+    this.floorCap = kRetentionFloorCap,
   });
 
   /// Track importance, 0..1 (research × level × domain). Missing → [kDefaultBaseWeight].
@@ -88,8 +101,21 @@ class PlanContext {
   final Map<String, double> recencyLoad;
 
   /// Tracks that must get at least their top fitting unit today if available
-  /// (e.g. daily review, a cadence-due mock).
+  /// (e.g. a cadence-due mock). One-and-done, before the fair-queue.
   final Set<String> reserved;
+
+  /// Retention-floor tracks (#106 / ADR-0010 Phase B): their due units are cleared
+  /// FIRST, greedily in priority order, before anything else is fair-queued — so
+  /// retrieval never loses to new material on a heavy day. Bounded by [floorCap] of
+  /// the budget so a big backlog can't crowd out practice/new; any budget no other
+  /// track can use still flows back to them (never dropped to waste time). Empty →
+  /// the packer behaves exactly as before. Today the provider sets `{review}`.
+  final Set<String> floor;
+
+  /// The fraction of the budget the [floor] may claim before the remainder is
+  /// fair-queued to the other tracks (default [kRetentionFloorCap]). Only bites on
+  /// heavy-review days; normal due-loads sit well under it.
+  final double floorCap;
 
   double priority(String t) {
     final base = baseWeight[t] ?? kDefaultBaseWeight;
@@ -196,7 +222,6 @@ DailyPlan buildDailyPlan({
 
   final byTrack = {for (final a in eligible) a.track: a};
   final pri = {for (final a in eligible) a.track: ctx.priority(a.track)};
-  final totalPri = pri.values.fold(0.0, (s, v) => s + v);
 
   final scheduled = {for (final a in eligible) a.track: <PracticeUnit>[]};
   final used = {for (final a in eligible) a.track: 0.0};
@@ -222,9 +247,37 @@ DailyPlan buildDailyPlan({
     cursor[t] = i + 1;
   }
 
-  // 1) Reserve non-negotiable tracks' top fitting unit (priority order).
-  final reservedEligible = [
+  // 0) Retention floor (#106 / ADR-0010 Phase B): clear the floor tracks' due units
+  // FIRST, greedily in priority order, up to floorCap of the budget — so reviews
+  // clear before new material competes, and a heavy backlog can't eat the whole day.
+  // The rest divide only what's left; true leftover flows back to the floor (step 3).
+  final floorTracks = [
     for (final a in eligible)
+      if (ctx.floor.contains(a.track)) a.track,
+  ]..sort((x, y) => pri[y]!.compareTo(pri[x]!));
+  final floorCapMinutes = budgetMinutes * ctx.floorCap;
+  var floorUsed = 0.0;
+  for (final t in floorTracks) {
+    for (var i = nextFitting(t); i >= 0; i = nextFitting(t)) {
+      final m = byTrack[t]!.units[i].estMinutes;
+      if (floorUsed + m > floorCapMinutes + 1e-9) break;
+      floorUsed += m;
+      schedule(t, i);
+    }
+  }
+
+  // The non-floor tracks split the post-floor remainder; floor tracks sit out the
+  // reserve + fair-queue (they've had their priority pass) until step 3.
+  final rest = [
+    for (final a in eligible)
+      if (!ctx.floor.contains(a.track)) a,
+  ];
+  final restPri = rest.fold(0.0, (s, a) => s + pri[a.track]!);
+  final postFloorBudget = budgetLeft;
+
+  // 1) Reserve non-negotiable (non-floor) tracks' top fitting unit (priority order).
+  final reservedEligible = [
+    for (final a in rest)
       if (ctx.reserved.contains(a.track)) a.track,
   ]..sort((x, y) => pri[y]!.compareTo(pri[x]!));
   for (final t in reservedEligible) {
@@ -232,16 +285,17 @@ DailyPlan buildDailyPlan({
     if (i >= 0) schedule(t, i);
   }
 
-  // 2) Weighted fair-queuing: repeatedly give the next fitting unit to the track
-  // furthest below its priority-proportional fair share of the whole budget.
-  double fairShare(String t) => totalPri > 0
-      ? pri[t]! / totalPri * budgetMinutes
-      : budgetMinutes / eligible.length;
+  // 2) Weighted fair-queuing among the rest: repeatedly give the next fitting unit
+  // to the track furthest below its priority-proportional share of the post-floor
+  // budget.
+  double fairShare(String t) => restPri > 0
+      ? pri[t]! / restPri * postFloorBudget
+      : (rest.isEmpty ? 0 : postFloorBudget / rest.length);
 
   while (true) {
     String? best;
     var bestDeficit = double.negativeInfinity;
-    for (final a in eligible) {
+    for (final a in rest) {
       final t = a.track;
       if (nextFitting(t) < 0) continue;
       final deficit = fairShare(t) - used[t]!;
@@ -253,6 +307,14 @@ DailyPlan buildDailyPlan({
     }
     if (best == null) break;
     schedule(best, nextFitting(best));
+  }
+
+  // 3) Leftover → floor tracks (uncapped): if budget remains that no other track can
+  // use, clear more due reviews rather than waste the day.
+  for (final t in floorTracks) {
+    for (var i = nextFitting(t); i >= 0; i = nextFitting(t)) {
+      schedule(t, i);
+    }
   }
 
   // 3) Assemble — only tracks with work; priority order; mark non-negotiables.

@@ -191,11 +191,11 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
         },
   };
 
-  // Reserved: review is a daily non-negotiable; a mock track (system design,
-  // behavioral) is reserved only when one is genuinely due to re-practice (its
-  // spaced clock is overdue), so it surfaces on cadence (~2–3×/week), never
-  // back-to-back.
-  final reserved = <String>{kTrackReview};
+  // Reserved: a mock track (system design, behavioral) gets one top unit only when
+  // one is genuinely due to re-practice (its spaced clock is overdue), so it
+  // surfaces on cadence (~2–3×/week), never back-to-back. Review is NOT reserved
+  // here — it's the retention floor (below), cleared first up to a cap (#106).
+  final reserved = <String>{};
   final recog = await ref.watch(recognitionRepositoryProvider).loadStates();
   bool anyMockDue(String track) {
     final a = gated.firstWhere(
@@ -223,6 +223,9 @@ Future<DailyPlan> dailyPlan(Ref ref) async {
       baseWeight: baseWeight,
       recencyLoad: recency,
       reserved: reserved,
+      // Retention floor (#106): due reviews clear first, up to kRetentionFloorCap
+      // of the day, so a heavy backlog protects retention without eating the day.
+      floor: const {kTrackReview},
     ),
   );
 }

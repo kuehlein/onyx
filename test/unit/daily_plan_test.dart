@@ -141,6 +141,77 @@ void main() {
     expect(_track(p, kTrackAlgorithms)!.units.length, 2);
   });
 
+  group('retention floor (#106)', () {
+    test('a floor track clears its due units first, beating a heavier rival',
+        () {
+      // Review is weighted far below Algorithms, but as the floor it clears before
+      // anything competes: all 10 due reviews (10 min), then Algo takes what's left.
+      final p = buildDailyPlan(
+        availabilities: [
+          _avail(kTrackReview, List.filled(10, 1)),
+          _avail(kTrackAlgorithms, [5, 5, 5]),
+        ],
+        budgetMinutes: 20,
+        ctx: const PlanContext(
+          baseWeight: {kTrackReview: 0.1, kTrackAlgorithms: 0.9},
+          floor: {kTrackReview}, // default cap 0.8 → 16 min, all 10 fit
+        ),
+      );
+      expect(_track(p, kTrackReview)!.units.length, 10);
+      expect(_track(p, kTrackAlgorithms)!.units.length, 2); // 10 min left / 5
+    });
+
+    test('the floor cap keeps a backlog from eating the whole day', () {
+      // 20 due reviews but the cap is half the day; the rest goes to a track that
+      // can use it, so reviews hold at the cap (never crowd practice out entirely).
+      final p = buildDailyPlan(
+        availabilities: [
+          _avail(kTrackReview, List.filled(20, 1)),
+          _avail(kTrackAlgorithms, List.filled(10, 1)),
+        ],
+        budgetMinutes: 10,
+        ctx: const PlanContext(
+          baseWeight: {kTrackReview: 0.9, kTrackAlgorithms: 0.1},
+          floor: {kTrackReview},
+          floorCap: 0.5, // 5 min for reviews
+        ),
+      );
+      expect(_track(p, kTrackReview)!.units.length, 5); // capped
+      expect(_track(p, kTrackAlgorithms)!.units.length, 5); // the other half
+    });
+
+    test('leftover no one else can use flows back to the floor (past the cap)',
+        () {
+      // Same cap, but the only rival has a single unit — the rest of the day would
+      // be wasted, so reviews soak it up beyond the cap rather than idle.
+      final p = buildDailyPlan(
+        availabilities: [
+          _avail(kTrackReview, List.filled(20, 1)),
+          _avail(kTrackAlgorithms, [2]),
+        ],
+        budgetMinutes: 10,
+        ctx: const PlanContext(
+          floor: {kTrackReview},
+          floorCap: 0.5, // 5 min cap, but…
+        ),
+      );
+      expect(_track(p, kTrackAlgorithms)!.units.length, 1); // 2 min
+      expect(_track(p, kTrackReview)!.units.length, 8); // 5 capped + 3 leftover
+      expect(p.plannedMinutes, 10); // nothing wasted
+    });
+
+    test('a floor track is marked non-negotiable', () {
+      final p = buildDailyPlan(
+        availabilities: [
+          _avail(kTrackReview, [1])
+        ],
+        budgetMinutes: 60,
+        ctx: const PlanContext(floor: {kTrackReview}),
+      );
+      expect(_track(p, kTrackReview)!.nonNegotiable, isTrue);
+    });
+  });
+
   group('rampedBudgetMinutes', () {
     test('starts at the ease-in and reaches the target after ~a week', () {
       expect(rampedBudgetMinutes(recentActiveDays: 0), 90);
