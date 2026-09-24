@@ -110,14 +110,17 @@ model before we add features, so we build on the right shape.
         byte-identical) + **S5b ✅** (readers resolve per-aim; deck slots UNREAD) · **S5c ✅** (`deadline`
         round-arg sweep) · **S5d ✅** (peripheral writers + label-readers) · **S5e-1 ✅** (read-only
         Aims screen `/aims`) · **S5e-2 ✅** (per-aim editor + `upsertAim` writer flip + neutral axis-title
-        seam) · **S5e-3 ✅** (merge/retire old surfaces; last deck-slot writer gone; suite 989). The
-        unified Aims surface (#101's core deliverable) now SHIPS; **S5f** slot-deletion re-scoped as a
-        deferred fold-at-parse migration refactor (see below), **S5e-4** minor polish. **Architecture verdict
+        seam) · **S5e-3 ✅** (merge/retire old surfaces; last deck-slot writer gone) · **S5f ✅** (deleted
+        `Deck.{level,context,track,deadline}` + `toTarget`; fold-at-parse migration; the **deck is now a
+        pure lens**; suite 989). **#101/S5 substantively DONE** — the deck/aims model is fully realized in
+        code. Only tidy-ups remain: the `readiness.dart` split (deferred hygiene) + **S5e-4** minor polish.
+        **Architecture verdict
         (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
         bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
         feasibility→urgency→plan) is narrow, ADR-pinned, pure-cored, tested. The "recurring couplings"
         are OLD-model debt surfacing under the readers-first discipline (expected), not new debt. Watch:
-        `readiness.dart` at the size ceiling (18 providers) → **split it when S5f touches it**;
+        `readiness.dart` at the size ceiling (19 providers) → **split deferred to its own hygiene pass**
+        (S5f is done; the split is pure file-surgery, see S5f remaining tidy-up);
         `templateTarget`-on-`ReadinessTarget` is a minor leak → defer.
         - **Coupling reality:** the deletion blast-radius is ~400–500 lines but **mostly parameter
           sweeps + call-site updates — no algorithmic change** (readiness/plan already read from aims).
@@ -156,15 +159,20 @@ model before we add features, so we build on the right shape.
           behavioral's entry stays reversible pending its design pass; **#90 debrief deferred** to that
           pass) → **S5e-4** 0-aim coverage + open-ended polish (minor). Hold #8 (single-aim same *data*;
           the UI is intentionally new).
-        - **S5f — the slot deletion (re-scoped 2026-09-23; NOT pure dead-code).** Remove
-          `Deck.{level,context,track,deadline}` + `toTarget`; `activeTargetIsSet`→"an active aim is set";
-          **0-aim = coverage-only**; + **split `readiness.dart`**. **Finding:** the slots are still
-          **migration I/O**, not dead — `foldDeckSlotsIntoAims` copies them into aims but does NOT clear
-          them, and `Deck.fromJson`/`migratedDefaultDeck` still read/write the legacy keys; `lanes_hub`
-          is the last *live* reader (a lane countdown off `goal.deadline`). So deletion = a **fold-at-parse
-          migration refactor** (move the fold into `fromJson`, drop the redundant slot round-trip, flip
-          `lanes_hub` to the soonest-aim date) with real data-safety stakes — its own careful, tested pass,
-          NOT trivial. Non-blocking: the slots are harmless/redundant post-migration (readers use aims).
+        - **S5f — the slot deletion ✅ (done 2026-09-24; the deck is now a pure lens).** **S5f-1** flipped
+          the last live slot readers to aims (`lanes_hub` countdown → soonest active-aim date;
+          `activeTargetIsSet` → "the deck has an active aim"). **S5f-2** deleted
+          `Deck.{levelId,contextId,trackId,deadline}` + `toTarget` and moved the migration to **parse time**:
+          `Deck.fromJson` folds any legacy slot keys into the aims via `foldSlotsIntoAims` (idempotent —
+          proven for the post-S5a residual-slots+`target`-aim shape), `toJson` drops the keys (old files
+          self-clean on next save), `migratedDefaultDeck` folds via the same helper, and the standalone
+          `foldDeckSlotsIntoAims` + the `decks.dart` on-load re-fold/write-through are gone. **0-aim =
+          coverage-only** already held (readiness scores `ReadinessTarget.forAim(const Aim(), template)`).
+          Suite 989. Data-safe: old JSON slots are read-and-folded, never lost.
+          - **Remaining tidy-up (deferred, standalone — NOT model/behavior):** **split `readiness.dart`**
+            (583 lines / 19 providers / 32 importers). Pure hygiene; needs a re-export hub + `build_runner`
+            + care around cross-group provider refs (avoid circular imports). Its own focused pass — no
+            user/model value, so not worth a session-tail rabbit hole.
         - **Fidelity guardrails (from the SoT audit):** keep aims **round-shaped** — do NOT build past
           the parked `rounds → milestones` decision; terminology via `Vocabulary` (no hardcoded
           "interview"); hold **invariant #8** (single-aim byte-identical) and **#6** (weakest-link)
