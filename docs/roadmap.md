@@ -113,14 +113,15 @@ model before we add features, so we build on the right shape.
         seam) · **S5e-3 ✅** (merge/retire old surfaces; last deck-slot writer gone) · **S5f ✅** (deleted
         `Deck.{level,context,track,deadline}` + `toTarget`; fold-at-parse migration; the **deck is now a
         pure lens**; suite 989). **#101/S5 substantively DONE** — the deck/aims model is fully realized in
-        code. Only tidy-ups remain: the `readiness.dart` split (deferred hygiene) + **S5e-4** minor polish.
+        code. `readiness.dart` split ✅ (583 → 262 hub + 222 forecast + 141 feasibility). Only **S5e-4**
+        minor polish remains.
         **Architecture verdict
         (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
         bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
         feasibility→urgency→plan) is narrow, ADR-pinned, pure-cored, tested. The "recurring couplings"
         are OLD-model debt surfacing under the readers-first discipline (expected), not new debt. Watch:
-        `readiness.dart` at the size ceiling (19 providers) → **split deferred to its own hygiene pass**
-        (S5f is done; the split is pure file-surgery, see S5f remaining tidy-up);
+        `readiness.dart` **split ✅** (S5f) into hub + `readiness_forecast` + `readiness_feasibility` via a
+        re-export hub (importers unchanged);
         `templateTarget`-on-`ReadinessTarget` is a minor leak → defer.
         - **Coupling reality:** the deletion blast-radius is ~400–500 lines but **mostly parameter
           sweeps + call-site updates — no algorithmic change** (readiness/plan already read from aims).
@@ -169,10 +170,10 @@ model before we add features, so we build on the right shape.
           `foldDeckSlotsIntoAims` + the `decks.dart` on-load re-fold/write-through are gone. **0-aim =
           coverage-only** already held (readiness scores `ReadinessTarget.forAim(const Aim(), template)`).
           Suite 989. Data-safe: old JSON slots are read-and-folded, never lost.
-          - **Remaining tidy-up (deferred, standalone — NOT model/behavior):** **split `readiness.dart`**
-            (583 lines / 19 providers / 32 importers). Pure hygiene; needs a re-export hub + `build_runner`
-            + care around cross-group provider refs (avoid circular imports). Its own focused pass — no
-            user/model value, so not worth a session-tail rabbit hole.
+          - **`readiness.dart` split ✅** (583 → **262 hub + 222 `readiness_forecast` + 141
+            `readiness_feasibility`**). No behavior change: the hub keeps the name + re-exports the two
+            derived layers, so all 32 importers are unchanged; `_pick`→public `pickDeck`, `_bindingTarget`
+            moved into forecast. Suite 989.
         - **Fidelity guardrails (from the SoT audit):** keep aims **round-shaped** — do NOT build past
           the parked `rounds → milestones` decision; terminology via `Vocabulary` (no hardcoded
           "interview"); hold **invariant #8** (single-aim byte-identical) and **#6** (weakest-link)
