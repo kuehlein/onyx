@@ -27,21 +27,12 @@ class Decks extends _$Decks {
   Future<List<Deck>> build() async {
     final registry = await ref.watch(templateRegistryProvider.future);
     final source = ref.watch(vaultSourceProvider);
-    final loadedRaw =
+    // Decks load already-folded: [Deck.fromJson] migrates any legacy target slots
+    // into the aims at parse time (S5), so a loaded deck carries no slots of its
+    // own. Old files keep the now-redundant slot keys until their next save; they're
+    // ignored on read.
+    final loaded =
         source == null ? const <Deck>[] : await DeckStore(source).load();
-    // S5a writer-flip prep: fold each persisted deck's transitional level/context/
-    // track/deadline slots into its aims, so the deck slots can be deleted (S5). A
-    // no-op for decks with nothing to fold; when it changes something, write it
-    // through once (idempotent — later builds then load the folded form and no-op).
-    final loaded = [for (final d in loadedRaw) foldDeckSlotsIntoAims(d)];
-    if (source != null &&
-        loaded.indexed.any((e) => !identical(e.$2, loadedRaw[e.$1]))) {
-      try {
-        await DeckStore(source).save(loaded);
-      } catch (_) {
-        // Non-fatal: the in-memory fold still stands; retry on the next build.
-      }
-    }
     // Explicit (non-default) goals replace the whole-vault default. With any
     // *live* one, run as the multi-goal hub; with all archived, Home/readiness
     // degrade to the default whole-vault view rather than a graduated goal.
@@ -62,8 +53,8 @@ class Decks extends _$Decks {
     // legacy files are no longer consulted.
     final baseTarget = await TargetService(source).load();
     final interviews = await legacyInterviews(source);
-    final migrated = foldDeckSlotsIntoAims(migratedDefaultDeck(registry.primary,
-        baseTarget: baseTarget, aims: interviews));
+    final migrated = migratedDefaultDeck(registry.primary,
+        baseTarget: baseTarget, aims: interviews);
     // Write-through: durably persist the folded default so the legacy files are no
     // longer needed (only when there IS legacy data — never persist a bare default).
     // Preserve any graduated explicit goals alongside it (they're hidden here but

@@ -64,7 +64,9 @@ void main() {
   });
 
   group('migratedDefaultDeck', () {
-    test('folds the base target + interviews into the default goal', () {
+    test(
+        'folds the base target into the interview aims (deck carries no slots)',
+        () {
       final base = ReadinessTarget.of(
         level: SeniorityLevel.senior,
         company: CompanyTier.faang,
@@ -79,92 +81,88 @@ void main() {
 
       final goal = migratedDefaultDeck(softwareInterviewsTemplate,
           baseTarget: base, aims: interviews);
-
-      // Default goal carries the base target's slots + deadline (ids == enum
-      // names).
       expect(goal.id, defaultDeckId);
-      expect([goal.levelId, goal.contextId, goal.trackId],
-          ['senior', 'faang', 'backend']);
-      expect(goal.deadline, DateTime(2026, 6, 1));
 
-      // Each legacy interview → an Aim, preserving its facets + date.
+      // The base target's slots fold into the interview aim (S5 — the deck is a
+      // pure lens; no separate 'target' aim, since there IS an interview).
       expect(goal.aims.length, 1);
       final iv = goal.aims.single;
       expect(iv.companyName, 'Google');
       expect(iv.active, isFalse);
       expect(iv.domainWeights['system-design'], 1.3);
-      // A single-date legacy entry materialized a synthetic round 1 (date kept).
+      expect([iv.levelId, iv.contextId, iv.trackId],
+          ['senior', 'faang', 'backend']); // inherited from the base target
+      // The interview keeps its OWN round date (its rounds aren't empty, so the
+      // base deadline doesn't synthesize one).
       expect(iv.rounds.single.date, DateTime(2026, 5, 15));
+    });
+
+    test('a base target with no interviews → one coverage `target` aim', () {
+      final base = ReadinessTarget.of(
+        level: SeniorityLevel.senior,
+        company: CompanyTier.faang,
+        track: Track.general,
+        interviewDate: DateTime(2026, 6, 1),
+      );
+      final goal =
+          migratedDefaultDeck(softwareInterviewsTemplate, baseTarget: base);
+      final iv = goal.aims.single;
+      expect(iv.id, 'target');
+      expect([iv.levelId, iv.contextId, iv.trackId],
+          ['senior', 'faang', 'general']);
+      expect(iv.rounds.single.date, DateTime(2026, 6, 1));
     });
 
     test('no legacy data → a bare default goal (template fallbacks stand)', () {
       final bare = migratedDefaultDeck(softwareInterviewsTemplate);
-      expect(bare.levelId, isNull);
-      expect(bare.deadline, isNull);
       expect(bare.aims, isEmpty);
     });
   });
 
-  group('foldDeckSlotsIntoAims (S5a writer-flip prep)', () {
-    Deck deck({
-      String? levelId,
-      String? contextId,
-      String? trackId,
-      DateTime? deadline,
-      List<Aim> aims = const [],
-    }) =>
-        Deck(
-          id: 'd',
-          name: 'D',
-          templateId: 'swe',
-          levelId: levelId,
-          contextId: contextId,
-          trackId: trackId,
-          deadline: deadline,
-          aims: aims,
-        );
-
-    test('a target-less deck (no slots, no deadline) is returned unchanged',
-        () {
-      final d = deck(aims: const [Aim(id: 'a')]);
-      expect(identical(foldDeckSlotsIntoAims(d), d), isTrue);
+  group('foldSlotsIntoAims (S5 parse-time migration)', () {
+    test('no slots + no deadline → the aim list is returned unchanged', () {
+      const aims = [Aim(id: 'a')];
+      expect(identical(foldSlotsIntoAims(aims, deckId: 'd'), aims), isTrue);
     });
 
     test('an aim inherits the deck slots explicitly (byte-identical)', () {
-      final f = foldDeckSlotsIntoAims(deck(
+      final f = foldSlotsIntoAims(
+        const [Aim(id: 'a')],
         levelId: 'senior',
         contextId: 'faang',
         trackId: 'backend',
-        aims: const [Aim(id: 'a')],
-      ));
-      final a = f.aims.single;
+        deckId: 'd',
+      );
+      final a = f.single;
       expect(
           [a.levelId, a.contextId, a.trackId], ['senior', 'faang', 'backend']);
       expect(a.rounds, isEmpty); // no deadline → no synthetic round
     });
 
     test('a round-less aim gets the deck deadline as an explicit round 1', () {
-      final f = foldDeckSlotsIntoAims(deck(
+      final f = foldSlotsIntoAims(
+        const [Aim(id: 'a')],
         levelId: 'senior',
         deadline: DateTime(2026, 6, 1),
-        aims: const [Aim(id: 'a')],
-      ));
-      final r = f.aims.single.rounds.single;
+        deckId: 'd',
+      );
+      final r = f.single.rounds.single;
       expect(r.id, 'a-r1');
       expect(r.number, 1);
       expect(r.date, DateTime(2026, 6, 1));
     });
 
-    test('a deck with an explicit target but NO aims gets one coverage aim',
-        () {
-      final f = foldDeckSlotsIntoAims(deck(
+    test('slots with NO aims become one coverage `target` aim', () {
+      final f = foldSlotsIntoAims(
+        const [],
         levelId: 'senior',
         contextId: 'faang',
         trackId: 'backend',
         deadline: DateTime(2026, 6, 1),
-      ));
-      expect(f.aims.length, 1);
-      final a = f.aims.single;
+        deckId: 'd',
+      );
+      expect(f.length, 1);
+      final a = f.single;
       expect(a.id, 'target');
       expect(
           [a.levelId, a.contextId, a.trackId], ['senior', 'faang', 'backend']);
@@ -172,22 +170,48 @@ void main() {
     });
 
     test('an aim keeps its OWN slots; only null-slot aims inherit', () {
-      final f = foldDeckSlotsIntoAims(deck(
+      final f = foldSlotsIntoAims(
+        const [Aim(id: 'a', levelId: 'staff'), Aim(id: 'b')],
         levelId: 'senior',
-        aims: const [Aim(id: 'a', levelId: 'staff'), Aim(id: 'b')],
-      ));
-      expect(f.aims[0].levelId, 'staff'); // its own, untouched
-      expect(f.aims[1].levelId, 'senior'); // inherited from the deck
+        deckId: 'd',
+      );
+      expect(f[0].levelId, 'staff'); // its own, untouched
+      expect(f[1].levelId, 'senior'); // inherited from the deck
     });
 
-    test('idempotent — a second fold is a no-op (same instance)', () {
-      final once = foldDeckSlotsIntoAims(deck(
+    test('idempotent — re-folding does not duplicate the round', () {
+      final once = foldSlotsIntoAims(
+        const [Aim(id: 'a')],
         levelId: 'senior',
         deadline: DateTime(2026, 6, 1),
-        aims: const [Aim(id: 'a')],
-      ));
-      expect(identical(foldDeckSlotsIntoAims(once), once), isTrue);
-      expect(once.aims.single.rounds.length, 1); // round not duplicated
+        deckId: 'd',
+      );
+      final twice = foldSlotsIntoAims(once,
+          levelId: 'senior', deadline: DateTime(2026, 6, 1), deckId: 'd');
+      expect(twice.single.rounds.length, 1); // round not duplicated
+      expect(twice.single.levelId, 'senior');
+    });
+
+    test(
+        're-parsing an already-folded deck (residual slots + `target` aim) does '
+        'not duplicate it', () {
+      // The post-S5a on-disk shape: the JSON kept the slot keys AND the `target`
+      // aim they were folded into. Re-folding must not create a second one.
+      final f = foldSlotsIntoAims(
+        const [
+          Aim(
+              id: 'target',
+              levelId: 'senior',
+              contextId: 'faang',
+              trackId: 'general')
+        ],
+        levelId: 'senior',
+        contextId: 'faang',
+        trackId: 'general',
+        deckId: 'default',
+      );
+      expect(f.length, 1); // no duplicate 'target'
+      expect(f.single.id, 'target');
     });
   });
 }

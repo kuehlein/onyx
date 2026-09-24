@@ -171,13 +171,12 @@ void main() {
     final goal = await c.read(activeDeckProvider.future);
     expect(goal.aims.map((iv) => iv.companyName), ['Google']);
     expect(goal.aims.single.domainWeights['system-design'], 1.6);
-    // The plan's knobs + date landed on the AIM (S5 — the deck is a pure lens),
-    // not the deck slots.
+    // The plan's knobs + date landed on the AIM (S5 — the deck is a pure lens
+    // with no target slots of its own).
     final iv = goal.aims.single;
     expect(iv.levelId, 'senior');
     expect(iv.trackId, 'backend');
     expect(iv.rounds.single.date, DateTime(2026, 9, 20));
-    expect(goal.levelId, isNull); // deck stays a lens — no target on it
     await db.close();
   });
 

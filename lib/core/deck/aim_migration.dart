@@ -1,9 +1,10 @@
 /// One-time bridge (task #30d Phase B — aim unification, B5): fold the legacy aim
 /// stores — the base [ReadinessTarget] (`onyx-target.json`) + the interview list
 /// (`onyx-goals.json`, the old `PrepGoal` file) — into the whole-vault **default**
-/// [Deck]. The base target supplies the goal's slots + deadline; each legacy
-/// entry becomes an [Aim]. Read-only parse; the caller ([Decks])
-/// write-through-persists the folded default so the legacy files fall out of use.
+/// [Deck]. The base target is folded into a coverage `'target'` aim; each legacy
+/// entry becomes an [Aim] (the deck itself carries no target slots — n006). Read-only
+/// parse; the caller ([Decks]) write-through-persists the folded default so the
+/// legacy files fall out of use.
 library;
 
 import 'dart:convert';
@@ -15,9 +16,11 @@ import '../template/deck_template.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
-/// The whole-vault default deck, enriched from the legacy aim data. Slots/deadline
-/// from [baseTarget] (null → the template fallbacks stand); the aims from [aims].
-/// With no legacy data this equals `defaultDeckFor(template)`.
+/// The whole-vault default deck, enriched from the legacy aim data — the legacy
+/// [baseTarget] (`onyx-target.json`, null → the template fallbacks stand) is folded
+/// into the aims (a coverage `'target'` aim when there are none, dated if it had a
+/// deadline); the interviews come from [aims]. With no legacy data this equals
+/// `defaultDeckFor(template)`. See [foldSlotsIntoAims].
 Deck migratedDefaultDeck(
   DeckTemplate template, {
   ReadinessTarget? baseTarget,
@@ -27,65 +30,15 @@ Deck migratedDefaultDeck(
       id: defaultDeckId,
       name: template.id,
       templateId: template.id,
-      levelId: baseTarget?.levelId,
-      contextId: baseTarget?.contextId,
-      trackId: baseTarget?.trackId,
-      deadline: baseTarget?.interviewDate,
-      aims: aims,
+      aims: foldSlotsIntoAims(
+        aims,
+        levelId: baseTarget?.levelId,
+        contextId: baseTarget?.contextId,
+        trackId: baseTarget?.trackId,
+        deadline: baseTarget?.interviewDate,
+        deckId: defaultDeckId,
+      ),
     );
-
-/// S5 writer-flip prep (task #101): make each aim carry its OWN knobs + dates
-/// explicitly, so the deck's transitional `level/context/track/deadline` slots can
-/// be deleted. **Byte-identical** — an aim's null slot is filled from the deck slot
-/// it already inherited (`_aimTarget`), and a round-less aim that fell back to the
-/// deck [Deck.deadline] gets it as an explicit round 1 (same id/date
-/// `effectiveRounds` would have synthesized). A deck with an explicit target
-/// (a non-null slot) but NO aims gets one **coverage aim** carrying the slots (dated
-/// when there was a deadline), so its target survives slot deletion; a deck that
-/// never set a target (no slots, no deadline) is returned unchanged and stays
-/// aim-less (0-aim → coverage vs the template fallbacks). Returns the SAME instance
-/// when nothing needs folding, so the caller can skip a needless persist.
-Deck foldDeckSlotsIntoAims(Deck g) {
-  final hasSlots =
-      g.levelId != null || g.contextId != null || g.trackId != null;
-  if (!hasSlots && g.deadline == null) return g; // nothing to preserve
-
-  Aim carry(Aim a) {
-    final lv = a.levelId ?? g.levelId;
-    final cx = a.contextId ?? g.contextId;
-    final tk = a.trackId ?? g.trackId;
-    final needRound = a.rounds.isEmpty && g.deadline != null;
-    if (lv == a.levelId && cx == a.contextId && tk == a.trackId && !needRound) {
-      return a; // already carries everything — unchanged
-    }
-    return a.copyWith(
-      levelId: lv,
-      contextId: cx,
-      trackId: tk,
-      rounds: needRound
-          ? [
-              InterviewRound(
-                id: '${a.id.isNotEmpty ? a.id : g.id}-r1',
-                number: 1,
-                date: g.deadline,
-              )
-            ]
-          : a.rounds,
-    );
-  }
-
-  if (g.aims.isEmpty) {
-    // Preserve the explicit target as one coverage aim (dated if there was a
-    // deadline). A target-less deck returned above, so we only reach here with
-    // something to keep.
-    return g.copyWith(aims: [carry(const Aim(id: 'target'))]);
-  }
-  final folded = [for (final a in g.aims) carry(a)];
-  final changed = [
-    for (var i = 0; i < folded.length; i++) identical(folded[i], g.aims[i])
-  ].any((same) => !same);
-  return changed ? g.copyWith(aims: folded) : g;
-}
 
 /// The dev-gated legacy interview file (mirrors the deleted `GoalsService`'s
 /// isolation — desktop testing can't pollute the real synced interviews).

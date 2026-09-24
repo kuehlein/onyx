@@ -3,14 +3,13 @@
 ///
 /// A goal is a named, configured, scheduled *view* of a set of related cards: a
 /// [membership] query selects the cards, a [templateId] names the target
-/// vocabulary (a `DeckTemplate`), a target selection + [deadline] set the
-/// objective, and a [budgetWeight] + [state] control its slice of the shared daily
-/// study time. Readiness is computed per goal over its members (G2). Goals are
-/// app-managed state (persisted in `_meta/` by [id]), not vault content.
+/// vocabulary (a `DeckTemplate`), the [aims] carry the objectives (each with its
+/// own knobs + date), and a [budgetWeight] + [state] control its slice of the
+/// shared daily study time. Readiness is computed per goal over its members (G2).
+/// Goals are app-managed state (persisted in `_meta/` by [id]), not vault content.
 library;
 
 import '../../shared/models/card.dart';
-import '../readiness/target.dart';
 import '../template/deck_template.dart';
 import 'aim.dart';
 import 'membership_query.dart';
@@ -30,10 +29,6 @@ class Deck {
     required this.name,
     required this.templateId,
     this.membership = const AllCards(),
-    this.levelId,
-    this.contextId,
-    this.trackId,
-    this.deadline,
     this.budgetWeight = 1.0,
     this.state = DeckState.active,
     this.aims = const [],
@@ -52,27 +47,19 @@ class Deck {
   /// The card selector — what makes this goal a lens over the vault.
   final MembershipQuery membership;
 
-  /// Target selection within the template. Null slots fall back to the template's
-  /// declared fallbacks (so a goal can be created before the user picks a target).
-  final String? levelId;
-  final String? contextId;
-  final String? trackId;
-
-  /// When the goal is due (interview, exam, debate), or null for an open-ended goal.
-  final DateTime? deadline;
-
   /// Relative share of the daily budget among active goals (renormalized across
   /// the active set; see G4).
   final double budgetWeight;
 
   final DeckState state;
 
-  /// The aims this deck points at (Phase B aim unification) — a deck can hold
-  /// several at once (e.g. Google + Amazon interviews, or a comp-test + a jury),
-  /// which the targeting layer blends. Empty → a plain study deck (open-ended, or
-  /// a dated exam without a rounds loop). All share the deck's level/context/track
-  /// slots today; S1 lifts those knobs onto each aim. Persisted under the legacy
-  /// `interviews` JSON key for vault back-compat.
+  /// The aims this deck points at — a deck can hold several at once (e.g. Google +
+  /// Amazon interviews, or a comp-test + a jury), which the targeting layer blends.
+  /// Each aim owns its OWN readiness knobs (difficulty [Aim.levelId] · durability
+  /// [Aim.contextId] · emphasis [Aim.trackId]) + date via rounds (S1); the **deck
+  /// is a pure lens** with no target slots of its own (n006). Empty → a plain
+  /// 0-aim study deck (coverage-only vs the template fallbacks). Persisted under
+  /// the legacy `interviews` JSON key for vault back-compat.
   final List<Aim> aims;
 
   bool get isActive => state == DeckState.active;
@@ -81,77 +68,59 @@ class Deck {
   Iterable<Card> select(Iterable<Card> cards) =>
       cards.where(membership.matches);
 
-  /// This goal's [ReadinessTarget] — its own level/context/track selection, with
-  /// null or empty slots resolved to [template]'s fallbacks, and the [deadline]
-  /// (coerced to date-only, as `interviewDate` is contractually local-midnight) as
-  /// the target's interview date (task #30d, G3a).
-  ReadinessTarget toTarget(DeckTemplate template) {
-    String slot(String? id, String fallback) =>
-        (id == null || id.isEmpty) ? fallback : id;
-    final d = deadline;
-    return ReadinessTarget(
-      levelId: slot(levelId, template.target.fallbackLevelId),
-      contextId: slot(contextId, template.target.fallbackContextId),
-      trackId: slot(trackId, template.target.fallbackTrackId),
-      interviewDate: d == null ? null : DateTime(d.year, d.month, d.day),
-      // Carry the template so per-goal scoring (readiness, ladder, forecast) uses
-      // this goal's own dimensions, not the process-global primary (#30d).
-      templateTarget: template.target,
-    );
-  }
-
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'templateId': templateId,
         'membership': membership.toJson(),
-        if (levelId != null) 'levelId': levelId,
-        if (contextId != null) 'contextId': contextId,
-        if (trackId != null) 'trackId': trackId,
-        if (deadline != null) 'deadline': deadline!.toIso8601String(),
         'budgetWeight': budgetWeight,
         'state': state.name,
         if (aims.isNotEmpty) 'interviews': [for (final i in aims) i.toJson()],
       };
 
-  static Deck fromJson(Map<String, dynamic> m) => Deck(
-        id: m['id'] as String,
-        name: (m['name'] ?? m['id']) as String,
-        templateId: (m['templateId'] ?? '') as String,
-        membership: m['membership'] is Map
-            ? MembershipQuery.fromJson(
-                (m['membership'] as Map).cast<String, dynamic>())
-            : const AllCards(),
-        levelId: m['levelId'] as String?,
-        contextId: m['contextId'] as String?,
-        trackId: m['trackId'] as String?,
-        deadline: m['deadline'] is String
-            ? DateTime.tryParse(m['deadline'] as String)
-            : null,
-        budgetWeight: (m['budgetWeight'] as num?)?.toDouble() ?? 1.0,
-        state: DeckState.values.firstWhere(
-          (s) => s.name == m['state'],
-          orElse: () => DeckState.active,
-        ),
-        aims: m['interviews'] is List
-            ? [
-                for (final e in m['interviews'] as List)
-                  if (e is Map) Aim.fromJson(e.cast<String, dynamic>()),
-              ]
-            : const [],
-      );
+  static Deck fromJson(Map<String, dynamic> m) {
+    final id = m['id'] as String;
+    final rawAims = m['interviews'] is List
+        ? [
+            for (final e in m['interviews'] as List)
+              if (e is Map) Aim.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const <Aim>[];
+    // Fold any legacy deck target slots into the aims at parse time (S5 — the deck
+    // is a pure lens now; the slots are read-and-folded, never stored as fields).
+    // Old files keep the redundant `levelId`/… keys until their next save; ignored
+    // on read. Idempotent for already-folded data (see [foldSlotsIntoAims]).
+    final aims = foldSlotsIntoAims(
+      rawAims,
+      levelId: m['levelId'] as String?,
+      contextId: m['contextId'] as String?,
+      trackId: m['trackId'] as String?,
+      deadline: m['deadline'] is String
+          ? DateTime.tryParse(m['deadline'] as String)
+          : null,
+      deckId: id,
+    );
+    return Deck(
+      id: id,
+      name: (m['name'] ?? m['id']) as String,
+      templateId: (m['templateId'] ?? '') as String,
+      membership: m['membership'] is Map
+          ? MembershipQuery.fromJson(
+              (m['membership'] as Map).cast<String, dynamic>())
+          : const AllCards(),
+      budgetWeight: (m['budgetWeight'] as num?)?.toDouble() ?? 1.0,
+      state: DeckState.values.firstWhere(
+        (s) => s.name == m['state'],
+        orElse: () => DeckState.active,
+      ),
+      aims: aims,
+    );
+  }
 
-  // Nullable slots use an _unset sentinel so a caller can clear them back to null
-  // (e.g. convert a dated goal to open-ended) — a plain `x ?? this.x` can't
-  // distinguish "omit" from "set to null".
   Deck copyWith({
     String? name,
     String? templateId,
     MembershipQuery? membership,
-    Object? levelId = _unset,
-    Object? contextId = _unset,
-    Object? trackId = _unset,
-    Object? deadline = _unset,
     double? budgetWeight,
     DeckState? state,
     List<Aim>? aims,
@@ -161,17 +130,11 @@ class Deck {
         name: name ?? this.name,
         templateId: templateId ?? this.templateId,
         membership: membership ?? this.membership,
-        levelId: levelId == _unset ? this.levelId : levelId as String?,
-        contextId: contextId == _unset ? this.contextId : contextId as String?,
-        trackId: trackId == _unset ? this.trackId : trackId as String?,
-        deadline: deadline == _unset ? this.deadline : deadline as DateTime?,
         budgetWeight: budgetWeight ?? this.budgetWeight,
         state: state ?? this.state,
         aims: aims ?? this.aims,
       );
 }
-
-const _unset = Object();
 
 /// The id of the implicit whole-vault goal that a single-subject vault runs as —
 /// the degradation case that keeps behavior identical to pre-#30d.
@@ -185,3 +148,51 @@ Deck defaultDeckFor(DeckTemplate template) => Deck(
       templateId: template.id,
       membership: const AllCards(),
     );
+
+/// Fold a deck's legacy target **slots** (level/context/track/deadline) into its
+/// [aims] — the S5 migration, applied at **parse time** ([Deck.fromJson]) and in
+/// the legacy first-run migration ([migratedDefaultDeck]) so the deck itself never
+/// carries the slots. Each aim's null knob is filled from the deck slot it used to
+/// inherit; a round-less aim inherits [deadline] as an explicit round 1; a set of
+/// slots with NO aims becomes one coverage aim (`id: 'target'`). **Idempotent:**
+/// aims already carrying the slots return unchanged, and with no slots + no
+/// deadline the input list is returned as-is (so re-parsing a folded deck is a
+/// no-op). [deckId] seeds any synthetic round id.
+List<Aim> foldSlotsIntoAims(
+  List<Aim> aims, {
+  String? levelId,
+  String? contextId,
+  String? trackId,
+  DateTime? deadline,
+  required String deckId,
+}) {
+  final hasSlots = levelId != null || contextId != null || trackId != null;
+  if (!hasSlots && deadline == null) return aims; // nothing to preserve
+
+  Aim carry(Aim a) {
+    final lv = a.levelId ?? levelId;
+    final cx = a.contextId ?? contextId;
+    final tk = a.trackId ?? trackId;
+    final needRound = a.rounds.isEmpty && deadline != null;
+    if (lv == a.levelId && cx == a.contextId && tk == a.trackId && !needRound) {
+      return a; // already carries everything — unchanged
+    }
+    return a.copyWith(
+      levelId: lv,
+      contextId: cx,
+      trackId: tk,
+      rounds: needRound
+          ? [
+              InterviewRound(
+                id: '${a.id.isNotEmpty ? a.id : deckId}-r1',
+                number: 1,
+                date: deadline,
+              )
+            ]
+          : a.rounds,
+    );
+  }
+
+  if (aims.isEmpty) return [carry(const Aim(id: 'target'))];
+  return [for (final a in aims) carry(a)];
+}

@@ -218,10 +218,15 @@ void main() {
     expect(goals.length, 1);
     final g = goals.single;
     expect(g.id, defaultDeckId);
-    expect([g.levelId, g.contextId, g.trackId], ['senior', 'faang', 'backend']);
-    expect(g.deadline, DateTime(2026, 6, 1));
-    expect(g.aims.single.companyName, 'Google');
-    expect(g.aims.single.domainWeights['system-design'], 1.3);
+    // The legacy base target folded into the interview aim (deck is a pure lens
+    // now — no slots); the interview keeps its own date, so the base deadline is
+    // superseded rather than materialized.
+    final iv = g.aims.single;
+    expect(iv.companyName, 'Google');
+    expect(iv.domainWeights['system-design'], 1.3);
+    expect(
+        [iv.levelId, iv.contextId, iv.trackId], ['senior', 'faang', 'backend']);
+    expect(iv.rounds.single.date, DateTime(2026, 5, 15));
 
     // B5 write-through: the migration durably persists the folded default so the
     // legacy files are no longer needed. Wait for the fire-and-forget save.
@@ -278,9 +283,10 @@ void main() {
     final stored = (await c2.read(decksProvider.future)).single;
     expect(stored.id, defaultDeckId);
     expect(stored.aims.map((iv) => iv.id).toSet(), {'g1', 'amzn'});
-    // Slots survived the cutover too.
-    expect([stored.levelId, stored.contextId, stored.trackId],
-        ['senior', 'faang', 'backend']);
+    // The base target folded into the migrated interview aim (deck is a lens now).
+    final g1 = stored.aims.firstWhere((a) => a.id == 'g1');
+    expect(
+        [g1.levelId, g1.contextId, g1.trackId], ['senior', 'faang', 'backend']);
   });
 
   test('migration write-through preserves a graduated explicit goal (B5)',

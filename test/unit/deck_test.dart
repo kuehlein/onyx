@@ -82,35 +82,6 @@ void main() {
       expect(goal.select(cards).length, cards.length);
     });
 
-    test('toTarget resolves null slots to the template fallbacks + deadline',
-        () {
-      // A deadline with a time-of-day is coerced to date-only midnight.
-      final deadline = DateTime(2026, 3, 1, 20, 30);
-      // Null slots → template fallbacks.
-      final bare = defaultDeckFor(_template).copyWith(deadline: deadline);
-      final t1 = bare.toTarget(_template);
-      expect([t1.levelId, t1.contextId, t1.trackId], ['l', 'c', 't']);
-      expect(t1.interviewDate, DateTime(2026, 3, 1));
-
-      // Empty-string slots also fall back to the template (not kept as '').
-      final empty = defaultDeckFor(_template)
-          .copyWith(levelId: '', contextId: '', trackId: '');
-      final te = empty.toTarget(_template);
-      expect([te.levelId, te.contextId, te.trackId], ['l', 'c', 't']);
-
-      // Explicit slots win.
-      const chosen = Deck(
-        id: 'g',
-        name: 'G',
-        templateId: 'demo',
-        levelId: 'sr',
-        contextId: 'exam',
-        trackId: 'read',
-      );
-      final t2 = chosen.toTarget(_template);
-      expect([t2.levelId, t2.contextId, t2.trackId], ['sr', 'exam', 'read']);
-    });
-
     test('copyWith updates fields but keeps id', () {
       final g = defaultDeckFor(_template)
           .copyWith(state: DeckState.paused, budgetWeight: 0.3);
@@ -118,15 +89,6 @@ void main() {
       expect(g.state, DeckState.paused);
       expect(g.budgetWeight, 0.3);
       expect(g.isActive, isFalse);
-    });
-
-    test('copyWith can clear a nullable field back to null', () {
-      final dated =
-          defaultDeckFor(_template).copyWith(deadline: DateTime(2026));
-      expect(dated.deadline, isNotNull);
-      // Omitting deadline keeps it; passing null clears it.
-      expect(dated.copyWith(budgetWeight: 0.5).deadline, isNotNull);
-      expect(dated.copyWith(deadline: null).deadline, isNull);
     });
 
     test(
@@ -154,7 +116,6 @@ void main() {
         id: deckId,
         name: 'Acme',
         templateId: 'demo',
-        deadline: DateTime(2026, 5, 1),
         aims: [aim],
       );
 

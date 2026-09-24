@@ -73,10 +73,15 @@ void main() {
       id: 'd',
       name: 'Old name',
       templateId: 'software-interviews',
-      aims: [Aim(id: 'a1', companyName: 'Google')],
-      levelId: 'senior',
-      contextId: 'faang',
-      trackId: 'backend',
+      // Post-S5 the target knobs live on the aim, not deck slots.
+      aims: [
+        Aim(
+            id: 'a1',
+            companyName: 'Google',
+            levelId: 'senior',
+            contextId: 'faang',
+            trackId: 'backend')
+      ],
     );
     await tester.pumpWidget(
       ProviderScope(
@@ -108,10 +113,11 @@ void main() {
     final saved = cap.upserted!;
     expect(saved.id, 'd'); // same deck
     expect(saved.name, 'New name'); // edit applied
-    // The bug rebuilt Deck() from scratch, wiping these:
-    expect(saved.aims.map((a) => a.id), ['a1']);
-    expect(saved.levelId, 'senior');
-    expect(saved.contextId, 'faang');
-    expect(saved.trackId, 'backend');
+    // The bug rebuilt Deck() from scratch, wiping the aims (which now carry the
+    // target knobs):
+    final a1 = saved.aims.single;
+    expect(a1.id, 'a1');
+    expect(
+        [a1.levelId, a1.contextId, a1.trackId], ['senior', 'faang', 'backend']);
   });
 }

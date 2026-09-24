@@ -56,10 +56,19 @@ void main() {
         name: 'Saints debate',
         templateId: 'orthodoxy',
         membership: TagMembership('intercession'),
-        levelId: 'deep',
-        deadline: DateTime(2026, 3, 1),
         budgetWeight: 0.4,
         state: DeckState.paused,
+        // Post-S5 the target lives on the aim, not deck slots.
+        aims: [
+          Aim(
+              id: 'jury',
+              companyName: 'Diocesan jury',
+              levelId: 'deep',
+              rounds: [
+                InterviewRound(
+                    id: 'jury-r1', number: 1, date: DateTime(2026, 3, 1)),
+              ]),
+        ],
       );
       expect(Deck.fromJson(goal.toJson()).toJson(), goal.toJson());
     });
