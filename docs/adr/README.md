@@ -37,3 +37,4 @@ belong in code comments + the PR description, not an ADR.
 | [0008](0008-cram-vs-durable-fsrs-safe-deadlines.md) | Cram-vs-durable: honor deadlines without corrupting FSRS | Accepted |
 | [0009](0009-aims-surface-design.md) | The Aims surface (S5e): design + the target-writer flip | Accepted |
 | [0010](0010-workload-budget-and-proportions.md) | Study workload: user sets budget + proportions; the engine derives the mix | Accepted |
+| [0011](0011-load-control-auto-mix-propose-size.md) | Load control: the engine auto-adjusts the mix; it proposes (never auto-writes) the size | Accepted |

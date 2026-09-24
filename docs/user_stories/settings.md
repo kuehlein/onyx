@@ -19,6 +19,18 @@ below).
   a deck runs). **Workload is NOT hand-tuned:** the engine derives the study mix from the budget +
   aims + FSRS + urgency; the old manual new-sections/day + algo min/max knobs are removed
   ([ADR-0010](../adr/0010-workload-budget-and-proportions.md)).
+- **How load *adjusts* (not just how it's configured)** — the SIZE-vs-MIX split
+  ([ADR-0011](../adr/0011-load-control-auto-mix-propose-size.md)): the **engine auto-adjusts the MIX**
+  (review vs new vs practice, the automatic new-material ceiling) **silently** — it never announces a
+  mix change. The day's **SIZE stays user-owned**: the user changes it by moving the daily-budget /
+  proportion dial or picking a high-level **intent** (push / steady / ease off), and sees an
+  **in-the-moment informed readout** — a zone band (ambitious / sustainable / likely-to-burn-out) + a
+  **neutral forward date shift** ("finish ~Apr 18 instead of Apr 14; speed up anytime"), never a red
+  behind-countdown. The **coach proposes / applies-on-request, never overrides** a user dial; an
+  explicit "ease off" / "I'm burned out" is honored **immediately** (autonomy > data); lowering an
+  already-low load is honored **silently** (brainstorming is available on-pull, never a gating "are
+  you sure?"). Engine-*initiated* size proposals + any notification surface are **deferred** (Phase B +
+  #110); silence is the default. [MVP: the pulled readout + the coach routing through budget/intents]
 - **Parsing preferences** — accommodate how users structure files: `##` = a card, maybe `###`
   too, `---` as a separator, ignore `//` lines, render ```` ``` ```` blocks specially. [MVP:
   read-only explainer + a small preset picker; fully custom markers = later, `#84`]
@@ -54,5 +66,6 @@ below).
 ## Cross-refs
 [deck_selection](deck_selection.md) (vault-level home) · [home](home.md) (deck config) ·
 [card](card.md) (parsing → sections) · [ADR-0010](../adr/0010-workload-budget-and-proportions.md)
-(workload = budget + proportions, engine-derived mix) · older: `settings-ux.md`, `#66`/`#84`
-(parsing), `#85` (settings IA), `#67`.
+(workload = budget + proportions, engine-derived mix) ·
+[ADR-0011](../adr/0011-load-control-auto-mix-propose-size.md) (load control: auto-mix, propose-size) ·
+older: `settings-ux.md`, `#66`/`#84` (parsing), `#85` (settings IA), `#67`.

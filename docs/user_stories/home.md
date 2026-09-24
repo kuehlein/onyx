@@ -23,7 +23,12 @@ deck).
 - **Today's progress** — e.g. "53% done · 31 min left." [MVP]
 - **Readiness** — the weakest-link roll-up across active aims, with a link to the fuller AI
   **readiness report**. [core MVP: the number; report: partial]
-- **AI coach** — one honest, actionable nudge (never a dashboard or guilt). [MVP]
+- **AI coach** — one honest, actionable nudge (never a dashboard or guilt). [MVP] On **load**, the
+  coach **proposes / applies-on-request, never overrides** a user dial
+  ([ADR-0011](../adr/0011-load-control-auto-mix-propose-size.md)): it may apply a change the user asks
+  for ("ease off") and runs the opt-in check-in, but it has **no private knobs** (all load routes
+  through the daily budget + proportion + intents). It stays a **single nudge** — a load-*proposal*
+  surface + any notification is deferred (Phase B + #110); the engine's mix changes are silent.
 
 ## Open questions → recommendations
 - **The "extra study" overflow when all tasks are done — better way? bad to have? still working?**
