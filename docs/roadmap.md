@@ -36,8 +36,9 @@ model before we add features, so we build on the right shape.
       `StudyGoal→Deck` (providers / `/debrief/:deckId` / `_GoalLane`; keep `study-goals.json`);
       **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
     - **② Structural (behavior) — "target lives on the aim"** (the model is [ADR-0006](adr/0006-deck-and-aims-model.md)).
-      **Status: S1–S4 ✅ (readers now honor per-aim, byte-identical; suite 969→981); S5 (writer-flip) is
-      the one remaining slice.** Key finding (2026-09-22 investigation,
+      **Status: S1–S5 ✅ DONE — the deck/aims model is fully realized in code (the deck is a pure lens;
+      suite 969→996). Every slice shipped byte-identical for a single aim (#8). Post-S5 review
+      follow-ups are filed (#111–#113, below).** Key finding (2026-09-22 investigation,
       3-agent map): the system is consistent *today* only because every aim inherits the deck's slots.
       So the safe order is **make every reader honor per-aim first (while aims still inherit →
       byte-identical), then flip the writers + migrate + delete the deck slots.** Deck-slot removal
@@ -105,7 +106,7 @@ model before we add features, so we build on the right shape.
           (non-rescheduling — fsrs-exam-targeting), reusing the existing non-grading session infra
           (gym / practice). This is how "see them again and again today" is served FSRS-safely.
           Not built yet; lands with the cram-vs-durable work (S5 + #103).
-      - **S5 — the writer-flip (in progress; the biggest, most coupled slice).** Surface + coupling
+      - **S5 — the writer-flip ✅ DONE (2026-09-24; the biggest, most coupled slice).** Surface + coupling
         re-mapped 2026-09-23 (3-agent deep investigation). **S5a ✅** (migration `foldDeckSlotsIntoAims`,
         byte-identical) + **S5b ✅** (readers resolve per-aim; deck slots UNREAD) · **S5c ✅** (`deadline`
         round-arg sweep) · **S5d ✅** (peripheral writers + label-readers) · **S5e-1 ✅** (read-only
@@ -198,8 +199,29 @@ model before we add features, so we build on the right shape.
           design revisit.
       - **P0 ✅ (#102) deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilt `Deck(...)` from
         scratch, silently dropping `aims` + target slots on every edit; fixed to `existing.copyWith(...)`.
-      - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
-        aims round-shaped until decided; don't build ahead.
+      - **Post-S5 adversarial review ✅ (2026-09-24)** — a 4-lens review of the shipped reframe.
+        *Fixed in the pass (5 commits, suite 996 green):* a **deck-list data-loss bug** (one corrupt
+        `_meta` row made `DeckStore.load` return `[]` → wiped every deck; now per-entry-resilient +
+        type-tolerant parse); a **past-dated pending round mis-classified `infeasible`** (→ open-ended,
+        so a done-but-unlogged interview no longer hijacks the daily plan); the **Home / lanes / prep
+        countdowns read the always-null `target.interviewDate`** (→ `Deck.soonestAimDate`); the aim
+        editor's **date-clear dropped a typed round's type/notes**; **aim-row a11y**; and deleted dead
+        code (`interview_card.dart`, `Aim.normalized`) + corrected stale deck/aims docs. *Filed as
+        follow-ups (do NOT drop — the first is release-relevant):*
+        - **#111 (P1) — live-interview outcome logging is unreachable.** The aims row routes a LIVE aim
+          to the knob editor; the interview sheet (log outcome / advance rounds / archive / resume) is
+          gated behind `isEnded`, so a planned interview can never be advanced or ended. The fix
+          contradicts **ADR-0009 §3** (row→editor is ADR-pinned + test-locked) → needs an **ADR-0009
+          amendment**, not a cleanup edit. *(interview_card.dart, a card→sheet row, was deleted as dead
+          — git history has it if the fix wants it.)*
+        - **#112 — headline readiness omits `tierWeights`** that the ladder/forecast pass
+          (`deckReadiness.scoreFor` vs `computeReadinessForTarget`) → the headline band and the ladder
+          can disagree (~15pt). Changes user-facing numbers; reconcile so they agree for a single aim
+          (S4's promise) + add a test.
+        - **#113 — thread the readiness forecast per-deck** — a non-active deck currently inherits the
+          active deck's card sliver in its forecast/feasibility (multi-deck only; already documented).
+      - *Open decision (parked; S5 shipped round-shaped):* **rounds → milestones** (scheduler.md Rec,
+        not yet Accepted) — keep aims round-shaped until decided; don't build ahead.
     - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,
       never a domain-weight swing (a documented past inversion).
     - *Competing aims* (e.g. backend general aim + frontend interviews): weakest-link readiness (never
@@ -209,9 +231,10 @@ model before we add features, so we build on the right shape.
 - **1b · IA: vault → deck → home** (→ deck_selection, home): deck-selection as the vault-level hub
   (landing when >1 deck); single-deck degradation **with an escape hatch** (fixes the pause-strands
   bug); deck-scoped Home ("Home" stays the name).
-- **1c · The Aims surface** (→ your_target, scheduler): unify Your Target + Scheduler + the
-  interview list into **one per-deck Aims surface** (knobs + dates + status + zone-calendar); fix
-  reachability (#90 debrief; the buried calendar); decouple aims from deck creation.
+- **1c · The Aims surface ✅ (delivered via S5e — see ②Structural)** (→ your_target, scheduler):
+  Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
+  status + zone-calendar), with aims decoupled from deck creation. *Residual:* **#90** debrief
+  reachability (deferred to the behavioral pass) and **#111** live-aim routing.
 - **1d · Deck/vault scope split** (→ browse, analytics, settings): deck-scoped Browse / Analytics /
   deck-settings *inside* a deck; vault Settings + a light cross-deck glance at the vault level.
   *Absorbs settings-IA #85.*
