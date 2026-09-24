@@ -125,11 +125,12 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         // The unified per-deck Aims surface (S5e) — weakest-link readiness, the
         // aims list (subsumes the old upcoming-interviews screen), + the planner.
         GoRoute(path: '/aims', builder: (_, __) => const AimsScreen()),
-        // Post-interview debrief for one goal (`/debrief/goal-123`).
+        // Post-interview debrief for one aim (`/debrief/aim-123`); reached from the
+        // interview sheet (#90).
         GoRoute(
-          path: '/debrief/:deckId',
+          path: '/debrief/:aimId',
           builder: (_, state) =>
-              InterviewDebriefScreen(deckId: state.pathParameters['deckId']!),
+              InterviewDebriefScreen(aimId: state.pathParameters['aimId']!),
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => _ShellScaffold(shell: shell),

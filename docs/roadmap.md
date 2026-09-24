@@ -241,8 +241,8 @@ model before we add features, so we build on the right shape.
   bug); deck-scoped Home ("Home" stays the name).
 - **1c · The Aims surface ✅ (delivered via S5e — see ②Structural)** (→ your_target, scheduler):
   Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
-  status + zone-calendar), with aims decoupled from deck creation. *Residual:* **#90** debrief
-  reachability (deferred to the behavioral pass). *(#111 live-aim routing ✅ fixed 2026-09-24.)*
+  status + zone-calendar), with aims decoupled from deck creation. *(#111 live-aim routing + #90
+  debrief reachability both ✅ fixed 2026-09-24 — see 1h.)*
 - **1d · Deck/vault scope split** (→ browse, analytics, settings): deck-scoped Browse / Analytics /
   deck-settings *inside* a deck; vault Settings + a light cross-deck glance at the vault level.
   *Absorbs settings-IA #85.*
@@ -254,9 +254,22 @@ model before we add features, so we build on the right shape.
 - **1g · Shared authoring + query API** (→ deck_creation, browse): one card-authoring entry API and
   one query/lens API (Browse filters == the lens language); the scoped card-explorer for building a
   lens.
-- **1h · Engine conformance + bugs** (→ architecture invariants): #91 practice-content author-or-
-  retire; #58 overflow; #87 hygiene (CardCache, flow_access, recall-predicate, SD hardcode,
-  stem-fn); verify #90 / calendar / dev-clock fixed.
+- **1h · Engine conformance + bugs** (→ architecture invariants). *Mapped 2026-09-24 (Explore agent):*
+  - **#90 debrief ✅ DONE (2026-09-24)** — the built-but-orphaned `/debrief` screen is now wired from
+    the interview sheet: a live **occurred** interview gets an inline "Debrief with coach" button, an
+    **ended** one gets a "Debrief" overflow item. Also fixed the roadmap-flagged mis-named route param
+    (`/debrief/:deckId` → `:aimId`; it was always an `Aim.id`). + 2 entry-point tests.
+  - **calendar + dev-clock ✅ verified** — both correct, no bugs (ZoneCalendar; the Settings time-travel
+    dev clock is persisted + guarded).
+  - **#91 (practice content) — DEFERRED (decision).** `/practice/:domain` is wired + reachable (Home
+    extra-practice when clear · interview-sheet button · quiz-end) and degrades to concept re-exposure;
+    only the *authored interview-question content* is thin. Authoring it (vault content) vs retiring is a
+    product/content call, gates **#58**; left as-is (graceful).
+  - **#58 (overflow) — DEFERRED**, gated by #91: the "day is clear → optional extra practice" affordance
+    is built; the deeper under-fill backfill + effectiveness research is the unbuilt part (near #104).
+  - **#87 hygiene — mostly done / #32-coupled.** CardCache, flow_access, the SD *constants*, and (the
+    absent) "stem-fn" are all fine; the one residual — the `type == flashcard` concept predicate — is a
+    type-branch that needs #32's concept-vs-applied model call (tracked TODO), so it stays with #32.
 - **Dropped here (contradicts the guardrail):** **#50 second-brain S2/S3** — Onyx is *not* a second
   brain. The shipped card-links backlinks stay as a minor feature; the notes/graph expansion is out.
 

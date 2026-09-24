@@ -204,6 +204,45 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an occurred interview offers a coach debrief (#90)',
+      (tester) async {
+    // A past-dated round → "occurred" → the inline "Debrief with coach" entry
+    // point (unreachable before #90).
+    final google = _aim('g', 'Google', date: DateTime(2020, 1, 1));
+    await tester.pumpWidget(_app(
+      aims: [google],
+      feas: [
+        (
+          aim: google,
+          feasibility: const AimFeasibility(status: FeasibilityStatus.openEnded)
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Google'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Debrief with coach'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an ended interview offers Debrief in the overflow (#90)',
+      (tester) async {
+    await tester.pumpWidget(_app(
+      aims: [_aim('g', 'Google', status: InterviewStatus.rejected)],
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Past (1)')); // expand the Past section
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Google')); // ended → interview sheet
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz)); // header overflow
+    await tester.pumpAndSettle();
+
+    expect(find.text('Debrief'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an open-ended aim reads as coverage, never a ready-by',
       (tester) async {
     final meta = _aim('m', 'Meta'); // no rounds → open-ended

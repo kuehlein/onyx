@@ -94,6 +94,15 @@ class _InterviewSheet extends ConsumerWidget {
     // a time, never stacked (ADR-0009).
     void editAim() => Navigator.pop(context, true);
 
+    // Reflect with the coach → it logs the outcome + reweights the plan toward
+    // what came up (#90). Leave the sheet, then push the debrief SCREEN (a route,
+    // not a sheet); capture the router first so the pop doesn't defunct the context.
+    void debrief() {
+      final router = GoRouter.of(context);
+      Navigator.pop(context);
+      router.push('/debrief/${aim.id}');
+    }
+
     final title = aim.companyName.isEmpty
         ? (target?.label ?? 'Interview')
         : aim.companyName;
@@ -111,6 +120,9 @@ class _InterviewSheet extends ConsumerWidget {
               ended: ended,
               onReschedule: cur != null ? reschedule : null,
               onEdit: ended ? null : editAim,
+              // Ended aims debrief from the overflow; a live occurred one has the
+              // inline "Debrief with coach" button instead.
+              onDebrief: ended ? debrief : null,
               onArchive: () => save(archiveInterview(aim)),
               onReopen: () => save(reopenInterview(aim)),
               onDelete: confirmDelete,
@@ -147,6 +159,16 @@ class _InterviewSheet extends ConsumerWidget {
                     onRejected: () => end(InterviewStatus.rejected),
                   ),
                   const SizedBox(height: Dim.space3),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: debrief,
+                      icon: const Icon(Icons.rate_review_outlined,
+                          size: Dim.iconMd),
+                      label: const Text('Debrief with coach'),
+                    ),
+                  ),
+                  const SizedBox(height: Dim.space2),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -188,6 +210,7 @@ class _InterviewSheet extends ConsumerWidget {
     required bool ended,
     required VoidCallback? onReschedule,
     required VoidCallback? onEdit,
+    required VoidCallback? onDebrief,
     required VoidCallback onArchive,
     required VoidCallback onReopen,
     required VoidCallback onDelete,
@@ -201,6 +224,8 @@ class _InterviewSheet extends ConsumerWidget {
             onReschedule?.call();
           case 'edit':
             onEdit?.call();
+          case 'debrief':
+            onDebrief?.call();
           case 'archive':
             onArchive();
           case 'reopen':
@@ -218,6 +243,8 @@ class _InterviewSheet extends ConsumerWidget {
         if (!ended)
           const PopupMenuItem(value: 'archive', child: Text('Archive')),
         if (ended) const PopupMenuItem(value: 'reopen', child: Text('Reopen')),
+        if (onDebrief != null)
+          const PopupMenuItem(value: 'debrief', child: Text('Debrief')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     );

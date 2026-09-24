@@ -13,13 +13,14 @@ import '../../shared/providers/interview_debrief.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
 
-/// The post-interview debrief chat for one prep goal: say how it went, and the
-/// coach records the outcome + adjusts the plan toward what you were weak on
-/// (approve-then-apply). Reached from a goal in the upcoming-interviews list.
+/// The post-interview debrief chat for one aim: say how it went, and the coach
+/// records the outcome + adjusts the plan toward what you were weak on
+/// (approve-then-apply). Reached from the interview sheet (#90).
 class InterviewDebriefScreen extends ConsumerStatefulWidget {
-  const InterviewDebriefScreen({required this.deckId, super.key});
+  const InterviewDebriefScreen({required this.aimId, super.key});
 
-  final String deckId;
+  /// The [Aim.id] being debriefed (on the active deck).
+  final String aimId;
 
   @override
   ConsumerState<InterviewDebriefScreen> createState() =>
@@ -30,9 +31,8 @@ class _InterviewDebriefScreenState
     extends ConsumerState<InterviewDebriefScreen> {
   Future<void> _apply() async {
     final messenger = ScaffoldMessenger.of(context);
-    final aim = await ref
-        .read(interviewDebriefProvider(widget.deckId).notifier)
-        .apply();
+    final aim =
+        await ref.read(interviewDebriefProvider(widget.aimId).notifier).apply();
     if (aim == null) return;
     messenger.showSnackBar(
         const SnackBar(content: Text('Debrief saved — your plan is updated.')));
@@ -42,7 +42,7 @@ class _InterviewDebriefScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = ref.watch(interviewDebriefProvider(widget.deckId));
+    final state = ref.watch(interviewDebriefProvider(widget.aimId));
     final hasKey = ref.watch(claudeServiceProvider) != null;
 
     return Scaffold(
@@ -62,7 +62,7 @@ class _InterviewDebriefScreenState
                   ? _DebriefCard(state.result!, _apply)
                   : null,
               onSend: (t) => ref
-                  .read(interviewDebriefProvider(widget.deckId).notifier)
+                  .read(interviewDebriefProvider(widget.aimId).notifier)
                   .send(t),
             ),
     );

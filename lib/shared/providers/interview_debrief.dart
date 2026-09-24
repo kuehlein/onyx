@@ -55,14 +55,14 @@ class InterviewDebrief extends _$InterviewDebrief {
   static const _model = 'claude-sonnet-4-6';
 
   @override
-  InterviewDebriefState build(String deckId) => const InterviewDebriefState();
+  InterviewDebriefState build(String aimId) => const InterviewDebriefState();
 
-  /// The interview being debriefed — looked up by id on the active study goal
-  /// (Phase B). [deckId] is the [Aim.id].
+  /// The interview being debriefed — looked up by [aimId] on the active deck's
+  /// aims (Phase B).
   Future<Aim?> _aim() async {
     final goal = await ref.read(activeDeckProvider.future);
     for (final iv in goal.aims) {
-      if (iv.id == deckId) return iv;
+      if (iv.id == aimId) return iv;
     }
     return null;
   }
