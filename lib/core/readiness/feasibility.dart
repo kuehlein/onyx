@@ -66,6 +66,14 @@ AimFeasibility classifyAimFeasibility({
   }
   final readyBy = forecast.currentReadyDate;
   final daysLeft = date.difference(forecast.today).inDays;
+  if (daysLeft < 0) {
+    // The date has already passed but the round is still pending — the event
+    // happened and its outcome just isn't logged yet (awaiting debrief, #90). It's
+    // not a FUTURE deadline, so it must never read as `infeasible` (which would max
+    // this aim's daily-plan urgency for a done interview). Judge it by coverage,
+    // exactly like an open-ended aim.
+    return const AimFeasibility(status: FeasibilityStatus.openEnded);
+  }
   final required = forecast.requiredPerDayFor(daysLeft);
   final FeasibilityStatus status;
   if (forecast.alreadyReady) {

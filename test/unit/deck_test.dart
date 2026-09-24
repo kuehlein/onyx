@@ -158,5 +158,37 @@ void main() {
       expect(
           () => Deck.fromJson({'id': '', 'name': 'x'}), throwsFormatException);
     });
+
+    test('soonestAimDate is the soonest live-aim round; skips paused/ended',
+        () {
+      final today = DateTime(2026, 1, 1);
+      Deck deck(List<Aim> aims) =>
+          Deck(id: 'd', name: 'D', templateId: 't', aims: aims);
+      InterviewRound r(String id, DateTime date) =>
+          InterviewRound(id: id, number: 1, date: date);
+
+      // Soonest across two active aims.
+      expect(
+        deck([
+          Aim(id: 'a', rounds: [r('a1', DateTime(2026, 5, 1))]),
+          Aim(id: 'b', rounds: [r('b1', DateTime(2026, 3, 1))]),
+        ]).soonestAimDate(today),
+        DateTime(2026, 3, 1),
+      );
+      // Paused + ended aims are skipped (their earlier dates don't win).
+      expect(
+        deck([
+          Aim(id: 'p', active: false, rounds: [r('p1', DateTime(2026, 2, 1))]),
+          Aim(
+              id: 'e',
+              status: InterviewStatus.rejected,
+              rounds: [r('e1', DateTime(2026, 2, 15))]),
+          Aim(id: 'a', rounds: [r('a1', DateTime(2026, 4, 1))]),
+        ]).soonestAimDate(today),
+        DateTime(2026, 4, 1),
+      );
+      // No live dated aim → null (open-ended / 0-aim).
+      expect(deck([const Aim(id: 'x')]).soonestAimDate(today), isNull);
+    });
   });
 }

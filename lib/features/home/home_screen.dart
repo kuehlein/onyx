@@ -239,11 +239,15 @@ class _TargetCard extends ConsumerWidget {
     final unset = target == null ||
         ref.watch(activeTargetIsSetProvider).asData?.value != true;
 
+    // Countdown from the soonest upcoming aim round (S5 — dates live on aims now;
+    // the old `target.interviewDate` is structurally always null post-reframe).
     int? daysToGo;
-    final d = target?.interviewDate;
-    if (!unset && d != null && clock != null) {
-      daysToGo =
-          DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
+    if (goal != null && clock != null) {
+      final d = goal.soonestAimDate(clock.today());
+      if (d != null) {
+        daysToGo =
+            DateTime(d.year, d.month, d.day).difference(clock.today()).inDays;
+      }
     }
     final copy = targetCardCopy(
       vocab: vocab,

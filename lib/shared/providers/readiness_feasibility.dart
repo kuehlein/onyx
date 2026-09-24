@@ -44,7 +44,9 @@ Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
     if (!aim.active) continue;
     final date = aim.currentRound()?.date;
     if (date == null) {
-      // Open-ended aim → coverage, not a ready-by (no forecast needed).
+      // Open-ended aim → coverage, not a ready-by (no forecast needed). A PAST-dated
+      // round is handled downstream in [classifyAimFeasibility] (it becomes
+      // open-ended too, not infeasible — see there).
       out.add((aim: aim, feasibility: classifyAimFeasibility(date: null)));
       continue;
     }

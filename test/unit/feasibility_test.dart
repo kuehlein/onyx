@@ -76,4 +76,21 @@ void main() {
     expect(f.requiredPerDay, isNull);
     expect(f.needsAttention, isTrue);
   });
+
+  test('a past date on a still-pending round → open-ended, never infeasible',
+      () {
+    // The event already happened; its outcome just isn't logged (awaiting
+    // debrief, #90). A negative days-left must NOT read as infeasible — that would
+    // max the aim's daily-plan urgency for a done interview. Even with a forecast
+    // that would otherwise be hopeless, a past date is coverage-only.
+    final f = classifyAimFeasibility(
+      date: today.subtract(const Duration(days: 5)),
+      forecast: forecast(
+          start: 0.3,
+          currentPerDay: 8,
+          curve: const [PacePoint(8, 30), PacePoint(16, 25)]),
+    );
+    expect(f.status, FeasibilityStatus.openEnded);
+    expect(f.needsAttention, isFalse);
+  });
 }

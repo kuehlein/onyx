@@ -68,6 +68,19 @@ class Deck {
   Iterable<Card> select(Iterable<Card> cards) =>
       cards.where(membership.matches);
 
+  /// The soonest upcoming round date across this deck's **live** (active, not-ended)
+  /// aims, or null — the deck's effective "deadline" now that dates live on aims
+  /// (S5). Used by Home's target-card countdown + the lanes-hub lane subtitle.
+  DateTime? soonestAimDate(DateTime today) {
+    DateTime? soonest;
+    for (final a in aims) {
+      if (!a.active || a.status.isEnded) continue;
+      final d = a.nextRoundDate(today);
+      if (d != null && (soonest == null || d.isBefore(soonest))) soonest = d;
+    }
+    return soonest;
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
