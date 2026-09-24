@@ -257,10 +257,15 @@ model before we add features, so we build on the right shape.
   member-scoped `deckX(deckId)` (via `deckMemberCardIds` = `deck.select`); only `studyConsistency`
   stays vault-wide (a cross-deck habit — per-deck would need per-deck study-day tracking, a small
   follow-up). The **light cross-deck glance** at the vault level is served by the `/decks` lanes hub
-  (per-deck readiness + budget + countdown). **Deferred (user direction 2026-09-24):** the Settings
-  vault/deck split + **per-deck config-driven flow settings** (all flows configurable per deck, exposed
-  only when the deck declares them — supersedes the "data-global" interim) → **#114**; the settings
-  prune + bug-fix → **#115**; **#85** folds into #114.
+  (per-deck readiness + budget + countdown). **Deferred → #114/#115 (user direction 2026-09-24):** the
+  Settings vault/deck split + workload model. **#114 was REFRAMED — [ADR-0010](adr/0010-workload-budget-and-proportions.md):**
+  workload is NOT hand-tuned/per-deck; the user sets only the **vault daily budget** + each deck's
+  **proportion** (`budgetWeight`), and the engine derives the study mix (aims + FSRS + urgency), with one
+  automatic new-material ceiling. The manual new/day + algo min/max knobs are **removed**; gym → vault;
+  a **config-driven deck-flow-settings** scaffold exposes a flow's non-load knobs only when the deck
+  declares it (none today). **Phase A (now):** remove the knobs (fixed guardrails = today's defaults,
+  byte-identical) + surface budget/proportion + Settings vault/deck regroup (folds **#85**). **Phase B
+  (with #32 + #106):** derive the guardrails. Settings prune + bug-fix → **#115**.
 - **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
   *Resolves #86.*
 - **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible

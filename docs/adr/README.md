@@ -36,3 +36,4 @@ belong in code comments + the PR description, not an ADR.
 | [0007](0007-daily-plan-allocation-across-aims.md) | Daily-plan allocation across aims (feasibility urgency, soft fair-queuing) | Accepted |
 | [0008](0008-cram-vs-durable-fsrs-safe-deadlines.md) | Cram-vs-durable: honor deadlines without corrupting FSRS | Accepted |
 | [0009](0009-aims-surface-design.md) | The Aims surface (S5e): design + the target-writer flip | Accepted |
+| [0010](0010-workload-budget-and-proportions.md) | Study workload: user sets budget + proportions; the engine derives the mix | Accepted |
