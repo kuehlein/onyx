@@ -169,6 +169,34 @@ model before we add features, so we build on the right shape.
           the parked `rounds → milestones` decision; terminology via `Vocabulary` (no hardcoded
           "interview"); hold **invariant #8** (single-aim byte-identical) and **#6** (weakest-link)
           every slice; deck stays a **pure lens** (decouple deck-creation from aim-setting, Accepted).
+      - **Behavioral & readiness model — design pass (2026-09-23, 4-agent + adversary investigation).**
+        **Conclusion — decided, don't re-litigate:** the behavioral flow stays **as-is** (a separate
+        last-mile coverage×freshness readout in the interview-prep hub; task #59). We **rejected** —
+        readiness-gated flows, a gated "interview-readiness" **aim**, and **splitting** readiness into two
+        top-level numbers. Reasons (all independently reached): (a) *math* — the split rolls recall + transfer
+        into two cross-domain aggregates then re-combines, which **inflates** the number (worked example:
+        0.71 vs the honest per-domain-conjunctive 0.55) and re-introduces the cross-domain masking that
+        weakest-link (#6) exists to prevent; (b) *generality* — the gate/latch is SWE-shaped (native only to
+        P4; fails "serve all six with equal dignity"); (c) *SoT cost* — it would rewrite ADR-0006/0009, the
+        glossary Aim, and break #8, for a worse number; (d) *research* — a **soft** floor is fine but a **hard
+        lock demotivates**; two numbers only help if computed honestly (the two-tone recall/proven bar already
+        shows the distinction). The genuine need ("behavioral prep needs runway") is a **nudge**, not a model
+        change — and that nudge **already exists** (`coach_update.behavioralDue`, forecast-driven, task #60).
+        - **Follow-ups (small, non-blocking):**
+          - **Behavioral nudge refinement (③):** de-hardcode the SWE constants `behavioralForecastDays=35` /
+            `behavioralWindowDays=28` from `coach_update.dart` → the SWE template (optional, assessment-only,
+            default-absent, reusing the `hasAssessment` seam); enrich the "about ready" nudge copy with the
+            apply-orientation ("start applying — résumé, LinkedIn, portfolio"). Content = template data.
+          - **Behavioral hygiene:** `Story.lastRehearsed` is **dead** (parsed/serialized, never written/read)
+            — delete it, or wire it (a mock stamps the story it exercised; today the mock is competency-keyed
+            and never records which story, so freshness is competency-level only). Fold into #87.
+          - **Glue / career-coach layer:** deferred by decision — only the safe-kernel **in-app** apply nudge
+            (above); the fuller out-of-app career/next-steps coach is a **separate identity decision**, not now
+            (SoT currently fences it: "not a second brain / authoring studio", anti-guilt).
+          - **Artifact-flow seam (Pending, build-when-consumed):** STAR story bank is the only flow that
+            produces a durable user **bank** (coverage×freshness lifecycle, vault user-land markdown, non-FSRS);
+            n=1 + internally unsettled, so **don't** generalize now — document the seam (a `FlowSpec` could one
+            day declare `produces: ArtifactSpec`) and generalize when a 2nd artifact-flow appears.
       - **P0 ✅ (#102) deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilt `Deck(...)` from
         scratch, silently dropping `aims` + target slots on every edit; fixed to `existing.copyWith(...)`.
       - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
