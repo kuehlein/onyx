@@ -18,6 +18,7 @@ import '../../shared/providers/today_progress.dart';
 import '../../shared/providers/vault.dart';
 import 'coach_badge.dart';
 import 'deck_editor_sheet.dart';
+import 'deck_settings_sheet.dart';
 import 'lanes_hub.dart';
 import 'today_flows.dart';
 import 'today_ring.dart';
@@ -80,6 +81,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // (even single-deck, so you can add/switch/resume), a secondary action
         // rather than a prominent back arrow that reads as "leaving".
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Deck settings',
+            onPressed: () => showDeckSettingsSheet(context),
+          ),
           IconButton(
             icon: const Icon(Icons.layers_outlined),
             tooltip: 'Decks',

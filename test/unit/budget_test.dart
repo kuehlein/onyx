@@ -59,4 +59,44 @@ void main() {
       );
     });
   });
+
+  group('deckAllocationWarning', () {
+    test('below the engagement floor → tooLittle', () {
+      expect(
+          deckAllocationWarning(allocatedMinutes: 10, hasLongSessions: false),
+          DeckAllocationWarning.tooLittle);
+    });
+
+    test('a deck with long sessions under a session cost → longSessionWontFit',
+        () {
+      expect(
+        deckAllocationWarning(
+            allocatedMinutes: 25,
+            hasLongSessions: true,
+            longSessionMinutes: 40),
+        DeckAllocationWarning.longSessionWontFit,
+      );
+    });
+
+    test('enough time, or no long sessions → none', () {
+      // No long-session flow: 25 min is fine (above the floor).
+      expect(
+          deckAllocationWarning(allocatedMinutes: 25, hasLongSessions: false),
+          DeckAllocationWarning.none);
+      // A long session fits at 45 >= 40.
+      expect(
+        deckAllocationWarning(
+            allocatedMinutes: 45,
+            hasLongSessions: true,
+            longSessionMinutes: 40),
+        DeckAllocationWarning.none,
+      );
+    });
+
+    test('the engagement floor takes precedence over the long-session check',
+        () {
+      expect(deckAllocationWarning(allocatedMinutes: 5, hasLongSessions: true),
+          DeckAllocationWarning.tooLittle);
+    });
+  });
 }
