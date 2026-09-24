@@ -294,11 +294,20 @@ model before we add features, so we build on the right shape.
     insufficient. **Rejected outright:** the engine auto-writing/pushing SIZE (re-creates the autonomy
     erosion ADR-0010 removed — it can't see real-world urgency) and a proactive pre-deadline taper
     (fights ADR-0007 urgency). Tracked on **#114** (+ #110).
-- **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
-  *Resolves #86.*
-- **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible
-  + mastered-badged sections, per-deck `neverQuizzed` + per-card `quizzable`, stub cards for broken
-  links.
+- **1e · Onboarding — ✅ DONE (verified 2026-09-24; the MVP was already built).** The `/welcome`
+  router gate redirects until a study folder is configured (`router.dart`); `FolderSourceBody`
+  (shared by `/welcome` + the Settings sheet) offers **Choose a folder** / **Create one for me** — the
+  create path scaffolds + seeds a subject-neutral **starter deck** (`starter_deck.dart`, the "two taps
+  to first review" non-negotiable); native-pick is capability-gated off on mobile; the **pull** on-ramp
+  is correctly cloud-absent; deck creation exists (Settings → Decks). #86's folder-first-vs-three-choices
+  tension is resolved in the SoT (folder first; on-ramps inside step 2). Tests: `onboarding_test.dart`,
+  `vault_scaffold_test.dart`. *Resolves #86.* Parked non-MVP: QR class/org quick-setup (Phase 5).
+- **1f · Card model — NEXT (partially built; needs a unify/gap-scoping pass)** (→ card): the SoT wants a
+  **multi-modal card** (one surface, modes: view / study / authoring / stub), collapsible +
+  mastered-badged sections, per-deck `neverQuizzed` + per-card `quizzable`, stub cards for broken links.
+  Today those live SPREAD across `browse/card_detail_screen`, `editor/card_editor_screen`, learn/quiz,
+  and `browse/unresolved_links_screen` rather than a unified card. Scope the real gap against `card.md`
+  before building (the roadmap line predates the current code — verify like 1d/1e did).
 - **1g · Shared authoring + query API** (→ deck_creation, browse): one card-authoring entry API and
   one query/lens API (Browse filters == the lens language); the scoped card-explorer for building a
   lens.
