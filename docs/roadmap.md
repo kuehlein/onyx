@@ -250,9 +250,17 @@ model before we add features, so we build on the right shape.
   Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
   status + zone-calendar), with aims decoupled from deck creation. *(#111 live-aim routing + #90
   debrief reachability both ✅ fixed 2026-09-24 — see 1h.)*
-- **1d · Deck/vault scope split** (→ browse, analytics, settings): deck-scoped Browse / Analytics /
-  deck-settings *inside* a deck; vault Settings + a light cross-deck glance at the vault level.
-  *Absorbs settings-IA #85.*
+- **1d · Deck/vault scope split — ✅ Browse/Analytics scoped (2026-09-24); Settings → #114/#115**
+  (→ browse, analytics, settings). **Browse** is now **deck-scoped** — it filters by the active deck's
+  membership (whole-vault default deck unchanged; a lens with no members gets its own empty state).
+  **Analytics/Insights** was ALREADY deck-scoped: its top-level providers are active-deck wrappers over
+  member-scoped `deckX(deckId)` (via `deckMemberCardIds` = `deck.select`); only `studyConsistency`
+  stays vault-wide (a cross-deck habit — per-deck would need per-deck study-day tracking, a small
+  follow-up). The **light cross-deck glance** at the vault level is served by the `/decks` lanes hub
+  (per-deck readiness + budget + countdown). **Deferred (user direction 2026-09-24):** the Settings
+  vault/deck split + **per-deck config-driven flow settings** (all flows configurable per deck, exposed
+  only when the deck declares them — supersedes the "data-global" interim) → **#114**; the settings
+  prune + bug-fix → **#115**; **#85** folds into #114.
 - **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
   *Resolves #86.*
 - **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible
