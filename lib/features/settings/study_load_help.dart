@@ -36,33 +36,40 @@ class _StudyLoadHelp extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(
                   Dim.space5, Dim.space3, Dim.space5, Dim.space6),
               children: [
-                const _H('The five activities'),
+                const _H('What you set'),
                 _P(
-                    'You make progress on five fronts. They cost very different '
-                    'amounts of time:',
+                    'Just two things — the app works out the rest of the day for '
+                    'you:',
                     muted),
                 const SizedBox(height: Dim.space2),
                 const _Bullet(
-                    'Learn — new concept cards. Quick each, but this is the '
-                    'hidden load dial: every new card creates a tail of future '
-                    'reviews.'),
+                    'Daily study time — the one honest lever: how long you want '
+                    'to study each day. The app eases you in and ramps up '
+                    'automatically as the habit holds.'),
                 const _Bullet(
-                    'Review — concept cards coming due. Seconds each; the count '
-                    'is set by FSRS, not by you.'),
-                const _Bullet(
-                    'Algorithms — the time sink. A fresh solve is 20–40 min; an '
-                    'explain is ~5 min and phone-doable.'),
-                const _Bullet(
-                    'Mock interviews — the applied test. ~20–40 min; you start '
-                    'these yourself.'),
-                const _Bullet(
-                    'Interview prep — set a target/date so the rest aims at it.'),
+                    'Each deck’s share — if you’re studying more than one thing, '
+                    'how to split the day between them.'),
                 const SizedBox(height: Dim.space5),
-                const _H('A start-slow ramp'),
+                const _H('What the app decides for you'),
                 _P(
-                    'The app eases you in and ramps automatically as the week '
-                    'holds (see the guardrail) — you set the daily budget, it '
-                    'grows the load. The shape it targets:',
+                    'From your daily time, your aims and any deadlines, and how '
+                    'your recall is going, the app fills each day with the right '
+                    'mix — clearing what’s due to review first, then new material '
+                    'and practice, weighted toward whatever’s most urgent. You '
+                    'never hand-tune how many of each.',
+                    muted),
+                const SizedBox(height: Dim.space3),
+                _P(
+                    'New material has an automatic ceiling. Taking on too much at '
+                    'once spikes your future review load and hurts recall, so the '
+                    'app holds new material to a sustainable rate — and eases it '
+                    'further on its own when you fall behind.',
+                    muted),
+                const SizedBox(height: Dim.space5),
+                const _H('The start-slow ramp'),
+                _P(
+                    'The day starts short and grows to your full budget over about '
+                    'a week of steady days — a missed day barely dents it:',
                     muted),
                 const SizedBox(height: Dim.space3),
                 const _RampTable(),
@@ -70,19 +77,18 @@ class _StudyLoadHelp extends StatelessWidget {
                 const _H('The one guardrail'),
                 _P(
                     'Let recent review success be your gauge. Aim for ~90%. If it '
-                    'holds and reviews aren’t piling up, you have room to add a '
-                    'little. If it drops below ~80% or a backlog builds, hold or ease '
-                    'off — that’s the signal the load is too high. Chasing higher '
-                    'than ~90% isn’t worth it; it explodes the workload for little '
-                    'gain.',
+                    'holds and reviews aren’t piling up, you have room — nudge your '
+                    'daily time up. If it dips below ~80% or a backlog builds, the '
+                    'app automatically eases new material; clear your reviews '
+                    'first, and trim your daily time if it keeps feeling heavy. '
+                    'Chasing higher than ~90% isn’t worth it; it explodes the '
+                    'workload for little gain.',
                     muted),
                 const SizedBox(height: Dim.space4),
                 _P(
-                    'You set only the daily budget + each deck’s share; the app '
-                    'derives the mix (new vs. review vs. practice) from your aims, '
-                    'FSRS, and urgency, and ramps new material as your reviews '
-                    'hold. The coach on Home watches these signals and flags room '
-                    'or strain.',
+                    'The coach on Home watches these signals and lets you know '
+                    'when there’s room or strain — but it never changes your daily '
+                    'time on its own; that stays yours.',
                     muted),
               ],
             ),
@@ -122,17 +128,15 @@ class _RampTable extends StatelessWidget {
         borderRadius: Dim.brChip,
       ),
       columnWidths: const {
-        0: FlexColumnWidth(1.5),
-        1: FlexColumnWidth(1.1),
-        2: FlexColumnWidth(1.3),
-        3: FlexColumnWidth(1.1),
+        0: FlexColumnWidth(1.4),
+        1: FlexColumnWidth(1.6),
       },
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
-        row(['Phase', 'New/day', 'Algos', 'Mocks/wk'], header: true),
-        row(['Weeks 1–2', '8', '1–2', '0–1']),
-        row(['Weeks 3–4', '12', '2–4', '1']),
-        row(['Week 5+', '15–18', '2–6', '2']),
+        row(['Phase', 'Daily study time'], header: true),
+        row(['Days 1–2', '~90 min (ease-in)']),
+        row(['Building', 'ramping up']),
+        row(['~1 week+', 'your full budget']),
       ],
     );
   }
