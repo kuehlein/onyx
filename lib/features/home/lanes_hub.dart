@@ -88,10 +88,10 @@ class _DeckLane extends ConsumerWidget {
     final r = ref.watch(deckReadinessProvider(goal.id)).asData?.value;
     final clock = ref.watch(clockProvider).asData?.value;
 
+    final soonest = clock == null ? null : _soonestAimDate(goal, clock.today());
     final subParts = <String>[
       if (r != null) '${(r.overall * 100).round()}% ready',
-      if (goal.deadline case final d? when clock != null)
-        _countdown(d, clock.today()),
+      if (soonest != null && clock != null) _countdown(soonest, clock.today()),
     ];
 
     return Material(
@@ -181,6 +181,18 @@ class _PausedRow extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The soonest upcoming round date across a deck's live (active, not-ended) aims —
+/// the lane's "deadline" now that the deck carries no slot of its own (S5f).
+DateTime? _soonestAimDate(Deck goal, DateTime today) {
+  DateTime? soonest;
+  for (final a in goal.aims) {
+    if (!a.active || a.status.isEnded) continue;
+    final d = a.nextRoundDate(today);
+    if (d != null && (soonest == null || d.isBefore(soonest))) soonest = d;
+  }
+  return soonest;
 }
 
 String _countdown(DateTime deadline, DateTime today) {

@@ -175,14 +175,15 @@ Future<ReadinessTarget> activeTarget(Ref ref) async {
   return ref.watch(targetForDeckProvider(goal.id).future);
 }
 
-/// Whether the active goal has an explicitly-chosen target (vs the template's
-/// fallbacks) — drives the "Set your target" onboarding CTA. [activeTarget] always
-/// resolves null slots to fallbacks, so it can't answer this; the goal's null
-/// slots are the signal (Save writes all three together, so `levelId` is a
-/// faithful proxy).
+/// Whether the active deck has an aim set at all (vs a 0-aim coverage deck on the
+/// template fallbacks) — drives the "Set your target" onboarding CTA. Post-S5 the
+/// deck is a pure lens with no target slots of its own; **an active aim is the
+/// signal** (the migration folded any legacy deck target into a `'target'` aim).
 @riverpod
 Future<bool> activeTargetIsSet(Ref ref) async =>
-    (await ref.watch(activeDeckProvider.future)).levelId != null;
+    (await ref.watch(activeDeckProvider.future))
+        .aims
+        .any((a) => a.active && !a.status.isEnded);
 
 /// The ACTIVE goal's targeting — see [targetingForDeck]. Single default goal →
 /// identical to [targeting].

@@ -216,25 +216,24 @@ void main() {
     await db.close();
   });
 
-  test('activeTargetIsSet drives the "set your target" CTA off the goal slots',
+  test('activeTargetIsSet drives the "set your target" CTA off an active aim',
       () async {
     if (!_sqliteAvailable) return;
     final db = AppDatabase.withExecutor(NativeDatabase.memory());
     addTearDown(() => db.close());
 
-    // Bare default goal (null slots) → NOT set → Home shows "Set your target".
-    // (Regression: activeTarget fills template fallbacks, so an identity check
-    // against ReadinessTarget.fallback silently read as "already set".)
+    // Bare default deck (no aims) → NOT set → Home shows "Set your target".
+    // (Post-S5 the deck is a pure lens; an active aim is the signal, not a slot.)
     final bare = make(db, goals: [
       const Deck(id: 'default', name: 'All', templateId: 'swe'),
     ]);
     addTearDown(bare.dispose);
     expect(await bare.read(activeTargetIsSetProvider.future), isFalse);
 
-    // A goal with a chosen level → set.
+    // A deck with an active aim → set.
     final chosen = make(db, goals: [
       const Deck(
-          id: 'default', name: 'All', templateId: 'swe', levelId: 'senior'),
+          id: 'default', name: 'All', templateId: 'swe', aims: [Aim(id: 'a1')]),
     ]);
     addTearDown(chosen.dispose);
     expect(await chosen.read(activeTargetIsSetProvider.future), isTrue);
