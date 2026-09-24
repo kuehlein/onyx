@@ -192,21 +192,10 @@ model before we add features, so we build on the right shape.
         lock demotivates**; two numbers only help if computed honestly (the two-tone recall/proven bar already
         shows the distinction). The genuine need ("behavioral prep needs runway") is a **nudge**, not a model
         change — and that nudge **already exists** (`coach_update.behavioralDue`, forecast-driven, task #60).
-        - **Follow-ups (small, non-blocking):**
-          - **Behavioral nudge refinement (③):** de-hardcode the SWE constants `behavioralForecastDays=35` /
-            `behavioralWindowDays=28` from `coach_update.dart` → the SWE template (optional, assessment-only,
-            default-absent, reusing the `hasAssessment` seam); enrich the "about ready" nudge copy with the
-            apply-orientation ("start applying — résumé, LinkedIn, portfolio"). Content = template data.
-          - **Behavioral hygiene:** `Story.lastRehearsed` is **dead** (parsed/serialized, never written/read)
-            — delete it, or wire it (a mock stamps the story it exercised; today the mock is competency-keyed
-            and never records which story, so freshness is competency-level only). Fold into #87.
-          - **Glue / career-coach layer:** deferred by decision — only the safe-kernel **in-app** apply nudge
-            (above); the fuller out-of-app career/next-steps coach is a **separate identity decision**, not now
-            (SoT currently fences it: "not a second brain / authoring studio", anti-guilt).
-          - **Artifact-flow seam (Pending, build-when-consumed):** STAR story bank is the only flow that
-            produces a durable user **bank** (coverage×freshness lifecycle, vault user-land markdown, non-FSRS);
-            n=1 + internally unsettled, so **don't** generalize now — document the seam (a `FlowSpec` could one
-            day declare `produces: ArtifactSpec`) and generalize when a 2nd artifact-flow appears.
+        - **Follow-ups** (surfaced prominently under **Behavioral flow — follow-ups & revisit** in Phase 3,
+          tasks **#107–#109**): the nudge refinement (③ de-hardcode SWE timing + apply copy), the hygiene
+          (`Story.lastRehearsed` + story↔mock link), and the deferred glue/next-steps + artifact-generalization
+          design revisit.
       - **P0 ✅ (#102) deck-editor data-loss bug** — `deck_editor_sheet._save` rebuilt `Deck(...)` from
         scratch, silently dropping `aims` + target slots on every edit; fixed to `existing.copyWith(...)`.
       - *Open decision before S5:* **rounds → milestones** (scheduler.md Rec, not yet Accepted) — keep
@@ -247,7 +236,7 @@ model before we add features, so we build on the right shape.
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
   Needs a short research spike on the robust integration (Figma API / MCP + a UX-review agent).
 - a11y pass (large-text, tap-targets, semantics — carry the #78–#81 discipline forward).
-- **Foundations & evidence-base doc [new, your ask].** Dig up + formalize the learning-science
+- **Foundations & evidence-base doc [new, your ask; #110].** Dig up + formalize the learning-science
   principles the app rests on, **with citations**, so design decisions are grounded + auditable (and
   drift is harder to introduce). Cover at least: **Miller's pyramid** (knows → knows how → shows how →
   does), **retrieval practice / the testing effect**, **spaced repetition / FSRS**, **desirable
@@ -260,6 +249,19 @@ model before we add features, so we build on the right shape.
 
 ## Phase 3 — Finish the MVP
 The MVP-tagged stories, cloud still absent:
+- **Behavioral flow — follow-ups & revisit** *(from the 2026-09-23/24 behavioral/readiness design pass;
+  full record + rationale in Phase 1's S5 "Behavioral & readiness model" block).* The behavioral flow
+  ships and works as-is; these are the agreed next touches — **important to revisit**:
+  - **#107 — nudge refinement (③, near-term/small):** de-hardcode the SWE timing constants
+    (`behavioralForecastDays=35` / `behavioralWindowDays=28`) out of `coach_update.dart` → the SWE
+    template (optional, assessment-only, default-absent); enrich the "about ready" nudge with
+    apply-orientation copy. Content = template data, mechanic stays general.
+  - **#108 — hygiene (small):** `Story.lastRehearsed` is dead code; decide competency-level freshness
+    (delete it) vs per-story (wire a mock to stamp the story it exercised).
+  - **#109 — deferred design revisit (touches the SoT):** the **glue / real-world next-steps layer**
+    (out-of-app apply/register orientation — a deliberate identity decision the SoT currently fences) and
+    the **artifact-flow generalization** (the STAR "bank" is n=1; generalize `FlowSpec.produces` only
+    when a 2nd artifact-flow appears).
 - The daily loop + Aims + readiness end-to-end for one deck *and* several; the three on-ramps
   (existing lens / create cards / pull); light authoring; deck-scoped Browse/Analytics/Settings.
 - Feature calls (decide per story — some may slip to stretch): #22 quiz customization, #26 reader
