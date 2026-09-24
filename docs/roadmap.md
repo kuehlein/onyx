@@ -250,8 +250,8 @@ model before we add features, so we build on the right shape.
   Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
   status + zone-calendar), with aims decoupled from deck creation. *(#111 live-aim routing + #90
   debrief reachability both ✅ fixed 2026-09-24 — see 1h.)*
-- **1d · Deck/vault scope split — ✅ Browse/Analytics scoped (2026-09-24); Settings → #114/#115**
-  (→ browse, analytics, settings). **Browse** is now **deck-scoped** — it filters by the active deck's
+- **1d · Deck/vault scope split — ✅ DONE (2026-09-24): Browse/Analytics + Settings/workload model
+  shipped; only refinements remain (#114 Phase B/C, #115, #116)** (→ browse, analytics, settings). **Browse** is now **deck-scoped** — it filters by the active deck's
   membership (whole-vault default deck unchanged; a lens with no members gets its own empty state).
   **Analytics/Insights** was ALREADY deck-scoped: its top-level providers are active-deck wrappers over
   member-scoped `deckX(deckId)` (via `deckMemberCardIds` = `deck.select`); only `studyConsistency`
@@ -281,14 +281,19 @@ model before we add features, so we build on the right shape.
     contradiction; readyToPush is informational; check-in + chat propose a budget change); subject-neutral
     **study-load help** + a Vocabulary leak-guard test; the **budget sustainability-zone** readout on the
     daily-time dial (the user-pulled "informed override").
-  - **Phase B (deferred, with #32 + #106):** replace the FIXED guardrails with **DERIVED** quantities +
-    the flow-aware automatic ceiling (needs state-aware est-minutes #32 + the retention floor #106
-    est-minutes fidelity). The precise **budget → ready-by date-shift** readout waits here (moving the
-    budget doesn't shift ready-by until it derives the new-count).
-  - **Phase C (deferred, gated on #32/#106 + #110 + real usage evidence):** the engine-*initiated* size
-    **proposal** + any ambient notify surface. Rejected for now: engine auto-writing/pushing SIZE
-    (re-creates the autonomy erosion ADR-0010 removed); proactive pre-deadline taper (fights ADR-0007
-    urgency).
+  - **Phase B (workload derivation) — sequenced with the #32 engine arc (Phase 3), NOT blocking.**
+    Replace the FIXED guardrails with **DERIVED** quantities + the flow-aware automatic ceiling; add the
+    precise **budget → ready-by date-shift** readout (moving the budget doesn't shift ready-by until it
+    derives the new-count). Needs the **est-minutes fidelity** sliver of **#32** + **#106**. It's a
+    *refinement*: Phase A already ships a sane, SoT-conformant plan (the engine derives the mix via the
+    packer; the caps are fixed placeholders), so this waits behind the Phase 1 conformance items (1e–1g)
+    and rides in with the FSRS-tuning work. Tracked on **#114** (+ #32/#106).
+  - **Phase C (proactive proposal / notify) — later, gated on #110 + real usage evidence.** The
+    engine-*initiated* size **proposal** + any ambient notify surface — only after the #110
+    notification-fatigue foundations (Phase 2) land and instrumentation shows the pull-based model is
+    insufficient. **Rejected outright:** the engine auto-writing/pushing SIZE (re-creates the autonomy
+    erosion ADR-0010 removed — it can't see real-world urgency) and a proactive pre-deadline taper
+    (fights ADR-0007 urgency). Tracked on **#114** (+ #110).
 - **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
   *Resolves #86.*
 - **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible
@@ -355,6 +360,14 @@ The MVP-tagged stories, cloud still absent:
   comprehension, #25 AI study suggestions.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
+- **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc: state-aware
+  **est-minutes** + optimizer-from-history + the desired-retention knob (#32), the **capped retention
+  floor** est-minutes fidelity (#106, its reviews-first slice already shipped), then flip the workload
+  guardrails from **fixed → derived** (budget/urgency-aware new + practice quantities under the flow-aware
+  ceiling) and add the **budget → ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the
+  shipped fixed guardrails already produce a sane, SoT-conformant plan — but this is where "the engine
+  derives the quantities" becomes fully real. (**#114 Phase C** — engine-initiated proposals + notify —
+  waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
   **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
