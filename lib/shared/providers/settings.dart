@@ -13,13 +13,13 @@ part 'settings.g.dart';
 PreferencesRepository preferencesRepository(Ref ref) =>
     PreferencesRepository(ref.watch(appDatabaseProvider));
 
-/// The cap on brand-new sections introduced per day (see [dailyNewRemaining],
-/// which subtracts what's already been learned today). Persisted in the
-/// preferences table; defaults to a deliberately gentle 8 — the start of the
-/// recommended ramp (see docs/learning-science.md + the Settings study-load
-/// help). Too many new items at once raises cognitive load and hurts retention;
-/// the coach ramps this up as retention holds. Step is 1 so the coach's small
-/// (+3) nudges land exactly.
+/// The automatic ceiling on brand-new sections introduced per day (see
+/// [dailyNewRemaining], which subtracts what's already been learned today). An
+/// INTERNAL guardrail, not a user or coach dial (ADR-0010/0011: the engine derives
+/// the study mix; the user's only load dial is the daily budget, and the coach
+/// routes through that, never a per-flow knob). Kept fixed at a gentle 8 in
+/// Phase A; Phase B derives it from budget + due-load under the sustainable
+/// ceiling. Too many new items at once raises cognitive load and hurts retention.
 @Riverpod(keepAlive: true)
 class NewCardLimit extends _$NewCardLimit {
   static const prefKey = 'new_section_limit';
@@ -82,7 +82,8 @@ class AlgoDailyMin extends _$AlgoDailyMin {
 @Riverpod(keepAlive: true)
 class AlgoDailyMax extends _$AlgoDailyMax {
   static const prefKey = 'algo_daily_max';
-  static const defaultValue = 2; // gentle ramp start; coach raises it over time
+  static const defaultValue =
+      2; // fixed internal guardrail (ADR-0011); Phase B derives it
   static const min = 1;
   static const max = 12;
   static const step = 1;

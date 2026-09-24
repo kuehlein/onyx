@@ -12,8 +12,9 @@ import '../../shared/widgets/chat_view.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Opens the "talk about it" strategist chat for a coach [update], seeded with
-/// the learner's current numbers (readiness + both tracks' load) so it can
-/// advise — and offer one-tap load changes — without a round-trip.
+/// the learner's current numbers (readiness + the daily budget + backlog) so it
+/// can advise — and offer a one-tap budget change (its one load lever) — without
+/// a round-trip.
 Future<void> showCoachChatSheet(
   BuildContext context, {
   required CoachUpdate update,
@@ -21,11 +22,9 @@ Future<void> showCoachChatSheet(
   required int coveragePct,
   required String targetLabel,
   int? daysToInterview,
-  required int newPerDay,
+  required int budgetMinutes,
   int? retentionPct,
   required int reviewBacklog,
-  required int algoMin,
-  required int algoMax,
   String? todayPlan,
 }) {
   final system = buildCoachChatSystem(
@@ -34,11 +33,9 @@ Future<void> showCoachChatSheet(
     coveragePct: coveragePct,
     targetLabel: targetLabel,
     daysToInterview: daysToInterview,
-    newPerDay: newPerDay,
+    budgetMinutes: budgetMinutes,
     retentionPct: retentionPct,
     reviewBacklog: reviewBacklog,
-    algoMin: algoMin,
-    algoMax: algoMax,
     todayPlan: todayPlan,
   );
   return showOnyxSheet<void>(
@@ -107,13 +104,12 @@ Future<void> _apply(BuildContext context, WidgetRef ref) async {
   if (proposal == null) return;
   final messenger = ScaffoldMessenger.of(context);
   ref.read(coachChatProvider.notifier).dismissProposal();
-  final r = await applyCoachSetting(ref, proposal.setting, proposal.delta);
+  final r = await applyBudgetDelta(ref, proposal.deltaMinutes);
   messenger.showSnackBar(SnackBar(
-    content: Text(
-        '${coachSettingLabel(proposal.setting)}: ${r.before} → ${r.after}'),
+    content: Text('Daily study time: ${r.before} → ${r.after} min'),
     action: SnackBarAction(
       label: 'Undo',
-      onPressed: () => setCoachSetting(ref, proposal.setting, r.before),
+      onPressed: () => setBudgetMinutes(ref, r.before),
     ),
   ));
 }
@@ -134,7 +130,7 @@ class _ProposalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final sign = proposal.delta > 0 ? '+' : '';
+    final sign = proposal.deltaMinutes > 0 ? '+' : '';
     return Container(
       margin: const EdgeInsets.fromLTRB(
           Dim.space3, Dim.space1, Dim.space3, Dim.space3),
@@ -151,7 +147,7 @@ class _ProposalCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${coachSettingLabel(proposal.setting)}  $sign${proposal.delta}',
+            'Daily study time  $sign${proposal.deltaMinutes} min/day',
             style: theme.textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),

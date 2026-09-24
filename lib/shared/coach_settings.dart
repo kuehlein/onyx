@@ -1,43 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/coach/coach_update.dart';
 import 'providers/settings.dart';
 
-/// The load settings the coach can adjust, one per independently-paced track.
-/// Shared by the ambient nudge (badge) and the "talk about it" chat so both
-/// apply changes the same way.
+/// The coach's ONE load lever is the vault **daily study budget** (ADR-0011): the
+/// engine derives the mix; the user owns the size; the coach has no per-flow knobs.
+/// Shared by the ambient nudge, the weekly check-in, and the "talk about it" chat
+/// so all three apply a change the same way — always on the user's tap, with undo.
 
-/// Human label for a coach-adjustable load setting.
-String coachSettingLabel(CoachSetting s) => switch (s) {
-      CoachSetting.newCardsPerDay => 'New cards/day',
-      CoachSetting.algoMin => 'Algorithms/day (fewest)',
-      CoachSetting.algoMax => 'Algorithms/day (most)',
-    };
-
-/// Apply a signed [delta] to a load [setting] (each notifier clamps to its own
+/// Apply a signed [deltaMinutes] to the daily budget (the notifier clamps to its
 /// range), returning the before/after values for confirmation + undo.
-Future<({int before, int after})> applyCoachSetting(
-    WidgetRef ref, CoachSetting setting, int delta) async {
-  final before = await _read(ref, setting);
-  await _set(ref, setting, before + delta);
-  return (before: before, after: await _read(ref, setting));
+Future<({int before, int after})> applyBudgetDelta(
+    WidgetRef ref, int deltaMinutes) async {
+  final before = await ref.read(dailyTargetMinutesProvider.future);
+  await ref
+      .read(dailyTargetMinutesProvider.notifier)
+      .set(before + deltaMinutes);
+  return (
+    before: before,
+    after: await ref.read(dailyTargetMinutesProvider.future)
+  );
 }
 
-/// Set a load [setting] to an absolute [value] — used to undo a change.
-Future<void> setCoachSetting(WidgetRef ref, CoachSetting setting, int value) =>
-    _set(ref, setting, value);
-
-Future<int> _read(WidgetRef ref, CoachSetting s) => switch (s) {
-      CoachSetting.newCardsPerDay => ref.read(newCardLimitProvider.future),
-      CoachSetting.algoMin => ref.read(algoDailyMinProvider.future),
-      CoachSetting.algoMax => ref.read(algoDailyMaxProvider.future),
-    };
-
-Future<void> _set(WidgetRef ref, CoachSetting s, int value) => switch (s) {
-      CoachSetting.newCardsPerDay =>
-        ref.read(newCardLimitProvider.notifier).set(value),
-      CoachSetting.algoMin =>
-        ref.read(algoDailyMinProvider.notifier).set(value),
-      CoachSetting.algoMax =>
-        ref.read(algoDailyMaxProvider.notifier).set(value),
-    };
+/// Set the daily budget to an absolute [minutes] — used to undo a change.
+Future<void> setBudgetMinutes(WidgetRef ref, int minutes) =>
+    ref.read(dailyTargetMinutesProvider.notifier).set(minutes);

@@ -55,17 +55,18 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
     setState(() => _answered = feel);
   }
 
-  Future<void> _adjust(int delta) async {
+  Future<void> _adjust(int deltaMinutes) async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    final r = await applyCoachSetting(ref, CoachSetting.newCardsPerDay, delta);
+    // The user's own answer is the consent — apply the budget change they picked
+    // (ADR-0011: the coach's one lever is the daily budget), with a one-tap undo.
+    final r = await applyBudgetDelta(ref, deltaMinutes);
     navigator.pop();
     messenger.showSnackBar(SnackBar(
-      content: Text('New cards/day: ${r.before} → ${r.after}'),
+      content: Text('Daily study time: ${r.before} → ${r.after} min'),
       action: SnackBarAction(
         label: 'Undo',
-        onPressed: () =>
-            setCoachSetting(ref, CoachSetting.newCardsPerDay, r.before),
+        onPressed: () => setBudgetMinutes(ref, r.before),
       ),
     ));
   }
@@ -141,18 +142,18 @@ class _LoadCheckInSheetState extends ConsumerState<_LoadCheckInSheet> {
     final (title, body, applyLabel, delta) = switch (feel) {
       LoadFeel.tooMuch => (
           'Let’s ease off',
-          'Fewer new cards each day shrinks your future review load — the '
-              'fastest way to lighten things. Want me to trim new cards/day by 3?',
-          'Reduce new cards/day by 3',
-          -3,
+          'A little less time each day lightens the load — the app keeps your '
+              'reviews first and eases new material automatically. Want me to trim '
+              'your daily study time by 15 min?',
+          'Trim 15 min/day',
+          -15,
         ),
       LoadFeel.couldDoMore => (
           'Room to grow',
-          'Nice. A small bump keeps it sustainable — I’d add just a few new '
-              'cards/day and see how next week feels. (If recall dips, we ease '
-              'back.)',
-          'Add 3 new cards/day',
-          3,
+          'Nice. A little more time each day gives the app room to fit more in — '
+              'and see how next week feels. (If recall dips, we ease back.)',
+          'Add 15 min/day',
+          15,
         ),
       LoadFeel.aboutRight => (
           'Steady it is',

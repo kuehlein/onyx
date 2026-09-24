@@ -35,31 +35,29 @@ ClaudeService _replying(String text, {void Function(String body)? onBody}) =>
 
 void main() {
   group('buildCoachChatSystem', () {
-    test('seeds the nudge, the numbers, both tracks, and the rules', () {
+    test('seeds the nudge, the numbers, the budget lever, and the rules', () {
       final s = buildCoachChatSystem(
         update: _update,
         overallPct: 42,
         coveragePct: 30,
         targetLabel: 'Senior · FAANG · General',
         daysToInterview: 21,
-        newPerDay: 12,
+        budgetMinutes: 120,
         retentionPct: 88,
         reviewBacklog: 40,
-        algoMin: 2,
-        algoMax: 5,
       );
       expect(s, contains('Reviews are piling up')); // the nudge
       expect(s, contains('42%'));
       expect(s, contains('30%'));
       expect(s, contains('Senior · FAANG · General'));
       expect(s, contains('target date in 21 days'));
-      // Both adjustable tracks are described with current load.
-      expect(s, contains('12 new cards/day'));
+      // The one adjustable lever — the daily study budget — with current load.
+      expect(s, contains('120 min/day'));
       expect(s, contains('88%'));
       expect(s, contains('40 reviews due'));
-      expect(s, contains('2–5 problems/day'));
-      // It knows how to propose a change.
-      expect(s, contains('<set setting='));
+      expect(s.toLowerCase(), contains('daily study budget'));
+      // It knows how to propose a budget change.
+      expect(s, contains('<set setting="budget"'));
       // Research-grounded coaching stance.
       expect(s, contains('implementation intention'));
       expect(s.toLowerCase(), contains('autonomy-supportive'));
@@ -72,36 +70,26 @@ void main() {
         overallPct: 42,
         coveragePct: 30,
         targetLabel: 'goal',
-        newPerDay: 12,
+        budgetMinutes: 120,
         reviewBacklog: 0,
-        algoMin: 2,
-        algoMax: 5,
       );
       expect(s, contains('no target date set'));
     });
   });
 
   group('parseCoachChatReply', () {
-    test('extracts a proposed change and strips the tag', () {
-      final r = parseCoachChatReply('Sounds good — I\'ll bump the floor.\n'
-          '<set setting="algo-min" delta="+1"/>');
-      expect(r.text, 'Sounds good — I\'ll bump the floor.');
-      expect(r.proposal?.setting, CoachSetting.algoMin);
-      expect(r.proposal?.delta, 1);
+    test('extracts a proposed budget change (minutes) and strips the tag', () {
+      final r = parseCoachChatReply('Sounds good — a bit more time.\n'
+          '<set setting="budget" delta="+15"/>');
+      expect(r.text, 'Sounds good — a bit more time.');
+      expect(r.proposal?.deltaMinutes, 15);
     });
 
-    test('handles negative deltas and each setting', () {
+    test('handles negative deltas', () {
       expect(
-          parseCoachChatReply('x <set setting="new-per-day" delta="-5"/>')
-              .proposal,
+          parseCoachChatReply('x <set setting="budget" delta="-15"/>').proposal,
           isA<CoachProposal>()
-              .having((p) => p.setting, 'setting', CoachSetting.newCardsPerDay)
-              .having((p) => p.delta, 'delta', -5));
-      expect(
-          parseCoachChatReply('<set setting="algo-max" delta="+2"/>')
-              .proposal
-              ?.setting,
-          CoachSetting.algoMax);
+              .having((p) => p.deltaMinutes, 'deltaMinutes', -15));
     });
 
     test('no tag → no proposal, text untouched', () {
@@ -111,8 +99,7 @@ void main() {
     });
 
     test('a zero delta is ignored', () {
-      expect(
-          parseCoachChatReply('<set setting="algo-min" delta="0"/>').proposal,
+      expect(parseCoachChatReply('<set setting="budget" delta="0"/>').proposal,
           isNull);
     });
   });

@@ -29,7 +29,6 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
   if (readiness.isEmpty) return null; // no vault/cards → nothing to coach
 
   final pace = await ref.watch(readinessPaceProvider.future);
-  final newLimit = await ref.watch(newCardLimitProvider.future);
   final review = await ref.watch(reviewQueueProvider.future);
   final clock = await ref.watch(clockProvider.future);
   final stats = await ref
@@ -95,7 +94,6 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     coverage: coverage,
     interviewTested: readiness.interview,
     dueCount: review.queue.length,
-    newCardLimit: newLimit,
     reviewsInWindow: stats.total,
     retention: stats.total > 0 ? stats.retained / stats.total : null,
     algoDue: algoDue,

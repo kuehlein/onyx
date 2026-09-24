@@ -8,7 +8,6 @@ import '../../core/coach/coach_update.dart';
 import '../../core/plan/daily_plan.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
-import '../../shared/coach_settings.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/coach_update.dart';
 import '../../shared/providers/daily_plan.dart';
@@ -27,9 +26,9 @@ typedef _ChatSeed = ({
   int? days,
 });
 
-/// The current per-track daily load, so the chat can reason about (and offer to
-/// change) either flow.
-typedef _Load = ({int newPerDay, int backlog, int algoMin, int algoMax});
+/// The current daily load for the chat to reason about (and offer to change via
+/// the one lever, the daily budget): the daily study time + the review backlog.
+typedef _Load = ({int budgetMinutes, int backlog});
 
 const _green = StatusColor.good;
 const _amber = StatusColor.warn;
@@ -51,13 +50,9 @@ class CoachBadge extends ConsumerWidget {
       ref.watch(clockProvider).asData?.value,
     );
     final load = (
-      newPerDay: ref.watch(newCardLimitProvider).asData?.value ??
-          NewCardLimit.defaultValue,
+      budgetMinutes: ref.watch(dailyTargetMinutesProvider).asData?.value ??
+          DailyTargetMinutes.defaultValue,
       backlog: ref.watch(reviewQueueProvider).asData?.value.queue.length ?? 0,
-      algoMin: ref.watch(algoDailyMinProvider).asData?.value ??
-          AlgoDailyMin.defaultValue,
-      algoMax: ref.watch(algoDailyMaxProvider).asData?.value ??
-          AlgoDailyMax.defaultValue,
     );
     // Today's assembled plan, so "talk about it" can reason about the actual
     // queue (what to keep, defer, sequence) — null until it's ready.
@@ -148,19 +143,7 @@ class CoachBadge extends ConsumerWidget {
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface, height: 1.4)),
                     const SizedBox(height: Dim.space5),
-                    if (u.proposal != null)
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _applyProposal(context, ref, u.proposal!);
-                          },
-                          icon: const Icon(Icons.check, size: Dim.iconMd),
-                          label: Text(u.proposal!.applyLabel),
-                        ),
-                      )
-                    else if (u.hasAction)
+                    if (u.hasAction)
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
@@ -184,10 +167,8 @@ class CoachBadge extends ConsumerWidget {
                             coveragePct: seed.coveragePct,
                             targetLabel: seed.targetLabel,
                             daysToInterview: seed.days,
-                            newPerDay: load.newPerDay,
+                            budgetMinutes: load.budgetMinutes,
                             reviewBacklog: load.backlog,
-                            algoMin: load.algoMin,
-                            algoMax: load.algoMax,
                             todayPlan: todayPlan,
                           );
                         },
@@ -219,22 +200,6 @@ class CoachBadge extends ConsumerWidget {
         );
       },
     );
-  }
-
-  /// Apply a proposed load change, then offer a one-tap Undo. Never silent —
-  /// only reached from the sheet's explicit Apply button.
-  Future<void> _applyProposal(
-      BuildContext context, WidgetRef ref, CoachProposal p) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final r = await applyCoachSetting(ref, p.setting, p.delta);
-    messenger.showSnackBar(SnackBar(
-      content:
-          Text('${coachSettingLabel(p.setting)}: ${r.before} → ${r.after}'),
-      action: SnackBarAction(
-        label: 'Undo',
-        onPressed: () => setCoachSetting(ref, p.setting, r.before),
-      ),
-    ));
   }
 
   Color _toneColor(CoachTone tone, ThemeData theme) => switch (tone) {

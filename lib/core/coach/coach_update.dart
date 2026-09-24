@@ -33,28 +33,25 @@ enum CoachInsightKind {
 /// Visual tone for the badge (mapped to color by the widget).
 enum CoachTone { info, caution, positive }
 
-/// A daily-load setting the coach can offer to change for the learner — one per
-/// independently-paced track: the concept/review track ([newCardsPerDay]) and
-/// the algorithms track ([algoMin]/[algoMax]). The triage (or the chat) names
-/// the change; the UI applies it with an undo on confirm — never silently.
-enum CoachSetting { newCardsPerDay, algoMin, algoMax }
-
 /// The learner's self-reported sense of the load, from the opt-in weekly
 /// check-in. Complements the objective signals (retention/backlog): you can be
 /// hitting 90% and still be burning out, or coasting and ready for more.
 enum LoadFeel { tooMuch, aboutRight, couldDoMore }
 
-/// A proposed setting change carried by a [CoachUpdate]. [delta] is signed
-/// (e.g. +3 or -5); [applyLabel] is the button text (e.g. "Add 3 new/day").
+/// A proposed change to the vault **daily study budget** (minutes) — the coach's
+/// only load lever (ADR-0011: the engine derives the mix; the user owns the size;
+/// the coach never touches a per-flow dial). [deltaMinutes] is signed (e.g. +15 or
+/// -15); [applyLabel] is the button text (e.g. "Add 15 min/day"). Applied only on
+/// the user's explicit tap, with an undo — never silently, and only from a
+/// user-requested/consented flow (the check-in or the chat), never an unsolicited
+/// engine push (that surface is deferred — ADR-0011).
 class CoachProposal {
   const CoachProposal({
-    required this.setting,
-    required this.delta,
+    required this.deltaMinutes,
     required this.applyLabel,
   });
 
-  final CoachSetting setting;
-  final int delta;
+  final int deltaMinutes;
   final String applyLabel;
 }
 
@@ -68,7 +65,6 @@ class CoachUpdate {
     required this.why,
     this.actionLabel,
     this.actionRoute,
-    this.proposal,
   });
 
   final CoachInsightKind kind;
@@ -77,10 +73,6 @@ class CoachUpdate {
   final String why;
   final String? actionLabel;
   final String? actionRoute;
-
-  /// A one-tap setting change the coach offers (adaptive load). Mutually
-  /// exclusive with a navigation action in practice — keeps one button.
-  final CoachProposal? proposal;
 
   bool get hasAction => actionLabel != null && actionRoute != null;
 }
@@ -95,7 +87,6 @@ class CoachSignals {
     required this.coverage,
     required this.interviewTested,
     required this.dueCount,
-    required this.newCardLimit,
     required this.reviewsInWindow,
     required this.retention,
     this.algoDue = 0,
@@ -122,7 +113,6 @@ class CoachSignals {
   final double coverage; // 0..1 fraction of all in-scope sections started
   final bool interviewTested; // mocks exist → transfer measured
   final int dueCount; // reviews due now (backlog proxy)
-  final int newCardLimit; // configured new sections/day
   final int reviewsInWindow; // sample size behind [retention]
   final double? retention; // recent review success 0..1, null if sample tiny
   final int algoDue; // algorithm problems due for a spaced re-solve
@@ -210,11 +200,18 @@ class CoachSignals {
   static const minReviewSample = 20;
 
   /// A due backlog at/above this is "piling up" — the dominant SRS failure mode.
-  int get backlogThreshold => newCardLimit * 3 < 60 ? 60 : newCardLimit * 3;
+  /// A fixed line now that new-material intake is engine-derived, not a user/coach
+  /// dial (ADR-0011): ~60 due is the "clear the backlog first" threshold.
+  static const backlogThreshold = 60;
 
   /// Below this coverage there's still substantial material to learn — building
   /// the base outranks proving transfer or affirming "on track".
   static const coverageBar = 0.85;
+
+  /// A "room for more" push needs a real base first: below this coverage the
+  /// honest nudge is "keep building", not "go faster". Replaces the old
+  /// new-card-ceiling gate that incidentally suppressed the push (ADR-0011).
+  static const pushCoverageFloor = 0.2;
 
   /// Overall readiness at/above this counts as solid enough to affirm (absent an
   /// explicit on-pace-for-a-date signal).
@@ -223,25 +220,23 @@ class CoachSignals {
   /// Recent review success strong enough that adding a little load is safe.
   static const pushRetentionBar = 0.90;
 
-  /// The coach won't nudge new-cards/day above this (manual can go higher).
-  static const newCardPushCeiling = 20;
-
   /// Retention bar for a push, relaxed a touch when the learner has said they
   /// could handle more (their input, not just the numbers).
   double get _pushBar =>
       loadFeel == LoadFeel.couldDoMore ? 0.85 : pushRetentionBar;
 
   /// Everything's green with headroom while still building the base: strong
-  /// retention, zero backlog, engaged (today AND showing up lately), new/day
-  /// below the ceiling, and they haven't said the load's too much. The moment to
-  /// *offer* a small load increase rather than just "keep learning".
+  /// retention, zero backlog, engaged (today AND showing up lately), and they
+  /// haven't said the load's too much. The moment to *affirm* headroom (and point
+  /// at the daily-budget dial if they want more) — informational, no auto-dial
+  /// (ADR-0011: the engine already fills to the automatic ceiling on a strong day).
   bool get readyToPush =>
       anyStudied &&
       activeRecently &&
+      coverage >= pushCoverageFloor &&
       coverage < coverageBar &&
       dueCount == 0 &&
       studiedToday &&
-      newCardLimit < newCardPushCeiling &&
       loadFeel != LoadFeel.tooMuch &&
       retention != null &&
       reviewsInWindow >= minReviewSample &&
@@ -293,12 +288,13 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     return CoachUpdate(
       kind: CoachInsightKind.overloaded,
       tone: CoachTone.caution,
-      headline: "Recall's slipping (~${pct(s.retention!)}%) — ease off new "
-          'cards.',
+      headline: "Recall's slipping (~${pct(s.retention!)}%) — clear reviews "
+          'first.',
       why: 'Your recent review success is ~${pct(s.retention!)}% (aim ~90%). '
           "That usually means new material is arriving faster than it's "
-          'sticking. Lower your new-cards/day in Settings and clear today’s '
-          'reviews first — it settles quickly.',
+          'sticking. Clear today’s reviews first — the app automatically eases '
+          'new material while your recall recovers, so it settles quickly. (If it '
+          'keeps feeling heavy, trim your daily study time in Settings.)',
       actionLabel: 'Review now',
       actionRoute: '/quiz',
     );
@@ -307,12 +303,11 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     return CoachUpdate(
       kind: CoachInsightKind.overloaded,
       tone: CoachTone.caution,
-      headline:
-          '${s.dueCount} reviews due — clear the backlog before new cards.',
-      why:
-          'Reviews have piled up (${s.dueCount} due). New cards multiply future '
-          'reviews, so pausing or lowering new-cards/day lets you catch up '
-          'instead of falling further behind.',
+      headline: '${s.dueCount} reviews due — clear the backlog first.',
+      why: 'Reviews have piled up (${s.dueCount} due). New material multiplies '
+          'future reviews, so the app automatically holds it back while you catch '
+          'up — a review session now gets you ahead of it instead of falling '
+          'further behind.',
       actionLabel: 'Review now',
       actionRoute: '/quiz',
     );
@@ -401,17 +396,13 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
       kind: CoachInsightKind.readyToPush,
       tone: CoachTone.positive,
       headline: "Retention's strong (~${pct(s.retention!)}%) with no backlog — "
-          'room to add a little.',
+          "you're in a great groove.",
       why:
-          "You're holding ~${pct(s.retention!)}% and reviews aren't piling up, "
-          'so there’s headroom to learn a bit more each day. Small steps keep '
-          'it sustainable — try a few more new cards and see how next week '
-          'feels. You can always ease back.',
-      proposal: const CoachProposal(
-        setting: CoachSetting.newCardsPerDay,
-        delta: 3,
-        applyLabel: 'Add 3 new/day',
-      ),
+          "You're holding ~${pct(s.retention!)}% and reviews aren't piling up, so "
+          'you have real headroom. The app already gives you new material up to a '
+          'sustainable ceiling; if you want to go faster, nudge your daily study '
+          'time up in Settings — small steps keep it sustainable, and you can '
+          'always ease back.',
     );
   }
 

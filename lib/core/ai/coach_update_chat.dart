@@ -23,11 +23,9 @@ String buildCoachChatSystem({
   required int coveragePct,
   required String targetLabel,
   int? daysToInterview,
-  required int newPerDay,
+  required int budgetMinutes,
   int? retentionPct,
   required int reviewBacklog,
-  required int algoMin,
-  required int algoMax,
   String? todayPlan,
 }) {
   final b = StringBuffer();
@@ -47,14 +45,13 @@ String buildCoachChatSystem({
             '${daysToInterview == 1 ? '' : 's'}' : '; no target date set'}.')
     ..writeln()
     ..writeln(
-        'There are two independently-paced tracks, each with its own daily '
-        'load you can adjust for them:')
-    ..writeln('  1. Concept/review track (the spaced concept deck): '
-        '$newPerDay new cards/day'
-        '${retentionPct != null ? ', recent recall ~$retentionPct%' : ''}, '
+        'The ONE load lever you can adjust for them is the daily study budget '
+        '(how much time per day). The app derives the study MIX — reviews vs new '
+        'vs practice — from that budget automatically; there are no per-flow '
+        'counts to hand-tune:')
+    ..writeln('  - Daily study budget: ~$budgetMinutes min/day'
+        '${retentionPct != null ? '; recent recall ~$retentionPct%' : ''}; '
         '$reviewBacklog reviews due now.')
-    ..writeln('  2. Algorithms track (problem-solving practice): $algoMin–'
-        '$algoMax problems/day (a floor and a ceiling).')
     ..writeln()
     ..writeln();
   if (todayPlan != null && todayPlan.trim().isNotEmpty) {
@@ -66,20 +63,24 @@ String buildCoachChatSystem({
       ..writeln('Reason about this concretely: if they are short on time, tell '
           'them what to keep (must-do rows first) and what can slip; help them '
           'sequence or trim it. But you only change ongoing load via the <set/> '
-          'tag below — the plan itself recomputes from those settings plus their '
-          'progress, so never claim you edited today\'s list directly.')
+          'tag below (the daily budget) — the plan itself recomputes from that '
+          'budget plus their progress, so never claim you edited today\'s list '
+          'directly.')
       ..writeln();
   }
   b
-    ..writeln('You can CHANGE either track for them. When you and the learner '
-        'land on a specific change, end that reply with ONE tag on its own '
-        'final line: <set setting="new-per-day|algo-min|algo-max" delta="±N"/> '
-        '(small steps, e.g. +3, -1). The app turns it into an "Apply" button — '
-        'so OFFER, then let them tap. Never claim you already changed a setting; '
-        'you are proposing. Grounding for load moves: ~1–2 algorithms/day is '
-        'light, 3–4 intense, 5+ heavy; for concepts, ~90% recall with no '
-        'backlog means there\'s room to add a few new/day, while low recall or a '
-        'backlog means ease off. Adjust the two tracks independently.')
+    ..writeln(
+        'You can CHANGE the daily study budget for them (in minutes). When '
+        'you and the learner land on a specific change, end that reply with ONE '
+        'tag on its own final line: <set setting="budget" delta="±N"/> where N is '
+        'MINUTES (small steps, e.g. +15, -15). The app turns it into an "Apply" '
+        'button — so OFFER, then let them tap. Never claim you already changed a '
+        'setting; you are proposing, and it applies only when they tap. Grounding: '
+        'more time lets the app fit more in each day; less time lightens the load, '
+        'and the app always keeps reviews first and eases new material '
+        'automatically. If they feel overloaded, the levers are trimming time or '
+        'just clearing the backlog — never tell them to hand-tune new cards or '
+        'problems per day; those are automatic now.')
     ..writeln()
     ..writeln('Your job is to help them ACT on this — not to lecture. Rules:')
     ..writeln('- Be concrete and task-focused. Anchor advice to their numbers; '
@@ -93,41 +94,35 @@ String buildCoachChatSystem({
         'minutes of review cards"). These reliably improve follow-through.')
     ..writeln('- Ask ONE focused question or offer ONE suggestion at a time. '
         'Keep it to 2–4 sentences, plain Markdown, no headings.')
-    ..writeln('- On load/pace questions, use sound principles: cutting new '
-        'cards eases future review load (new cards multiply reviews); ~90% '
-        'retention is the target — don\'t chase higher, it explodes workload; '
-        'steady daily practice beats last-minute cramming; if behind, the '
-        'honest levers are more time, narrower scope, or a later date.')
+    ..writeln(
+        '- On load/pace questions, use sound principles: the app auto-eases '
+        'new material when they fall behind (new material multiplies future '
+        'reviews); ~90% retention is the target — don\'t chase higher, it explodes '
+        'workload; steady daily practice beats last-minute cramming; if behind, '
+        'the honest levers are more time, narrower scope, or a later date.')
     ..writeln(
         '- Never invent data you weren\'t given. If you need something to '
         'advise well, ask for it.');
   return b.toString();
 }
 
-final _setTag = RegExp(
-    r'<set\s+setting="(new-per-day|algo-min|algo-max)"\s+delta="([+-]?\d+)"\s*/>',
+final _setTag = RegExp(r'<set\s+setting="budget"\s+delta="([+-]?\d+)"\s*/>',
     caseSensitive: false);
 
-/// Splits a strategist reply into the display text and an optional proposed load
-/// change (parsed from a `<set .../>` tag, which is stripped from the text so it
-/// never shows). The app renders the proposal as an "Apply" button.
+/// Splits a strategist reply into the display text and an optional proposed
+/// daily-budget change in MINUTES (parsed from a `<set setting="budget" .../>`
+/// tag, stripped from the text so it never shows). The app renders the proposal
+/// as an "Apply" button — the budget is the coach's one load lever (ADR-0011).
 ({String text, CoachProposal? proposal}) parseCoachChatReply(String raw) {
   final m = _setTag.firstMatch(raw);
   CoachProposal? proposal;
   if (m != null) {
-    final setting = switch (m.group(1)!.toLowerCase()) {
-      'new-per-day' => CoachSetting.newCardsPerDay,
-      'algo-min' => CoachSetting.algoMin,
-      'algo-max' => CoachSetting.algoMax,
-      _ => null,
-    };
-    final delta = int.tryParse(m.group(2)!);
-    if (setting != null && delta != null && delta != 0) {
+    final delta = int.tryParse(m.group(1)!);
+    if (delta != null && delta != 0) {
       final sign = delta > 0 ? '+' : '';
       proposal = CoachProposal(
-        setting: setting,
-        delta: delta,
-        applyLabel: 'Apply: $sign$delta',
+        deltaMinutes: delta,
+        applyLabel: 'Apply: $sign$delta min/day',
       );
     }
   }

@@ -11,7 +11,6 @@ CoachSignals sig({
   double overall = 0.6,
   double coverage = 0.9,
   int dueCount = 0,
-  int newCardLimit = 20,
   int reviewsInWindow = 30,
   double? retention = 0.9,
   int algoDue = 0,
@@ -37,7 +36,6 @@ CoachSignals sig({
       coverage: coverage,
       interviewTested: interviewTested,
       dueCount: dueCount,
-      newCardLimit: newCardLimit,
       reviewsInWindow: reviewsInWindow,
       retention: retention,
       algoDue: algoDue,
@@ -135,17 +133,19 @@ void main() {
     });
 
     test('large due backlog → overloaded (clear backlog)', () {
-      // healthy retention, but backlog >= max(60, 3*limit)
-      final u = buildCoachUpdate(sig(dueCount: 60, newCardLimit: 20))!;
+      // healthy retention, but backlog >= the fixed threshold (60).
+      final u = buildCoachUpdate(sig(dueCount: 60))!;
       expect(u.kind, CoachInsightKind.overloaded);
       expect(u.headline, contains('60 reviews'));
     });
 
-    test('backlog threshold scales with new-card load', () {
-      // 3*30 = 90; 80 due is below threshold → not a backlog overload.
-      expect(buildCoachUpdate(sig(dueCount: 80, newCardLimit: 30))!.kind,
+    test(
+        'backlog threshold is a fixed 60 (new-material load is engine-derived)',
+        () {
+      // ADR-0011: the coach no longer scales the threshold off a new-card dial.
+      expect(buildCoachUpdate(sig(dueCount: 59))!.kind,
           isNot(CoachInsightKind.overloaded));
-      expect(buildCoachUpdate(sig(dueCount: 90, newCardLimit: 30))!.kind,
+      expect(buildCoachUpdate(sig(dueCount: 60))!.kind,
           CoachInsightKind.overloaded);
     });
 
@@ -208,29 +208,27 @@ void main() {
       expect(u.actionRoute, '/learn');
     });
 
-    test('thriving mid-build → readyToPush with a new-cards proposal', () {
-      final u = buildCoachUpdate(
-          sig(coverage: 0.5, newCardLimit: 15, retention: 0.95, dueCount: 0))!;
+    test(
+        'thriving mid-build → readyToPush (informational, points at the budget)',
+        () {
+      // ADR-0011: no one-tap dial; the engine already fills to the ceiling, so
+      // the nudge affirms headroom and points at the daily-budget dial.
+      final u =
+          buildCoachUpdate(sig(coverage: 0.5, retention: 0.95, dueCount: 0))!;
       expect(u.kind, CoachInsightKind.readyToPush);
-      expect(u.proposal?.setting, CoachSetting.newCardsPerDay);
-      expect(u.proposal?.delta, 3);
       expect(u.tone, CoachTone.positive);
+      expect(u.why.toLowerCase(), contains('daily study time'));
     });
 
     test('no push when not showing up lately (engagement gate)', () {
       final u = buildCoachUpdate(sig(
-          coverage: 0.5,
-          newCardLimit: 15,
-          retention: 0.95,
-          dueCount: 0,
-          activeRecently: false))!;
+          coverage: 0.5, retention: 0.95, dueCount: 0, activeRecently: false))!;
       expect(u.kind, isNot(CoachInsightKind.readyToPush));
     });
 
     test('"too much" feel suppresses the push even when numbers are green', () {
       final u = buildCoachUpdate(sig(
           coverage: 0.5,
-          newCardLimit: 15,
           retention: 0.95,
           dueCount: 0,
           loadFeel: LoadFeel.tooMuch))!;
@@ -241,7 +239,6 @@ void main() {
       // 0.86 is below the 0.90 bar but clears the relaxed 0.85 bar.
       final u = buildCoachUpdate(sig(
           coverage: 0.5,
-          newCardLimit: 15,
           retention: 0.86,
           dueCount: 0,
           loadFeel: LoadFeel.couldDoMore))!;
@@ -257,28 +254,20 @@ void main() {
       final u = buildCoachUpdate(sig(
           checkInDue: true,
           dueCount: 90,
-          newCardLimit: 20,
           retention: 0.6,
           reviewsInWindow: 30))!;
       expect(u.kind, CoachInsightKind.overloaded);
     });
 
     test('only-ok retention while building → plain building, no push', () {
-      final u = buildCoachUpdate(
-          sig(coverage: 0.5, newCardLimit: 15, retention: 0.85, dueCount: 0))!;
-      expect(u.kind, CoachInsightKind.building);
-      expect(u.proposal, isNull);
-    });
-
-    test('no push at the new-card ceiling', () {
-      final u = buildCoachUpdate(
-          sig(coverage: 0.5, newCardLimit: 20, retention: 0.95, dueCount: 0))!;
+      final u =
+          buildCoachUpdate(sig(coverage: 0.5, retention: 0.85, dueCount: 0))!;
       expect(u.kind, CoachInsightKind.building);
     });
 
     test('no push with a backlog (health first)', () {
-      final u = buildCoachUpdate(
-          sig(coverage: 0.5, newCardLimit: 15, retention: 0.95, dueCount: 3))!;
+      final u =
+          buildCoachUpdate(sig(coverage: 0.5, retention: 0.95, dueCount: 3))!;
       expect(u.kind, isNot(CoachInsightKind.readyToPush));
     });
 
