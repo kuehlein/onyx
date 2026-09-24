@@ -263,9 +263,15 @@ model before we add features, so we build on the right shape.
   **proportion** (`budgetWeight`), and the engine derives the study mix (aims + FSRS + urgency), with one
   automatic new-material ceiling. The manual new/day + algo min/max knobs are **removed**; gym → vault;
   a **config-driven deck-flow-settings** scaffold exposes a flow's non-load knobs only when the deck
-  declares it (none today). **Phase A (now):** remove the knobs (fixed guardrails = today's defaults,
-  byte-identical) + surface budget/proportion + Settings vault/deck regroup (folds **#85**). **Phase B
-  (with #32 + #106):** derive the guardrails. Settings prune + bug-fix → **#115**.
+  declares it (none today). **Phase A ✅ (2026-09-24):** removed the manual knobs (fixed guardrails =
+  today's defaults, byte-identical) + reframed the study-load help; added a **`/deck-settings` surface**
+  from Home ("This deck only") — the deck's **share** of the budget (live minutes/% + a
+  **too-little-time warning**: engagement floor or heaviest-flow unit cost, deck_selection.md) + the
+  config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
+  (Pace/Algo removed). **Remaining:** a vault-level **cross-deck** allocation view (all shares +
+  warnings together — deck_selection.md) is optional/later; **recommended** shares → **#116**. **Phase
+  B (with #32 + #106):** derive the guardrails (the engine computes the mix + the automatic cognitive
+  ceiling). Settings prune + bug-fix → **#115**.
 - **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
   *Resolves #86.*
 - **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible
