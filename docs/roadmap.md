@@ -209,6 +209,16 @@ model before we add features, so we build on the right shape.
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
   Needs a short research spike on the robust integration (Figma API / MCP + a UX-review agent).
 - a11y pass (large-text, tap-targets, semantics — carry the #78–#81 discipline forward).
+- **Foundations & evidence-base doc [new, your ask].** Dig up + formalize the learning-science
+  principles the app rests on, **with citations**, so design decisions are grounded + auditable (and
+  drift is harder to introduce). Cover at least: **Miller's pyramid** (knows → knows how → shows how →
+  does), **retrieval practice / the testing effect**, **spaced repetition / FSRS**, **desirable
+  difficulties**, the **knowing-doing & performance≠learning gap**, **transfer of learning** (near/far),
+  **implementation intentions** (the basis for action nudges), and **notification-fatigue** limits.
+  Expand `docs/learning-science.md` into (or beside) a cited foundations doc; link it from the
+  user-stories backbone so it's discoverable. Seed citations were already gathered in the S5/behavioral
+  design investigation (2026-09-23) — pull from there rather than starting cold. Can be pulled earlier
+  than Phase 2 since it grounds decisions we're making now.
 
 ## Phase 3 — Finish the MVP
 The MVP-tagged stories, cloud still absent:
