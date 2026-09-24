@@ -113,8 +113,9 @@ model before we add features, so we build on the right shape.
         seam) · **S5e-3 ✅** (merge/retire old surfaces; last deck-slot writer gone) · **S5f ✅** (deleted
         `Deck.{level,context,track,deadline}` + `toTarget`; fold-at-parse migration; the **deck is now a
         pure lens**; suite 989). **#101/S5 substantively DONE** — the deck/aims model is fully realized in
-        code. `readiness.dart` split ✅ (583 → 262 hub + 222 forecast + 141 feasibility). Only **S5e-4**
-        minor polish remains.
+        code. `readiness.dart` split ✅ (583 → 262 hub + 222 forecast + 141 feasibility). **S5e-4 ✅**
+        (honest 0-aim coverage readout). **#101 / S5 is fully COMPLETE** — the deck/aims model is realized
+        end-to-end and every sub-slice (S1–S5f) has shipped green.
         **Architecture verdict
         (arch-health audit):** the reframe is **net-cleaner** — S5b *deleted* the `_aimTarget` inheritance
         bridge; the readiness engine is fully off deck slots; new coupling (binding-aim resolver,
@@ -158,7 +159,7 @@ model before we add features, so we build on the right shape.
           +`showTargetSheet` and `upcoming_interviews`+its route — the LAST deck-slot writer is gone,
           `target_sheet` 1150→765 lines, suite 989. Home target card kept → the prep hub UNCHANGED so
           behavioral's entry stays reversible pending its design pass; **#90 debrief deferred** to that
-          pass) → **S5e-4** 0-aim coverage + open-ended polish (minor). Hold #8 (single-aim same *data*;
+          pass) → **S5e-4 ✅** 0-aim coverage (honest sections-studied readout) + open-ended polish. Hold #8 (single-aim same *data*;
           the UI is intentionally new).
         - **S5f — the slot deletion ✅ (done 2026-09-24; the deck is now a pure lens).** **S5f-1** flipped
           the last live slot readers to aims (`lanes_hub` countdown → soonest active-aim date;
