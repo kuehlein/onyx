@@ -1,6 +1,6 @@
 # ADR 0009 — The Aims surface (S5e): design + the target-writer flip
 
-- **Status:** Accepted (design); implementation = roadmap **S5e** (#101, in progress)
+- **Status:** Accepted; implemented in **S5e** (#101). **Amended 2026-09-24** (live-aim routing — see the Amendment at the end).
 - **Date:** 2026-09-23
 - **Deciders:** Kyle Uehlein
 - **Related:** ADR-0006 (deck/aims model), ADR-0007 (allocation), ADR-0008 (cram-vs-durable);
@@ -50,6 +50,9 @@ principles:
    writer flip). Knob TITLES are subject-neutral (**Difficulty / Emphasis /
    Durability**) via the `Vocabulary` seam; values come from the template; the
    assessment noun reads naturally per deck (interview / exam / target).
+   *(Amended 2026-09-24 — the row tap opens this editor only for a **bare target
+   aim**; a **scheduled interview** opens the interview sheet, which gains an "Edit
+   aim" action back to this editor. See the Amendment at the end.)*
 4. **Feasibility is informational + actionable, never punitive.** A behind/infeasible
    aim shows a quiet inline line ("~14/day would make it; you're at 8") and, in the
    editor, real options — **Move the date · Lower durability · Cram** — propose-with-
@@ -104,3 +107,36 @@ build past the parked `rounds → milestones` decision.
   pre-S5 (the model is unchanged; only the surface is new).
 - After S5e, `target_sheet`'s deck-slot writer is gone → S5f deletes `Deck.{level,
   context,track,deadline}` + `toTarget` with no remaining reader/writer.
+
+## Amendment (2026-09-24) — live-aim routing: interviews open the sheet
+
+- **Decider:** Kyle Uehlein. **Related:** task #111 (found in the post-S5 adversarial review).
+
+**Problem.** The shipped S5e wiring routed *every* live aim's row tap to the per-aim
+**editor** (§3) and only an *ended* aim to the **interview sheet**. But the interview
+sheet is the only surface with the interview lifecycle — log outcome, reschedule, add
+a round, archive, and the study/pause toggle — and its whole live branch is gated
+behind `isEnded`. Net: a live interview could never be advanced or ended (you can't
+log an outcome to *reach* ended), and the sheet's live-handling code was dead. This is
+a P1 that contradicted §3 in practice.
+
+**Decision.** Route the Aims-screen row tap by aim **shape** (`Aim.isScheduledInterview`
+— names a company, has >1 round, or has any resolved or explicitly-typed round: the
+planner's output or an in-progress loop):
+- a **scheduled interview** (and any **ended** aim) → the **interview sheet** (manage
+  rounds + outcome). The sheet gains an **"Edit aim"** overflow action → the knob
+  editor (pop-then-open — one sheet at a time, never stacked), so an interview's knobs
+  stay editable.
+- a **bare target aim** (knobs + an optional date, no interview loop) → the **knob
+  editor**, unchanged.
+
+This refines §3 ("a row taps into the per-aim editor (live aim)"): the editor is the
+target-tuning surface; the interview sheet is the lifecycle surface. It restores the
+sheet's built-but-orphaned live path and matches user mental models (tap an interview
+→ see the interview; tap a target → tune it).
+
+**Out of scope (unchanged):** the interview sheet's SWE-specific copy (round types,
+"Offer / Didn't pass") stays #88/G7's subject-neutral-surface work; this amendment is
+about *reachability* only. Deferred edge: a degenerate planner aim with no company AND
+an untyped single round reads as a target (opens the editor) — acceptable; strengthen
+the planner's round typing if it ever bites.

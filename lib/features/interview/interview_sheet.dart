@@ -11,6 +11,7 @@ import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/sheet_header.dart';
+import '../home/target_sheet.dart';
 import 'interview_actions.dart';
 import 'round_editing.dart';
 
@@ -86,6 +87,15 @@ class _InterviewSheet extends ConsumerWidget {
       }
     }
 
+    // Edit this aim's knobs (difficulty/durability/emphasis + date). Leave the
+    // interview overview first, then open the editor — one sheet at a time (the
+    // navigator's own context survives the pop), never stacked (ADR-0009).
+    void editAim() {
+      final navigator = Navigator.of(context);
+      navigator.pop();
+      showAimEditorSheet(navigator.context, aimId: aim.id);
+    }
+
     final title = aim.companyName.isEmpty
         ? (target?.label ?? 'Interview')
         : aim.companyName;
@@ -102,6 +112,7 @@ class _InterviewSheet extends ConsumerWidget {
               context,
               ended: ended,
               onReschedule: cur != null ? reschedule : null,
+              onEdit: ended ? null : editAim,
               onArchive: () => save(archiveInterview(aim)),
               onReopen: () => save(reopenInterview(aim)),
               onDelete: confirmDelete,
@@ -178,6 +189,7 @@ class _InterviewSheet extends ConsumerWidget {
     BuildContext context, {
     required bool ended,
     required VoidCallback? onReschedule,
+    required VoidCallback? onEdit,
     required VoidCallback onArchive,
     required VoidCallback onReopen,
     required VoidCallback onDelete,
@@ -189,6 +201,8 @@ class _InterviewSheet extends ConsumerWidget {
         switch (v) {
           case 'reschedule':
             onReschedule?.call();
+          case 'edit':
+            onEdit?.call();
           case 'archive':
             onArchive();
           case 'reopen':
@@ -200,6 +214,9 @@ class _InterviewSheet extends ConsumerWidget {
       itemBuilder: (_) => [
         if (!ended && onReschedule != null)
           const PopupMenuItem(value: 'reschedule', child: Text('Reschedule')),
+        if (!ended && onEdit != null)
+          const PopupMenuItem(
+              value: 'edit', child: Text('Edit aim (difficulty · date)')),
         if (!ended)
           const PopupMenuItem(value: 'archive', child: Text('Archive')),
         if (ended) const PopupMenuItem(value: 'reopen', child: Text('Reopen')),

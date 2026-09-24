@@ -189,8 +189,11 @@ class _AimRow extends StatelessWidget {
     // reader announces the row as a single button, not four fragments.
     return MergeSemantics(
       child: InkWell(
-        // A live aim → edit its knobs; an ended one → its outcome/debrief history.
-        onTap: () => aim.status.isEnded
+        // A scheduled interview (and any ended aim) → the interview sheet to manage
+        // its rounds/outcome; a bare target aim → the knob editor (ADR-0009, amended
+        // 2026-09-24: interview-shaped aims open the sheet, not the editor — else a
+        // live interview's outcome can never be logged).
+        onTap: () => aim.status.isEnded || aim.isScheduledInterview
             ? showInterviewSheet(context, aim.id)
             : showAimEditorSheet(context, aimId: aim.id),
         borderRadius: Dim.brCard,

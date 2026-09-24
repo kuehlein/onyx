@@ -128,7 +128,10 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tapping a live aim opens its knob editor', (tester) async {
+  testWidgets('tapping a scheduled interview opens the interview overview',
+      (tester) async {
+    // A company-named aim is interview-shaped → the sheet (where you log the
+    // outcome / reschedule), NOT the knob editor (ADR-0009 amendment / #111).
     final google = _aim('g', 'Google', date: DateTime(2099, 1, 1));
     await tester.pumpWidget(_app(
       aims: [google],
@@ -141,6 +144,31 @@ void main() {
     ));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Google'));
+    await tester.pumpAndSettle();
+
+    // The interview sheet — its study/pause toggle shows; no editor pickers.
+    expect(find.text('Prioritize my study for this'), findsOneWidget);
+    expect(find.text('Level'), findsNothing);
+    expect(find.text('Save'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a bare target aim opens the knob editor',
+      (tester) async {
+    // No company + no interview loop → a target to tune → the knob editor.
+    const target = Aim(id: 't');
+    await tester.pumpWidget(_app(
+      aims: [target],
+      feas: [
+        (
+          aim: target,
+          feasibility: const AimFeasibility(status: FeasibilityStatus.openEnded)
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+    // A company-less aim's row reads as the assessment noun ("Interview" for SWE).
+    await tester.tap(find.text('Interview'));
     await tester.pumpAndSettle();
 
     // The aim editor sheet is open — its Save button + axis pickers are shown.

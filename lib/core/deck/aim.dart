@@ -195,6 +195,20 @@ class Aim {
           if (r.outcome != AimOutcome.pending) r,
       ];
 
+  /// Whether this aim is a scheduled interview **loop to manage** (rounds +
+  /// outcomes) vs a bare **target to tune** (knobs + a date). True when it names a
+  /// company, has more than one round, or has any resolved or explicitly-typed
+  /// round — the interview planner's output or an in-progress loop. A knob-only
+  /// target (no company; at most one untyped, still-pending date-holder) is false.
+  /// The Aims surface routes the former to the interview sheet (lifecycle) and the
+  /// latter to the knob editor ([ADR-0009], amended 2026-09-24).
+  bool get isScheduledInterview =>
+      companyName.isNotEmpty ||
+      rounds.length > 1 ||
+      rounds.any((r) =>
+          r.outcome != AimOutcome.pending ||
+          r.type != InterviewRoundType.other);
+
   /// All scheduled round dates (date-only), for calendar flags.
   List<DateTime> roundDates() => [
         for (final r in rounds)

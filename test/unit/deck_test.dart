@@ -191,4 +191,33 @@ void main() {
       expect(deck([const Aim(id: 'x')]).soonestAimDate(today), isNull);
     });
   });
+
+  group('Aim.isScheduledInterview', () {
+    InterviewRound r(String id,
+            {InterviewRoundType type = InterviewRoundType.other,
+            AimOutcome outcome = AimOutcome.pending}) =>
+        InterviewRound(id: id, number: 1, type: type, outcome: outcome);
+
+    test('a bare target (no company, <=1 untyped pending round) is not one',
+        () {
+      expect(const Aim(id: 'a').isScheduledInterview, isFalse); // no rounds
+      expect(Aim(id: 'a', rounds: [r('a1')]).isScheduledInterview,
+          isFalse); // one untyped date-holder
+    });
+
+    test('company / typed round / resolved round / >1 round makes it one', () {
+      expect(const Aim(id: 'a', companyName: 'Google').isScheduledInterview,
+          isTrue);
+      expect(
+          Aim(id: 'a', rounds: [r('a1', type: InterviewRoundType.onsite)])
+              .isScheduledInterview,
+          isTrue);
+      expect(
+          Aim(id: 'a', rounds: [r('a1', outcome: AimOutcome.passed)])
+              .isScheduledInterview,
+          isTrue);
+      expect(Aim(id: 'a', rounds: [r('a1'), r('a2')]).isScheduledInterview,
+          isTrue);
+    });
+  });
 }

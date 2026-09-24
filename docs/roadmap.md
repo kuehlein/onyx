@@ -206,14 +206,14 @@ model before we add features, so we build on the right shape.
         so a done-but-unlogged interview no longer hijacks the daily plan); the **Home / lanes / prep
         countdowns read the always-null `target.interviewDate`** (→ `Deck.soonestAimDate`); the aim
         editor's **date-clear dropped a typed round's type/notes**; **aim-row a11y**; and deleted dead
-        code (`interview_card.dart`, `Aim.normalized`) + corrected stale deck/aims docs. *Filed as
-        follow-ups (do NOT drop — the first is release-relevant):*
-        - **#111 (P1) — live-interview outcome logging is unreachable.** The aims row routes a LIVE aim
-          to the knob editor; the interview sheet (log outcome / advance rounds / archive / resume) is
-          gated behind `isEnded`, so a planned interview can never be advanced or ended. The fix
-          contradicts **ADR-0009 §3** (row→editor is ADR-pinned + test-locked) → needs an **ADR-0009
-          amendment**, not a cleanup edit. *(interview_card.dart, a card→sheet row, was deleted as dead
-          — git history has it if the fix wants it.)*
+        code (`interview_card.dart`, `Aim.normalized`) + corrected stale deck/aims docs. *Follow-ups:*
+        - **#111 (P1) ✅ DONE (2026-09-24) — live-interview outcome logging now reachable.** The aims
+          row routed every live aim to the knob editor, orphaning the interview sheet's lifecycle (log
+          outcome / advance rounds / archive / resume was gated behind `isEnded`) — a planned interview
+          could never be advanced or ended. Fixed: route by `Aim.isScheduledInterview` (company / >1
+          round / typed or resolved round → the interview sheet; bare target → the editor), and the
+          sheet gains an **"Edit aim"** action back to the knob editor. Recorded in the
+          **[ADR-0009] amendment** (2026-09-24). Interview-sheet copy-generality stays #88.
         - **#112 — headline readiness omits `tierWeights`** that the ladder/forecast pass
           (`deckReadiness.scoreFor` vs `computeReadinessForTarget`) → the headline band and the ladder
           can disagree (~15pt). Changes user-facing numbers; reconcile so they agree for a single aim
@@ -234,7 +234,7 @@ model before we add features, so we build on the right shape.
 - **1c · The Aims surface ✅ (delivered via S5e — see ②Structural)** (→ your_target, scheduler):
   Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
   status + zone-calendar), with aims decoupled from deck creation. *Residual:* **#90** debrief
-  reachability (deferred to the behavioral pass) and **#111** live-aim routing.
+  reachability (deferred to the behavioral pass). *(#111 live-aim routing ✅ fixed 2026-09-24.)*
 - **1d · Deck/vault scope split** (→ browse, analytics, settings): deck-scoped Browse / Analytics /
   deck-settings *inside* a deck; vault Settings + a light cross-deck glance at the vault level.
   *Absorbs settings-IA #85.*
