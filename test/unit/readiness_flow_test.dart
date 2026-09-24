@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/interview/assessment.dart';
+import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
@@ -28,13 +29,13 @@ final bool _sqliteAvailable = () {
   }
 }();
 
-Card _card(String id, String domain) => Card(
+Card _card(String id, String domain, {int tier = 1}) => Card(
       id: id,
       type: 'flashcard',
       title: id,
       overview: '',
       tags: [domain],
-      tiers: {domain: 1},
+      tiers: {domain: tier},
       sections: [
         const CardSection(
             heading: 's1', slug: 's1', content: 'x', quizzable: true),
@@ -75,11 +76,14 @@ void main() {
     'B::s1': srs('B', 5), // weak system design
   });
 
-  ProviderContainer make(AppDatabase db, {List<Deck>? goals}) =>
+  ProviderContainer make(AppDatabase db,
+          {List<Deck>? goals,
+          IndexResult? indexOverride,
+          SectionStates? statesOverride}) =>
       ProviderContainer(overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        vaultIndexProvider.overrideWith((ref) async => index),
-        srsStatesProvider.overrideWith((ref) async => states),
+        vaultIndexProvider.overrideWith((ref) async => indexOverride ?? index),
+        srsStatesProvider.overrideWith((ref) async => statesOverride ?? states),
         // This test asserts SWE track-weighting (ds-a vs system-design), so pin
         // the SWE subject — the config-less default is now neutral (G7f).
         templateRegistryProvider.overrideWith(
@@ -237,5 +241,63 @@ void main() {
     ]);
     addTearDown(chosen.dispose);
     expect(await chosen.read(activeTargetIsSetProvider.future), isTrue);
+  });
+
+  test(
+      'the headline is tier-weighted, agreeing with the ladder/forecast (#112)',
+      () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    addTearDown(() => db.close());
+
+    // One domain, two tiers with very different retention: a strong foundational
+    // (tier 1) + a weak peripheral (tier 4). tier RELEVANCE changes how they
+    // combine, so a single-tier domain wouldn't exercise the knob.
+    final mixIndex = IndexResult(
+      cards: [
+        _card('A', 'system-design', tier: 1),
+        _card('B', 'system-design', tier: 4),
+      ],
+      idless: 0,
+      malformed: 0,
+      skipped: 0,
+    );
+    final mixStates = SectionStates({
+      'A::s1': srs('A', 200), // strong foundational
+      'B::s1': srs('B', 3), // weak peripheral
+    });
+    final stab = {'A::s1': 200.0, 'B::s1': 3.0};
+    final aim = Aim(
+      id: 'a',
+      levelId: SeniorityLevel.senior.name,
+      contextId: CompanyTier.faang.name,
+      trackId: Track.backend.name,
+    );
+    final c =
+        make(db, indexOverride: mixIndex, statesOverride: mixStates, goals: [
+      Deck(id: 'default', name: 'All', templateId: 'swe', aims: [aim]),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(readinessProvider, (_, __) {});
+    final headline = (await c.read(readinessProvider.future)).overall;
+
+    // The canonical tier-weighted readiness for the aim's target — what the
+    // ladder/forecast use. The headline must equal THIS, not the un-tier-weighted
+    // computeReadiness (the pre-#112 headline).
+    final target = ReadinessTarget.forAim(aim, softwareInterviewsTemplate);
+    final tierWeighted = computeReadinessForTarget(
+            cards: mixIndex.cards, stabilityByKey: stab, target: target)
+        .overall;
+    final flat = computeReadiness(
+      cards: mixIndex.cards,
+      stabilityByKey: stab,
+      stabilityTarget: target.stabilityTarget,
+      domainWeights: {'system-design': domainWeight(target, 'system-design')},
+    ).overall;
+
+    expect((tierWeighted - flat).abs(), greaterThan(0.01),
+        reason: 'the fixture must actually exercise tierWeights');
+    expect(headline, closeTo(tierWeighted, 1e-9),
+        reason: 'the headline must be tier-weighted (agree with the forecast)');
   });
 }

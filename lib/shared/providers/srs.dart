@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/clock.dart';
 import '../../core/database/database.dart';
 import '../../core/readiness/readiness.dart';
+import '../../core/readiness/target.dart';
 import '../../core/srs/recognition_repository.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
@@ -165,6 +166,9 @@ class StudySession extends _$StudySession {
         domainWeights: {
           for (final d in domains) d: targeting.weightForDomain(d),
         },
+        // Tier relevance — must match the headline (readinessProvider), which is
+        // tier-weighted, or the before/after delta skews (#112).
+        tierWeights: tierWeightsFor(targeting.base),
         transferByDomain: applied.interview ? applied.byDomain : null,
       );
     } catch (_) {

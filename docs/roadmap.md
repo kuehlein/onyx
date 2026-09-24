@@ -214,10 +214,14 @@ model before we add features, so we build on the right shape.
           round / typed or resolved round → the interview sheet; bare target → the editor), and the
           sheet gains an **"Edit aim"** action back to the knob editor. Recorded in the
           **[ADR-0009] amendment** (2026-09-24). Interview-sheet copy-generality stays #88.
-        - **#112 — headline readiness omits `tierWeights`** that the ladder/forecast pass
-          (`deckReadiness.scoreFor` vs `computeReadinessForTarget`) → the headline band and the ladder
-          can disagree (~15pt). Changes user-facing numbers; reconcile so they agree for a single aim
-          (S4's promise) + add a test.
+        - **#112 ✅ DONE (2026-09-24) — headline readiness now tier-weighted.** `deckReadiness.scoreFor`
+          (and the post-session before-snapshot in `srs.dart`) omitted the `tierWeights` the
+          ladder/forecast pass, so the headline band disagreed with the ladder (~15pt). Root cause: the
+          targeting-layer refactor (n6535fd9, pre-S2) swapped `computeReadinessForTarget` for an inline
+          `computeReadiness` and dropped the arg. Restored `tierWeights: tierWeightsFor(...)` in both the
+          headline and the before-snapshot (they must move together — the session delta compares them);
+          the headline now equals the canonical `computeReadinessForTarget` (S4's promise). + a
+          provider test asserting agreement on a mixed-tier deck. Suite 1001.
         - **#113 — thread the readiness forecast per-deck** — a non-active deck currently inherits the
           active deck's card sliver in its forecast/feasibility (multi-deck only; already documented).
       - *Open decision (parked; S5 shipped round-shaped):* **rounds → milestones** (scheduler.md Rec,

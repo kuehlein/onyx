@@ -216,7 +216,10 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
   // readiness is its hardest-to-clear aim, never an average that hides a gap (the
   // competing-aims decision — user_stories/index.md). A deck with no active aim
   // scores against its own base target (0-aim coverage-only is a later slice). A
-  // single aim reproduces the pre-S2 single-target readiness (invariant #8).
+  // single aim reproduces the canonical single-target readiness
+  // ([computeReadinessForTarget] — tier + domain weighted), so the headline agrees
+  // with the ladder/forecast (S4). (#112 restored the tier weighting the targeting
+  // refactor n6535fd9 dropped; invariant #8 holds against that canonical readiness.)
   final registry = await registryF;
   final template = registry.byId(goal.templateId) ?? registry.primary;
 
@@ -230,6 +233,10 @@ Future<Readiness> deckReadiness(Ref ref, String deckId) async {
       stabilityByKey: stabilityByKey,
       stabilityTarget: tg.stabilityTarget,
       domainWeights: {for (final d in domains) d: tg.weightForDomain(d)},
+      // Tier RELEVANCE for this target (the ladder/forecast weight on it too, via
+      // computeReadinessForTarget) — peripheral-for-this-target cards barely move
+      // readiness. Without it the headline disagreed with the ladder/forecast (#112).
+      tierWeights: tierWeightsFor(base),
       transferByDomain: applied.interview ? applied.byDomain : null,
     );
   }

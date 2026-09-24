@@ -253,9 +253,12 @@ Readiness computeReadiness({
   );
 }
 
-/// Convenience wrapper: compute readiness for a specific [target] — its
-/// durability bar plus per-domain weights. Shared by the dashboard provider and
-/// the post-session summary so their numbers line up exactly.
+/// Convenience wrapper: compute readiness for a specific [target] — its durability
+/// bar, per-domain weights, AND per-tier relevance ([tierWeightsFor]). This is the
+/// CANONICAL target-aware readiness: the dashboard headline (`deckReadiness`), the
+/// post-session before/after snapshot, and the ladder/forecast all apply the same
+/// three weightings off their own targets so their numbers line up (#112). Used
+/// directly by the readiness-delta tests.
 Readiness computeReadinessForTarget({
   required List<Card> cards,
   required Map<String, double> stabilityByKey,
