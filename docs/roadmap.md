@@ -269,9 +269,26 @@ model before we add features, so we build on the right shape.
   **too-little-time warning**: engagement floor or heaviest-flow unit cost, deck_selection.md) + the
   config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
   (Pace/Algo removed). **Remaining:** a vault-level **cross-deck** allocation view (all shares +
-  warnings together — deck_selection.md) is optional/later; **recommended** shares → **#116**. **Phase
-  B (with #32 + #106):** derive the guardrails (the engine computes the mix + the automatic cognitive
-  ceiling). Settings prune + bug-fix → **#115**.
+  warnings together — deck_selection.md) is optional/later; **recommended** shares → **#116**. **Settings
+  prune + bug-fix → #115.**
+  - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
+    a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
+    to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user
+    owns the **SIZE** (budget + proportion); the coach **proposes / applies-on-request, never
+    auto-writes**; **silence is the default** (proactive notify deferred, #110). Shipped: **#106 slice 1**
+    (reviews-first retention floor in the packer — due reviews clear first up to a cap); the **coach
+    repoint** off the three removed dials onto the daily budget + intents (fixes a live docs/code
+    contradiction; readyToPush is informational; check-in + chat propose a budget change); subject-neutral
+    **study-load help** + a Vocabulary leak-guard test; the **budget sustainability-zone** readout on the
+    daily-time dial (the user-pulled "informed override").
+  - **Phase B (deferred, with #32 + #106):** replace the FIXED guardrails with **DERIVED** quantities +
+    the flow-aware automatic ceiling (needs state-aware est-minutes #32 + the retention floor #106
+    est-minutes fidelity). The precise **budget → ready-by date-shift** readout waits here (moving the
+    budget doesn't shift ready-by until it derives the new-count).
+  - **Phase C (deferred, gated on #32/#106 + #110 + real usage evidence):** the engine-*initiated* size
+    **proposal** + any ambient notify surface. Rejected for now: engine auto-writing/pushing SIZE
+    (re-creates the autonomy erosion ADR-0010 removed); proactive pre-deadline taper (fights ADR-0007
+    urgency).
 - **1e · Onboarding** (→ onboarding): folder → deck; cloud capabilities absent (not disabled).
   *Resolves #86.*
 - **1f · Card model** (→ card): the multi-modal card (view / study / authoring / stub), collapsible
