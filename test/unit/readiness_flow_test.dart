@@ -300,4 +300,56 @@ void main() {
     expect(headline, closeTo(tierWeighted, 1e-9),
         reason: 'the headline must be tier-weighted (agree with the forecast)');
   });
+
+  test('the forecast is scoped per-deck, not to the active deck (#113)',
+      () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    addTearDown(() => db.close());
+
+    // Two decks over DISJOINT cards: A = strong ds-a, B = weak system-design. At
+    // the SAME role, each deck's forecast must reflect ITS OWN cards — before #113
+    // both keyed on role only and shared the active deck's card sliver.
+    final twoDeckIndex = IndexResult(
+      cards: [_card('A', 'ds-a'), _card('B', 'system-design')],
+      idless: 0,
+      malformed: 0,
+      skipped: 0,
+    );
+    final twoDeckStates = SectionStates({
+      'A::s1': srs('A', 400), // deck A: strong
+      'B::s1': srs('B', 2), // deck B: weak
+    });
+    final c = make(db,
+        indexOverride: twoDeckIndex,
+        statesOverride: twoDeckStates,
+        goals: [
+          Deck(
+              id: 'a',
+              name: 'A',
+              templateId: 'swe',
+              membership: TagMembership('ds-a')),
+          Deck(
+              id: 'b',
+              name: 'B',
+              templateId: 'swe',
+              membership: TagMembership('system-design')),
+        ]);
+    addTearDown(c.dispose);
+
+    ForecastDims dims(String deckId) => (
+          deckId: deckId,
+          level: SeniorityLevel.senior,
+          company: CompanyTier.faang,
+          track: Track.backend,
+        );
+    final fa = await c.read(readinessForecastForProvider(dims('a')).future);
+    final fb = await c.read(readinessForecastForProvider(dims('b')).future);
+
+    expect(fa, isNotNull);
+    expect(fb, isNotNull);
+    // A's strong cards → higher current readiness than B's weak cards; EQUAL would
+    // mean both forecasts used one deck's card sliver (the #113 bug).
+    expect(fa!.startReadiness, greaterThan(fb!.startReadiness));
+  });
 }

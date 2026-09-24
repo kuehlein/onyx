@@ -75,10 +75,13 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
   );
 }
 
-/// The role dimensions a forecast is computed against. A value-equal record so
-/// [readinessForecastForProvider] memoises per role — interviews sharing a role
-/// (e.g. two "senior · faang · backend" loops) reuse a single simulation.
+/// The (deck + role) a forecast is computed against. A value-equal record so
+/// [readinessForecastForProvider] memoises per deck+role — aims in the SAME deck
+/// sharing a role (e.g. two "senior · faang · backend" loops) reuse one simulation,
+/// while two DECKS at the same role keep SEPARATE forecasts (their card sets differ
+/// — the per-deck scoping, #113).
 typedef ForecastDims = ({
+  String deckId,
   SeniorityLevel level,
   CompanyTier company,
   Track track,
@@ -107,6 +110,7 @@ Future<ReadinessForecast?> readinessForecast(Ref ref) async {
   final target =
       _bindingTarget(goal, await readinessF, template, await targetF);
   return ref.watch(readinessForecastForProvider((
+    deckId: goal.id,
     level: target.level,
     company: target.company,
     track: target.track,
@@ -125,13 +129,14 @@ Future<ReadinessForecast?> readinessForecastFor(
     Ref ref, ForecastDims dims) async {
   final registryF =
       ref.watch(templateRegistryProvider.future); // register first
+  final decksF = ref.watch(decksProvider.future);
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final today = (await ref.watch(clockProvider.future)).today();
-  final goal = await ref.watch(activeDeckProvider.future);
-  // Forecast against the active goal's OWN template (#30d multi-template); the
-  // dims record stays role-only so the per-role memoisation + external callers are
-  // unchanged.
+  // Scope to the [dims.deckId] deck (NOT necessarily the active one) so a non-active
+  // lane's forecast/feasibility is computed over ITS OWN members (#113). Forecast
+  // against that deck's OWN template (#30d multi-template).
+  final goal = pickDeck(await decksF, dims.deckId);
   final registry = await registryF;
   final target = ReadinessTarget.of(
     level: dims.level,
@@ -140,8 +145,8 @@ Future<ReadinessForecast?> readinessForecastFor(
     templateTarget: registry.byId(goal.templateId)?.target,
   );
 
-  // The active goal's concept cards — practice tracks feed readiness via transfer,
-  // not recall coverage (matches the readiness provider; task #30d, G2).
+  // The deck's concept cards — practice tracks feed readiness via transfer, not
+  // recall coverage (matches the readiness provider; task #30d, G2).
   final cards =
       goal.select(index.studyCards).where((c) => !c.isPracticeTrack).toList();
   if (cards.isEmpty) return null;

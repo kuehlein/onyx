@@ -26,10 +26,9 @@ part 'readiness_feasibility.g.dart';
 /// urgency on this (S3), the coach warns from it (#103 — infeasible = the
 /// incoherent-cram case), and the Aims surface shows it per aim (S5).
 ///
-/// The forecast substrate ([readinessForecastFor]) is scoped to the ACTIVE deck's
-/// cards (the documented single-goal-Home sliver noted on [targetForDeck]), so
-/// this is exact for the active deck; a non-active deck inherits that same sliver
-/// until the forecast is threaded per-deck.
+/// The forecast substrate ([readinessForecastFor]) is scoped to THIS [deckId]'s
+/// cards (keyed by `(deckId, role)`, #113), so per-aim feasibility is exact for any
+/// deck — active or a non-active lane in the hub — not just the active one.
 @riverpod
 Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
     Ref ref, String deckId) async {
@@ -52,6 +51,7 @@ Future<List<({Aim aim, AimFeasibility feasibility})>> deckAimFeasibility(
     }
     final t = ReadinessTarget.forAim(aim, template);
     final forecast = await ref.watch(readinessForecastForProvider((
+      deckId: deckId,
       level: t.level,
       company: t.company,
       track: t.track,

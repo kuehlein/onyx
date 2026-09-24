@@ -37,8 +37,8 @@ model before we add features, so we build on the right shape.
       **R4** user-facing copy (goal→deck; interview/target→aim via the existing `Vocabulary` seam).
     - **② Structural (behavior) — "target lives on the aim"** (the model is [ADR-0006](adr/0006-deck-and-aims-model.md)).
       **Status: S1–S5 ✅ DONE — the deck/aims model is fully realized in code (the deck is a pure lens;
-      suite 969→996). Every slice shipped byte-identical for a single aim (#8). Post-S5 review
-      follow-ups are filed (#111–#113, below).** Key finding (2026-09-22 investigation,
+      suite 969→1002). Every slice shipped byte-identical for a single aim (#8). Post-S5 review
+      follow-ups #111–#113 are all ✅ done (below).** Key finding (2026-09-22 investigation,
       3-agent map): the system is consistent *today* only because every aim inherits the deck's slots.
       So the safe order is **make every reader honor per-aim first (while aims still inherit →
       byte-identical), then flip the writers + migrate + delete the deck slots.** Deck-slot removal
@@ -222,8 +222,12 @@ model before we add features, so we build on the right shape.
           headline and the before-snapshot (they must move together — the session delta compares them);
           the headline now equals the canonical `computeReadinessForTarget` (S4's promise). + a
           provider test asserting agreement on a mixed-tier deck. Suite 1001.
-        - **#113 — thread the readiness forecast per-deck** — a non-active deck currently inherits the
-          active deck's card sliver in its forecast/feasibility (multi-deck only; already documented).
+        - **#113 ✅ DONE (2026-09-24) — readiness forecast threaded per-deck.** `readinessForecastFor`
+          keyed on role only and always used the ACTIVE deck's cards, so a non-active lane's
+          forecast/feasibility used the wrong card set. Added `deckId` to `ForecastDims` (memoised per
+          deck+role) and resolve the deck via `pickDeck(dims.deckId)`; every caller (active forecast,
+          aim editor, `deckAimFeasibility`) passes its deckId. + a multi-deck test (disjoint decks get
+          distinct forecasts). Suite 1002.
       - *Open decision (parked; S5 shipped round-shaped):* **rounds → milestones** (scheduler.md Rec,
         not yet Accepted) — keep aims round-shaped until decided; don't build ahead.
     - *Invariant to hold throughout:* difficulty (level) affects readiness **only** via tier-depth,

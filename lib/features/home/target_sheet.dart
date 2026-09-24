@@ -135,7 +135,12 @@ class _AimEditorSheetState extends ConsumerState<_AimEditorSheet> {
     final rt =
         ReadinessTarget.forAim(aim, template, date: aim.currentRound()?.date);
     final date = rt.interviewDate;
-    final dims = (level: rt.level, company: rt.company, track: rt.track);
+    final dims = (
+      deckId: goal.id,
+      level: rt.level,
+      company: rt.company,
+      track: rt.track
+    );
     final forecast =
         ref.watch(readinessForecastForProvider(dims)).asData?.value;
 
