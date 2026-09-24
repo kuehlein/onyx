@@ -131,4 +131,49 @@ void main() {
     expect(rec.upsertedDeck, isNull);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('clearing the date keeps a typed round (only clears its date)',
+      (tester) async {
+    late _RecordingDecks rec;
+    final aim = Aim(id: 'a1', rounds: [
+      InterviewRound(
+          id: 'a1-r1',
+          number: 1,
+          type: InterviewRoundType.onsite,
+          date: DateTime(2099, 6, 1)),
+    ]);
+    await tester
+        .pumpWidget(_harness(_deckWith([aim]), (d) => rec = d, aimId: 'a1'));
+    await _openEditor(tester);
+
+    // A set date shows a Clear affordance; clearing must NOT drop the round (it
+    // carries the "Onsite" type), only its date — the aim just goes open-ended.
+    await _tap(tester, 'Clear');
+    await _tap(tester, 'Save');
+
+    final saved = rec.upsertedAim;
+    expect(saved, isNotNull);
+    expect(saved!.rounds.length, 1);
+    expect(saved.rounds.single.type, InterviewRoundType.onsite);
+    expect(saved.rounds.single.date, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('clearing the date drops a bare synthetic date-holder round',
+      (tester) async {
+    late _RecordingDecks rec;
+    // Default type (other) + no notes → a bare date-holder, safe to remove so a
+    // target with no date carries no phantom round.
+    final aim = Aim(id: 'a1', rounds: [
+      InterviewRound(id: 'a1-r1', number: 1, date: DateTime(2099, 6, 1)),
+    ]);
+    await tester
+        .pumpWidget(_harness(_deckWith([aim]), (d) => rec = d, aimId: 'a1'));
+    await _openEditor(tester);
+    await _tap(tester, 'Clear');
+    await _tap(tester, 'Save');
+
+    expect(rec.upsertedAim?.rounds, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
 }

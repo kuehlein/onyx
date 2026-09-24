@@ -14,8 +14,8 @@ import '../../shared/widgets/sheet_header.dart';
 import 'interview_actions.dart';
 import 'round_editing.dart';
 
-/// The single place to act on an interview — opened by tapping any [InterviewCard]
-/// anywhere. Shows the round history + current round, and CONTEXTUAL actions:
+/// The single place to act on an interview — the round history + current round,
+/// with CONTEXTUAL actions:
 /// before the round you reschedule; after it you log the result (which advances
 /// or ends the loop). Secondary/destructive actions live in the header overflow
 /// to keep the body uncluttered. Watches the active goal's interview live.

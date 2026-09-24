@@ -83,7 +83,21 @@ class _AimEditorSheetState extends ConsumerState<_AimEditorSheet> {
     final rounds = [...aim.rounds];
     final i = rounds.indexWhere((r) => r.outcome == AimOutcome.pending);
     if (date == null) {
-      if (i >= 0) rounds.removeAt(i);
+      if (i >= 0) {
+        // Clearing the date must not silently drop a REAL round's type/notes (this
+        // editor can also edit a planner-made interview whose round is typed, e.g.
+        // "Onsite"). Keep such a round — just clear its date (copyWith clears via
+        // the _unset sentinel) so the aim reads as open-ended; only a bare
+        // synthetic date-holder (default type, no notes) is removed.
+        final r = rounds[i];
+        final bare =
+            r.type == InterviewRoundType.other && (r.notes?.isEmpty ?? true);
+        if (bare) {
+          rounds.removeAt(i);
+        } else {
+          rounds[i] = r.copyWith(date: null);
+        }
+      }
       return aim.copyWith(rounds: rounds);
     }
     if (i >= 0) {

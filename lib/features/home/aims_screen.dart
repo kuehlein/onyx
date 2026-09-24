@@ -185,35 +185,39 @@ class _AimRow extends StatelessWidget {
     final name = aim.companyName.isEmpty ? assessment : aim.companyName;
     final sub = _subtitle();
 
-    return InkWell(
-      // A live aim → edit its knobs; an ended one → its outcome/debrief history.
-      onTap: () => aim.status.isEnded
-          ? showInterviewSheet(context, aim.id)
-          : showAimEditorSheet(context, aimId: aim.id),
-      borderRadius: Dim.brCard,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: Dim.space2, vertical: Dim.space3),
-        child: Row(
-          children: [
-            Icon(leading, size: Dim.iconMd, color: muted),
-            const SizedBox(width: Dim.space3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: theme.textTheme.titleMedium),
-                  if (sub.isNotEmpty)
-                    Text(sub,
-                        style:
-                            theme.textTheme.bodySmall?.copyWith(color: muted)),
-                ],
+    // Merge the glyph + name + subtitle + pill into one semantics node so a screen
+    // reader announces the row as a single button, not four fragments.
+    return MergeSemantics(
+      child: InkWell(
+        // A live aim → edit its knobs; an ended one → its outcome/debrief history.
+        onTap: () => aim.status.isEnded
+            ? showInterviewSheet(context, aim.id)
+            : showAimEditorSheet(context, aimId: aim.id),
+        borderRadius: Dim.brCard,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Dim.space2, vertical: Dim.space3),
+          child: Row(
+            children: [
+              Icon(leading, size: Dim.iconMd, color: muted),
+              const SizedBox(width: Dim.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: theme.textTheme.titleMedium),
+                    if (sub.isNotEmpty)
+                      Text(sub,
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: muted)),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: Dim.space2),
-            _statusPill(aim, feasibility),
-            Icon(Icons.chevron_right, size: Dim.iconMd, color: muted),
-          ],
+              const SizedBox(width: Dim.space2),
+              _statusPill(aim, feasibility),
+              Icon(Icons.chevron_right, size: Dim.iconMd, color: muted),
+            ],
+          ),
         ),
       ),
     );
@@ -391,17 +395,21 @@ class _PastAimsState extends State<_PastAims> {
         InkWell(
           onTap: () => setState(() => _open = !_open),
           borderRadius: Dim.brChip,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: Dim.space2, vertical: Dim.space2),
-            child: Row(
-              children: [
-                Icon(_open ? Icons.expand_more : Icons.chevron_right,
-                    size: Dim.iconMd, color: muted),
-                const SizedBox(width: Dim.space2),
-                Text('Past (${widget.past.length})',
-                    style: theme.textTheme.labelLarge?.copyWith(color: muted)),
-              ],
+          // minHeight 48 keeps the disclosure toggle a full tap target (a11y #79).
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Dim.space2),
+              child: Row(
+                children: [
+                  Icon(_open ? Icons.expand_more : Icons.chevron_right,
+                      size: Dim.iconMd, color: muted),
+                  const SizedBox(width: Dim.space2),
+                  Text('Past (${widget.past.length})',
+                      style:
+                          theme.textTheme.labelLarge?.copyWith(color: muted)),
+                ],
+              ),
             ),
           ),
         ),
