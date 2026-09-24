@@ -236,9 +236,16 @@ model before we add features, so we build on the right shape.
       averaged, per-aim shown) + urgency/deadline-weighted allocation + the user's pause lever; the
       coach may gently flag low-overlap tension, never auto-override. Shape agreed; mechanism in
       **S2** (rollup) + **S3** (allocation) + a coach nudge. See the Open decision in `user_stories/index.md`.
-- **1b · IA: vault → deck → home** (→ deck_selection, home): deck-selection as the vault-level hub
-  (landing when >1 deck); single-deck degradation **with an escape hatch** (fixes the pause-strands
-  bug); deck-scoped Home ("Home" stays the name).
+- **1b · IA: vault → deck → home — ✅ escape hatch done (2026-09-24)** (→ deck_selection, home).
+  The **pause-strands bug is fixed**: a persistent secondary **"Decks"** app-bar affordance on Home
+  (always present, even single-deck) opens the new vault-level **`/decks`** deck-selection screen
+  (reuses the lanes hub, header-suppressed), so paused decks stay **resumable** with only one active
+  deck and single-deck users can add/switch. It **replaces the prominent hub back-arrow**
+  (deck_selection.md: "secondary, not a back arrow that reads as leaving"). Kept ADR-0005's
+  active-count **degradation** (the inline landing hub still needs ≥2 active) — the escape hatch is
+  the on-demand path ADR-0005 flagged as a trade-off (see its 2026-09-24 amendment).
+  *Remainder → 1d:* the full **vault-vs-deck scope split** (deck-scoped Browse/Analytics/Settings only
+  *inside* a deck; the inline landing hub still carries the deck-scoped tabs — transitional).
 - **1c · The Aims surface ✅ (delivered via S5e — see ②Structural)** (→ your_target, scheduler):
   Your Target + Scheduler + the interview list are now **one per-deck Aims surface** (knobs + dates +
   status + zone-calendar), with aims decoupled from deck creation. *(#111 live-aim routing + #90

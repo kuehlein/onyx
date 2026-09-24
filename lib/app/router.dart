@@ -11,6 +11,7 @@ import '../features/browse/card_detail_screen.dart';
 import '../features/browse/unresolved_links_screen.dart';
 import '../features/drafts/draft_review_screen.dart';
 import '../features/home/aims_screen.dart';
+import '../features/home/deck_selection_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/interview/interview_debrief_screen.dart';
@@ -122,6 +123,10 @@ GoRouter createRouter(WidgetRef ref, Listenable refresh) => GoRouter(
         // The AI interview-readiness report, launched from Home.
         GoRoute(
             path: '/report', builder: (_, __) => const ReadinessReportScreen()),
+        // Vault-level deck selection (1b) — the persistent escape hatch from Home
+        // (reachable with a single active deck, so paused decks stay resumable).
+        GoRoute(
+            path: '/decks', builder: (_, __) => const DeckSelectionScreen()),
         // The unified per-deck Aims surface (S5e) — weakest-link readiness, the
         // aims list (subsumes the old upcoming-interviews screen), + the planner.
         GoRoute(path: '/aims', builder: (_, __) => const AimsScreen()),

@@ -65,6 +65,18 @@ spec-mandated fix to the paused-counted-as-a-lane bug).
   `activeStudyGoal`, so they inherit the spine without change; explicitly wiring
   their route params to set `focusedGoalProvider` is a later UI unit.
 
+## Amendment (2026-09-24) — the escape hatch (1b)
+
+The "1 active + N paused" degradation (above) is retained, but its **trade-off**
+("a paused goal no longer appears on the hub when only one goal is active") stranded
+the user: with the hub only reachable at ≥2 active, a paused deck couldn't be
+resumed (`deck_selection.md` "Known bugs"). Resolved **without changing the
+degradation**: a persistent secondary **"Decks"** affordance on Home opens a
+vault-level `/decks` deck-selection screen on demand (reusing the lanes hub), so
+paused decks stay reachable with one active deck. The degradation still governs the
+*auto-landing* (≥2 active → hub); the escape hatch is the manual path. The old
+prominent hub back-arrow is replaced by this secondary affordance.
+
 ## Validation
 
 - `test/unit/focused_goal_spine_test.dart`: the spine defaults to `null` and

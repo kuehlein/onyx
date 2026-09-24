@@ -15,10 +15,15 @@ import 'deck_editor_sheet.dart';
 /// Tapping a lane enters that goal (its own Home). Shown only when ≥2 goals live;
 /// a single goal renders today's Home directly (the degradation rule).
 class LanesHub extends ConsumerWidget {
-  const LanesHub({super.key, required this.onEnter});
+  const LanesHub({super.key, required this.onEnter, this.showHeader = true});
 
   /// Called with a goal id when the user taps into a lane.
   final void Function(String deckId) onEnter;
+
+  /// Whether to render the in-body "Today's mix" title + blurb. The inline
+  /// landing shows it; the `/decks` screen (which has its own "Decks" AppBar)
+  /// hides it to avoid a doubled header.
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,14 +50,16 @@ class LanesHub extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(
               Dim.space4, Dim.space3, Dim.space4, Dim.space5),
           children: [
-            Text("Today's mix", style: theme.textTheme.headlineSmall),
-            const SizedBox(height: Dim.space1),
-            Text(
-              'Your decks share the day. Tap one to study it.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: Dim.space4),
+            if (showHeader) ...[
+              Text("Today's mix", style: theme.textTheme.headlineSmall),
+              const SizedBox(height: Dim.space1),
+              Text(
+                'Your decks share the day. Tap one to study it.',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: Dim.space4),
+            ],
             for (final g in active) ...[
               _DeckLane(goal: g, onEnter: onEnter),
               const SizedBox(height: Dim.space3),

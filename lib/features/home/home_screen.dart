@@ -36,8 +36,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _enter(String deckId) =>
       ref.read(focusedDeckProvider.notifier).focus(deckId);
 
-  void _backToHub() => ref.read(focusedDeckProvider.notifier).focus(null);
-
   @override
   Widget build(BuildContext context) {
     // Kick off the one-time restore-from-vault-if-empty on app start.
@@ -71,22 +69,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Single-goal Home: the only goal, or the lane we entered.
-    final canGoBack = activeGoals.length >= 2 && focusedId != null;
     final focused = focusedId == null
         ? null
         : activeGoals.firstWhere((g) => g.id == focusedId);
 
     return Scaffold(
       appBar: AppBar(
-        leading: canGoBack
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: "Today's mix",
-                onPressed: _backToHub,
-              )
-            : null,
         title: Text(focused?.name ?? 'Onyx'),
-        actions: const [_ReadinessChip(), SizedBox(width: Dim.space2)],
+        // The persistent "Decks" escape hatch (deck_selection.md) — always present
+        // (even single-deck, so you can add/switch/resume), a secondary action
+        // rather than a prominent back arrow that reads as "leaving".
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.layers_outlined),
+            tooltip: 'Decks',
+            onPressed: () => context.push('/decks'),
+          ),
+          const _ReadinessChip(),
+          const SizedBox(width: Dim.space2),
+        ],
       ),
       body: const _DeckHomeBody(),
     );

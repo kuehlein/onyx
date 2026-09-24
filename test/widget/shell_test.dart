@@ -62,4 +62,21 @@ void main() {
 
     expect(find.textContaining('No cards indexed'), findsOneWidget);
   });
+
+  testWidgets('Home has a persistent Decks escape hatch → deck selection (1b)',
+      (tester) async {
+    await pumpApp(tester, index: populated);
+
+    // Always present on Home (even single-deck), a secondary app-bar action — the
+    // fix for "pausing one of two decks strands you" (deck_selection.md).
+    expect(find.byTooltip('Decks'), findsOneWidget);
+    await tester.tap(find.byTooltip('Decks'));
+    await tester.pumpAndSettle();
+
+    // Deck selection: its own "Decks" title + the add path; no doubled "Today's
+    // mix" header (the vault-level view drops the inline landing header).
+    expect(find.widgetWithText(AppBar, 'Decks'), findsOneWidget);
+    expect(find.text('New deck'), findsOneWidget);
+    expect(find.text("Today's mix"), findsNothing);
+  });
 }
