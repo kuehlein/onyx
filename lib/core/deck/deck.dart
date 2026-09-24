@@ -54,7 +54,9 @@ class Deck {
   final DeckState state;
 
   /// The aims this deck points at — a deck can hold several at once (e.g. Google +
-  /// Amazon interviews, or a comp-test + a jury), which the targeting layer blends.
+  /// Amazon interviews, or a comp-test + a jury). Readiness scores the **weakest
+  /// link** across the active aims (#6); the daily plan blends their emphasis into
+  /// today's allocation (ADR-0007).
   /// Each aim owns its OWN readiness knobs (difficulty [Aim.levelId] · durability
   /// [Aim.contextId] · emphasis [Aim.trackId]) + date via rounds (S1); the **deck
   /// is a pure lens** with no target slots of its own (n006). Empty → a plain

@@ -1,11 +1,13 @@
-/// The interview-lifecycle facet of a [Deck] (task #30d Phase B — aim
-/// unification). A goal's *target* (level/context/track/deadline) and membership
-/// live on the goal itself; this holds only what is **interview-specific**: the
-/// company, the ordered rounds, the status/outcome, and AI-plan weight boosts.
-/// A null `interview` on a Deck → a plain (non-interview) study goal.
+/// The **aim** — one objective a [Deck] points at (task #30d Phase B; deck/aims
+/// model, ADR-0006 / n006). An aim OWNS its readiness knobs — difficulty
+/// ([Aim.levelId]) · durability ([Aim.contextId]) · emphasis ([Aim.trackId]) —
+/// plus its date (via [Aim.rounds]) and its interview lifecycle (company, ordered
+/// rounds, status/outcome, AI-plan weight boosts). The **deck is a pure lens**
+/// (membership + template) with no target slots of its own; a deck holds a set of
+/// aims and the readiness layer takes the **weakest link** across them (#6).
 ///
-/// These types are interview-generic (a screen/onsite loop with outcomes), NOT
-/// tied to the SWE target enums — so `Deck` stays template-agnostic.
+/// These types stay interview-generic (a screen/onsite loop with outcomes), NOT
+/// tied to the SWE target enums — so a [Deck] stays template-agnostic.
 library;
 
 import '../util.dart';
@@ -118,8 +120,9 @@ class InterviewRound {
   }
 }
 
-/// One interview attached to a [Deck] via `Deck.aims` (a goal can
-/// hold several, which the targeting layer blends).
+/// One **aim** attached to a [Deck] via [Deck.aims] — a deck can hold several at
+/// once; readiness scores the **weakest link** across the active aims (n006 / #6),
+/// while the daily plan blends their emphasis into today's allocation (ADR-0007).
 class Aim {
   const Aim({
     this.id = '',
@@ -205,27 +208,6 @@ class Aim {
     if (dates.isEmpty) return null;
     if (from == null) return dates.first;
     return dates.firstWhere((d) => !d.isBefore(from), orElse: () => dates.last);
-  }
-
-  /// Heal stale data: a round dated in the FUTURE can't have a logged result, so
-  /// reset any such round to pending. Returns the same instance when clean.
-  Aim normalized(DateTime today) {
-    if (rounds.isEmpty) return this;
-    final t = DateTime(today.year, today.month, today.day);
-    var changed = false;
-    final fixed = <InterviewRound>[];
-    for (final r in rounds) {
-      final d = r.date;
-      if (d != null &&
-          r.outcome != AimOutcome.pending &&
-          DateTime(d.year, d.month, d.day).isAfter(t)) {
-        fixed.add(r.copyWith(outcome: AimOutcome.pending));
-        changed = true;
-      } else {
-        fixed.add(r);
-      }
-    }
-    return changed ? copyWith(rounds: fixed) : this;
   }
 
   Aim copyWith({

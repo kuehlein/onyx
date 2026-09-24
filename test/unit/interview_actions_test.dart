@@ -32,7 +32,7 @@ void main() {
 
     // (Removed S5c: the legacy deck-deadline → synthetic round-1 fallback is gone;
     // the migration folds a deck deadline into an explicit round — see
-    // aim_migration_test's foldDeckSlotsIntoAims cases.)
+    // aim_migration_test's foldSlotsIntoAims cases.)
   });
 
   group('passAndScheduleNext', () {
