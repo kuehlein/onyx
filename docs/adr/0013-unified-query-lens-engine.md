@@ -130,3 +130,45 @@ card-explorer (structural-only, live counts, suggestions) → **G4** authoring r
   dropped); the card-explorer's "N included / M excluded" matches `matches()`; a `folder:korean/ OR tag:korean` lens
   gathers cards from both sources.
 - **G4**: deck-creation + onboarding create cards through `showCardEditor`; no second authoring chrome.
+
+## Addendum — G2b Browse-wiring design (2026-09-25, post adversarial review)
+
+A 12-agent research + adversarial-critique pass (web conventions + code-map + 3 critics) refined how Browse composes
+onto the IR. It caught one **fatal** flaw and corrected two claims; the decisions below are load-bearing.
+
+- **The domain facet maps to a new `DomainIs` leaf, NOT `TagIs` (fatal flaw fixed).** Today `matchesFilter`'s domain
+  check reads `card.domain` = the card's **first tag only** (`card.dart` `domain => tags.first`), while `TagIs`
+  matches **any** tag. The vault is full of multi-tag cards (the whole algo deck is `[ds-a, algorithms]`; some are
+  4-tag), so folding the domain facet onto `TagIs` would **silently widen** results (e.g. `tag:algorithms` matches
+  nothing today but `TagIs('algorithms')` matches ~20) — violating the G2 byte-identical bar. So G2b introduces
+  **`DomainIs`** (== `card.domain`, first tag) and routes **both the Domain chip and the `tag:`/`domain:` operators**
+  to it. *Any-tag* filtering is a **deliberately deferred, separately-labeled** future capability (e.g. a `hastag:`
+  operator) — it must be ADR-blessed with its own test, **never** shipped as a "no-op". Note **three distinct
+  tag-ish surfaces** that must not be conflated: `card.tags` (any), `card.domain` (first tag — the filter),
+  `card.domains` (the List field — what `searchCards` *ranks* against).
+- **Same-field values UNION; distinct fields AND** (reproduces `CardFilter.merge` exactly, and is the *correct*
+  reading regardless): a chip `type=Flashcard` + a typed `type:interview` → `Or([TypeIs('flashcard'),
+  TypeIs('interview-question')])` (matches **either**) — never `And` (a single-valued field AND two values is
+  unsatisfiable → a baffling empty set), never last-writer-wins. The combiner **dedups by (field, normalized value)**
+  (leaves have no `==`) and **drops empty facets** (never emits a top-level `Or([])`, which is vacuously false and
+  would select nothing). `DomainIs` fixes its normalization once and runs the chip value through it.
+- **One IR, two editors; free-text stays a separate ranked stage.** The chip sheet and the search box both project
+  leaves into one `And([...])` (with `deck.membership` as the outer AND — a Browse operator never widens past the
+  deck lens). Free-text is **not** a query leaf: it remains the ranked `searchCards` stage over the IR-filtered
+  survivors (so title>tag>body order is preserved). `TextMatches` (named in §1) is **lens-persistence only**, not
+  Browse.
+- **The parser is total** — it must never throw and never build a match-everything/‑nothing leaf from a typo
+  (`tag:`/`folder:` with no value degrade to free-text; unknown operators fall through to ranked free-text, as today).
+  Precedence: space = implicit AND, `OR`/`||` lowest, `()` groups, `-`/`!` tightest → `a OR b c` parses as
+  `a OR (b AND c)` (only *frozen* once G3 persists an `OR` lens).
+- **Visibility deferred (signed off):** G2b is a **byte-identical** migration — chips and typed operators stay
+  independently visible (chips in the strip, operators in the box), both applied via union, as today. Rendering the
+  active-filter strip from the *composed* tree (typed operators shown as removable chips) is a separable fast-follow,
+  not part of the byte-identical slice.
+- **Sequencing:** **G2b.0** a differential harness over the *real* current pipeline
+  (`parseSearchQuery`→`merge`→`matchesFilter`→`searchCards`) with **multi-tag fixtures** (the case where any-tag would
+  diverge) → **G2b.1** add `DomainIs` + `CardFilter.toQuery()` + swap `matchesFilter`→`CardQuery.matches`, proven
+  byte-identical → **G2b.2** replace `merge` with the field-normalizing combiner + the total recursive parser
+  (`folder:`/`path:`, `-`/`!`, `OR`/`()`), delete `matchesFilter`/`merge`/`parseSearchQuery` once the differential is
+  green. `StateIs` becomes testable only after the widget harness seeds real `dueAt`s (today it injects an empty
+  `SectionStates`, so `is:due` can never match).
