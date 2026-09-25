@@ -94,11 +94,14 @@ engine gaps are split into 1f.1.**
 
 **Sequencing.** **1f (this):** S0 characterization tests (real-notifier grade tests for Learn + Review; goldens
 of card_detail/learn/quiz on `main`) → S1 lift components + rebuild VIEW byte-identical + the label fix → S2
-edit keep-vs-reset on the existing editor (the orphan bug) → S3 authoring as the single entry (+ light AI chat
-via the coach seam / deck authoring skill) → S4 stub screen; learn/quiz **adopt** `CardSection` for the
-revealed body (additive, keep their notifiers/grade-sets). Study migrates **last**, one screen at a time, proven
-against S0. **1f.1:** mastered auto-collapse (#6) + per-card `quizzable:false` (#5) — each with an off-switch /
-precedence matrix + before/after golden.
+edit keep-vs-reset on the existing editor (the orphan bug) → S3 authoring (already satisfied: `showCardEditor`
+is the single entry — browse `+` / card Edit / draft-review — and AI "make a card about X" ships as
+`card_generation`; the in-editor **"update this card" AI edit-chat is deferred to 1f.2** — its coach-seam reuse
+keys on a real `cardId::sectionSlug` a draft lacks, and a fresh panel would fork a 3rd AI surface) → S4 stub
+screen; learn/quiz **adopt** `CardSection` for the revealed body (additive, keep their notifiers/grade-sets).
+Study migrates **last**, one screen at a time, proven against S0. **1f.1:** mastered auto-collapse (#6) +
+per-card `quizzable:false` (#5) — each with an off-switch / precedence matrix + before/after golden. **1f.2
+(deferred):** the in-editor "update this card" AI edit-chat (keying + reuse-not-fork the existing AI seam).
 
 ## Alternatives considered
 

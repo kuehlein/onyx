@@ -311,13 +311,22 @@ model before we add features, so we build on the right shape.
   `CardSection`; algo/SD/behavioral stay the invariant-#2-exempt engine screens. Fixes two live bugs: the
   hardcoded `'Interview question'`/`'Flashcard'` label (→ `FlowSpec.displayLabel`) and the FSRS **orphan** on
   heading rename (edit keeps history; keep-vs-reset only on a material slug-set change; rekey on the current
-  `cardId::sectionSlug` key). **Slices:** S0 characterization tests (real grade paths + goldens, FIRST) → S1
-  lift components + rebuild VIEW byte-identical + label fix → S2 edit keep-vs-reset → S3 authoring single-entry
-  + light AI chat → S4 stub screen (References from unresolved graph; barred from queues; "create" → authoring).
+  `cardId::sectionSlug` key). **Slices:** **S0 ✅** characterization tests (real grade paths at the
+  notifier + DB; study-view rendering contract) → **S1 ✅** shared component layer (`CardMetaChip` /
+  `CardSectionPanel` / `CardLinks` / `flowIcon`→design) + VIEW rebuilt byte-identical + config-driven label →
+  **S2 ✅** edit keep-vs-reset (FSRS orphan fixed: `sectionSlugDelta` + `renameSection`/`dropSection`) →
+  **S3 ✅ (already satisfied)** authoring is a single entry (`showCardEditor` from browse `+` / card Edit /
+  draft-review; S4 adds the stub CTA) and AI "make a card about X" ships as `card_generation` — so the
+  authoring MVP is met; the in-editor **"update this card" AI edit-chat is deferred** (its coach-seam reuse
+  keys on a real `cardId::sectionSlug` a draft lacks, and a fresh panel would fork a 3rd AI surface) → **1f.2**
+  below → **S4** stub screen (References from the unresolved graph; barred from queues; "create" → authoring).
   - **1f.1 (engine gaps, each ADR-noted + off-switch + before/after golden):** mastered auto-collapse (retention
     threshold via core/srs `getCardRetrievability`, display-only) + per-card `quizzable:false` (pure DENY;
     precedence deny > allowlist > policy; `quizzable:true` a no-op for MVP). **neverQuizzed** stays read-only
     (per-card override covers MVP; user-editable per-deck set → **#84**, per settings.md).
+  - **1f.2 (deferred): in-editor "update this card" AI edit-chat** — the one unbuilt card.md authoring mode.
+    Needs a keying decision (an authoring draft/new card has no `cardId::sectionSlug` conversation key) and must
+    reuse/extend the existing AI seam rather than fork a third surface (coach + generation already exist).
 - **1g · Shared authoring + query API** (→ deck_creation, browse): one card-authoring entry API and
   one query/lens API (Browse filters == the lens language); the scoped card-explorer for building a
   lens.
