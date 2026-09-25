@@ -159,8 +159,9 @@ onto the IR. It caught one **fatal** flaw and corrected two claims; the decision
   Browse.
 - **The parser is total** — it must never throw and never build a match-everything/‑nothing leaf from a typo
   (`tag:`/`folder:` with no value degrade to free-text; unknown operators fall through to ranked free-text, as today).
-  Precedence: space = implicit AND, `OR`/`||` lowest, `()` groups, `-`/`!` tightest → `a OR b c` parses as
-  `a OR (b AND c)` (only *frozen* once G3 persists an `OR` lens).
+  `-`/`!` binds to the following operator (`-tag:done` → `Not(DomainIs('done'))`); a `-word` that isn't an operator
+  stays free text. **`OR`/`()` grouping is NOT parsed in the Browse box — deferred to G3** (see amendment below); the
+  IR itself supports `Or`/`And`/`Not` (built + tested in G2a).
 - **Visibility deferred (signed off):** G2b is a **byte-identical** migration — chips and typed operators stay
   independently visible (chips in the strip, operators in the box), both applied via union, as today. Rendering the
   active-filter strip from the *composed* tree (typed operators shown as removable chips) is a separable fast-follow,
@@ -168,7 +169,19 @@ onto the IR. It caught one **fatal** flaw and corrected two claims; the decision
 - **Sequencing:** **G2b.0** a differential harness over the *real* current pipeline
   (`parseSearchQuery`→`merge`→`matchesFilter`→`searchCards`) with **multi-tag fixtures** (the case where any-tag would
   diverge) → **G2b.1** add `DomainIs` + `CardFilter.toQuery()` + swap `matchesFilter`→`CardQuery.matches`, proven
-  byte-identical → **G2b.2** replace `merge` with the field-normalizing combiner + the total recursive parser
-  (`folder:`/`path:`, `-`/`!`, `OR`/`()`), delete `matchesFilter`/`merge`/`parseSearchQuery` once the differential is
-  green. `StateIs` becomes testable only after the widget harness seeds real `dueAt`s (today it injects an empty
-  `SectionStates`, so `is:due` can never match).
+  byte-identical → **G2b.2** the new `parseQuery` returns `(facets: CardFilter, extra: CardQuery, text)` — facets pool
+  the tag/type/tier/is operators exactly as `parseSearchQuery` did (so `chip.merge(facets)` keeps the chip+operator
+  UNION byte-identical), while `folder:`/`path:` and negated operators (`-`/`!`) become AND-ed `extra` leaves; Browse
+  evaluates `And([chip.merge(facets).toQuery(), extra])`. `matchesFilter` + `parseSearchQuery` are deleted (`merge` +
+  `toQuery` stay). `StateIs` becomes testable only after the widget harness seeds real `dueAt`s (today it injects an
+  empty `SectionStates`, so `is:due` can never match).
+
+**Amendment (2026-09-25) — `OR`/`()` grouping deferred from G2b.2 to G3.** Building the Browse combiner surfaced a
+real conflict: the byte-identical bar requires a chip and a typed operator on the same field to **union** (they pool
+in `CardFilter`), but once a typed `type:x` can sit inside an explicit `OR` group it can no longer pool with the
+chip's set — forcing a much more intricate "reconcile chips against an arbitrary boolean tree" combiner. That
+complexity buys nothing in **Browse**, because the `folder:… OR tag:…` **gather** case is a *deck-lens* feature (G3),
+not Browse (you're already scoped to one deck there). So the recursive `OR`/`()` **text parser lands in G3** with the
+deck-lens text form, where there are no chips to reconcile; the IR's `Or`/`And`/`Not` are already built and tested.
+G2b.2 ships the byte-identical facet migration + `folder:`/`path:` + negation (no `OR`/`()` in the Browse box). Signed
+off (defer OR/() to G3).

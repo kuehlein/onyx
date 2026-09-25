@@ -1,6 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/query/card_query.dart';
 import 'package:onyx/core/search/card_filter.dart';
 import 'package:onyx/shared/models/card.dart';
+
+/// The Browse query surface (ADR-0013 G2b): `parseQuery` splits a raw query into
+/// pooled `facets` (byte-identical to the legacy parser) + an `extra` CardQuery
+/// (folder:/negation) + free `text`; `CardFilter.toQuery()` projects the chips to
+/// the IR. The parser must be TOTAL — never throw, never build a match-all leaf
+/// from a typo.
 
 Card _card(
   String id, {
@@ -25,77 +32,179 @@ Card _card(
     );
 
 void main() {
-  group('parseSearchQuery', () {
-    test('extracts operators and keeps free text', () {
-      final r = parseSearchQuery('trees tag:ds-a is:due tier:1 type:interview');
+  group('parseQuery — facet pooling (byte-identical to the legacy parser)', () {
+    test('pools tag/type/tier/is operators and keeps free text', () {
+      final r = parseQuery('trees tag:ds-a is:due tier:1 type:interview');
       expect(r.text, 'trees');
-      expect(r.filter.domains, {'ds-a'});
-      expect(r.filter.mastery, {MasteryFilter.due});
-      expect(r.filter.tiers, {1});
-      expect(r.filter.types, {'interview-question'});
+      expect(r.facets.domains, {'ds-a'});
+      expect(r.facets.mastery, {MasteryFilter.due});
+      expect(r.facets.tiers, {1});
+      expect(r.facets.types, {'interview-question'});
+      expect(r.extra, isA<Everything>());
     });
 
     test('domain: is an alias for tag:', () {
-      expect(parseSearchQuery('domain:graphs').filter.domains, {'graphs'});
+      expect(parseQuery('domain:graphs').facets.domains, {'graphs'});
     });
 
-    test('unrecognised operators fall through to free text', () {
-      final r = parseSearchQuery('foo:bar hello');
+    test('same-field operators pool (union), values lowercased', () {
+      expect(parseQuery('tier:1 tier:2').facets.tiers, {1, 2});
+      expect(parseQuery('tag:DS-A').facets.domains, {'ds-a'});
+    });
+
+    test('unrecognized operator → free text', () {
+      final r = parseQuery('foo:bar hello');
       expect(r.text, 'foo:bar hello');
-      expect(r.filter.isEmpty, isTrue);
+      expect(r.facets.isEmpty, isTrue);
     });
 
-    test('type: with an unconfigured value falls through to free text', () {
-      // Not an alias and not a flow of the active subject → treated as text,
-      // not a filter that would silently match nothing.
-      final r = parseSearchQuery('type:zzz hello');
-      expect(r.filter.types, isEmpty);
+    test('type: with an unconfigured value → free text', () {
+      final r = parseQuery('type:zzz hello');
+      expect(r.facets.types, isEmpty);
       expect(r.text, 'type:zzz hello');
     });
 
-    test('empty query yields an empty filter and text', () {
-      final r = parseSearchQuery('   ');
-      expect(r.filter.isEmpty, isTrue);
+    test('empty query → empty facets, Everything extra, empty text', () {
+      final r = parseQuery('   ');
+      expect(r.facets.isEmpty, isTrue);
+      expect(r.extra, isA<Everything>());
       expect(r.text, '');
     });
   });
 
-  group('matchesFilter', () {
-    final card =
-        _card('A', type: 'interview-question', domain: 'ds-a', tier: 2);
-
-    test('empty filter matches everything', () {
-      expect(matchesFilter(card, const CardFilter(), const {}), isTrue);
+  group('parseQuery — extra (folder: + negation)', () {
+    test('folder:/path: → a FolderUnder leaf in extra, case PRESERVED', () {
+      final r = parseQuery('folder:Korean/Vocab');
+      expect(r.facets.isEmpty, isTrue);
+      expect(r.extra, isA<FolderUnder>());
+      expect((r.extra as FolderUnder).path, 'Korean/Vocab');
+      expect(parseQuery('path:a/b').extra, isA<FolderUnder>());
     });
 
-    test('type / domain / tier facets are AND-ed', () {
-      expect(
-          matchesFilter(
-              card, const CardFilter(types: {'interview-question'}), const {}),
-          isTrue);
-      expect(
-          matchesFilter(card, const CardFilter(types: {'flashcard'}), const {}),
-          isFalse);
-      expect(matchesFilter(card, const CardFilter(domains: {'ds-a'}), const {}),
-          isTrue);
-      expect(
-          matchesFilter(card, const CardFilter(domains: {'graphs'}), const {}),
-          isFalse);
-      expect(
-          matchesFilter(card, const CardFilter(tiers: {2}), const {}), isTrue);
-      expect(
-          matchesFilter(card, const CardFilter(tiers: {1}), const {}), isFalse);
+    test('a negated operator → Not(leaf) in extra, never a facet', () {
+      final r = parseQuery('-tag:done');
+      expect(r.facets.isEmpty, isTrue);
+      expect(r.extra, isA<Not>());
+      final inner = (r.extra as Not).q;
+      expect(inner, isA<DomainIs>());
+      expect((inner as DomainIs).domain, 'done');
+      expect(parseQuery('!type:flashcard').extra, isA<Not>());
     });
 
-    test('mastery matches on set intersection', () {
-      expect(
-          matchesFilter(card, const CardFilter(mastery: {MasteryFilter.due}),
-              {MasteryFilter.due, MasteryFilter.fresh}),
-          isTrue);
-      expect(
-          matchesFilter(card, const CardFilter(mastery: {MasteryFilter.strong}),
-              {MasteryFilter.fresh}),
-          isFalse);
+    test('a negated NON-operator stays free text (with its prefix)', () {
+      final r = parseQuery('-hello');
+      expect(r.extra, isA<Everything>());
+      expect(r.text, '-hello');
+    });
+
+    test('multiple extra leaves AND together', () {
+      final r = parseQuery('folder:a -tier:1');
+      expect(r.extra, isA<And>());
+      expect((r.extra as And).of.length, 2);
+    });
+
+    test('a trailing-colon operator is free text — NEVER a match-all leaf', () {
+      for (final q in ['tag:', 'folder:', 'type:', '-tag:']) {
+        final r = parseQuery(q);
+        expect(r.facets.isEmpty, isTrue, reason: q);
+        expect(r.extra, isA<Everything>(), reason: q);
+        expect(r.text, q, reason: q);
+      }
+    });
+  });
+
+  group('parseQuery — TOTAL (never throws, never a bogus match-all)', () {
+    test('handles a battery of malformed inputs without throwing', () {
+      const junk = [
+        '',
+        '   ',
+        '(',
+        ')',
+        '()',
+        '(  )',
+        ':',
+        '::',
+        'tag::a',
+        'tag:',
+        'folder:',
+        '-',
+        '!',
+        '- -',
+        '-tag:',
+        'type:',
+        'tier:',
+        'is:',
+        'http://example.com',
+        'tag:a.*',
+        r'\',
+        '[',
+        ']',
+        '((((tag:a',
+        'tag:a))))',
+        'OR',
+        '||',
+        'a OR',
+        'tier:99999999999999999999999',
+        '  tag:a   tag:b  ',
+        '-!tag:x',
+        '!!x',
+      ];
+      for (final q in junk) {
+        expect(() => parseQuery(q), returnsNormally, reason: 'query: "$q"');
+        final r = parseQuery(q);
+        expect(r.extra, isA<CardQuery>(), reason: 'query: "$q"');
+      }
+    });
+
+    test('is total over a generated token alphabet (deterministic)', () {
+      const alphabet = [
+        'tag:a',
+        'type:x',
+        'tier:1',
+        'is:due',
+        'folder:f',
+        '-tag:b',
+        '!type:y',
+        '(',
+        ')',
+        'OR',
+        '||',
+        'word',
+        ':',
+        'tag:',
+        '-',
+        '!',
+        '-word',
+        'tier:z',
+      ];
+      for (var seed = 0; seed < 400; seed++) {
+        final n = 1 + seed % 7;
+        final toks = [
+          for (var k = 0; k < n; k++)
+            alphabet[(seed * 31 + k * 17) % alphabet.length]
+        ];
+        final q = toks.join(' ');
+        expect(() => parseQuery(q), returnsNormally, reason: 'query: "$q"');
+      }
+    });
+  });
+
+  group('CardFilter.toQuery', () {
+    test('empty filter → Everything', () {
+      expect(const CardFilter().toQuery(), isA<Everything>());
+    });
+
+    test('a single-value facet → a single leaf (never Or of one)', () {
+      expect(const CardFilter(types: {'flashcard'}).toQuery(), isA<TypeIs>());
+    });
+
+    test('a multi-value facet → an Or of leaves', () {
+      expect(const CardFilter(tiers: {1, 2}).toQuery(), isA<Or>());
+    });
+
+    test('multiple facets → an And of groups', () {
+      expect(const CardFilter(types: {'flashcard'}, tiers: {1}).toQuery(),
+          isA<And>());
     });
   });
 

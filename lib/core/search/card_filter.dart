@@ -77,81 +77,94 @@ class CardFilter {
 CardQuery _anyOf(List<CardQuery> leaves) =>
     leaves.length == 1 ? leaves.single : Or(leaves);
 
-/// Whether [card] passes [filter], given its precomputed [mastery] set.
-bool matchesFilter(Card card, CardFilter filter, Set<MasteryFilter> mastery) {
-  if (filter.types.isNotEmpty && !filter.types.contains(card.type)) {
-    return false;
-  }
-  if (filter.domains.isNotEmpty &&
-      !(card.domain != null && filter.domains.contains(card.domain))) {
-    return false;
-  }
-  if (filter.tiers.isNotEmpty &&
-      !card.tiers.values.any(filter.tiers.contains)) {
-    return false;
-  }
-  if (filter.mastery.isNotEmpty &&
-      mastery.intersection(filter.mastery).isEmpty) {
-    return false;
-  }
-  return true;
-}
-
-/// Splits a raw query into a filter (from `key:value` operators) and the
-/// remaining free-text terms. Unrecognized operators fall through to free text.
-({CardFilter filter, String text}) parseSearchQuery(String query) {
+/// Parses a raw Browse query into structural [facets] (the `tag`/`type`/`tier`/`is`
+/// operators, pooled into a [CardFilter] exactly as the legacy parser did — so
+/// `chip.merge(facets)` keeps the chip+operator same-field UNION byte-identical),
+/// an [extra] `CardQuery` for the non-facet operators (`folder:`/`path:` and
+/// negated `-`/`!` leaves, AND-ed on), and the remaining free-[text]. Unrecognized
+/// or empty-value operators fall through to free text.
+///
+/// **Total** — never throws, and never builds a match-everything/‑nothing leaf
+/// from a typo (`tag:`/`folder:` with no value → free text). `OR`/`()` grouping is
+/// deferred to the deck-lens text form (G3); ADR-0013 §Amendment.
+({CardFilter facets, CardQuery extra, String text}) parseQuery(String query) {
   final types = <String>{};
   final domains = <String>{};
   final tiers = <int>{};
   final mastery = <MasteryFilter>{};
+  final extra = <CardQuery>[];
   final free = <String>[];
 
   for (final tok in query.split(RegExp(r'\s+'))) {
     if (tok.isEmpty) continue;
-    final i = tok.indexOf(':');
-    if (i > 0 && i < tok.length - 1) {
-      final key = tok.substring(0, i).toLowerCase();
-      final val = tok.substring(i + 1).toLowerCase();
-      var handled = true;
-      switch (key) {
-        case 'type':
-          final t = _parseType(val);
-          if (t != null) {
-            types.add(t);
-          } else {
-            handled = false;
+    // A leading - or ! negates the FOLLOWING operator; a bare -/! or a negated
+    // non-operator (e.g. "-word") stays free text.
+    final negated = tok.length > 1 && (tok[0] == '-' || tok[0] == '!');
+    final body = negated ? tok.substring(1) : tok;
+    final i = body.indexOf(':');
+    if (i > 0 && i < body.length - 1) {
+      final key = body.substring(0, i).toLowerCase();
+      final rawVal = body.substring(i + 1);
+      final leaf = _opLeaf(key, rawVal.toLowerCase(), rawVal);
+      if (leaf != null) {
+        if (negated) {
+          extra.add(Not(leaf));
+        } else {
+          // Positive facet operators pool into the CardFilter (byte-identical);
+          // a positive folder leaf is AND-ed on via [extra].
+          switch (leaf) {
+            case DomainIs(:final domain):
+              domains.add(domain);
+            case TypeIs(:final type):
+              types.add(type);
+            case TierIs(:final tier):
+              tiers.add(tier);
+            case StateIs(:final state):
+              mastery.add(state);
+            default:
+              extra.add(leaf);
           }
-        case 'tag':
-        case 'domain':
-          domains.add(val);
-        case 'tier':
-          final n = int.tryParse(val);
-          if (n != null) {
-            tiers.add(n);
-          } else {
-            handled = false;
-          }
-        case 'is':
-        case 'mastery':
-          final m = _parseMastery(val);
-          if (m != null) {
-            mastery.add(m);
-          } else {
-            handled = false;
-          }
-        default:
-          handled = false;
+        }
+        continue;
       }
-      if (handled) continue;
     }
-    free.add(tok);
+    free.add(tok); // full token incl any -/! prefix (byte-identical to before)
   }
 
   return (
-    filter: CardFilter(
+    facets: CardFilter(
         types: types, domains: domains, tiers: tiers, mastery: mastery),
+    extra: extra.isEmpty
+        ? CardQuery.everything
+        : (extra.length == 1 ? extra.single : And(extra)),
     text: free.join(' '),
   );
+}
+
+/// The leaf for a `key:value` operator, or null if unrecognized / invalid. [val]
+/// is lowercased; [rawVal] keeps case for the path leaf (`filePath` is
+/// case-sensitive). Domain/tag both map to the first-tag [DomainIs] (ADR-0013).
+CardQuery? _opLeaf(String key, String val, String rawVal) {
+  switch (key) {
+    case 'tag':
+    case 'domain':
+      return DomainIs(val);
+    case 'type':
+      final t = _parseType(val);
+      return t == null ? null : TypeIs(t);
+    case 'tier':
+      final n = int.tryParse(val);
+      return n == null ? null : TierIs(n);
+    case 'is':
+    case 'mastery':
+      final m = _parseMastery(val);
+      return m == null ? null : StateIs(m);
+    case 'folder':
+    case 'path':
+      return FolderUnder(rawVal);
+    default:
+      return null;
+  }
 }
 
 /// Maps free-text search aliases to a card `type:` value. The aliases are a

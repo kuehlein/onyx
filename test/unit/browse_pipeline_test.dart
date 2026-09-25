@@ -4,16 +4,15 @@ import 'package:onyx/core/search/card_filter.dart';
 import 'package:onyx/core/search/card_search.dart';
 import 'package:onyx/shared/models/card.dart';
 
-/// G2b.0 — the Browse pipeline differential harness (ADR-0013 §Addendum).
-///
-/// Pins the CURRENT Browse filter+search behavior over a MULTI-TAG corpus with
-/// explicit expected results, so wiring Browse onto the CardQuery IR (G2b.1/.2)
-/// can be proven byte-identical. [_run] reproduces `browse_screen._body` exactly:
-///   parseSearchQuery -> chip.merge -> matchesFilter(cardMastery) -> searchCards|sort
-/// The load-bearing pins: the DOMAIN facet is FIRST-TAG only (a card tagged
-/// [networking, ds-a] is NOT a ds-a domain match; `domain:algorithms` matches
-/// nothing) — the exact case where mapping domain->any-tag would silently widen —
-/// and same-field values UNION while distinct fields AND.
+/// The Browse pipeline golden (ADR-0013 §Addendum). Pins Browse's filter+search
+/// behavior over a MULTI-TAG corpus with explicit expected results. [_run] mirrors
+/// `browse_screen._body` on the unified IR:
+///   parseQuery -> chip.merge(facets).toQuery() AND extra -> matches -> searchCards|sort
+/// These expected values were pinned against the legacy `parseSearchQuery ->
+/// matchesFilter` path at G2b.0 and proven byte-identical to the IR path at G2b.1
+/// (differential harness); G2b.2 swaps [_run] onto the new parser and the same
+/// values must hold. Load-bearing pins: DOMAIN is FIRST-TAG only (any-tag would
+/// silently widen), same-field values UNION, folder:/negation AND on.
 
 Card _c(
   String id,
@@ -22,6 +21,7 @@ Card _c(
   required List<String> tags,
   Map<String, int> tiers = const {},
   String overview = '',
+  String? path,
 }) =>
     Card(
       id: id,
@@ -38,14 +38,12 @@ Card _c(
             quizzable: true),
       ],
       wikilinks: const [],
-      filePath: '$id.md',
+      filePath: path ?? '$id.md',
     );
 
-// A corpus that stresses the multi-tag / first-tag distinction:
-//  - tcp's SECOND tag is ds-a (first-tag networking) — any-tag would wrongly pull
-//    it into a ds-a domain filter.
-//  - two-sum/bfs carry `algorithms` as a NON-first tag — `domain:algorithms`
-//    (first-tag) matches nothing; any-tag would match both.
+// Stresses the multi-tag / first-tag distinction (tcp's SECOND tag is ds-a;
+// two-sum/bfs carry `algorithms` as a NON-first tag). bfs lives under graphs/ to
+// exercise folder:.
 final _corpus = [
   _c('two-sum', 'Two Sum',
       type: kTypeInterviewQuestion,
@@ -54,7 +52,8 @@ final _corpus = [
   _c('bfs', 'BFS',
       type: kTypeFlashcard,
       tags: ['ds-a', 'algorithms', 'graphs', 'traversal'],
-      tiers: {'ds-a': 2}),
+      tiers: {'ds-a': 2},
+      path: 'graphs/bfs.md'),
   _c('rate-limiter', 'Rate Limiter',
       type: kTypeSystemDesign,
       tags: ['system-design', 'ai-infra'],
@@ -70,8 +69,12 @@ final _corpus = [
       overview: 'divide a sorted array'),
 ];
 
-/// Reproduces `browse_screen._body`'s combine over [_corpus]; returns result ids
-/// in the exact order Browse would render.
+/// AND two queries, dropping an [Everything] operand (mirrors browse_screen).
+CardQuery _and2(CardQuery a, CardQuery b) =>
+    a is Everything ? b : (b is Everything ? a : And([a, b]));
+
+/// Mirrors `browse_screen._body` on the unified IR; returns result ids in render
+/// order.
 List<String> _run({
   CardFilter chip = const CardFilter(),
   String query = '',
@@ -79,34 +82,8 @@ List<String> _run({
   DateTime? now,
 }) {
   final t = now ?? DateTime(2026, 6, 1);
-  final parsed = parseSearchQuery(query.trim());
-  final effective = chip.merge(parsed.filter);
-  final filtered = [
-    for (final c in _corpus)
-      if (matchesFilter(c, effective, cardMastery(c, dueByKey, t))) c,
-  ];
-  final List<Card> results;
-  if (parsed.text.isEmpty) {
-    results = [...filtered]
-      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-  } else {
-    results = searchCards(filtered, parsed.text);
-  }
-  return [for (final c in results) c.id];
-}
-
-/// The NEW IR path (G2b.1): same combine, but chips+operators project through
-/// `CardFilter.toQuery()` and evaluate via `CardQuery.matches`. Free-text ranking
-/// stays the identical `searchCards` stage. Must equal [_run] byte-for-byte.
-List<String> _runIR({
-  CardFilter chip = const CardFilter(),
-  String query = '',
-  Map<String, DateTime> dueByKey = const {},
-  DateTime? now,
-}) {
-  final t = now ?? DateTime(2026, 6, 1);
-  final parsed = parseSearchQuery(query.trim());
-  final q = chip.merge(parsed.filter).toQuery();
+  final parsed = parseQuery(query.trim());
+  final q = _and2(chip.merge(parsed.facets).toQuery(), parsed.extra);
   final ctx = QueryContext(dueByKey: dueByKey, now: t);
   final filtered = [
     for (final c in _corpus)
@@ -178,8 +155,6 @@ void main() {
     test(
         'a lone trailing-colon operator falls through to free-text (no match-all)',
         () {
-      // "tag:" with nothing after is NOT an operator; it becomes free text, which
-      // matches no card — it must NEVER behave like a whole-vault match.
       expect(_run(query: 'tag:'), isEmpty);
     });
   });
@@ -199,6 +174,32 @@ void main() {
               chip: const CardFilter(types: {kTypeFlashcard}), query: 'tier:1'),
           ['binary-search', 'tcp']);
     });
+
+    test('two same-field operators UNION (tier:1 tier:2)', () {
+      // Every card is tier 1 or 2, so the UNION matches all five; an AND
+      // (intersection) would be empty — proving same-field pools to OR.
+      expect(_run(query: 'tier:1 tier:2'),
+          ['bfs', 'binary-search', 'rate-limiter', 'tcp', 'two-sum']);
+    });
+  });
+
+  group('folder: and negation (G2b.2 additions)', () {
+    test('folder: scopes to a subtree', () {
+      expect(_run(query: 'folder:graphs'), ['bfs']);
+    });
+
+    test('negating a facet excludes its matches', () {
+      expect(_run(query: '-type:flashcard'), ['rate-limiter', 'two-sum']);
+    });
+
+    test('negating a folder excludes the subtree', () {
+      expect(_run(query: '-folder:graphs'),
+          ['binary-search', 'rate-limiter', 'tcp', 'two-sum']);
+    });
+
+    test('positive facet AND a negation', () {
+      expect(_run(query: 'type:flashcard -tier:1'), ['bfs']);
+    });
   });
 
   group('free-text (ranked stage)', () {
@@ -211,8 +212,14 @@ void main() {
     });
 
     test('free-text runs WITHIN the filtered survivors', () {
-      // type:flashcard filters to {bfs, binary-search, tcp}, then "binary" ranks.
       expect(_run(query: 'type:flashcard binary'), ['binary-search']);
+    });
+
+    test('"or" is a free word, not a boolean operator (OR deferred to G3)', () {
+      // If OR were an operator, "two OR binary" would match Two Sum OR Binary
+      // Search; as free words it's an AND of [two, or, binary] — which no card
+      // satisfies — so the empty result proves "or" is just a search term.
+      expect(_run(query: 'two or binary'), isEmpty);
     });
   });
 
@@ -224,47 +231,5 @@ void main() {
               dueByKey: {'two-sum::when-to-use': DateTime(2026, 5, 1)}),
           ['two-sum']);
     });
-  });
-
-  // G2b.1 gate: the IR path (CardFilter.toQuery -> CardQuery.matches) is
-  // byte-identical to the legacy matchesFilter path across the whole matrix.
-  group('IR path is byte-identical to the legacy pipeline', () {
-    final due = {'two-sum::when-to-use': DateTime(2026, 5, 1)};
-    final cases = <({CardFilter chip, String query, Map<String, DateTime> d})>[
-      (chip: const CardFilter(), query: '', d: const {}),
-      (chip: const CardFilter(types: {kTypeFlashcard}), query: '', d: const {}),
-      (chip: const CardFilter(tiers: {1}), query: '', d: const {}),
-      (chip: const CardFilter(domains: {'ds-a'}), query: '', d: const {}),
-      (chip: const CardFilter(mastery: {MasteryFilter.due}), query: '', d: due),
-      (chip: const CardFilter(), query: 'tag:ds-a', d: const {}),
-      (chip: const CardFilter(), query: 'domain:algorithms', d: const {}),
-      (chip: const CardFilter(), query: 'tag:algorithms', d: const {}),
-      (chip: const CardFilter(), query: 'type:flashcard', d: const {}),
-      (chip: const CardFilter(), query: 'type:interview', d: const {}),
-      (chip: const CardFilter(), query: 'tier:1', d: const {}),
-      (chip: const CardFilter(), query: 'tag:', d: const {}),
-      (chip: const CardFilter(), query: 'is:due', d: due),
-      (
-        chip: const CardFilter(types: {kTypeFlashcard}),
-        query: 'type:interview',
-        d: const {}
-      ),
-      (
-        chip: const CardFilter(types: {kTypeFlashcard}),
-        query: 'tier:1',
-        d: const {}
-      ),
-      (chip: const CardFilter(), query: 'sorted', d: const {}),
-      (chip: const CardFilter(), query: 'binary', d: const {}),
-      (chip: const CardFilter(), query: 'type:flashcard binary', d: const {}),
-    ];
-    for (final c in cases) {
-      test('chip=${c.chip.activeFacetCount} facets, query="${c.query}"', () {
-        expect(
-          _runIR(chip: c.chip, query: c.query, dueByKey: c.d),
-          _run(chip: c.chip, query: c.query, dueByKey: c.d),
-        );
-      });
-    }
   });
 }

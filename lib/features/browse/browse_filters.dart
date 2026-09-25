@@ -213,8 +213,11 @@ class _SearchHelpSheet extends StatelessWidget {
                         'Interview questions (or type:flashcard)'),
                     _Op('tier:1', 'Cards at this tier (1 = most foundational)'),
                     _Op('is:due', 'Study state: is:new · is:due · is:strong'),
+                    _Op('folder:ds-a/', 'Cards under a folder (also path:)'),
+                    _Op('-type:flashcard',
+                        'Exclude with - or ! before any filter'),
                     SizedBox(height: Dim.space3),
-                    _Example('trees tag:ds-a is:due'),
+                    _Example('trees tag:ds-a is:due -folder:archive/'),
                     SizedBox(height: Dim.space4),
                     _Heading('Filter button'),
                     _Body(

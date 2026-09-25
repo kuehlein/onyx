@@ -23,7 +23,9 @@ import 'import_deck_sheet.dart';
 
 /// Browse: full-text search + composable filters over the indexed cards.
 /// Search and filters combine; power users can also type operators
-/// (`tag:`, `type:`, `tier:`, `is:`) — all documented in the help sheet.
+/// (`tag:`, `type:`, `tier:`, `is:`, `folder:`, and `-`/`!` to exclude) — all
+/// documented in the help sheet. (`OR`/`()` grouping lands with the deck-lens form
+/// in G3; ADR-0013 §Amendment.)
 class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({super.key});
 
@@ -131,11 +133,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     };
     final now = DateTime.now();
 
-    final parsed = parseSearchQuery(_query.trim());
-    // Chips + typed operators compose into ONE query IR (ADR-0013): OR within a
-    // facet, AND across; the ranked free-text stage stays separate below. Dynamic
-    // study-state (StateIs) reads the due dates from the context.
-    final query = _chipFilter.merge(parsed.filter).toQuery();
+    final parsed = parseQuery(_query.trim());
+    // Chips + typed operators compose into ONE query IR (ADR-0013): the facet
+    // operators pool with the chips (OR within a facet, AND across); `folder:` and
+    // negated operators AND on as `extra`. The ranked free-text stage stays
+    // separate below; StateIs reads the due dates from the context.
+    final query =
+        _and2(_chipFilter.merge(parsed.facets).toQuery(), parsed.extra);
     final ctx = QueryContext(dueByKey: dueByKey, now: now);
 
     final filtered = [
@@ -234,6 +238,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     return set.toList()..sort();
   }
 }
+
+/// AND two queries, dropping an [Everything] operand so an empty facet-set or an
+/// empty `extra` adds no constraint (never an `And` with a vacuous member).
+CardQuery _and2(CardQuery a, CardQuery b) =>
+    a is Everything ? b : (b is Everything ? a : And([a, b]));
 
 class _SearchField extends StatelessWidget {
   const _SearchField({
