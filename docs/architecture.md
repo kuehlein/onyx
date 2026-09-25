@@ -25,10 +25,12 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 - **Card** — a markdown file: frontmatter (`id`, `type`, `tags`, `tiers`, `status`, …) + an H1
   title + sections split by the deck's parse rules. A study unit is a section (or the whole file);
   `neverQuizzed` sections + per-card `quizzable: false` are excluded.
-- **Deck** — a query lens (membership: all / tag / folder) over the vault; the unit the user works
-  in. (Code: `StudyGoal` + `MembershipQuery`.)
-- **Aim** — a target on a deck (difficulty / emphasis / durability / date); a deck holds a *set*.
-  (Code today: `ReadinessTarget` + `InterviewAim`; to be unified — see the roadmap.)
+- **Deck** — a query lens over the vault; the unit the user works in. Membership is a `CardQuery` —
+  a boolean lens/filter tree (tag · folder · domain · type · tier, composed with `And`/`Or`/`Not`)
+  shared with Browse (ADR-0013). (Code: `Deck` + `CardQuery`.)
+- **Aim** — a target on a deck (difficulty / emphasis / durability / date); a deck holds a *set*, and
+  readiness takes the **weakest link** across them. Each aim OWNS its four knobs (ADR-0006). (Code:
+  `Aim` on `Deck.aims`; `ReadinessTarget` is derived from an aim for scoring.)
 - **Schedule** — FSRS state / reviews / recognition / applied attempts, keyed `cardId::sectionSlug`.
 - **card_links** — the card→card graph (backlinks, wikilinks).
 
@@ -54,12 +56,25 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 8. **Single-deck / single-aim byte-identical degradation.** One deck / one aim behaves exactly like
    the pre-multi case; the multi machinery engages only when there are several.
 
+> **Conformance:** all 8 invariants audited **conformant** on 2026-09-25 (six-agent pass; see
+> roadmap 1h). The only sanctioned type-branch residual is the `type == flashcard` concept
+> predicate (invariant #2), which stays coupled to #32's concept-vs-applied model call.
+
 ## ADRs (decisions of record)
 - **ADR-0001 / 0002** — the DB is a derived cache of one vault; the `_meta` snapshot is durable;
   `VaultRef` is persisted and the snapshot is swapped on a vault switch.
 - **ADR-0003** — the `draft` / `active` card status + its universal exclusion.
+- **ADR-0004** — the AI provider seam (BYO-key transport; managed tier deferred).
 - **ADR-0005** — degradation: a single active deck shows its Home directly (with an escape hatch
   back to deck selection).
+- **ADR-0006** — Deck = a pure lens; the target lives on the **Aim** (a deck holds a set of aims).
+- **ADR-0007** — daily-plan allocation across aims (feasibility urgency + soft fair-queuing).
+- **ADR-0008** — cram-vs-durable: honor deadlines without corrupting FSRS.
+- **ADR-0009** — the Aims surface (S5) + the target-writer flip.
+- **ADR-0010** — study workload: the user sets budget + proportions; the engine derives the mix.
+- **ADR-0011** — load control: the engine auto-adjusts the MIX; it PROPOSES the SIZE.
+- **ADR-0012** — card model: a shared component layer + quizzability precedence + edit-identity.
+- **ADR-0013** — one query/lens engine: Browse filters == deck membership.
 - Add new ADRs here as decisions are made; keep this the index.
 
 ## Where the rest lives

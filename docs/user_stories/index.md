@@ -109,18 +109,19 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
   test exclusion), plus the refinements noted in deck_selection / deck_creation / settings.
 
 ## Implementation mapping (today's code → this model — descriptive only)
-The stories drive the target; this is just how the current code lines up, so we know what to
-re-shape vs reuse.
-- **Deck (query lens)** ≈ `StudyGoal` + its `MembershipQuery` (AllCards / TagMembership /
-  FolderMembership).
-- **Aim** ≈ `InterviewAim` (already a *list* on a goal) generalized to carry the four knobs,
-  which today are split across `ReadinessTarget` (difficulty/emphasis/durability/date) + the
-  interview loop.
-- **"Subject" / `SubjectConfig`** ≈ the per-deck/vault template (flows, parse rules,
-  vocabulary) that lives in `_meta`.
-- **Flow** ≈ `FlowSpec` (scheduling: `recall` / `twoClock` / `mock`).
-- Gaps this model exposes (to resolve during re-planning): "one target per goal" → "many aims
-  per deck"; readiness weakest-link *across aims*; daily-plan allocation *across aims*.
+The stories drive the target; this maps the model onto the code so navigation stays easy. The
+2026-09 re-shape (the R1–R4 renames, S1–S5 aim unification, and the unified query lens) is **done**,
+so this is now a straight description, not a to-reshape list.
+- **Deck (query lens)** = `Deck` — a name + template + a `CardQuery` membership (the boolean
+  lens/filter tree shared with Browse; ADR-0013).
+- **Aim** = `Aim`, a *list* on the deck (`Deck.aims`); each aim OWNS its four knobs
+  (difficulty / emphasis / durability / date) — unified (ADR-0006). (`ReadinessTarget` is derived
+  from an aim for scoring.)
+- **Deck template** = `DeckTemplate` — the per-deck/vault template (flows, parse rules,
+  vocabulary) in `_meta` (formerly `SubjectConfig`).
+- **Flow** = `FlowSpec` (scheduling: `recall` / `twoClock` / `mock`).
+- Resolved (were the "gaps to re-shape", now shipped): many aims per deck; readiness weakest-link
+  *across aims* (#6); daily-plan allocation *across aims* (ADR-0007).
 
 ## Files
 [onboarding](onboarding.md) · [deck_selection](deck_selection.md) · [deck_creation](deck_creation.md)

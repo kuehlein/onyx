@@ -376,7 +376,23 @@ model before we add features, so we build on the right shape.
     legitimately don't author cards — nothing to compose; the real work was the frontmatter-assembly dedup — the
     thrice-copied `_scalar`/`_flowList`/`_oneLine`/`_slugify` extracted to `core/vault/card_markdown.dart`, byte-identical
     (proven by the write-path suites) + a direct escaping test). **1g COMPLETE (G0–G4).**
-- **1h · Engine conformance + bugs** (→ architecture invariants). *Mapped 2026-09-24 (Explore agent):*
+- **1h · Engine conformance + bugs — ✅ DONE (2026-09-25)** (→ architecture invariants). *Triaged 2026-09-24; invariant audit + doc pass 2026-09-25.*
+  - **Conformance audit ✅ (2026-09-25, six-agent pass).** All **8 architecture invariants** audited
+    **conformant** — vault-SSoT snapshot round-trips all authoritative tables; no unsanctioned
+    card-type branch (`custom_lint` clean; the lone `type == flashcard` concept predicate stays
+    #32-coupled); scheduling never travels (content-only manifest, imports forced `draft`); **0
+    draft-in-denominator leaks** across 35+ sites; every schedule join keys `cardId::sectionSlug`;
+    weakest-link readiness (p20 in-domain, `min` across aims, #112-consistent tier weights); cloud
+    capability-gated (absent, never a disabled row); single-deck/aim degrades byte-identical. The
+    audit **is** the milestone conformance check the user-stories anti-drift contract calls for.
+  - **1h.1 doc-conformance ✅ (2026-09-25).** The invariants doc + SoT had drifted behind the R1–R4
+    renames / S1–S5 aim unification / CardQuery fold. Fixed: `architecture.md` data-model
+    (`Deck`+`CardQuery`, `Aim` owns its knobs) + membership description + ADR index (added
+    0004/0006–0013); `user_stories/index.md` "Implementation mapping" (descriptive-only section)
+    refreshed to `Deck`/`Aim`/`CardQuery`/`DeckTemplate`, gaps marked resolved. **No intent changed.**
+  - **1h.2 guard tests ✅ (2026-09-25).** A named invariant-#4 (draft-exclusion) regression guard
+    pinning the canonical `studyCards` set + the deck member-set denominator, so a future denominator
+    that iterates raw `.cards` is caught.
   - **#90 debrief ✅ DONE (2026-09-24)** — the built-but-orphaned `/debrief` screen is now wired from
     the interview sheet: a live **occurred** interview gets an inline "Debrief with coach" button, an
     **ended** one gets a "Debrief" overflow item. Also fixed the roadmap-flagged mis-named route param
