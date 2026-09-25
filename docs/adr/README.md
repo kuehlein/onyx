@@ -38,3 +38,4 @@ belong in code comments + the PR description, not an ADR.
 | [0009](0009-aims-surface-design.md) | The Aims surface (S5e): design + the target-writer flip | Accepted |
 | [0010](0010-workload-budget-and-proportions.md) | Study workload: user sets budget + proportions; the engine derives the mix | Accepted |
 | [0011](0011-load-control-auto-mix-propose-size.md) | Load control: the engine auto-adjusts the mix; it proposes (never auto-writes) the size | Accepted |
+| [0012](0012-card-model-shared-components.md) | Card model: a shared component layer (not a mode-widget), quizzability precedence, edit-identity | Accepted |

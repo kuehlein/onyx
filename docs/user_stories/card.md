@@ -38,10 +38,16 @@
   later, only if users ask.
   **Status.** Accepted
 - **How multi-modal should one widget be?**
-  **Rec.** One card widget with a `mode` — view/study/authoring/stub share layout + section
-  rendering, differing only in affordances. Keeps behavior consistent and avoids four
-  half-overlapping screens.
-  **Status.** Accepted
+  **Rec.** Share **layout + section rendering** across view/study/authoring/stub, differing only in
+  affordances — so behavior stays consistent and we avoid four half-overlapping screens.
+  **Status.** Accepted — **realized as a shared component LAYER, not a single mode-param widget**
+  ([ADR-0012](../adr/0012-card-model-shared-components.md)). The scope pass found the four modes are too
+  disjoint below the shared chrome for one `CardView(mode)` container (a `switch(mode)` over disjoint
+  bodies is its own mode-branch smell, and it would funnel the high-risk study grade paths through shared
+  code). Instead, shared components — `CardScaffold` · `CardSection` (the single section renderer) ·
+  `CardHead` · `CardMetaChip` · `CardLinks` · `sectionExpandDefault` — are composed by each thin surface;
+  **study (learn/quiz) keep their own screens + schedulers** and merely *adopt* `CardSection`. This
+  satisfies "share layout + section rendering, differ only in affordances" via composition.
 - **How to handle modifying cards that have already been learned/tested?**
   **Rec.** Default: **keep the FSRS history** — the schedule is tied to the card/section identity,
   not its exact text, so fixing a typo or clarifying doesn't reset progress. When an edit

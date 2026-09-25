@@ -302,12 +302,22 @@ model before we add features, so we build on the right shape.
   is correctly cloud-absent; deck creation exists (Settings → Decks). #86's folder-first-vs-three-choices
   tension is resolved in the SoT (folder first; on-ramps inside step 2). Tests: `onboarding_test.dart`,
   `vault_scaffold_test.dart`. *Resolves #86.* Parked non-MVP: QR class/org quick-setup (Phase 5).
-- **1f · Card model — NEXT (partially built; needs a unify/gap-scoping pass)** (→ card): the SoT wants a
-  **multi-modal card** (one surface, modes: view / study / authoring / stub), collapsible +
-  mastered-badged sections, per-deck `neverQuizzed` + per-card `quizzable`, stub cards for broken links.
-  Today those live SPREAD across `browse/card_detail_screen`, `editor/card_editor_screen`, learn/quiz,
-  and `browse/unresolved_links_screen` rather than a unified card. Scope the real gap against `card.md`
-  before building (the roadmap line predates the current code — verify like 1d/1e did).
+- **1f · Card model — NEXT; SCOPED [ADR-0012](adr/0012-card-model-shared-components.md) (2026-09-24)** (→ card).
+  Scoped via a 10-agent workflow (SoT + code-map of all ~7 spread surfaces + arch + UX → plan → 3 adversarial
+  critics). **Decision:** deliver a shared component **LAYER** (`CardScaffold` · `CardSection` (single section
+  renderer) · `CardHead` · `CardMetaChip` · `CardLinks` · `sectionExpandDefault`), composed by each thin
+  surface — **not** a `CardView(mode)` container (a mode-switch over disjoint bodies is its own smell + would
+  funnel the study grade paths). **Study (learn/quiz) keep their own screens + schedulers**, just *adopt*
+  `CardSection`; algo/SD/behavioral stay the invariant-#2-exempt engine screens. Fixes two live bugs: the
+  hardcoded `'Interview question'`/`'Flashcard'` label (→ `FlowSpec.displayLabel`) and the FSRS **orphan** on
+  heading rename (edit keeps history; keep-vs-reset only on a material slug-set change; rekey on the current
+  `cardId::sectionSlug` key). **Slices:** S0 characterization tests (real grade paths + goldens, FIRST) → S1
+  lift components + rebuild VIEW byte-identical + label fix → S2 edit keep-vs-reset → S3 authoring single-entry
+  + light AI chat → S4 stub screen (References from unresolved graph; barred from queues; "create" → authoring).
+  - **1f.1 (engine gaps, each ADR-noted + off-switch + before/after golden):** mastered auto-collapse (retention
+    threshold via core/srs `getCardRetrievability`, display-only) + per-card `quizzable:false` (pure DENY;
+    precedence deny > allowlist > policy; `quizzable:true` a no-op for MVP). **neverQuizzed** stays read-only
+    (per-card override covers MVP; user-editable per-deck set → **#84**, per settings.md).
 - **1g · Shared authoring + query API** (→ deck_creation, browse): one card-authoring entry API and
   one query/lens API (Browse filters == the lens language); the scoped card-explorer for building a
   lens.
