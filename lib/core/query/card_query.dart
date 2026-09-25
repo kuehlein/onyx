@@ -133,8 +133,14 @@ class FolderUnder extends CardQuery {
 /// Cards whose PRIMARY domain (`card.domain` = the first tag) is [domain]. This is
 /// the Browse "Domain" facet + the `tag:`/`domain:` operator — deliberately
 /// first-tag, NOT any-tag (`TagIs`): the vault is full of multi-tag cards, so
-/// matching any tag would silently widen the filter (ADR-0013 §Addendum). Compares
-/// raw (no normalization) to stay byte-identical with the legacy `matchesFilter`.
+/// matching any tag would silently widen the filter (ADR-0013 §Addendum).
+///
+/// Comparison is raw `==` (no normalization inside the leaf) to stay byte-identical
+/// with the legacy `matchesFilter`: the `tag:`/`domain:` operator lowercases its
+/// value while the Domain chip passes it raw — exactly as before. Vault domains are
+/// lowercase in practice, so the asymmetry never bites; a consistent
+/// case-insensitive normalization is a deferred hardening (it would change results,
+/// so it's out of the byte-identical G2b slice).
 class DomainIs extends CardQuery {
   const DomainIs(this.domain);
 

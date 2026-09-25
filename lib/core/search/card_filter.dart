@@ -161,7 +161,10 @@ CardQuery? _opLeaf(String key, String val, String rawVal) {
       return m == null ? null : StateIs(m);
     case 'folder':
     case 'path':
-      return FolderUnder(rawVal);
+      // Guard the match-everything footgun: `folder:/` trims to an empty path,
+      // which FolderUnder treats as "whole vault". Degrade to free text instead.
+      final f = FolderUnder(rawVal);
+      return f.path.isEmpty ? null : f;
     default:
       return null;
   }

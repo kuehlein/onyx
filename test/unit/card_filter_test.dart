@@ -111,6 +111,16 @@ void main() {
         expect(r.text, q, reason: q);
       }
     });
+
+    test('folder:/ (empty after trim) degrades to free text, NOT match-all',
+        () {
+      // FolderUnder("") matches every card; a "folder:/" typo must never do that.
+      for (final q in ['folder:/', 'folder://', 'path:/']) {
+        final r = parseQuery(q);
+        expect(r.extra, isA<Everything>(), reason: q);
+        expect(r.text, q, reason: q);
+      }
+    });
   });
 
   group('parseQuery — TOTAL (never throws, never a bogus match-all)', () {
