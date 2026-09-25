@@ -8,7 +8,6 @@ import '../../core/template/active_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
-import '../browse/browse_screen.dart' show flowIcon;
 
 /// Today's flows as a priority-ordered action stack (task #57 / Home redesign).
 /// The plan decides the order; emphasis follows Material 3's button hierarchy —

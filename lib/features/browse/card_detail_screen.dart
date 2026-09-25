@@ -1,22 +1,21 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
-import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/database/database.dart';
-import '../../core/vault/card_links_repository.dart';
+import '../../core/template/active_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
-import '../../shared/providers/card_graph.dart';
 import '../../shared/providers/srs.dart';
-import '../../shared/url.dart';
 import '../../shared/providers/vault.dart';
+import '../../shared/url.dart';
+import '../../shared/widgets/card_links.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/card_meta_chip.dart';
+import '../../shared/widgets/card_section_panel.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
-import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/log_solve_sheet.dart';
 import '../editor/card_editor_screen.dart';
 
@@ -28,7 +27,8 @@ import '../editor/card_editor_screen.dart';
 /// line length is constrained (~66ch); content is chunked into panels. Which
 /// sections open by default adapts to study state — new/due sections expand
 /// (they need work), while mastered (reviewed and scheduled out) and
-/// supplementary sections collapse.
+/// supplementary sections collapse. Composed from the shared card component layer
+/// (CardMetaChip / CardSectionPanel / CardLinks — ADR-0012).
 class CardDetailScreen extends ConsumerWidget {
   const CardDetailScreen({super.key, required this.cardId});
 
@@ -71,20 +71,6 @@ class CardDetailScreen extends ConsumerWidget {
   }
 }
 
-/// Whether a section should open by default: supplementary sections stay
-/// collapsed; a quizzable section opens if it's new (never studied) or due, and
-/// collapses once it's been reviewed and scheduled into the future (mastered).
-bool _expandByDefault(CardSection section, SrsState? state, DateTime now) {
-  if (section.quizzable) {
-    if (state == null) return true;
-    return !state.dueAt.isAfter(now);
-  }
-  // Non-quizzable: expand the implementation/code reference (the reason to open
-  // the full card); keep other supplementary sections (resources, related)
-  // collapsed.
-  return implementationHeadings.contains(section.heading.trim().toLowerCase());
-}
-
 class _CardDetail extends ConsumerWidget {
   const _CardDetail({required this.card, required this.states});
 
@@ -95,6 +81,10 @@ class _CardDetail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isApproach = card.isApproachCard;
     final now = DateTime.now();
+    // The card's type label + icon come from its flow (config), never a
+    // `card.type ==` branch (invariant #2) — resolved from the active template,
+    // matching Browse's resolution exactly.
+    final flow = activeTemplate.flowForType(card.type);
 
     return Scaffold(
       appBar: AppBar(
@@ -136,17 +126,15 @@ class _CardDetail extends ConsumerWidget {
                   spacing: Dim.space2,
                   runSpacing: Dim.space1,
                   children: [
-                    _MetaChip(
-                      icon: isApproach
-                          ? Icons.forum_outlined
-                          : Icons.style_outlined,
-                      label: isApproach ? 'Interview question' : 'Flashcard',
+                    CardMetaChip(
+                      icon: flowIcon(flow?.iconKey),
+                      label: flow?.displayLabel ?? card.type,
                     ),
-                    if (card.domain != null) _MetaChip(label: card.domain!),
+                    if (card.domain != null) CardMetaChip(label: card.domain!),
                     for (final entry in card.tiers.entries)
-                      _MetaChip(label: '${entry.key} · T${entry.value}'),
+                      CardMetaChip(label: '${entry.key} · T${entry.value}'),
                     if (card.priority != Priority.normal)
-                      _MetaChip(
+                      CardMetaChip(
                         icon: card.priority == Priority.high
                             ? Icons.priority_high
                             : Icons.low_priority,
@@ -182,15 +170,15 @@ class _CardDetail extends ConsumerWidget {
                 ],
                 const SizedBox(height: Dim.space4),
                 for (final section in card.sections)
-                  _SectionPanel(
+                  CardSectionPanel(
                     section: section,
-                    initiallyExpanded: _expandByDefault(
+                    initiallyExpanded: sectionExpandDefault(
                       section,
                       states?['${card.id}::${section.slug}'],
                       now,
                     ),
                   ),
-                _LinksSection(cardId: card.id),
+                CardLinks(cardId: card.id),
               ],
             ),
           ),
@@ -198,176 +186,4 @@ class _CardDetail extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// The card's link neighborhood — outbound links + backlinks from the
-/// `card_links` graph (task #50, S1: cards as nodes in the second-brain). Hidden
-/// when the card has no resolved links; each chip navigates to that card.
-class _LinksSection extends ConsumerWidget {
-  const _LinksSection({required this.cardId});
-
-  final String cardId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nb = ref.watch(cardNeighborhoodProvider(cardId)).asData?.value;
-    if (nb == null || nb.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (nb.outbound.isNotEmpty)
-          _LinkGroup(
-              title: 'Links', icon: Icons.north_east, cards: nb.outbound),
-        if (nb.backlinks.isNotEmpty)
-          _LinkGroup(
-              title: 'Backlinks', icon: Icons.south_west, cards: nb.backlinks),
-      ],
-    );
-  }
-}
-
-/// One labelled group of navigable link chips (outbound or backlinks).
-class _LinkGroup extends StatelessWidget {
-  const _LinkGroup(
-      {required this.title, required this.icon, required this.cards});
-
-  final String title;
-  final IconData icon;
-  final List<LinkedCard> cards;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: Dim.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: Dim.iconSm, color: cs.onSurfaceVariant),
-              const SizedBox(width: Dim.space2),
-              Text(
-                title.toUpperCase(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6),
-              ),
-            ],
-          ),
-          const SizedBox(height: Dim.space2),
-          Wrap(
-            spacing: Dim.space2,
-            runSpacing: Dim.space2,
-            children: [
-              for (final c in cards)
-                ActionChip(
-                  label: Text(c.title),
-                  onPressed: () => context.push('/card/${c.id}'),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One collapsible H2 section. Whether it opens by default is decided by the
-/// caller from study state; quizzable headings are accented either way.
-class _SectionPanel extends StatelessWidget {
-  const _SectionPanel({required this.section, required this.initiallyExpanded});
-
-  final CardSection section;
-  final bool initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    // A left accent rail plus a hairline border give each section a distinct
-    // "region" (Gestalt common-region) without noisy dividers. The rail also
-    // signals importance: primary for core/quizzable sections, muted otherwise.
-    final accent = section.quizzable ? scheme.primary : scheme.outlineVariant;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Dim.space4),
-      // Material (not a bare colored Container) so the ExpansionTile's inner
-      // ListTile has a Material ancestor to paint its background/ink onto.
-      child: Material(
-        color: scheme.surfaceContainerHigh,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: Dim.brCard,
-          side: BorderSide(color: scheme.outlineVariant),
-        ),
-        // IntrinsicHeight so the accent rail can stretch to the panel's height
-        // (a Row in a ListView is otherwise vertically unbounded).
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 4, color: accent),
-              Expanded(
-                child: Theme(
-                  // Drop the ExpansionTile's default header/body divider lines.
-                  data: theme.copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: initiallyExpanded,
-                    tilePadding: const EdgeInsets.fromLTRB(
-                        Dim.space4, Dim.space1, Dim.space4, Dim.space1),
-                    childrenPadding: const EdgeInsets.fromLTRB(
-                        Dim.space4, 0, Dim.space4, Dim.space4),
-                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            section.heading,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: section.quizzable
-                                  ? scheme.primary
-                                  : scheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        if (section.quizzable)
-                          Tooltip(
-                            message: 'Scheduled for review',
-                            child: Icon(Icons.check_circle_outline,
-                                size: Dim.iconMd, color: scheme.primary),
-                          ),
-                      ],
-                    ),
-                    children: [CardMarkdown(section.content)],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A calm neutral meta chip (card type, domain, tier, priority). Composes
-/// [StatusPill] with the muted tone — these carry no good/attention/bad meaning.
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.label, this.icon});
-
-  final String label;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) => StatusPill(
-        tone: StatusTone.muted,
-        label: label,
-        icon: icon,
-        dense: true,
-      );
 }

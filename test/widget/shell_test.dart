@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:onyx/shared/widgets/card_meta_chip.dart';
+
 import 'support/harness.dart';
 
 void main() {
@@ -48,9 +50,11 @@ void main() {
     await tester.tap(find.text('Binary Search'));
     await tester.pumpAndSettle();
 
-    // Detail renders the section heading and a type meta-chip.
+    // Detail renders the section heading and its meta chips (type/tier). The
+    // exact flow label is template-dependent (config-driven, ADR-0012) and pinned
+    // in card_detail_view_test; here we just confirm the detail opened.
     expect(find.text('When to Use'), findsOneWidget);
-    expect(find.text('Flashcard'), findsOneWidget);
+    expect(find.byType(CardMetaChip), findsWidgets);
   });
 
   testWidgets('Browse shows an empty-state prompt when no cards',

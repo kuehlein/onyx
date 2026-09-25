@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
 import '../../core/template/active_template.dart';
-import '../../core/template/deck_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/decks.dart';
@@ -20,16 +19,6 @@ import '../editor/card_editor_screen.dart';
 import '../generation/card_generation_sheet.dart';
 import 'browse_filters.dart';
 import 'import_deck_sheet.dart';
-
-/// Maps a flow's [FlowSpec.iconKey] to a Browse icon (fallback: a generic card).
-IconData flowIcon(String? key) => switch (key) {
-      'flashcard' => Icons.style_outlined,
-      'interview' => Icons.forum_outlined,
-      'algorithm' => Icons.terminal_outlined,
-      'systemDesign' => Icons.architecture_outlined,
-      'behavioral' => Icons.record_voice_over_outlined,
-      _ => Icons.style_outlined,
-    };
 
 /// Browse: full-text search + composable filters over the indexed cards.
 /// Search and filters combine; power users can also type operators
