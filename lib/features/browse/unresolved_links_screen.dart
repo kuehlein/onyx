@@ -7,6 +7,7 @@ import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
+import 'stub_note_screen.dart';
 
 /// Unresolved-links view (task #20): every `[[wikilink]]` that points to no file
 /// in the vault, grouped by the missing target (most-referenced first). Each
@@ -76,27 +77,36 @@ class _TargetGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              Dim.space4, Dim.space4, Dim.space4, Dim.space1),
-          child: Row(
-            children: [
-              Icon(Icons.link_off,
-                  size: Dim.iconSm, color: context.colors.error),
-              const SizedBox(width: Dim.space2),
-              Expanded(
-                child: Text(
-                  '[[$target]]',
-                  style: context.text.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+        // The target header opens the stub (a placeholder view with a "create
+        // this note" affordance); the ref rows below still jump to the source
+        // card to fix the link there — two distinct intents, both kept.
+        InkWell(
+          onTap: () => showStubNote(context, target),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                Dim.space4, Dim.space4, Dim.space4, Dim.space1),
+            child: Row(
+              children: [
+                Icon(Icons.link_off,
+                    size: Dim.iconSm, color: context.colors.error),
+                const SizedBox(width: Dim.space2),
+                Expanded(
+                  child: Text(
+                    '[[$target]]',
+                    style: context.text.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
-              Text(
-                '${refs.length} ref${refs.length == 1 ? '' : 's'}',
-                style: context.text.labelSmall
-                    ?.copyWith(color: context.colors.onSurfaceVariant),
-              ),
-            ],
+                Text(
+                  '${refs.length} ref${refs.length == 1 ? '' : 's'}',
+                  style: context.text.labelSmall
+                      ?.copyWith(color: context.colors.onSurfaceVariant),
+                ),
+                const SizedBox(width: Dim.space1),
+                Icon(Icons.chevron_right,
+                    size: Dim.iconSm, color: context.colors.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
         for (final r in refs)

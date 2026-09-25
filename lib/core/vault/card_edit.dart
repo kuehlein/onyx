@@ -240,29 +240,42 @@ Future<void> saveCardEdit(
   await source.writeFile(filePath, rebuilt);
 }
 
-/// Creates a new hand-authored card at the vault ROOT as `<slug>.md`, where the
-/// slug (also the frontmatter `id`) is derived from [title] and de-duped against
-/// existing card paths (suffix `-2`, `-3`, … when `<slug>.md` already exists).
-/// Returns the new card's relative path. Enters as `status: active` (trusted).
+/// Turns a filename slug/stem into a human title for display + a seeded editor
+/// title (e.g. `"two-pointers"` → `"Two Pointers"`). Cosmetic only — the file's
+/// identity is set explicitly by the caller when it matters (a stub's create).
+String humanizeSlug(String slug) => slug
+    .split(RegExp(r'[-_ ]+'))
+    .where((w) => w.isNotEmpty)
+    .map((w) => w[0].toUpperCase() + w.substring(1))
+    .join(' ');
+
+/// Creates a new hand-authored card at the vault ROOT as `<stem>.md`, where the
+/// stem (also the frontmatter `id`) is [slug] when given, else derived from
+/// [title]; either way it's de-duped against existing card paths (suffix `-2`,
+/// `-3`, …). Returns the new card's relative path. Enters as `status: active`
+/// (trusted). Passing [slug] verbatim is how a **stub's "create this note"**
+/// guarantees the new file's stem equals the broken link's target, so every
+/// `[[target]]` resolves on re-index (targets are matched raw, not slugified).
 Future<String> createCard(
   VaultSource source, {
   required String title,
   required String body,
   List<String> tags = const [],
+  String? slug,
 }) async {
   final existing = (await source.listCardPaths()).toSet();
-  final base = slugifyTitle(title);
+  final base = (slug != null && slug.isNotEmpty) ? slug : slugifyTitle(title);
   final root = base.isEmpty ? 'card' : base;
-  var slug = root;
+  var stem = root;
   var n = 2;
-  while (existing.contains('$slug.md')) {
-    slug = '$root-$n';
+  while (existing.contains('$stem.md')) {
+    stem = '$root-$n';
     n++;
   }
-  final path = '$slug.md';
+  final path = '$stem.md';
   await source.writeFile(
     path,
-    newCardMarkdown(id: slug, title: title, body: body, tags: tags),
+    newCardMarkdown(id: stem, title: title, body: body, tags: tags),
   );
   return path;
 }

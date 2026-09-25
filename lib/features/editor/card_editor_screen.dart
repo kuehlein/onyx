@@ -25,20 +25,36 @@ import '../../shared/widgets/fading_scroll_edges.dart';
 enum _SectionEdit { keep, reset }
 
 /// Pushes [CardEditorScreen] full-screen. [card] null → create; non-null → edit.
-/// Returns true if the user saved (so the caller can invalidate/pop a now-stale
-/// detail view).
-Future<bool> showCardEditor(BuildContext context, {Card? card}) async {
+/// [initialTitle] seeds the title on create (e.g. a stub's de-slugged target);
+/// [createSlug] forces the new file's stem/id on create (a stub passes the broken
+/// link's target so `[[target]]` resolves on re-index). Returns true if saved.
+Future<bool> showCardEditor(
+  BuildContext context, {
+  Card? card,
+  String? initialTitle,
+  String? createSlug,
+}) async {
   final saved = await Navigator.of(context).push<bool>(
-    MaterialPageRoute(builder: (_) => CardEditorScreen(card: card)),
+    MaterialPageRoute(
+      builder: (_) => CardEditorScreen(
+          card: card, initialTitle: initialTitle, createSlug: createSlug),
+    ),
   );
   return saved ?? false;
 }
 
 class CardEditorScreen extends ConsumerStatefulWidget {
-  const CardEditorScreen({super.key, this.card});
+  const CardEditorScreen(
+      {super.key, this.card, this.initialTitle, this.createSlug});
 
   /// The card being edited, or null when creating a new one.
   final Card? card;
+
+  /// Seeds the title on create (a stub's de-slugged target).
+  final String? initialTitle;
+
+  /// Forces the new file's stem/id on create so a stub's `[[target]]` resolves.
+  final String? createSlug;
 
   @override
   ConsumerState<CardEditorScreen> createState() => _CardEditorScreenState();
@@ -59,7 +75,8 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
   void initState() {
     super.initState();
     final card = widget.card;
-    _title = TextEditingController(text: card?.title ?? '');
+    _title =
+        TextEditingController(text: card?.title ?? widget.initialTitle ?? '');
     _tags = TextEditingController(text: (card?.tags ?? const []).join(', '));
     // On create, seed a body template so the new card is quizzable out of the
     // box. On edit, seed the raw body sliced from the file (exact round-trip of
@@ -149,7 +166,11 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
         );
         ref.invalidate(srsStatesProvider);
       } else {
-        await createCard(source, title: title, body: body, tags: _parsedTags);
+        await createCard(source,
+            title: title,
+            body: body,
+            tags: _parsedTags,
+            slug: widget.createSlug);
       }
       ref.invalidate(vaultIndexProvider);
       navigator.pop(true);

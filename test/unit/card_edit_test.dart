@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/vault/card_edit.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
+import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
 
 /// Round-trip safety for the in-app editor (task #28). The crux: editing a card
@@ -239,6 +240,27 @@ void main() {
     });
   });
 
+  group('humanizeSlug', () {
+    test('de-slugs kebab / underscore / mixed separators to Title Case', () {
+      expect(humanizeSlug('two-pointers'), 'Two Pointers');
+      expect(humanizeSlug('binary_search_tree'), 'Binary Search Tree');
+      expect(humanizeSlug('sliding-window_max'), 'Sliding Window Max');
+    });
+
+    test('collapses repeated/leading separators and empties to nothing', () {
+      expect(humanizeSlug('--a__b  c--'), 'A B C');
+      expect(humanizeSlug(''), '');
+      expect(humanizeSlug('---'), '');
+    });
+
+    test('leaves an already-spaced target readable (only cases the words)', () {
+      // A raw Obsidian target seeds the create-title; it stays human, and the
+      // FILE stem is set from the verbatim target, not this — so no round-trip
+      // loss (createCard test above proves the stem).
+      expect(humanizeSlug('Two Pointers'), 'Two Pointers');
+    });
+  });
+
   group('createCard / saveCardEdit / deleteCardFile (temp source)', () {
     late Directory root;
     late DesktopVaultSource source;
@@ -285,6 +307,67 @@ void main() {
         () async {
       final path = await createCard(source, title: '???', body: '## A\n\nx');
       expect(path, 'card.md');
+    });
+
+    test('createCard writes the given slug as the stem VERBATIM (no slugify)',
+        () async {
+      // A stub creates with slug == the raw link target; Obsidian targets are
+      // often title-case with spaces. The stem must equal it byte-for-byte —
+      // slugifying here (→ "two-pointers") would leave every [[Two Pointers]]
+      // dangling. This is the load-bearing guarantee of ADR-0012 §7.
+      final path = await createCard(
+        source,
+        title: 'Two Pointers',
+        body: '## A\n\nx',
+        slug: 'Two Pointers',
+      );
+      expect(path, 'Two Pointers.md');
+      final card = _parser.parse(await source.readCard(path), filePath: path)!;
+      expect(card.id, 'Two Pointers', reason: 'id follows the verbatim stem');
+      expect(card.title, 'Two Pointers');
+    });
+
+    test('createCard de-dups even an explicit slug when the stem exists',
+        () async {
+      final p1 = await createCard(source,
+          title: 'X', body: '## A\n\nx', slug: 'target');
+      final p2 = await createCard(source,
+          title: 'X', body: '## A\n\ny', slug: 'target');
+      expect(p1, 'target.md');
+      expect(p2, 'target-2.md',
+          reason: 'a colliding slug still de-dups; the round-trip guarantee '
+              'holds for the FIRST create of a dangling target');
+    });
+
+    test('stub round-trip: creating the note resolves the [[target]] it seeded',
+        () async {
+      // A card links a dangling target raw (spaces + caps, as Obsidian writes).
+      final linker = _parser.parse(
+        newCardMarkdown(
+          id: 'linker',
+          title: 'Linker',
+          body: 'See [[Two Pointers]] for the technique.\n\n## A\n\nx',
+        ),
+        filePath: 'linker.md',
+      )!;
+      expect(linker.wikilinks, ['Two Pointers'],
+          reason: 'target is kept raw + trimmed, not slugified');
+
+      // Before: the target resolves to no file → one unresolved link.
+      final before = computeUnresolvedLinks([linker], <String>{});
+      expect(before.single.target, 'Two Pointers');
+
+      // Create the note the way the stub does (slug == the raw target)…
+      await createCard(source,
+          title: humanizeSlug('Two Pointers'),
+          body: '## A\n\nx',
+          slug: 'Two Pointers');
+      final stems = {
+        for (final p in await source.listCardPaths()) p.replaceAll('.md', ''),
+      };
+
+      // After: the [[Two Pointers]] link resolves — nothing dangling.
+      expect(computeUnresolvedLinks([linker], stems), isEmpty);
     });
 
     test(
