@@ -1,14 +1,22 @@
 // Material's `Card` widget collides with our domain `Card` model.
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+// ignore: depend_on_referenced_packages
+import 'package:sqlite3/sqlite3.dart' show sqlite3;
 
 import 'package:onyx/app/app.dart';
 import 'package:onyx/app/theme.dart';
 import 'package:onyx/core/clock.dart';
+import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/interview/transfer.dart';
 import 'package:onyx/core/plan/daily_plan.dart';
 import 'package:onyx/core/readiness/target.dart';
+import 'package:onyx/core/template/deck_template.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -16,10 +24,13 @@ import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/backup.dart';
 import 'package:onyx/shared/providers/clock.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
+import 'package:onyx/shared/providers/database.dart';
+import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/glossary.dart';
 import 'package:onyx/shared/providers/learn.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/today_progress.dart';
 import 'package:onyx/shared/providers/vault.dart';
 
@@ -106,6 +117,66 @@ Future<void> pumpApp(
     child: const OnyxApp(),
   ));
   await tester.pumpAndSettle();
+}
+
+/// Whether native sqlite is loadable — the LIVE harness needs a real (in-memory)
+/// DB, which some CI/sandboxes lack. Live tests guard: `if (db == null) return;`.
+final bool sqliteAvailable = () {
+  try {
+    sqlite3.openInMemory().dispose();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}();
+
+class _SeededDecks extends Decks {
+  _SeededDecks(this._seed);
+  final List<Deck> _seed;
+  @override
+  Future<List<Deck>> build() async => _seed;
+}
+
+/// Pumps the full [OnyxApp] against a REAL in-memory database with the study
+/// providers LIVE — srs state / queues / plan / readiness / today-progress all
+/// derive from the DB + the seeded index + decks (unlike [pumpApp], which injects
+/// them as calm stubs). This lets a test drive the real **grade → persist →
+/// recompute** cycle end-to-end (E2E verification, task E1).
+///
+/// Overrides only the vault-touching seams (source / index / template / decks) so
+/// nothing hits the filesystem; everything downstream is real. Returns the
+/// [AppDatabase] to seed / assert against / close, or **null when sqlite is
+/// unavailable** — a live test must guard `final db = await pumpLiveApp(...); if
+/// (db == null) return;` and `addTearDown(db.close)`.
+Future<AppDatabase?> pumpLiveApp(
+  WidgetTester tester, {
+  required List<Card> cards,
+  List<Deck>? decks,
+  DeckTemplate? template,
+}) async {
+  if (!sqliteAvailable) return null;
+  final db = AppDatabase.withExecutor(NativeDatabase.memory());
+  final tpl = template ?? softwareInterviewsTemplate;
+  final seeded =
+      decks ?? [Deck(id: defaultDeckId, name: tpl.id, templateId: tpl.id)];
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      vaultSourceProvider
+          .overrideWithValue(DesktopVaultSource('/tmp/onyx-live-test')),
+      loadVaultRefProvider.overrideWith((ref) async {}),
+      appDatabaseProvider.overrideWithValue(db),
+      vaultIndexProvider.overrideWith((ref) async => testIndex(cards)),
+      templateRegistryProvider
+          .overrideWith((ref) async => TemplateRegistry.single(tpl)),
+      decksProvider.overrideWith(() => _SeededDecks(seeded)),
+      clockProvider.overrideWith((ref) async => Clock.real),
+      startupRestoreProvider.overrideWith((ref) async {}),
+      glossaryProvider.overrideWith((ref) async => const {}),
+    ],
+    child: const OnyxApp(),
+  ));
+  await tester.pumpAndSettle();
+  return db;
 }
 
 /// Pumps a single [screen] inside the app theme (which registers OnyxColors /
