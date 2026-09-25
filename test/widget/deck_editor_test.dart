@@ -267,4 +267,57 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('2 of 3 cards'), findsOneWidget);
   });
+
+  testWidgets('Tag and Folder fields keep separate state (no value bleed)',
+      (tester) async {
+    final cap = _CapturingGoals();
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'D'); // name
+    await tester.tap(find.text('Tag'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).last, 'korean');
+    await tester.pump();
+
+    // Switch to Folder — its field must be EMPTY, not the stale 'korean' tag.
+    await tester.tap(find.text('Folder'));
+    await tester.pump();
+    expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        isEmpty);
+  });
+
+  testWidgets('editing the simple value reseeds Advanced (no stale lens)',
+      (tester) async {
+    final cap = _CapturingGoals();
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'D');
+    await tester.tap(find.text('Tag'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).last, 'korean');
+    await tester.pump();
+
+    await tester.tap(find.text('Advanced'));
+    await tester.pump();
+    expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        'tag:korean');
+
+    // Back to Tag, change the value, return to Advanced — must reseed, not keep
+    // the stale tag:korean (the one-shot-seed bug).
+    await tester.tap(find.text('Tag'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).last, 'spanish');
+    await tester.pump();
+    await tester.tap(find.text('Advanced'));
+    await tester.pump();
+    expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        'tag:spanish');
+  });
 }

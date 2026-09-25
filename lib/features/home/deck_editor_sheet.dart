@@ -129,12 +129,12 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       CardQuery.everything;
   late final TextEditingController _name =
       TextEditingController(text: widget.goal?.name ?? '');
-  late final TextEditingController _value = TextEditingController(
-      text: switch (_seed) {
-    TagIs(:final tag) => tag,
-    FolderUnder(:final path) => path,
-    _ => '',
-  });
+  // Tag and Folder keep SEPARATE controllers — a shared one bled a typed tag into
+  // the Folder field on a mode switch (adversarial review).
+  late final TextEditingController _tagValue = TextEditingController(
+      text: switch (_seed) { TagIs(:final tag) => tag, _ => '' });
+  late final TextEditingController _folderValue = TextEditingController(
+      text: switch (_seed) { FolderUnder(:final path) => path, _ => '' });
   // A lens the simple radio can't express (And/Or/Not/type/tier/…) opens directly
   // in Advanced, pre-filled with its query text.
   late _Kind _kind = switch (_seed) {
@@ -145,6 +145,9 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   };
   late final TextEditingController _lensText = TextEditingController(
       text: _kind == _Kind.advanced ? renderLens(_seed) : '');
+  // Whether the user has hand-edited the Advanced text — gates the simple→Advanced
+  // reseed so a simple edit is picked up but hand-typed advanced isn't clobbered.
+  bool _advancedEdited = false;
   late String? _templateId = widget.goal?.templateId;
   late double _weight = widget.goal?.budgetWeight ?? 1.0;
   // The existing decks — watched in [build] so a new deck's id can dodge a
@@ -156,7 +159,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   @override
   void dispose() {
     _name.dispose();
-    _value.dispose();
+    _tagValue.dispose();
+    _folderValue.dispose();
     _lensText.dispose();
     super.dispose();
   }
@@ -165,7 +169,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
     if (_name.text.trim().isEmpty) return false;
     return switch (_kind) {
       _Kind.all => true,
-      _Kind.tag || _Kind.folder => _value.text.trim().isNotEmpty,
+      _Kind.tag => _tagValue.text.trim().isNotEmpty,
+      _Kind.folder => _folderValue.text.trim().isNotEmpty,
       _Kind.advanced => _lensText.text.trim().isNotEmpty,
     };
   }
@@ -174,8 +179,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   /// parses the text form; the simple kinds map to a single leaf.
   CardQuery _membershipFor(_Kind kind) => switch (kind) {
         _Kind.all => CardQuery.everything,
-        _Kind.tag => TagIs(_value.text.trim()),
-        _Kind.folder => FolderUnder(_value.text.trim()),
+        _Kind.tag => TagIs(_tagValue.text.trim()),
+        _Kind.folder => FolderUnder(_folderValue.text.trim()),
         _Kind.advanced => parseLens(_lensText.text.trim()),
       };
 
@@ -261,7 +266,11 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                   label: Text('${s.label} · ${s.count}'),
                   onPressed: () => setState(() {
                     _kind = s.kind;
-                    _value.text = s.value;
+                    if (s.kind == _Kind.tag) {
+                      _tagValue.text = s.value;
+                    } else {
+                      _folderValue.text = s.value;
+                    }
                   }),
                 ),
             ],
@@ -389,25 +398,35 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                   ButtonSegment(value: _Kind.advanced, label: Text('Advanced')),
                 ],
                 selected: {_kind},
-                // Switching to Advanced seeds the text with the simple pick's
-                // query form, so nothing is lost revealing the underlying lens.
+                // Switching to Advanced seeds the text with the simple pick's query
+                // form — UNLESS the user has hand-edited Advanced (then preserve it).
+                // Reseeding when not-edited picks up a changed simple value.
                 onSelectionChanged: (s) => setState(() {
                   final next = s.first;
-                  if (next == _Kind.advanced && _lensText.text.trim().isEmpty) {
+                  if (next == _Kind.advanced && !_advancedEdited) {
                     _lensText.text = renderLens(_membershipFor(_kind));
                   }
                   _kind = next;
                 }),
               ),
-              if (_kind == _Kind.tag || _kind == _Kind.folder) ...[
+              if (_kind == _Kind.tag) ...[
                 const SizedBox(height: Dim.space3),
                 TextField(
-                  controller: _value,
-                  decoration: InputDecoration(
-                    labelText: _kind == _Kind.tag ? 'Tag' : 'Folder path',
-                    hintText: _kind == _Kind.tag
-                        ? 'e.g. intercession (no #)'
-                        : 'e.g. Math/Calculus/101',
+                  controller: _tagValue,
+                  decoration: const InputDecoration(
+                    labelText: 'Tag',
+                    hintText: 'e.g. intercession (no #)',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
+              if (_kind == _Kind.folder) ...[
+                const SizedBox(height: Dim.space3),
+                TextField(
+                  controller: _folderValue,
+                  decoration: const InputDecoration(
+                    labelText: 'Folder path',
+                    hintText: 'e.g. Math/Calculus/101',
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -422,7 +441,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                     hintText:
                         'e.g. tag:korean OR folder:korean/  -tag:archived',
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) => setState(() => _advancedEdited = true),
                 ),
                 const SizedBox(height: Dim.space1),
                 Text(
