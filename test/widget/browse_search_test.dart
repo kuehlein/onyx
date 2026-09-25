@@ -3,12 +3,20 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/deck/deck.dart';
+import 'package:onyx/core/template/software_interviews.dart';
+import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/features/browse/browse_screen.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/srs.dart';
+import 'package:onyx/shared/providers/template.dart';
 import 'package:onyx/shared/providers/vault.dart';
+
+class _EmptyDecks extends Decks {
+  @override
+  Future<List<Deck>> build() async => const [];
+}
 
 Card _card(
   String title, {
@@ -129,5 +137,34 @@ void main() {
     expect(find.text('Binary Search'), findsNothing);
     expect(find.text('Two Pointers'), findsNothing);
     expect(find.text('Design a URL shortener'), findsNothing);
+  });
+
+  // ADR-0013 §Addendum 2 (adversarial review): "Save as deck" on an all-dynamic
+  // filter (is:due) strips to nothing structural — the composed lens equals the
+  // active deck's own lens (whole vault here), so it must warn, not silently open a
+  // whole-vault clone. Exercises the untested _saveAsDeck composition + note.
+  testWidgets('Save as deck warns when the filter adds nothing structural',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        vaultIndexProvider.overrideWith((ref) async => index),
+        srsStatesProvider.overrideWith((ref) async => const SectionStates({})),
+        activeDeckProvider.overrideWith((ref) async =>
+            const Deck(id: 'default', name: 'All', templateId: 't')),
+        decksProvider.overrideWith(_EmptyDecks.new),
+        templateRegistryProvider.overrideWith(
+            (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
+      ],
+      child: const MaterialApp(home: BrowseScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'is:due');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save as deck'));
+    await tester.pumpAndSettle();
+
+    // is:due strips to Everything == the whole-vault active deck → warn, no clone.
+    expect(find.textContaining('whole vault'), findsOneWidget);
   });
 }

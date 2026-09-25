@@ -144,15 +144,24 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     final parsed = parseQuery(_query.trim());
     final filter =
         _and2(_chipFilter.merge(parsed.facets).toQuery(), parsed.extra);
-    final lens = _and2(deck?.membership ?? CardQuery.everything, filter);
-    final structural = stripDynamic(lens);
+    final deckLens = deck?.membership ?? CardQuery.everything;
+    final structural = stripDynamic(_and2(deckLens, filter));
     final text = parsed.text.trim();
+    // A no-op clone: nothing structural was added (only free text and/or an
+    // is:due-style dynamic filter), so the "new" deck would just re-create the
+    // current view. Say so, rather than silently opening an identical/whole-vault
+    // deck (adversarial review).
+    final isNoop = renderLens(structural) == renderLens(deckLens);
     showDeckEditor(
       context,
       initialMembership: structural,
-      note: text.isEmpty
-          ? null
-          : 'The text search "$text" isn\'t saved — a deck is defined by its filters.',
+      note: isNoop
+          ? (structural is Everything
+              ? 'This would save your whole vault — add a filter to narrow it.'
+              : 'This just re-creates the current deck — add a filter to narrow it.')
+          : (text.isEmpty
+              ? null
+              : 'The text search "$text" isn\'t saved — a deck is defined by its filters.'),
     );
   }
 

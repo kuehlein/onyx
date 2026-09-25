@@ -268,6 +268,30 @@ void main() {
     expect(find.textContaining('2 of 3 cards'), findsOneWidget);
   });
 
+  testWidgets('Advanced flags an unreadable query as whole-vault (fail-open)',
+      (tester) async {
+    final cap = _CapturingGoals();
+    final index = IndexResult(
+      cards: [
+        _card('a', folder: 'x', tags: ['t'])
+      ],
+      idless: 0,
+      malformed: 0,
+      skipped: 0,
+    );
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx), index: index);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Advanced'));
+    await tester.pump();
+    // a bare word / typo parses to nothing → whole vault; warn, don't show "1 of 1"
+    await tester.enterText(find.byType(TextField).last, 'oops');
+    await tester.pump();
+    expect(find.textContaining("Couldn't read that query"), findsOneWidget);
+    expect(find.textContaining('1 of 1'), findsNothing);
+  });
+
   testWidgets('Tag and Folder fields keep separate state (no value bleed)',
       (tester) async {
     final cap = _CapturingGoals();

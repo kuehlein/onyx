@@ -234,18 +234,29 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
         index.cards.where((c) => c.isDraft && lens.matches(c)).length;
     final none = n == 0;
     final suggestions = _suggestionCache ??= _computeSuggestions(study);
+    // Fail-open guard: a non-empty Advanced query that parses to Everything means
+    // the text wasn't understood (a typo → ignored) and would silently save the
+    // WHOLE vault. Flag it instead of showing a reassuring count (adversarial
+    // review). (An all-dynamic `is:due` parses to StateIs, not Everything, so it's
+    // not caught here — that's the stripDynamic-widens case, not a typo.)
+    final notUnderstood = _kind == _Kind.advanced &&
+        _lensText.text.trim().isNotEmpty &&
+        parseLens(_lensText.text.trim()) is Everything;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: Dim.space3),
         Text(
-          none
-              ? 'No cards match'
-              : '$n of ${study.length} cards'
-                  '${drafts > 0 ? '  ·  +$drafts draft${drafts == 1 ? '' : 's'}' : ''}',
+          notUnderstood
+              ? "Couldn't read that query — it matches your whole vault. "
+                  'Check the operators below.'
+              : none
+                  ? 'No cards match'
+                  : '$n of ${study.length} cards'
+                      '${drafts > 0 ? '  ·  +$drafts draft${drafts == 1 ? '' : 's'}' : ''}',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: none
+            color: (none || notUnderstood)
                 ? theme.colorScheme.error
                 : theme.colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
