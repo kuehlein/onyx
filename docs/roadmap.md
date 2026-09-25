@@ -17,9 +17,15 @@ Backbone (`user_stories/`) established as the source of truth with the anti-drif
 consolidated to the lean spine (`user_stories`, `roadmap`, `architecture`, `design-system`,
 `learning-science`) with 25 historical docs archived; roadmap re-baselined (this doc).
 
-## Phase 1 — Conform the code to the backbone *(the big one)*
+## Phase 1 — Conform the code to the backbone *(the big one)* — ✅ COMPLETE (2026-09-25)
 The engine is solid; the app's **structure + surface** must move onto the vault → deck → aims
 model before we add features, so we build on the right shape.
+
+> **Status — ✅ COMPLETE (2026-09-25).** Every slice **1a–1h** shipped green (audited against code
+> 2026-09-25 — no stale markings). Only *deliberately-deferred* sub-items remain, each tracked and
+> gated, none blocking: **1f.2** in-editor AI edit-chat; **1d Phase B/C** workload derivation
+> (**#114**, gated on the FSRS est-minutes sliver); **#106** est-minutes fidelity; behavioral
+> follow-ups **#107–#109**; **#32C** optimizer (ADR-0014). **The frontier is now Phase 2.**
 - **1a · Model + vocabulary** (→ index): reframe code "subject/goal/target" into **deck (query
   lens)** + **a set of aims** (difficulty/emphasis/durability/date); readiness weakest-link *across*
   aims; daily plan allocates *across* aims. Retire the single-target assumption. *Absorbs the rest
@@ -412,8 +418,12 @@ model before we add features, so we build on the right shape.
 - **Dropped here (contradicts the guardrail):** **#50 second-brain S2/S3** — Onyx is *not* a second
   brain. The shipped card-links backlinks stay as a minor feature; the notes/graph expansion is out.
 
-## Phase 2 — Polish (look & feel + UX)
-- Apply the design system across the re-architected surfaces; motion; empty/loading states.
+## Phase 2 — Polish (look & feel + UX) ← **NOW** (Phase 1 complete)
+- **Design-system application — ✅ largely satisfied** (audit 2026-09-25): the reframe surfaces were
+  built on the design layer as they went — **zero raw color literals**; `Dim` tokens / `StatusColor` /
+  `showOnyxSheet` / `StatusPill` applied consistently across home · aims · browse · insights · settings ·
+  deck-editor. **Remaining polish:** motion / transitions + a deliberate **empty & loading-state** pass
+  across surfaces (the token layer is done; the *states* aren't audited).
 - **Design tooling — Figma + UI/UX agents [new, your ask].** Wire a solid design workflow so quality
   isn't gated on hand-crafting: a **Figma source-of-truth** for components/screens + an **agent loop**
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
