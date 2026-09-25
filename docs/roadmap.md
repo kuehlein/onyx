@@ -446,8 +446,27 @@ The MVP-tagged stories, cloud still absent:
     when a 2nd artifact-flow appears).
 - The daily loop + Aims + readiness end-to-end for one deck *and* several; the three on-ramps
   (existing lens / create cards / pull); light authoring; deck-scoped Browse/Analytics/Settings.
-- Feature calls (decide per story — some may slip to stretch): #22 quiz customization, #26 reader
-  comprehension, #25 AI study suggestions.
+- **Feature calls — decided 2026-09-25** (survey: none was cleanly Accepted; each needed a call):
+  - **#22 quiz/session customization — ❌ DROPPED.** A per-session domain/mix override contradicts
+    [ADR-0010](adr/0010-workload-budget-and-proportions.md)/[0011](adr/0011-load-control-auto-mix-propose-size.md):
+    the engine derives the MIX, the user owns only the SIZE (daily budget + deck proportion). Re-adding
+    per-session mix knobs re-creates the dials those ADRs deliberately removed. Not built.
+  - **#25 AI study suggestions — ⏸ low-value SPIKE (evidence-gated), not a committed build.** Home already
+    orders the day's flows by importance, and the coach (11 nudge kinds incl. weakest-domain) + weak-area
+    report (#23 ✅) + analytics already tell the user where to focus. The only residual is an explicit
+    "you keep failing X — focus here" **struggling-items** nudge (persistent-fail signal; analytics has
+    `deckStrugglingCards`). Speculative + overlaps **#103**; revisit ONLY if usage shows the ordered Home
+    + reports are insufficient. A short spike, not a feature. → **#25**.
+  - **#26 reader comprehension — ♻️ REFRAMED (Accepted to EXPLORE): an AI-TUTOR first-exposure flow.** Not
+    a test-administrator quizzing you; a **tutor teaching a new concept.** At first exposure (the learn
+    stage), nudge the learner to read the **source material**, feed the AI that context, then hold a short
+    **conversational understanding-check** (Socratic/elaborative follow-ups) before the concept enters
+    spaced repetition — the doorway from "knows" → "knows how" (Miller). Ties to the **conversational**
+    contingent-flow kind + the learn stage + the card **source-linkback** seam. **Needs a design spike →
+    a story (card.md/home.md) → an ADR** (learning-science grounding: elaborative interrogation /
+    self-explanation / desirable difficulty; scheduling model: a comprehension *gate* before FSRS vs a
+    parallel unit) BEFORE any build. Highest new value of the three; a design project, not a quick feature.
+    → **#26**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
 - **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc: state-aware
