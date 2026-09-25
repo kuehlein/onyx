@@ -55,7 +55,27 @@ class CardFilter {
         tiers: {...tiers, ...other.tiers},
         mastery: {...mastery, ...other.mastery},
       );
+
+  /// Project onto the unified [CardQuery] IR (ADR-0013 §Addendum): each non-empty
+  /// facet becomes an OR of its leaf values, and the facets are AND-ed together —
+  /// exactly [matchesFilter]'s "OR within a facet, AND across". Empty facets
+  /// contribute no conjunct; an all-empty filter is [CardQuery.everything].
+  /// Domain maps to [DomainIs] (first-tag), NOT any-tag [TagIs].
+  CardQuery toQuery() {
+    final conj = <CardQuery>[
+      if (types.isNotEmpty) _anyOf([for (final t in types) TypeIs(t)]),
+      if (domains.isNotEmpty) _anyOf([for (final d in domains) DomainIs(d)]),
+      if (tiers.isNotEmpty) _anyOf([for (final n in tiers) TierIs(n)]),
+      if (mastery.isNotEmpty) _anyOf([for (final m in mastery) StateIs(m)]),
+    ];
+    if (conj.isEmpty) return CardQuery.everything;
+    return conj.length == 1 ? conj.single : And(conj);
+  }
 }
+
+/// A single leaf as itself, or an [Or] of several — never `Or([one])`.
+CardQuery _anyOf(List<CardQuery> leaves) =>
+    leaves.length == 1 ? leaves.single : Or(leaves);
 
 /// Whether [card] passes [filter], given its precomputed [mastery] set.
 bool matchesFilter(Card card, CardFilter filter, Set<MasteryFilter> mastery) {

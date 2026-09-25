@@ -147,6 +147,18 @@ void main() {
       expect(const TierIs(2).matches(c(tiers: {'ds-a': 2, 'sd': 1})), isTrue);
       expect(const TierIs(3).matches(c(tiers: {'ds-a': 2})), isFalse);
     });
+
+    test('DomainIs matches the FIRST tag only (not any tag)', () {
+      expect(const DomainIs('ds-a').matches(c(tags: ['ds-a', 'algorithms'])),
+          isTrue);
+      // ds-a is the SECOND tag here → not the domain → no match (the anti-any-tag
+      // guarantee that keeps the Browse migration byte-identical).
+      expect(const DomainIs('ds-a').matches(c(tags: ['networking', 'ds-a'])),
+          isFalse);
+      expect(const DomainIs('x').matches(c(tags: [])), isFalse);
+      expect(
+          const DomainIs('ds-a').toJson(), {'kind': 'domain', 'value': 'ds-a'});
+    });
   });
 
   group('StateIs (dynamic, Browse-only)', () {
@@ -190,6 +202,7 @@ void main() {
   group('fromJson — the G2 node kinds round-trip', () {
     test('type / tier / state / and / or / not', () {
       for (final q in <CardQuery>[
+        const DomainIs('ds-a'),
         const TypeIs('algorithm'),
         const TierIs(2),
         const StateIs(MasteryFilter.strong),

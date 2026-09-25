@@ -50,6 +50,7 @@ sealed class CardQuery {
         'all' => everything,
         'tag' => TagIs((json['value'] ?? '') as String),
         'folder' => FolderUnder((json['value'] ?? '') as String),
+        'domain' => DomainIs((json['value'] ?? '') as String),
         'type' => TypeIs((json['value'] ?? '') as String),
         'tier' => TierIs(_int(json['value'])),
         'state' => StateIs(_mastery(json['value']) ?? MasteryFilter.due),
@@ -127,6 +128,23 @@ class FolderUnder extends CardQuery {
 
   @override
   Map<String, dynamic> toJson() => {'kind': 'folder', 'value': path};
+}
+
+/// Cards whose PRIMARY domain (`card.domain` = the first tag) is [domain]. This is
+/// the Browse "Domain" facet + the `tag:`/`domain:` operator — deliberately
+/// first-tag, NOT any-tag (`TagIs`): the vault is full of multi-tag cards, so
+/// matching any tag would silently widen the filter (ADR-0013 §Addendum). Compares
+/// raw (no normalization) to stay byte-identical with the legacy `matchesFilter`.
+class DomainIs extends CardQuery {
+  const DomainIs(this.domain);
+
+  final String domain;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) => card.domain == domain;
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'domain', 'value': domain};
 }
 
 /// Cards of a card [type] (a flow id, e.g. `flashcard` / `interview-question`).

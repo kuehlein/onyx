@@ -7,6 +7,7 @@ import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/query/card_query.dart';
 import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
 import '../../core/template/active_template.dart';
@@ -131,11 +132,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     final now = DateTime.now();
 
     final parsed = parseSearchQuery(_query.trim());
-    final effective = _chipFilter.merge(parsed.filter);
+    // Chips + typed operators compose into ONE query IR (ADR-0013): OR within a
+    // facet, AND across; the ranked free-text stage stays separate below. Dynamic
+    // study-state (StateIs) reads the due dates from the context.
+    final query = _chipFilter.merge(parsed.filter).toQuery();
+    final ctx = QueryContext(dueByKey: dueByKey, now: now);
 
     final filtered = [
       for (final c in allCards)
-        if (matchesFilter(c, effective, cardMastery(c, dueByKey, now))) c,
+        if (query.matches(c, ctx)) c,
     ];
     final List<Card> results;
     if (parsed.text.isEmpty) {

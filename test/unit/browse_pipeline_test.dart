@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onyx/core/query/card_query.dart';
 import 'package:onyx/core/search/card_filter.dart';
 import 'package:onyx/core/search/card_search.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -83,6 +84,33 @@ List<String> _run({
   final filtered = [
     for (final c in _corpus)
       if (matchesFilter(c, effective, cardMastery(c, dueByKey, t))) c,
+  ];
+  final List<Card> results;
+  if (parsed.text.isEmpty) {
+    results = [...filtered]
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  } else {
+    results = searchCards(filtered, parsed.text);
+  }
+  return [for (final c in results) c.id];
+}
+
+/// The NEW IR path (G2b.1): same combine, but chips+operators project through
+/// `CardFilter.toQuery()` and evaluate via `CardQuery.matches`. Free-text ranking
+/// stays the identical `searchCards` stage. Must equal [_run] byte-for-byte.
+List<String> _runIR({
+  CardFilter chip = const CardFilter(),
+  String query = '',
+  Map<String, DateTime> dueByKey = const {},
+  DateTime? now,
+}) {
+  final t = now ?? DateTime(2026, 6, 1);
+  final parsed = parseSearchQuery(query.trim());
+  final q = chip.merge(parsed.filter).toQuery();
+  final ctx = QueryContext(dueByKey: dueByKey, now: t);
+  final filtered = [
+    for (final c in _corpus)
+      if (q.matches(c, ctx)) c,
   ];
   final List<Card> results;
   if (parsed.text.isEmpty) {
@@ -196,5 +224,47 @@ void main() {
               dueByKey: {'two-sum::when-to-use': DateTime(2026, 5, 1)}),
           ['two-sum']);
     });
+  });
+
+  // G2b.1 gate: the IR path (CardFilter.toQuery -> CardQuery.matches) is
+  // byte-identical to the legacy matchesFilter path across the whole matrix.
+  group('IR path is byte-identical to the legacy pipeline', () {
+    final due = {'two-sum::when-to-use': DateTime(2026, 5, 1)};
+    final cases = <({CardFilter chip, String query, Map<String, DateTime> d})>[
+      (chip: const CardFilter(), query: '', d: const {}),
+      (chip: const CardFilter(types: {kTypeFlashcard}), query: '', d: const {}),
+      (chip: const CardFilter(tiers: {1}), query: '', d: const {}),
+      (chip: const CardFilter(domains: {'ds-a'}), query: '', d: const {}),
+      (chip: const CardFilter(mastery: {MasteryFilter.due}), query: '', d: due),
+      (chip: const CardFilter(), query: 'tag:ds-a', d: const {}),
+      (chip: const CardFilter(), query: 'domain:algorithms', d: const {}),
+      (chip: const CardFilter(), query: 'tag:algorithms', d: const {}),
+      (chip: const CardFilter(), query: 'type:flashcard', d: const {}),
+      (chip: const CardFilter(), query: 'type:interview', d: const {}),
+      (chip: const CardFilter(), query: 'tier:1', d: const {}),
+      (chip: const CardFilter(), query: 'tag:', d: const {}),
+      (chip: const CardFilter(), query: 'is:due', d: due),
+      (
+        chip: const CardFilter(types: {kTypeFlashcard}),
+        query: 'type:interview',
+        d: const {}
+      ),
+      (
+        chip: const CardFilter(types: {kTypeFlashcard}),
+        query: 'tier:1',
+        d: const {}
+      ),
+      (chip: const CardFilter(), query: 'sorted', d: const {}),
+      (chip: const CardFilter(), query: 'binary', d: const {}),
+      (chip: const CardFilter(), query: 'type:flashcard binary', d: const {}),
+    ];
+    for (final c in cases) {
+      test('chip=${c.chip.activeFacetCount} facets, query="${c.query}"', () {
+        expect(
+          _runIR(chip: c.chip, query: c.query, dueByKey: c.d),
+          _run(chip: c.chip, query: c.query, dueByKey: c.d),
+        );
+      });
+    }
   });
 }
