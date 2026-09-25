@@ -7,6 +7,8 @@
 /// [resolveStudyPolicy], overridable via the card > flow > subject cascade.
 library;
 
+import '../../shared/models/card.dart' show Priority;
+
 // ── Retention intensity (axis 1) — data-bounded range ───────────────────────
 // (See coach-feedback-design memory: FSRS 0.80–0.95 sane, ~0.97 is where review
 //  load explodes, 0.90 default.) Retention already has a LIVE per-card path
@@ -18,6 +20,16 @@ const retentionCramTarget = 0.95;
 const retentionCeiling = 0.97; // never exceed — review load explodes above
 
 double clampRetention(double r) => r.clamp(retentionFloor, retentionCeiling);
+
+/// The per-card target recall for a chosen [base] normal-retention, preserving the
+/// [Priority] nudge (high/low sit a fixed step above/below normal) and clamped to
+/// the policy band. At [base] == [retentionDefault] this reproduces each Priority's
+/// own `desiredRetention` exactly (0.93/0.90/0.85) — so the global retention knob
+/// (n0014) is byte-identical at its default. The near-deadline interview ramp
+/// (ADR-0008, `Targeting.desiredRetentionForCard`) still applies on top of this base.
+double retentionForPriority(Priority p, {double base = retentionDefault}) =>
+    clampRetention(
+        base + (p.desiredRetention - Priority.normal.desiredRetention));
 
 /// Within this many days of a terminal deadline, cramming may kick in.
 const cramWindowDays = 14;

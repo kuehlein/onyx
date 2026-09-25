@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/srs/srs_scheduler.dart';
 import 'package:onyx/core/template/study_policy.dart';
+import 'package:onyx/shared/models/card.dart';
 
 void main() {
   group('resolveStudyPolicy', () {
@@ -66,6 +67,39 @@ void main() {
     test('cram (same-day steps) keeps a new Good card due the same day', () {
       final due = dueFor(ScheduleProfile.cram.learningSteps);
       expect(due.difference(at).inHours, lessThan(24));
+    });
+  });
+
+  group('retentionForPriority (the global retention knob base, n0014)', () {
+    test(
+        'at the default base it reproduces each Priority exactly (byte-identical)',
+        () {
+      for (final p in Priority.values) {
+        expect(retentionForPriority(p), p.desiredRetention,
+            reason: p.name); // 0.93 / 0.90 / 0.85
+        expect(retentionForPriority(p, base: retentionDefault),
+            p.desiredRetention);
+      }
+    });
+
+    test(
+        'a higher base shifts the whole band up, preserving the Priority offset',
+        () {
+      // normal follows the base; high/low keep their fixed ±step around it.
+      expect(retentionForPriority(Priority.normal, base: 0.92), 0.92);
+      expect(retentionForPriority(Priority.high, base: 0.92),
+          closeTo(0.95, 1e-9)); // 0.92 + 0.03
+      expect(retentionForPriority(Priority.low, base: 0.92),
+          closeTo(0.87, 1e-9)); // 0.92 - 0.05
+    });
+
+    test('clamps to the policy band at the extremes (no load explosion)', () {
+      // high at a near-ceiling base can't exceed the ceiling…
+      expect(retentionForPriority(Priority.high, base: retentionCeiling),
+          retentionCeiling);
+      // …nor low fall below the floor.
+      expect(retentionForPriority(Priority.low, base: retentionFloor),
+          retentionFloor);
     });
   });
 }

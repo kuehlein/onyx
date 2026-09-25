@@ -1,4 +1,6 @@
 import '../../shared/models/card.dart';
+import '../template/study_policy.dart'
+    show retentionDefault, retentionForPriority;
 import '../deck/aim.dart';
 import 'target.dart';
 
@@ -90,9 +92,18 @@ class Targeting {
   /// interview emphasizes, ramping up as the interview nears. This ONLY changes
   /// scheduling (shorter intervals → fresher on the date), never the fitted
   /// stability/difficulty, and reverts to base once the interview passes / is muted.
-  /// [today] anchors the proximity ramp.
-  double desiredRetentionForCard(Card card, {required DateTime today}) {
-    final base = card.priority.desiredRetention;
+  /// [today] anchors the proximity ramp. [normalRetention] is the user's global
+  /// target-retention baseline (n0014); at [retentionDefault] the base reproduces
+  /// each Priority's own retention (byte-identical).
+  double desiredRetentionForCard(
+    Card card, {
+    required DateTime today,
+    double normalRetention = retentionDefault,
+  }) {
+    final base = retentionForPriority(card.priority, base: normalRetention);
+    // The ramp only ever RAISES toward the cap — if the user's base already sits
+    // above [retentionCap], target the base so proximity never lowers retention.
+    final target = base > retentionCap ? base : retentionCap;
     var best = base;
     for (final iv in aims) {
       // Ramp retention toward the NEXT upcoming round — as round 1 passes, the
@@ -105,7 +116,7 @@ class Targeting {
       if (!_interviewTargets(iv, card)) continue;
       final proximity =
           1 - daysLeft / peakWindowDays; // 0 at edge → 1 on the day
-      final bumped = base + (retentionCap - base) * proximity;
+      final bumped = base + (target - base) * proximity;
       if (bumped > best) best = bumped;
     }
     return best;

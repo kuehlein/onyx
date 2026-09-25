@@ -170,4 +170,39 @@ void main() {
       expect(r, greaterThanOrEqualTo(0.90));
     });
   });
+
+  group('desiredRetentionForCard × the user retention base (n0014)', () {
+    final today = DateTime(2026, 1, 1);
+
+    test('no interviews → the user base (Priority offset preserved)', () {
+      final t = Targeting(base: _base);
+      // A raised base lifts a normal-priority card's target with it.
+      expect(
+          t.desiredRetentionForCard(_card('ds-a'),
+              today: today, normalRetention: 0.92),
+          closeTo(0.92, 1e-9));
+    });
+
+    test('the near-deadline ramp still applies, from the raised base', () {
+      final t = Targeting(base: _base, aims: [
+        _on(today, domainWeights: {'ds-a': 5.0})
+      ]);
+      // base 0.92 < cap → on the day it still ramps to the cap.
+      expect(
+          t.desiredRetentionForCard(_card('ds-a'),
+              today: today, normalRetention: 0.92),
+          closeTo(Targeting.retentionCap, 1e-9));
+    });
+
+    test('a base above the cap is never LOWERED by the ramp (guard)', () {
+      final t = Targeting(base: _base, aims: [
+        _on(today, domainWeights: {'ds-a': 5.0})
+      ]);
+      // base 0.96 > cap 0.95: proximity must not drag the target DOWN to the cap.
+      expect(
+          t.desiredRetentionForCard(_card('ds-a'),
+              today: today, normalRetention: 0.96),
+          closeTo(0.96, 1e-9));
+    });
+  });
 }

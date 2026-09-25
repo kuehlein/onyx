@@ -50,4 +50,37 @@ void main() {
       expect(await c2.read(newCardLimitProvider.future), NewCardLimit.max);
     });
   });
+
+  group('TargetRetention (the global retention knob, n0014)', () {
+    ProviderContainer container() => ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)]);
+
+    test('defaults to 0.90 when unset', () async {
+      final c = container();
+      addTearDown(c.dispose);
+      expect(await c.read(targetRetentionProvider.future), 0.90);
+    });
+
+    test(
+        'setValue persists (survives a fresh container) and clamps to the band',
+        () async {
+      final c = container();
+      addTearDown(c.dispose);
+      await c.read(targetRetentionProvider.future);
+      await c.read(targetRetentionProvider.notifier).setValue(0.93);
+      expect(await c.read(targetRetentionProvider.future), closeTo(0.93, 1e-9));
+
+      await c
+          .read(targetRetentionProvider.notifier)
+          .setValue(0.999); // > ceiling
+      expect(await c.read(targetRetentionProvider.future), TargetRetention.max);
+      await c.read(targetRetentionProvider.notifier).setValue(0.10); // < floor
+      expect(await c.read(targetRetentionProvider.future), TargetRetention.min);
+
+      final c2 = container();
+      addTearDown(c2.dispose);
+      expect(
+          await c2.read(targetRetentionProvider.future), TargetRetention.min);
+    });
+  });
 }

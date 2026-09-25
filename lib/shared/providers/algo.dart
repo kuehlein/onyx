@@ -9,6 +9,8 @@ import '../../core/database/database.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/srs/algo_queue.dart';
 import '../../core/srs/recognition.dart';
+import '../../core/template/study_policy.dart'
+    show retentionDefault, retentionForPriority;
 import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
@@ -140,12 +142,16 @@ class AlgoSession extends _$AlgoSession {
     final repo = ref.read(srsRepositoryProvider);
     final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
     final current = s.statesByKey[item.key];
+    // The user's global target-retention (n0014) sets the base, preserving the
+    // Priority nudge; byte-identical at the 0.90 default.
+    final base =
+        ref.read(targetRetentionProvider).asData?.value ?? retentionDefault;
 
     // Execution clock: FSRS schedules the next re-solve (first solve seeds it).
     final result = scheduler.review(
       grade: spec.grade,
       reviewedAt: clock.now(),
-      desiredRetention: item.card.priority.desiredRetention,
+      desiredRetention: retentionForPriority(item.card.priority, base: base),
       stability: current?.stability,
       difficulty: current?.difficulty,
       state: current?.state,

@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/coach/coach_update.dart' show LoadFeel;
 import '../../core/settings/preferences_repository.dart';
+import '../../core/template/study_policy.dart'
+    show retentionDefault, retentionFloor, retentionCeiling, clampRetention;
 import 'database.dart';
 
 part 'settings.g.dart';
@@ -284,6 +286,33 @@ class MasteredCollapse extends _$MasteredCollapse {
 
   Future<void> setEnabled(bool value) async {
     await ref.read(preferencesRepositoryProvider).set(prefKey, '$value');
+    ref.invalidateSelf();
+  }
+}
+
+/// The user's global **target retention** — the desired probability of recall at
+/// review time. This is the one FSRS load-vs-recall dial we expose (n0014): higher
+/// = better recall but more reviews. It sets the *normal* baseline; card [Priority]
+/// (high/low) rides a fixed step around it (`retentionForPriority`) and the
+/// near-deadline interview ramp (ADR-0008) applies on top. Clamped to the policy
+/// band; the default ([retentionDefault], 0.90) is byte-identical to the pre-knob
+/// engine. Deliberately ONE global dial (ADR-0011 minimize-the-knobs), not per-deck.
+@Riverpod(keepAlive: true)
+class TargetRetention extends _$TargetRetention {
+  static const prefKey = 'target_retention';
+  static const min = retentionFloor;
+  static const max = retentionCeiling;
+
+  @override
+  Future<double> build() async {
+    final raw = await ref.watch(preferencesRepositoryProvider).get(prefKey);
+    final parsed = double.tryParse(raw ?? '');
+    return parsed == null ? retentionDefault : clampRetention(parsed);
+  }
+
+  Future<void> setValue(double value) async {
+    final clamped = clampRetention(value);
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
     ref.invalidateSelf();
   }
 }

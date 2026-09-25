@@ -154,6 +154,32 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+          // The one FSRS quality dial (n0014): recall-vs-load, distinct from the
+          // budget above (which is load/mix). A percent stepper matches the house
+          // style; the value threads to per-card desired retention (Priority nudge
+          // preserved, near-deadline ramp on top).
+          ref.watch(targetRetentionProvider).when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (r) => ListTile(
+                  leading: const Icon(Icons.tune_outlined),
+                  title: const Text('Target retention'),
+                  subtitle: Text(
+                      '${(r * 100).round()}% — how well you want to remember at '
+                      'review time. Higher recalls better but schedules more '
+                      'reviews; lower means fewer reviews but more forgetting. '
+                      '90% suits most people.'),
+                  trailing: _Stepper(
+                    value: (r * 100).round(),
+                    min: (TargetRetention.min * 100).round(),
+                    max: (TargetRetention.max * 100).round(),
+                    step: 1,
+                    onChanged: (pct) => ref
+                        .read(targetRetentionProvider.notifier)
+                        .setValue(pct / 100),
+                  ),
+                ),
+              ),
           ref.watch(loadCheckInProvider).when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),

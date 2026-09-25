@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';
 import '../../core/srs/learn_queue.dart';
+import '../../core/template/study_policy.dart'
+    show retentionDefault, retentionForPriority;
 import '../models/card.dart';
 import 'clock.dart';
 import 'coach.dart';
@@ -131,14 +133,18 @@ class LearnSession extends _$LearnSession {
       final scheduler = ref.read(srsSchedulerProvider);
       final repo = ref.read(srsRepositoryProvider);
       final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
-      // A near-term interview raises target retention (scheduling only); base
-      // otherwise. Seeds the initial FSRS values for this fresh section.
+      // A near-term interview raises target retention (scheduling only); the user's
+      // global target-retention (n0014) sets the base otherwise. Seeds the initial
+      // FSRS values for this fresh section.
+      final base =
+          ref.read(targetRetentionProvider).asData?.value ?? retentionDefault;
       final retention = ref
               .read(activeTargetingProvider)
               .asData
               ?.value
-              .desiredRetentionForCard(item.card, today: clock.today()) ??
-          item.card.priority.desiredRetention;
+              .desiredRetentionForCard(item.card,
+                  today: clock.today(), normalRetention: base) ??
+          retentionForPriority(item.card.priority, base: base);
       final outcome = scheduler.review(
         grade: grade,
         reviewedAt: clock.now(),

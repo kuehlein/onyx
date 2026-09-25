@@ -8,11 +8,14 @@ import '../../core/srs/recognition_repository.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
+import '../../core/template/study_policy.dart'
+    show retentionDefault, retentionForPriority;
 import 'clock.dart';
 import 'coach.dart';
 import 'database.dart';
 import 'readiness.dart';
 import 'decks.dart';
+import 'settings.dart';
 import 'vault.dart';
 
 part 'srs.g.dart';
@@ -195,13 +198,17 @@ class StudySession extends _$StudySession {
     final clock = ref.read(clockProvider).asData?.value ?? Clock.real;
     final current = s.statesByKey[item.key];
     // FSRS-safe interview lever: a near-term interview raises this card's target
-    // retention (scheduling only — fitted state untouched). Falls back to base.
+    // retention (scheduling only — fitted state untouched). The user's global
+    // target-retention (n0014) sets the base; falls back to it if targeting isn't up.
+    final base =
+        ref.read(targetRetentionProvider).asData?.value ?? retentionDefault;
     final retention = ref
             .read(activeTargetingProvider)
             .asData
             ?.value
-            .desiredRetentionForCard(item.card, today: clock.today()) ??
-        item.card.priority.desiredRetention;
+            .desiredRetentionForCard(item.card,
+                today: clock.today(), normalRetention: base) ??
+        retentionForPriority(item.card.priority, base: base);
 
     final outcome = scheduler.review(
       grade: grade,
