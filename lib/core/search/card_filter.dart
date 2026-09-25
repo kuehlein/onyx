@@ -204,3 +204,163 @@ MasteryFilter? _parseMastery(String v) => switch (v) {
       'strong' || 'known' || 'mastered' => MasteryFilter.strong,
       _ => null,
     };
+
+// ─── Deck-lens text form (ADR-0013 §Addendum, G3.0) ─────────────────────────
+//
+// The deck-lens mini-language parses to ONE [CardQuery] tree — unlike Browse's
+// [parseQuery], there are no chips to reconcile, so it supports full `OR`/`()`
+// nesting. Grammar (precedence: OR lowest < implicit/`&&` AND < `-`/`!` NOT):
+//
+//   expr   := or
+//   or     := and ( ('OR' | '||') and )*
+//   and    := factor ( '&&'? factor )*        // juxtaposition = AND
+//   factor := ('-'|'!') factor | '(' expr ')' | term
+//   term   := key:value | bareword/ | «ignored»
+//
+// It is TOTAL (never throws; a typo degrades, never becomes a bogus match-all)
+// and empty → [CardQuery.everything] (the whole-vault lens).
+//
+// Tag semantics (a deliberate, documented split — the sensitive area ADR-0013's
+// adversarial pass flagged): `tag:`/`domain:` = the PRIMARY domain (first tag,
+// [DomainIs]) — identical to Browse, so `tag:` never means two things. `tags:`
+// (plural) = ANY tag ([TagIs]) — the lens-only any-tag selector, matching
+// deck_creation.md's `tags:korean` example and round-tripping the tag lenses
+// folded in at G1. Browse's [parseQuery] is untouched (no `tags:`), so this adds
+// a capability rather than changing any Browse result.
+
+/// Parses the deck-lens mini-language into one [CardQuery]. See the section
+/// comment above for the grammar, totality, and tag semantics.
+CardQuery parseLens(String input) =>
+    _LensParser(_tokenizeLens(input)).parseExpr() ?? CardQuery.everything;
+
+/// Renders a [CardQuery] back to the mini-language — the inverse of [parseLens]
+/// (modulo whitespace / redundant parens), so a saved lens is editable as text.
+/// Parens are added only where precedence needs them (an `Or` inside an `And`).
+String renderLens(CardQuery q) => switch (q) {
+      Everything() => '',
+      TagIs(:final tag) => 'tags:$tag',
+      DomainIs(:final domain) => 'tag:$domain',
+      FolderUnder(:final path) => 'folder:$path',
+      TypeIs(:final type) => 'type:$type',
+      TierIs(:final tier) => 'tier:$tier',
+      StateIs(:final state) => 'is:${state.name}',
+      Not(:final q) => _isLeaf(q) ? '-${renderLens(q)}' : '!(${renderLens(q)})',
+      And(:final of) => [
+          for (final c in of) c is Or ? '(${renderLens(c)})' : renderLens(c)
+        ].join(' '),
+      Or(:final of) => [for (final c in of) renderLens(c)].join(' OR '),
+    };
+
+bool _isLeaf(CardQuery q) => q is! And && q is! Or && q is! Not;
+
+/// Splits on whitespace, with `(` and `)` always standalone tokens (so `(a` and
+/// `!(a` tokenize cleanly). `&&` / `||` / `OR` survive as their own tokens when
+/// space-separated, which is the documented form.
+List<String> _tokenizeLens(String s) {
+  final out = <String>[];
+  final buf = StringBuffer();
+  void flush() {
+    if (buf.isNotEmpty) {
+      out.add(buf.toString());
+      buf.clear();
+    }
+  }
+
+  for (final ch in s.split('')) {
+    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+      flush();
+    } else if (ch == '(' || ch == ')') {
+      flush();
+      out.add(ch);
+    } else {
+      buf.write(ch);
+    }
+  }
+  flush();
+  return out;
+}
+
+class _LensParser {
+  _LensParser(this._tokens);
+
+  final List<String> _tokens;
+  int _i = 0;
+
+  String? get _peek => _i < _tokens.length ? _tokens[_i] : null;
+  String _next() => _tokens[_i++];
+  static bool _isOr(String t) => t == 'OR' || t == '||';
+
+  CardQuery? parseExpr() => _parseOr();
+
+  CardQuery? _parseOr() {
+    final terms = <CardQuery>[];
+    final first = _parseAnd();
+    if (first != null) terms.add(first);
+    while (_peek != null && _isOr(_peek!)) {
+      _next(); // consume OR / ||
+      final rhs = _parseAnd();
+      if (rhs != null) terms.add(rhs);
+    }
+    if (terms.isEmpty) return null;
+    return terms.length == 1 ? terms.single : Or(terms);
+  }
+
+  CardQuery? _parseAnd() {
+    final terms = <CardQuery>[];
+    while (_peek != null && !_isOr(_peek!) && _peek != ')') {
+      if (_peek == '&&') {
+        _next(); // explicit AND separator — juxtaposition already means AND
+        continue;
+      }
+      final f = _parseFactor();
+      if (f != null) terms.add(f);
+    }
+    if (terms.isEmpty) return null;
+    return terms.length == 1 ? terms.single : And(terms);
+  }
+
+  CardQuery? _parseFactor() {
+    final tok = _next();
+    if (tok == '(') {
+      final inner = _parseOr();
+      if (_peek == ')') _next(); // tolerate a missing close paren
+      return inner;
+    }
+    if (tok == ')') return null; // stray close — skip
+    // A lone `-` / `!` negates the following factor (e.g. `! (a OR b)`).
+    if (tok == '-' || tok == '!') {
+      if (_peek == null || _peek == ')') return null;
+      final f = _parseFactor();
+      return f == null ? null : Not(f);
+    }
+    // A `-`/`!` prefix on a term (e.g. `!tags:hangul`).
+    if ((tok.startsWith('-') || tok.startsWith('!')) && tok.length > 1) {
+      final leaf = _lensTerm(tok.substring(1));
+      return leaf == null ? null : Not(leaf);
+    }
+    return _lensTerm(tok);
+  }
+}
+
+/// One lens term: an operator leaf, the `foo/` folder shorthand
+/// (deck_creation.md), or null for a bare word (ignored — a structural lens has
+/// no free-text membership; `TextMatches` is deferred, ADR-0013 §Addendum).
+CardQuery? _lensTerm(String tok) {
+  final i = tok.indexOf(':');
+  if (i > 0 && i < tok.length - 1) {
+    final key = tok.substring(0, i).toLowerCase();
+    final rawVal = tok.substring(i + 1);
+    return _lensLeaf(key, rawVal.toLowerCase(), rawVal);
+  }
+  if (tok.endsWith('/')) {
+    final f = FolderUnder(tok); // trims trailing slashes
+    return f.path.isEmpty ? null : f; // a bare `/` is not match-all
+  }
+  return null;
+}
+
+/// The lens operator table: `tags:` → any-tag ([TagIs]); everything else reuses
+/// the shared [_opLeaf] (`tag:`/`domain:` → [DomainIs], `type:`/`tier:`/`is:`/
+/// `folder:`/`path:`), keeping `tag:` identical to Browse.
+CardQuery? _lensLeaf(String key, String val, String rawVal) =>
+    key == 'tags' ? TagIs(val) : _opLeaf(key, val, rawVal);
