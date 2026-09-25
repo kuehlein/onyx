@@ -145,9 +145,19 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   };
   late final TextEditingController _lensText = TextEditingController(
       text: _kind == _Kind.advanced ? renderLens(_seed) : '');
-  // Whether the user has hand-edited the Advanced text — gates the simple→Advanced
-  // reseed so a simple edit is picked up but hand-typed advanced isn't clobbered.
-  bool _advancedEdited = false;
+  // Whether the Advanced text holds content that must NOT be reseeded/clobbered on
+  // a mode toggle — hand-typed, OR the lens of a complex deck we opened to edit.
+  // Gates the simple→Advanced reseed: a simple edit (tag/folder/suggestion) resets
+  // it so the next switch to Advanced picks up the new value, while a complex lens
+  // survives toggling away and back. Keyed off the immutable [_seed], NOT `_kind`:
+  // this field is read lazily (first toggle), by when `_kind` may already have moved
+  // to a simple mode — so `_kind == advanced` would wrongly init false and clobber
+  // the seed (adversarial review; a bare `false` init had the same effect).
+  late bool _advancedEdited = switch (_seed) {
+    Everything() || TagIs() || FolderUnder() => false,
+    _ =>
+      true, // a complex seed opens in Advanced pre-filled — treat as precious
+  };
   late String? _templateId = widget.goal?.templateId;
   late double _weight = widget.goal?.budgetWeight ?? 1.0;
   // The existing decks — watched in [build] so a new deck's id can dodge a
@@ -227,36 +237,50 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   /// evaluated against the STRIPPED lens so a typed `is:due` reads as no-constraint.
   Widget _lensPreview(BuildContext context, IndexResult index) {
     final theme = Theme.of(context);
-    final lens = stripDynamic(_membershipFor(_kind));
+    // Parse the Advanced text ONCE (raw), then strip to the persisted lens.
+    final advancedText = _kind == _Kind.advanced ? _lensText.text.trim() : '';
+    final raw = _kind == _Kind.advanced
+        ? (advancedText.isEmpty
+            ? CardQuery.everything
+            : parseLens(advancedText))
+        : _membershipFor(_kind);
+    final lens = stripDynamic(raw);
     final study = index.studyCards;
     final n = study.where(lens.matches).length;
     final drafts =
         index.cards.where((c) => c.isDraft && lens.matches(c)).length;
     final none = n == 0;
     final suggestions = _suggestionCache ??= _computeSuggestions(study);
-    // Fail-open guard: a non-empty Advanced query that parses to Everything means
-    // the text wasn't understood (a typo → ignored) and would silently save the
-    // WHOLE vault. Flag it instead of showing a reassuring count (adversarial
-    // review). (An all-dynamic `is:due` parses to StateIs, not Everything, so it's
-    // not caught here — that's the stripDynamic-widens case, not a typo.)
-    final notUnderstood = _kind == _Kind.advanced &&
-        _lensText.text.trim().isNotEmpty &&
-        parseLens(_lensText.text.trim()) is Everything;
+    // Fail-open guards (adversarial review): an Advanced query that would silently
+    // save the WHOLE vault, shown as a warning instead of a reassuring count. Two
+    // distinct causes get two distinct messages:
+    //   • unreadable — non-empty text that parses to Everything (a typo → ignored).
+    //   • allDynamic — parses fine but is ALL study-state (e.g. `is:due`), which a
+    //     lens can't persist, so stripDynamic widens it to Everything on save.
+    // (A MIXED query like `type:flashcard is:due` still strips to a real constraint,
+    // so it's not flagged — the count honestly reflects the surviving `type:`.)
+    final unreadable = advancedText.isNotEmpty && raw is Everything;
+    final allDynamic =
+        advancedText.isNotEmpty && raw is! Everything && lens is Everything;
+    final widensToVault = unreadable || allDynamic;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: Dim.space3),
         Text(
-          notUnderstood
+          unreadable
               ? "Couldn't read that query — it matches your whole vault. "
                   'Check the operators below.'
-              : none
-                  ? 'No cards match'
-                  : '$n of ${study.length} cards'
-                      '${drafts > 0 ? '  ·  +$drafts draft${drafts == 1 ? '' : 's'}' : ''}',
+              : allDynamic
+                  ? "Study-state filters (like is:due) aren't saved in a deck — "
+                      'this would match your whole vault.'
+                  : none
+                      ? 'No cards match'
+                      : '$n of ${study.length} cards'
+                          '${drafts > 0 ? '  ·  +$drafts draft${drafts == 1 ? '' : 's'}' : ''}',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: (none || notUnderstood)
+            color: (none || widensToVault)
                 ? theme.colorScheme.error
                 : theme.colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
@@ -277,6 +301,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                   label: Text('${s.label} · ${s.count}'),
                   onPressed: () => setState(() {
                     _kind = s.kind;
+                    _advancedEdited =
+                        false; // a suggestion is a fresh simple pick
                     if (s.kind == _Kind.tag) {
                       _tagValue.text = s.value;
                     } else {
@@ -409,9 +435,10 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                   ButtonSegment(value: _Kind.advanced, label: Text('Advanced')),
                 ],
                 selected: {_kind},
-                // Switching to Advanced seeds the text with the simple pick's query
-                // form — UNLESS the user has hand-edited Advanced (then preserve it).
-                // Reseeding when not-edited picks up a changed simple value.
+                // Switching to Advanced seeds the text from the simple pick's query
+                // form — UNLESS Advanced already holds content to preserve (hand-typed,
+                // or a complex deck's lens; `_advancedEdited`). A simple edit resets
+                // that flag, so the reseed still picks up a freshly-typed tag/folder.
                 onSelectionChanged: (s) => setState(() {
                   final next = s.first;
                   if (next == _Kind.advanced && !_advancedEdited) {
@@ -428,7 +455,9 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                     labelText: 'Tag',
                     hintText: 'e.g. intercession (no #)',
                   ),
-                  onChanged: (_) => setState(() {}),
+                  // A simple edit is fresh intent — let a later switch to Advanced
+                  // reseed from it (don't preserve a now-stale Advanced text).
+                  onChanged: (_) => setState(() => _advancedEdited = false),
                 ),
               ],
               if (_kind == _Kind.folder) ...[
@@ -439,7 +468,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                     labelText: 'Folder path',
                     hintText: 'e.g. Math/Calculus/101',
                   ),
-                  onChanged: (_) => setState(() {}),
+                  // See the Tag field: a simple edit reseeds a later Advanced switch.
+                  onChanged: (_) => setState(() => _advancedEdited = false),
                 ),
               ],
               if (_kind == _Kind.advanced) ...[

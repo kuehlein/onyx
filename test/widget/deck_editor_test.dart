@@ -344,4 +344,58 @@ void main() {
         tester.widget<TextField>(find.byType(TextField).last).controller!.text,
         'tag:spanish');
   });
+
+  testWidgets('a complex lens survives toggling Advanced→simple→Advanced',
+      (tester) async {
+    // Regression (adversarial review): opening a complex deck lands in Advanced
+    // pre-filled, but a bare `_advancedEdited = false` init let the first toggle
+    // back to Advanced reseed from the (empty) simple field, wiping the lens to
+    // `tag:`. A complex seed must be treated as precious from the start.
+    final cap = _CapturingGoals();
+    final membership = And([TagIs('korean'), const TypeIs('flashcard')]);
+    await _open(tester, cap,
+        (ctx) => showDeckEditor(ctx, initialMembership: membership));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        'tag:korean type:flashcard');
+
+    // Toggle away and back WITHOUT touching a simple field — must be preserved.
+    await tester.tap(find.text('Tag'));
+    await tester.pump();
+    await tester.tap(find.text('Advanced'));
+    await tester.pump();
+    expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        'tag:korean type:flashcard');
+  });
+
+  testWidgets('Advanced flags an all-dynamic is:due lens as whole-vault',
+      (tester) async {
+    final cap = _CapturingGoals();
+    final index = IndexResult(
+      cards: [
+        _card('a', folder: 'x', tags: ['t'])
+      ],
+      idless: 0,
+      malformed: 0,
+      skipped: 0,
+    );
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx), index: index);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Advanced'));
+    await tester.pump();
+    // is:due parses fine (not a typo) but is ALL study-state — a lens can't hold
+    // it, so stripDynamic widens it to the whole vault on save. Warn distinctly
+    // from the unreadable-typo case, and don't show a reassuring "1 of 1".
+    await tester.enterText(find.byType(TextField).last, 'is:due');
+    await tester.pump();
+    expect(find.textContaining('Study-state filters'), findsOneWidget);
+    expect(find.textContaining("Couldn't read"), findsNothing);
+    expect(find.textContaining('1 of 1'), findsNothing);
+  });
 }
