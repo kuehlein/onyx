@@ -17,12 +17,13 @@ import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/card_meta_chip.dart';
 import '../../shared/widgets/grade_buttons.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/confidence_badge.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import '../../shared/widgets/view_full_card_button.dart';
 import 'rest_timer.dart';
 
 /// Study session: recall → reveal → self-grade, one section at a time.
@@ -184,7 +185,7 @@ class _ReviewView extends StatelessWidget {
                                 color: theme.colorScheme.onSurfaceVariant)),
                         if (card.domain != null) ...[
                           const SizedBox(width: Dim.space2),
-                          _Pill(card.domain!),
+                          CardMetaChip(label: card.domain!),
                         ],
                         if (card.confidence != null) ...[
                           const SizedBox(width: Dim.space2),
@@ -244,16 +245,7 @@ class _ReviewView extends StatelessWidget {
                       ],
                       // Reference sections (e.g. the implementation) aren't
                       // quizzed — reach them here without leaving the flow.
-                      if (card.sections.any((s) => !s.quizzable))
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () => context.push('/card/${card.id}'),
-                            icon: const Icon(Icons.article_outlined,
-                                size: Dim.iconMd),
-                            label: const Text('View full card'),
-                          ),
-                        ),
+                      ViewFullCardButton(card: card),
                     ],
                   ],
                 ),
@@ -366,21 +358,6 @@ class _ActionBar extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A calm neutral meta chip (the card's domain). Composes [StatusPill] so it
-/// shares the one status-surface shape; muted tone since it carries no
-/// good/attention/bad meaning.
-class _Pill extends StatelessWidget {
-  const _Pill(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => StatusPill(
-        tone: StatusTone.muted,
-        label: label,
-        dense: true,
-      );
 }
 
 /// The "no review session" state, which is context-aware:

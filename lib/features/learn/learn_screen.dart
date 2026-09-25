@@ -13,10 +13,11 @@ import '../../shared/providers/backup.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/study_grades.dart';
 import '../../shared/widgets/card_markdown.dart';
+import '../../shared/widgets/card_meta_chip.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/coach_sheet.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
+import '../../shared/widgets/view_full_card_button.dart';
 import 'study_tips_sheet.dart';
 
 /// Learn mode: first exposure to never-studied sections, grouped by family.
@@ -184,10 +185,12 @@ class _LearnView extends StatelessWidget {
                             style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(width: Dim.space2),
-                        _Pill(pretest ? 'Learn · recall' : 'Learn · study'),
+                        CardMetaChip(
+                            label:
+                                pretest ? 'Learn · recall' : 'Learn · study'),
                         if (item.card.domain != null) ...[
                           const SizedBox(width: Dim.space2),
-                          _Pill(item.card.domain!),
+                          CardMetaChip(label: item.card.domain!),
                         ],
                       ],
                     ),
@@ -210,17 +213,7 @@ class _LearnView extends StatelessWidget {
                       CardMarkdown(section.content),
                       // Reference sections (e.g. the implementation) aren't
                       // quizzed — read them here without leaving the flow.
-                      if (item.card.sections.any((s) => !s.quizzable))
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () =>
-                                context.push('/card/${item.card.id}'),
-                            icon: const Icon(Icons.article_outlined,
-                                size: Dim.iconMd),
-                            label: const Text('View full card'),
-                          ),
-                        ),
+                      ViewFullCardButton(card: item.card),
                     ],
                   ],
                 ),
@@ -310,20 +303,6 @@ class _ActionBar extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A calm neutral meta chip (the learn mode + the card's domain). Composes
-/// [StatusPill] with the muted tone — it carries no good/attention/bad meaning.
-class _Pill extends StatelessWidget {
-  const _Pill(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => StatusPill(
-        tone: StatusTone.muted,
-        label: label,
-        dense: true,
-      );
 }
 
 class _CompleteState extends ConsumerWidget {

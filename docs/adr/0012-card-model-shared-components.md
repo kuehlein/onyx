@@ -98,10 +98,20 @@ edit keep-vs-reset on the existing editor (the orphan bug) → S3 authoring (alr
 is the single entry — browse `+` / card Edit / draft-review — and AI "make a card about X" ships as
 `card_generation`; the in-editor **"update this card" AI edit-chat is deferred to 1f.2** — its coach-seam reuse
 keys on a real `cardId::sectionSlug` a draft lacks, and a fresh panel would fork a 3rd AI surface) → S4 stub
-screen; learn/quiz **adopt** `CardSection` for the revealed body (additive, keep their notifiers/grade-sets).
+screen; learn/quiz **adopt** the shared components (additive, keep their notifiers/grade-sets).
 Study migrates **last**, one screen at a time, proven against S0. **1f.1:** mastered auto-collapse (#6) +
 per-card `quizzable:false` (#5) — each with an off-switch / precedence matrix + before/after golden. **1f.2
 (deferred):** the in-editor "update this card" AI edit-chat (keying + reuse-not-fork the existing AI seam).
+
+**Amendment (2026-09-24) — what "learn/quiz adopt" actually means.** The collapsible `CardSectionPanel` is the
+renderer for surfaces that display a section *as a browsable unit* (view, stub). Study displays a **single
+revealed answer body inline** — a different shape — so forcing the panel there would (a) render the section
+heading a *second* time (the cue heading already shows it pre-reveal), breaking S0's byte-identical gate, and
+(b) add a collapse affordance you'd never use on an answer you just revealed, plus the "Scheduled for review"
+study-unit icon mid-session. So the shared **body** renderer study already uses is `CardMarkdown` (unchanged);
+what learn/quiz newly adopt is the shared **chrome**: `CardMetaChip` (replacing the two private `_Pill` copies —
+byte-identical) and a new shared `ViewFullCardButton` (the study→full-card link that was duplicated verbatim in
+both). No grade-path funnel; S0 stays green. `CardScaffold`/`CardHead` remain the deferred pieces of the layer.
 
 ## Alternatives considered
 
