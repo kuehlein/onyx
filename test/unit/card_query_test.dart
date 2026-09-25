@@ -113,4 +113,92 @@ void main() {
       expect(FolderUnder('a/b/').toJson(), {'kind': 'folder', 'value': 'a/b'});
     });
   });
+
+  // The G2 additions: the combinators + Browse's leaves (type / tier / state).
+  Card c({
+    String id = 'x',
+    String type = 'flashcard',
+    List<String> tags = const [],
+    Map<String, int> tiers = const {},
+    String path = 'x.md',
+  }) =>
+      Card(
+        id: id,
+        type: type,
+        title: id,
+        overview: '',
+        tags: tags,
+        tiers: tiers,
+        sections: const [
+          CardSection(heading: 'S', slug: 's', content: 'b', quizzable: true),
+        ],
+        wikilinks: const [],
+        filePath: path,
+      );
+
+  group('structural leaves (G2)', () {
+    test('TypeIs matches the card type', () {
+      expect(const TypeIs('flashcard').matches(c(type: 'flashcard')), isTrue);
+      expect(const TypeIs('interview-question').matches(c(type: 'flashcard')),
+          isFalse);
+    });
+
+    test('TierIs matches any of the card tiers', () {
+      expect(const TierIs(2).matches(c(tiers: {'ds-a': 2, 'sd': 1})), isTrue);
+      expect(const TierIs(3).matches(c(tiers: {'ds-a': 2})), isFalse);
+    });
+  });
+
+  group('StateIs (dynamic, Browse-only)', () {
+    final now = DateTime.utc(2026, 6, 1);
+    test('matches the section bucket only WITH a context', () {
+      final card = c(id: 'r');
+      final due = QueryContext(
+          dueByKey: {'r::s': now.subtract(const Duration(days: 1))}, now: now);
+      expect(const StateIs(MasteryFilter.due).matches(card, due), isTrue);
+      expect(const StateIs(MasteryFilter.fresh).matches(card, due), isFalse);
+      // A never-studied section is fresh.
+      final fresh = QueryContext(dueByKey: const {}, now: now);
+      expect(const StateIs(MasteryFilter.fresh).matches(card, fresh), isTrue);
+    });
+
+    test('matches nothing without a context (as in a structural lens)', () {
+      expect(const StateIs(MasteryFilter.due).matches(c()), isFalse);
+    });
+  });
+
+  group('combinators (G2)', () {
+    test('And / Or / Not compose leaves', () {
+      final card = c(type: 'flashcard', tags: ['ds-a'], tiers: {'ds-a': 2});
+      expect(And([const TypeIs('flashcard'), TagIs('ds-a')]).matches(card),
+          isTrue);
+      expect(
+          const And([TypeIs('flashcard'), TierIs(3)]).matches(card), isFalse);
+      expect(const Not(TierIs(3)).matches(card), isTrue);
+    });
+
+    test('cross-facet OR gathers scattered cards (folder OR tag)', () {
+      // The defining lens job (ADR-0013): "under korean/ OR tagged #korean".
+      final q = Or([FolderUnder('korean'), TagIs('korean')]);
+      expect(
+          q.matches(c(id: 'a', tags: ['korean'], path: 'other/a.md')), isTrue);
+      expect(q.matches(c(id: 'b', path: 'korean/b.md')), isTrue);
+      expect(q.matches(c(id: 'c', path: 'other/c.md')), isFalse);
+    });
+  });
+
+  group('fromJson — the G2 node kinds round-trip', () {
+    test('type / tier / state / and / or / not', () {
+      for (final q in <CardQuery>[
+        const TypeIs('algorithm'),
+        const TierIs(2),
+        const StateIs(MasteryFilter.strong),
+        And([const TypeIs('flashcard'), TagIs('ds-a')]),
+        Or([FolderUnder('korean'), TagIs('korean')]),
+        const Not(TierIs(1)),
+      ]) {
+        expect(CardQuery.fromJson(q.toJson()).toJson(), q.toJson());
+      }
+    });
+  });
 }

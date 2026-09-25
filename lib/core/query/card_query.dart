@@ -1,25 +1,38 @@
 /// The ONE query language over the vault — behind both deck membership (a saved
 /// *lens*) and Browse filtering (ADR-0013). A `CardQuery` is a boolean tree: leaf
-/// predicates over card attributes, composed with `And` / `Or` / `Not`.
+/// predicates over card attributes, composed with [And] / [Or] / [Not].
 ///
-/// This is the growable IR. G1 lands the spine + the three structural leaves that
-/// deck membership already uses ([Everything], [TagIs], [FolderUnder]) — folding
-/// in the former `MembershipQuery` byte-for-byte. Browse's richer leaves (type /
-/// tier / free-text / study-state) and the boolean combinators arrive with their
-/// consumers in G2/G3, so exhaustive `switch`es over a lens only face shapes the
-/// UI can already render.
+/// Leaves split two ways (ADR-0013):
+///  - **structural** ([TagIs], [FolderUnder], [TypeIs], [TierIs]) read stable card
+///    attributes — usable in a persisted deck lens (a stable member set).
+///  - **dynamic** ([StateIs]) reads FSRS study-state via a [QueryContext] — a
+///    Browse-only filter, never persisted into a lens (would make membership drift
+///    daily and break readiness/plan/analytics denominators).
 ///
-/// Deck lenses are **structural only** (stable member set for readiness/plan/
-/// analytics); dynamic study-state stays a Browse-only filter (ADR-0013).
+/// G1 folded the former `MembershipQuery` in ([Everything]/[TagIs]/[FolderUnder]);
+/// G2 adds the combinators + Browse's leaves. The text mini-language that builds
+/// these arrives with Browse in G2b.
 library;
 
 import '../../shared/models/card.dart';
 
+/// The runtime data a [StateIs] leaf needs — the per-section due dates + "now".
+/// Structural leaves ignore it, so deck membership evaluates with none.
+class QueryContext {
+  const QueryContext({this.dueByKey = const {}, required this.now});
+
+  /// `"cardId::sectionSlug"` → dueAt for *studied* sections (absent = never
+  /// studied). Same shape the Browse mastery filter has always used.
+  final Map<String, DateTime> dueByKey;
+  final DateTime now;
+}
+
 sealed class CardQuery {
   const CardQuery();
 
-  /// Whether [card] matches. Structural leaves read card attributes only.
-  bool matches(Card card);
+  /// Whether [card] matches. Structural leaves read card attributes only; a
+  /// dynamic leaf ([StateIs]) needs [ctx] and matches nothing without it.
+  bool matches(Card card, [QueryContext? ctx]);
 
   Map<String, dynamic> toJson();
 
@@ -37,8 +50,26 @@ sealed class CardQuery {
         'all' => everything,
         'tag' => TagIs((json['value'] ?? '') as String),
         'folder' => FolderUnder((json['value'] ?? '') as String),
+        'type' => TypeIs((json['value'] ?? '') as String),
+        'tier' => TierIs(_int(json['value'])),
+        'state' => StateIs(_mastery(json['value']) ?? MasteryFilter.due),
+        'and' => And(_children(json['of'])),
+        'or' => Or(_children(json['of'])),
+        'not' => Not(fromJson(_child(json['q']))),
         _ => everything,
       };
+
+  static int _int(Object? v) =>
+      v is int ? v : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+
+  static List<CardQuery> _children(Object? v) => [
+        if (v is List)
+          for (final e in v)
+            if (e is Map) fromJson(e.cast<String, dynamic>()),
+      ];
+
+  static Map<String, dynamic> _child(Object? v) =>
+      v is Map ? v.cast<String, dynamic>() : const {'kind': 'all'};
 }
 
 /// Every card in the vault (the single-deck / whole-vault case).
@@ -46,7 +77,7 @@ class Everything extends CardQuery {
   const Everything();
 
   @override
-  bool matches(Card card) => true;
+  bool matches(Card card, [QueryContext? ctx]) => true;
 
   @override
   Map<String, dynamic> toJson() => {'kind': 'all'};
@@ -66,7 +97,8 @@ class TagIs extends CardQuery {
   }
 
   @override
-  bool matches(Card card) => card.tags.any((t) => _normalize(t) == tag);
+  bool matches(Card card, [QueryContext? ctx]) =>
+      card.tags.any((t) => _normalize(t) == tag);
 
   @override
   Map<String, dynamic> toJson() => {'kind': 'tag', 'value': tag};
@@ -88,11 +120,142 @@ class FolderUnder extends CardQuery {
   }
 
   @override
-  bool matches(Card card) =>
+  bool matches(Card card, [QueryContext? ctx]) =>
       path.isEmpty ||
       card.filePath == path ||
       card.filePath.startsWith('$path/');
 
   @override
   Map<String, dynamic> toJson() => {'kind': 'folder', 'value': path};
+}
+
+/// Cards of a card [type] (a flow id, e.g. `flashcard` / `interview-question`).
+class TypeIs extends CardQuery {
+  const TypeIs(this.type);
+
+  final String type;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) => card.type == type;
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'type', 'value': type};
+}
+
+/// Cards carrying [tier] in any of their per-domain tier assignments.
+class TierIs extends CardQuery {
+  const TierIs(this.tier);
+
+  final int tier;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) =>
+      card.tiers.values.contains(tier);
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'tier', 'value': tier};
+}
+
+/// Cards in a study [state] (fresh / due / strong). **Dynamic** — needs a
+/// [QueryContext]; matches nothing without one. Browse-only (never a lens leaf).
+class StateIs extends CardQuery {
+  const StateIs(this.state);
+
+  final MasteryFilter state;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) =>
+      ctx != null && cardMastery(card, ctx.dueByKey, ctx.now).contains(state);
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'state', 'value': state.name};
+}
+
+/// All of [of] match (an empty conjunction is vacuously true — cf. [Everything]).
+class And extends CardQuery {
+  const And(this.of);
+
+  final List<CardQuery> of;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) =>
+      of.every((q) => q.matches(card, ctx));
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'kind': 'and',
+        'of': [for (final q in of) q.toJson()]
+      };
+}
+
+/// Any of [of] match (an empty disjunction is vacuously false).
+class Or extends CardQuery {
+  const Or(this.of);
+
+  final List<CardQuery> of;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) =>
+      of.any((q) => q.matches(card, ctx));
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'kind': 'or',
+        'of': [for (final q in of) q.toJson()]
+      };
+}
+
+/// The negation of [q].
+class Not extends CardQuery {
+  const Not(this.q);
+
+  final CardQuery q;
+
+  @override
+  bool matches(Card card, [QueryContext? ctx]) => !q.matches(card, ctx);
+
+  @override
+  Map<String, dynamic> toJson() => {'kind': 'not', 'q': q.toJson()};
+}
+
+/// Study-state buckets a card can fall into, derived from its sections' FSRS
+/// schedule. The [StateIs] leaf + Browse's mastery filter share this. (Moved here
+/// from `core/search/card_filter.dart` in G2 — it's a query concept.)
+enum MasteryFilter { fresh, due, strong }
+
+extension MasteryFilterLabel on MasteryFilter {
+  String get label => switch (this) {
+        MasteryFilter.fresh => 'New',
+        MasteryFilter.due => 'Due',
+        MasteryFilter.strong => 'Strong',
+      };
+}
+
+MasteryFilter? _mastery(Object? v) => switch (v) {
+      'fresh' => MasteryFilter.fresh,
+      'due' => MasteryFilter.due,
+      'strong' => MasteryFilter.strong,
+      _ => null,
+    };
+
+/// The study-state buckets a card currently occupies — a card with a mix of new
+/// and due sections is in both. Uses [dueByKey] (`"cardId::slug"` → dueAt for
+/// *studied* sections; absent = never studied).
+Set<MasteryFilter> cardMastery(
+  Card card,
+  Map<String, DateTime> dueByKey,
+  DateTime now,
+) {
+  final out = <MasteryFilter>{};
+  for (final s in card.quizzableSections) {
+    final due = dueByKey['${card.id}::${s.slug}'];
+    if (due == null) {
+      out.add(MasteryFilter.fresh);
+    } else if (!due.isAfter(now)) {
+      out.add(MasteryFilter.due);
+    } else {
+      out.add(MasteryFilter.strong);
+    }
+  }
+  return out;
 }

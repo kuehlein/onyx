@@ -1,17 +1,12 @@
 import '../../shared/models/card.dart'; // re-exports the kType* value constants
+import '../query/card_query.dart';
 import '../template/active_template.dart';
 
-/// Study-state buckets a card can fall into, derived from its sections' FSRS
-/// schedule.
-enum MasteryFilter { fresh, due, strong }
-
-extension MasteryFilterLabel on MasteryFilter {
-  String get label => switch (this) {
-        MasteryFilter.fresh => 'New',
-        MasteryFilter.due => 'Due',
-        MasteryFilter.strong => 'Strong',
-      };
-}
+// `MasteryFilter`/`cardMastery` moved to core/query (a query concept, shared with
+// the CardQuery `StateIs` leaf); re-exported so this file's consumers are unchanged
+// while Browse migrates onto the IR (G2).
+export '../query/card_query.dart'
+    show MasteryFilter, MasteryFilterLabel, cardMastery;
 
 /// A composable set of Browse filters. An empty facet means "no constraint on
 /// this facet"; within a facet the selected values are OR'd, and facets are
@@ -60,28 +55,6 @@ class CardFilter {
         tiers: {...tiers, ...other.tiers},
         mastery: {...mastery, ...other.mastery},
       );
-}
-
-/// The study-state buckets a card currently occupies — a card with a mix of new
-/// and due sections is in both. Uses [dueByKey] (`"cardId::slug"` → dueAt for
-/// *studied* sections; absent = never studied).
-Set<MasteryFilter> cardMastery(
-  Card card,
-  Map<String, DateTime> dueByKey,
-  DateTime now,
-) {
-  final out = <MasteryFilter>{};
-  for (final s in card.quizzableSections) {
-    final due = dueByKey['${card.id}::${s.slug}'];
-    if (due == null) {
-      out.add(MasteryFilter.fresh);
-    } else if (!due.isAfter(now)) {
-      out.add(MasteryFilter.due);
-    } else {
-      out.add(MasteryFilter.strong);
-    }
-  }
-  return out;
 }
 
 /// Whether [card] passes [filter], given its precomputed [mastery] set.
