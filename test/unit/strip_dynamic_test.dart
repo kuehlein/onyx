@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/query/card_query.dart';
+import 'package:onyx/core/deck/deck.dart'; // re-exports core/query/card_query
 import 'package:onyx/shared/models/card.dart';
 
 /// `stripDynamic` (ADR-0013 §Addendum, G3.1): a persisted deck lens must be
@@ -91,6 +91,38 @@ void main() {
     test('a negated study state (-is:due) → no constraint', () {
       expect(stripDynamic(const Not(StateIs(MasteryFilter.due))),
           isA<Everything>());
+    });
+
+    test('Not over a subtree with StateIs is DROPPED (widens, never narrows)',
+        () {
+      // Not(And([type, is:due])) must NOT reduce to Not(type) — that would exclude
+      // the not-due type cards the original kept (a narrowing). Drop the whole Not.
+      const q = Not(And([TypeIs('flashcard'), StateIs(MasteryFilter.due)]));
+      expect(stripDynamic(q), isA<Everything>());
+      expect(_hasState(stripDynamic(q)), isFalse);
+      // a Not with a purely-structural subtree is preserved
+      expect(stripDynamic(const Not(TypeIs('flashcard'))), isA<Not>());
+    });
+
+    test('Deck.fromJson strips a persisted StateIs on LOAD (defense-in-depth)',
+        () {
+      // A StateIs that reached the file would otherwise empty the deck (Deck.select
+      // has no context). fromJson must strip it too, not just save.
+      final deck = Deck.fromJson({
+        'id': 'd',
+        'name': 'D',
+        'templateId': '',
+        'membership': {
+          'kind': 'and',
+          'of': [
+            {'kind': 'folder', 'value': 'korean'},
+            {'kind': 'state', 'value': 'due'},
+          ],
+        },
+      });
+      expect(_hasState(deck.membership), isFalse);
+      expect(
+          deck.membership, isA<FolderUnder>()); // just the structural conjunct
     });
 
     test('nested: structural survives, all dynamic collapses to everything',

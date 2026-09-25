@@ -127,8 +127,13 @@ class Deck {
       id: id,
       name: m['name'] is String ? m['name'] as String : id,
       templateId: m['templateId'] is String ? m['templateId'] as String : '',
+      // A persisted lens must be STRUCTURAL — strip any dynamic StateIs on load
+      // too (not just on save). Deck.select evaluates with no context, so a
+      // StateIs that reached the file (hand-edit / sync / an older build) would
+      // otherwise silently empty the deck (ADR-0013 §Addendum 2).
       membership: m['membership'] is Map
-          ? CardQuery.fromJson((m['membership'] as Map).cast<String, dynamic>())
+          ? stripDynamic(CardQuery.fromJson(
+              (m['membership'] as Map).cast<String, dynamic>()))
           : CardQuery.everything,
       budgetWeight: m['budgetWeight'] is num
           ? (m['budgetWeight'] as num).toDouble()

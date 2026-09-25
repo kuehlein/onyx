@@ -188,6 +188,41 @@ void main() {
     });
   });
 
+  group('quoting — values with spaces / reserved syntax round-trip', () {
+    test('renderLens quotes a value that would break the tokenizer', () {
+      expect(renderLens(FolderUnder('Machine Learning')),
+          'folder:"Machine Learning"');
+      expect(renderLens(TagIs('two words')), 'tag:"two words"');
+      expect(renderLens(TagIs('korean')), 'tag:korean'); // no quote needed
+    });
+
+    test('parseLens round-trips quoted values (the editable-mirror invariant)',
+        () {
+      final trees = <CardQuery>[
+        FolderUnder('Machine Learning'),
+        TagIs('two words'),
+        And([FolderUnder('a b'), TagIs('c d')]),
+        Not(TagIs('a b')),
+        Or([TagIs('a b'), const DomainIs('c')]),
+      ];
+      for (final q in trees) {
+        // render → parse → render is stable (was silently corrupted pre-quoting:
+        // `folder:Machine Learning` re-parsed to FolderUnder('Machine')).
+        expect(renderLens(parseLens(renderLens(q))), renderLens(q),
+            reason: renderLens(q));
+      }
+    });
+
+    test('a value containing OR / parens survives via quoting', () {
+      final t = parseLens(renderLens(TagIs('a OR b')));
+      expect(t, isA<TagIs>());
+      expect((t as TagIs).tag, 'a or b');
+      final f = parseLens(renderLens(FolderUnder('x (y)')));
+      expect(f, isA<FolderUnder>());
+      expect((f as FolderUnder).path, 'x (y)');
+    });
+  });
+
   group('render→parse is faithful (same cards match)', () {
     final trees = <CardQuery>[
       CardQuery.everything,

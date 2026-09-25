@@ -242,10 +242,10 @@ CardQuery parseLens(String input) =>
 /// Parens are added only where precedence needs them (an `Or` inside an `And`).
 String renderLens(CardQuery q) => switch (q) {
       Everything() => '',
-      TagIs(:final tag) => 'tag:$tag',
-      DomainIs(:final domain) => 'domain:$domain',
-      FolderUnder(:final path) => 'folder:$path',
-      TypeIs(:final type) => 'type:$type',
+      TagIs(:final tag) => 'tag:${_qv(tag)}',
+      DomainIs(:final domain) => 'domain:${_qv(domain)}',
+      FolderUnder(:final path) => 'folder:${_qv(path)}',
+      TypeIs(:final type) => 'type:${_qv(type)}',
       TierIs(:final tier) => 'tier:$tier',
       StateIs(:final state) => 'is:${state.name}',
       Not(:final q) => _isLeaf(q) ? '-${renderLens(q)}' : '!(${renderLens(q)})',
@@ -257,12 +257,29 @@ String renderLens(CardQuery q) => switch (q) {
 
 bool _isLeaf(CardQuery q) => q is! And && q is! Or && q is! Not;
 
+/// Wraps a leaf value in `"..."` when it would otherwise break the tokenizer — it
+/// contains whitespace, a paren, or a quote, or is empty. So a folder/tag with a
+/// space (`folder:"Machine Learning"`) survives a `renderLens` → `parseLens`
+/// round-trip (the "editable text mirror" invariant). Embedded `"` is escaped.
+String _qv(String v) => v.isEmpty || v.contains(RegExp(r'[\s()"]'))
+    ? '"${v.replaceAll('"', r'\"')}"'
+    : v;
+
+/// Strips the surrounding `"..."` (and unescapes `\"`) from a token value, the
+/// inverse of [_qv]. A non-quoted value is returned unchanged.
+String _unquoteVal(String v) =>
+    v.length >= 2 && v.startsWith('"') && v.endsWith('"')
+        ? v.substring(1, v.length - 1).replaceAll(r'\"', '"')
+        : v;
+
 /// Splits on whitespace, with `(` and `)` always standalone tokens (so `(a` and
-/// `!(a` tokenize cleanly). `&&` / `||` / `OR` survive as their own tokens when
-/// space-separated, which is the documented form.
+/// `!(a` tokenize cleanly), and a `"..."` run kept intact (spaces/parens inside a
+/// quoted value don't split it; `\"` is an escaped quote). `&&` / `||` / `OR`
+/// survive as their own tokens when space-separated.
 List<String> _tokenizeLens(String s) {
   final out = <String>[];
   final buf = StringBuffer();
+  var inQuotes = false;
   void flush() {
     if (buf.isNotEmpty) {
       out.add(buf.toString());
@@ -270,8 +287,21 @@ List<String> _tokenizeLens(String s) {
     }
   }
 
-  for (final ch in s.split('')) {
-    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+  for (var i = 0; i < s.length; i++) {
+    final ch = s[i];
+    if (inQuotes) {
+      if (ch == r'\' && i + 1 < s.length) {
+        buf.write(ch);
+        buf.write(s[i + 1]);
+        i++; // keep the escape verbatim; _unquoteVal resolves it
+      } else {
+        buf.write(ch);
+        if (ch == '"') inQuotes = false;
+      }
+    } else if (ch == '"') {
+      buf.write(ch);
+      inQuotes = true;
+    } else if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
       flush();
     } else if (ch == '(' || ch == ')') {
       flush();
@@ -353,7 +383,7 @@ CardQuery? _lensTerm(String tok) {
   final i = tok.indexOf(':');
   if (i > 0 && i < tok.length - 1) {
     final key = tok.substring(0, i).toLowerCase();
-    final rawVal = tok.substring(i + 1);
+    final rawVal = _unquoteVal(tok.substring(i + 1)); // `folder:"a b"` → `a b`
     // The lens shares Browse's operator table (`_opLeaf`) — `tag:`/`tags:` any-tag,
     // `domain:` first-tag, plus type/tier/is/folder.
     return _opLeaf(key, rawVal.toLowerCase(), rawVal);

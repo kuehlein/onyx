@@ -299,11 +299,22 @@ CardQuery? _strip(CardQuery q) => switch (q) {
       StateIs() => null,
       And(:final of) => _stripJoin(of, and: true),
       Or(:final of) => _stripJoin(of, and: false),
-      Not(:final q) => switch (_strip(q)) {
-          null => null,
-          final s => Not(s),
-        },
+      // A negation is kept ONLY if its whole subtree is structural. If it contains
+      // any StateIs, reducing the inner tree would flip the negation's meaning and
+      // could *narrow* the lens (e.g. `Not(And([type, is:due]))` → `Not(type)`
+      // excludes not-due type cards the original kept) — so drop the whole Not,
+      // which widens to no-constraint (the stripDynamic contract).
+      Not(:final q) => _hasStateIs(q) ? null : Not(q),
       _ => q, // structural leaf (incl. Everything)
+    };
+
+/// Whether any [StateIs] appears anywhere in [q] (the dynamic-leaf test).
+bool _hasStateIs(CardQuery q) => switch (q) {
+      StateIs() => true,
+      And(:final of) => of.any(_hasStateIs),
+      Or(:final of) => of.any(_hasStateIs),
+      Not(:final q) => _hasStateIs(q),
+      _ => false,
     };
 
 CardQuery? _stripJoin(List<CardQuery> of, {required bool and}) {
