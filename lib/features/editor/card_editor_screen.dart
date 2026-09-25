@@ -6,6 +6,7 @@ import '../../core/vault/card_edit.dart';
 import '../../core/vault/card_parser.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/fading_scroll_edges.dart';
@@ -19,6 +20,9 @@ import '../../shared/widgets/fading_scroll_edges.dart';
 /// [saveCardEdit] / [createCard]. On CREATE a card enters as `active` (trusted);
 /// on EDIT the file's frontmatter — including `status` — is preserved, so a draft
 /// stays a draft (that's what makes the review gate's Edit work).
+
+/// The learner's choice when an edit renames/removes a studied section.
+enum _SectionEdit { keep, reset }
 
 /// Pushes [CardEditorScreen] full-screen. [card] null → create; non-null → edit.
 /// Returns true if the user saved (so the caller can invalidate/pop a now-stale
@@ -130,6 +134,12 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       if (_isEdit) {
+        // Keep the FSRS schedule aligned with any renamed/removed studied section
+        // BEFORE the file write re-indexes new slugs (ADR-0012 edit-identity).
+        if (!await _reconcileSectionEdits(body)) {
+          if (mounted) setState(() => _saving = false);
+          return; // user cancelled at the keep-vs-reset prompt
+        }
         await saveCardEdit(
           source,
           widget.card!.filePath,
@@ -137,6 +147,7 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
           body: body,
           tags: _parsedTags,
         );
+        ref.invalidate(srsStatesProvider);
       } else {
         await createCard(source, title: title, body: body, tags: _parsedTags);
       }
@@ -192,6 +203,103 @@ class _CardEditorScreenState extends ConsumerState<CardEditorScreen> {
         SnackBar(content: Text('Could not delete the card: $e')),
       );
     }
+  }
+
+  /// Before an edit's file write, keep the FSRS schedule aligned with any renamed
+  /// or removed STUDIED section (ADR-0012 edit-identity). Slug-unchanged edits
+  /// (typos, body fixes) are silent. On a material change, prompt keep-vs-reset:
+  /// KEEP rekeys the schedule across the rename (+ prunes removed orphans); RESET
+  /// drops it so the section re-learns. Returns false ONLY if the user cancels
+  /// (abort the save) — never a silent reset.
+  Future<bool> _reconcileSectionEdits(String body) async {
+    final card = widget.card!;
+    final delta = sectionSlugDelta(
+      [for (final s in card.sections) s.slug],
+      [for (final h in _sectionHeadings(body)) CardParser.slugify(h)],
+    );
+    if (delta.lost.isEmpty) return true; // no slug dropped → silent keep
+
+    final repo = ref.read(srsRepositoryProvider);
+    final states = await repo.loadStates();
+    bool studied(String slug) => states.containsKey('${card.id}::$slug');
+    final lostStudied = [
+      for (final s in delta.lost)
+        if (studied(s)) s,
+    ];
+    if (lostStudied.isEmpty) return true; // only unstudied sections changed
+
+    if (!mounted) return false;
+    final headingBySlug = {for (final s in card.sections) s.slug: s.heading};
+    final choice = await _confirmSectionEdit(
+        [for (final s in lostStudied) headingBySlug[s] ?? s]);
+    if (choice == null) return false; // cancelled
+
+    if (choice == _SectionEdit.keep) {
+      for (final r in delta.renames) {
+        if (studied(r.from)) {
+          await repo.renameSection(
+              cardId: card.id, oldSlug: r.from, newSlug: r.to);
+        }
+      }
+      for (final s in delta.removed) {
+        if (studied(s)) await repo.dropSection(cardId: card.id, slug: s);
+      }
+    } else {
+      for (final s in lostStudied) {
+        await repo.dropSection(cardId: card.id, slug: s);
+      }
+    }
+    return true;
+  }
+
+  /// The keep-vs-reset prompt for a material section edit. Returns [_SectionEdit]
+  /// or null (cancel). Keep is the recommended default (a rename usually keeps the
+  /// same question); Reset is for when the answer itself changed.
+  Future<_SectionEdit?> _confirmSectionEdit(List<String> headings) {
+    final list = headings.join('”, “');
+    final plural = headings.length == 1 ? '' : 's';
+    return showDialog<_SectionEdit>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keep review history?'),
+        content: Text(
+          'You renamed or removed section$plural you\'ve studied (“$list”). Keep '
+          'their review schedule, or reset it if the answer itself changed?',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _SectionEdit.reset),
+            child: const Text('Reset'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _SectionEdit.keep),
+            child: const Text('Keep'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The `## ` headings in [body], fence-aware (mirrors [_hasSection]) — the
+  /// source of the edit's new section slugs.
+  List<String> _sectionHeadings(String body) {
+    final fence = RegExp(r'^[ \t]*(```|~~~)');
+    final h2 = RegExp(r'^##[ \t]+(.+?)[ \t]*$');
+    final out = <String>[];
+    var inFence = false;
+    for (final line in body.split('\n')) {
+      if (fence.hasMatch(line)) {
+        inFence = !inFence;
+        continue;
+      }
+      if (!inFence) {
+        final m = h2.firstMatch(line);
+        if (m != null) out.add(m.group(1)!);
+      }
+    }
+    return out;
   }
 
   @override

@@ -173,6 +173,52 @@ String slugifyTitle(String value) => value
     .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
     .replaceAll(RegExp(r'^-+|-+$'), '');
 
+/// The section-slug delta of an edit (ADR-0012 edit-identity): which section
+/// slugs an edit drops ([lost]) vs introduces ([gained]), each in document order.
+/// The FSRS schedule keys on `cardId::sectionSlug`, and a slug is `slugify(heading)`
+/// — so a heading rename silently orphans the section's history unless we rekey it.
+/// This is the pure signal for "did the edit materially change studied sections?"
+/// — cosmetic/body edits leave the slug set unchanged ([lost] empty) and save
+/// silently; a rename/removal is surfaced for a keep-vs-reset choice (never a
+/// silent reset).
+class SectionSlugDelta {
+  const SectionSlugDelta({required this.lost, required this.gained});
+
+  final List<String> lost; // old slugs absent from the new set (old order)
+  final List<String> gained; // new slugs absent from the old set (new order)
+
+  bool get isEmpty => lost.isEmpty && gained.isEmpty;
+
+  /// A heading rename keeps section order, so pair the i-th [lost] with the i-th
+  /// [gained] — a positional heuristic, applied only under the user's explicit
+  /// "keep" choice. Extra [lost] beyond the pairing are [removed] (no counterpart
+  /// → prune); extra [gained] are brand-new (no prior state → nothing to do).
+  List<({String from, String to})> get renames => [
+        for (var i = 0; i < lost.length && i < gained.length; i++)
+          (from: lost[i], to: gained[i]),
+      ];
+
+  List<String> get removed =>
+      lost.length > gained.length ? lost.sublist(gained.length) : const [];
+}
+
+/// Computes the [SectionSlugDelta] between an edit's old and new section slugs.
+SectionSlugDelta sectionSlugDelta(
+    List<String> oldSlugs, List<String> newSlugs) {
+  final newSet = newSlugs.toSet();
+  final oldSet = oldSlugs.toSet();
+  return SectionSlugDelta(
+    lost: [
+      for (final s in oldSlugs)
+        if (!newSet.contains(s)) s,
+    ],
+    gained: [
+      for (final s in newSlugs)
+        if (!oldSet.contains(s)) s,
+    ],
+  );
+}
+
 // ── Save / create / delete service ───────────────────────────────────────────
 // Provider-free (a [VaultSource] in) so the file layer is unit-testable. The UI
 // calls these then `ref.invalidate(vaultIndexProvider)` to re-index.

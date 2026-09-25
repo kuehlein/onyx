@@ -314,4 +314,38 @@ class SrsRepository {
           );
     });
   }
+
+  /// Move a section's scheduling identity when a heading is renamed but the
+  /// section is the same (ADR-0012 edit-identity KEEP): rekeys the `srs_state`
+  /// row (and its review-log rows) from `cardId::oldSlug` to `cardId::newSlug`, so
+  /// the forgetting curve survives the rename instead of orphaning. A no-op if no
+  /// row exists for the old key.
+  Future<void> renameSection({
+    required String cardId,
+    required String oldSlug,
+    required String newSlug,
+  }) async {
+    if (oldSlug == newSlug) return;
+    await _db.transaction(() async {
+      await (_db.update(_db.srsStates)
+            ..where(
+                (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(oldSlug)))
+          .write(SrsStatesCompanion(sectionSlug: Value(newSlug)));
+      await (_db.update(_db.reviews)
+            ..where(
+                (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(oldSlug)))
+          .write(ReviewsCompanion(sectionSlug: Value(newSlug)));
+    });
+  }
+
+  /// Drop a section's scheduling state (ADR-0012 edit-identity RESET, or pruning a
+  /// removed section's orphaned row): deletes the `srs_state` row for
+  /// `cardId::slug` so the section re-enters Learn fresh. The immutable review log
+  /// is left intact (past reviews are historical fact).
+  Future<void> dropSection(
+      {required String cardId, required String slug}) async {
+    await (_db.delete(_db.srsStates)
+          ..where((t) => t.cardId.equals(cardId) & t.sectionSlug.equals(slug)))
+        .go();
+  }
 }
