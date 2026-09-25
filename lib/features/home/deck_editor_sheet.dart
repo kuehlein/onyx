@@ -1,11 +1,16 @@
-import 'package:flutter/material.dart';
+// Material's `Card` widget collides with our domain `Card` model (used for the
+// lens preview's card counts); we don't use the widget here, so hide it.
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/deck/deck.dart';
 import '../../core/search/card_filter.dart' show parseLens, renderLens;
+import '../../core/vault/vault_indexer.dart' show IndexResult;
 import '../../shared/design/onyx_design.dart';
+import '../../shared/models/card.dart';
 import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
+import '../../shared/providers/vault.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Create or edit a [Deck] (task #30d, G6) — name, template, membership
@@ -106,6 +111,16 @@ class DeckEditorSheet extends ConsumerStatefulWidget {
 /// `advanced` reveals the full query text form (ADR-0013 §Addendum, hybrid builder).
 enum _Kind { all, tag, folder, advanced }
 
+/// A tap-to-add lens suggestion drawn from vault commonalities (a top-level folder
+/// or a frequent tag) — the "start from a common slice" half of the hybrid builder.
+class _Suggestion {
+  const _Suggestion(this.kind, this.value, this.label, this.count);
+  final _Kind kind; // tag or folder
+  final String value; // the leaf value (tag name / folder path)
+  final String label; // display, e.g. '#vocab' or 'korean/'
+  final int count; // matching study cards
+}
+
 class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   // The membership to seed the form from — an existing deck's, a save-as-deck
   // hand-off, or the whole vault.
@@ -135,6 +150,8 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
   // The existing decks — watched in [build] so a new deck's id can dodge a
   // collision (see [_uniqueId]); reading it unwatched risks an unresolved future.
   List<Deck> _decks = const [];
+  // Suggestions depend only on the vault, not the query — compute once.
+  List<_Suggestion>? _suggestionCache;
 
   @override
   void dispose() {
@@ -161,6 +178,98 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
         _Kind.folder => FolderUnder(_value.text.trim()),
         _Kind.advanced => parseLens(_lensText.text.trim()),
       };
+
+  static String _normTag(String raw) {
+    final t = raw.trim();
+    return (t.startsWith('#') ? t.substring(1) : t).toLowerCase();
+  }
+
+  /// Top-level folders + frequent tags across [cards], as tap-to-add suggestions,
+  /// ranked by card count (ties broken alphabetically for determinism). A folder
+  /// suggestion's count IS its `FolderUnder` subtree count (top-level = the whole
+  /// first path segment), so it matches what tapping it selects.
+  List<_Suggestion> _computeSuggestions(List<Card> cards) {
+    final folders = <String, int>{};
+    final tags = <String, int>{};
+    for (final c in cards) {
+      final seg = c.filePath.split('/');
+      if (seg.length > 1 && seg.first.isNotEmpty) {
+        folders[seg.first] = (folders[seg.first] ?? 0) + 1;
+      }
+      for (final t in c.tags) {
+        final n = _normTag(t);
+        if (n.isNotEmpty) tags[n] = (tags[n] ?? 0) + 1;
+      }
+    }
+    int byCount(MapEntry<String, int> a, MapEntry<String, int> b) {
+      final c = b.value.compareTo(a.value);
+      return c != 0 ? c : a.key.compareTo(b.key);
+    }
+
+    final topFolders = folders.entries.toList()..sort(byCount);
+    final topTags = tags.entries.toList()..sort(byCount);
+    return [
+      for (final e in topFolders.take(4))
+        _Suggestion(_Kind.folder, e.key, '${e.key}/', e.value),
+      for (final e in topTags.take(4))
+        _Suggestion(_Kind.tag, e.key, '#${e.key}', e.value),
+    ];
+  }
+
+  /// Live "N of T cards" over the whole vault + the suggestion chips — so the lens
+  /// builder isn't blind (ADR-0013 §Addendum). The count is over `studyCards` (the
+  /// persisted member set; drafts are surfaced separately but never deck members),
+  /// evaluated against the STRIPPED lens so a typed `is:due` reads as no-constraint.
+  Widget _lensPreview(BuildContext context, IndexResult index) {
+    final theme = Theme.of(context);
+    final lens = stripDynamic(_membershipFor(_kind));
+    final study = index.studyCards;
+    final n = study.where(lens.matches).length;
+    final drafts =
+        index.cards.where((c) => c.isDraft && lens.matches(c)).length;
+    final none = n == 0;
+    final suggestions = _suggestionCache ??= _computeSuggestions(study);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: Dim.space3),
+        Text(
+          none
+              ? 'No cards match'
+              : '$n of ${study.length} cards'
+                  '${drafts > 0 ? '  ·  +$drafts draft${drafts == 1 ? '' : 's'}' : ''}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: none
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (suggestions.isNotEmpty) ...[
+          const SizedBox(height: Dim.space3),
+          Text('Start from a common slice',
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: Dim.space2),
+          Wrap(
+            spacing: Dim.space2,
+            runSpacing: Dim.space2,
+            children: [
+              for (final s in suggestions)
+                ActionChip(
+                  label: Text('${s.label} · ${s.count}'),
+                  onPressed: () => setState(() {
+                    _kind = s.kind;
+                    _value.text = s.value;
+                  }),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
 
   static String _slug(String s) => s
       .toLowerCase()
@@ -218,6 +327,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
         ref.watch(templateRegistryProvider).asData?.value.templates ?? const [];
     _templateId ??= templates.isEmpty ? null : templates.first.id;
     _decks = ref.watch(decksProvider).asData?.value ?? const [];
+    final index = ref.watch(vaultIndexProvider).asData?.value;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -322,6 +432,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
+              if (index != null) _lensPreview(context, index),
               const SizedBox(height: Dim.space5),
               Text('Share of daily time  ·  ${_weight.toStringAsFixed(1)}×',
                   style: theme.textTheme.labelLarge),

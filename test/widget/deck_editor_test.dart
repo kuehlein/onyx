@@ -1,13 +1,37 @@
-import 'package:flutter/material.dart';
+// Material's Card widget collides with the domain Card model used to build a test
+// vault index; we don't use the widget here, so hide it.
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/search/card_filter.dart' show renderLens;
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
+import 'package:onyx/core/vault/vault_indexer.dart' show IndexResult;
 import 'package:onyx/features/home/deck_editor_sheet.dart';
+import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/template.dart';
+import 'package:onyx/shared/providers/vault.dart';
+
+Card _card(String id,
+        {required String folder,
+        required List<String> tags,
+        bool draft = false}) =>
+    Card(
+      id: id,
+      type: 'flashcard',
+      title: id,
+      overview: '',
+      tags: tags,
+      tiers: const {},
+      sections: const [
+        CardSection(heading: 'H', slug: 'h', content: 'x', quizzable: true),
+      ],
+      wikilinks: const [],
+      filePath: '$folder/$id.md',
+      status: draft ? CardStatus.draft : CardStatus.active,
+    );
 
 class _CapturingGoals extends Decks {
   _CapturingGoals([this._initial = const []]);
@@ -22,14 +46,17 @@ class _CapturingGoals extends Decks {
 Future<void> _open(
   WidgetTester tester,
   _CapturingGoals cap,
-  void Function(BuildContext) onOpen,
-) =>
+  void Function(BuildContext) onOpen, {
+  IndexResult? index,
+}) =>
     tester.pumpWidget(
       ProviderScope(
         overrides: [
           decksProvider.overrideWith(() => cap),
           templateRegistryProvider.overrideWith((ref) async =>
               TemplateRegistry.single(softwareInterviewsTemplate)),
+          if (index != null)
+            vaultIndexProvider.overrideWith((ref) async => index),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -208,5 +235,36 @@ void main() {
 
     // `upsert` keys by id — a second "korean" must not overwrite the first.
     expect(cap.upserted!.id, 'korean-2');
+  });
+
+  testWidgets('the lens preview shows a live count + tap-to-add suggestions',
+      (tester) async {
+    final cap = _CapturingGoals();
+    final index = IndexResult(
+      cards: [
+        _card('a', folder: 'korean', tags: ['vocab']),
+        _card('b', folder: 'korean', tags: ['vocab', 'grammar']),
+        _card('c', folder: 'spanish', tags: ['vocab']),
+        _card('d', folder: 'korean', tags: ['vocab'], draft: true),
+      ],
+      idless: 0,
+      malformed: 0,
+      skipped: 0,
+    );
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx), index: index);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Whole vault: 3 study cards match; the 1 draft is surfaced separately.
+    expect(find.textContaining('3 of 3 cards'), findsOneWidget);
+    expect(find.textContaining('+1 draft'), findsOneWidget);
+    // Suggestions from vault commonalities (folder + tag), with counts.
+    expect(find.textContaining('#vocab'), findsOneWidget);
+    expect(find.textContaining('korean/'), findsOneWidget);
+
+    // Tapping a folder suggestion narrows the lens (and its live count).
+    await tester.tap(find.textContaining('korean/'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('2 of 3 cards'), findsOneWidget);
   });
 }
