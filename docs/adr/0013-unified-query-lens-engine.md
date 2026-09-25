@@ -185,3 +185,32 @@ not Browse (you're already scoped to one deck there). So the recursive `OR`/`()`
 deck-lens text form, where there are no chips to reconcile; the IR's `Or`/`And`/`Not` are already built and tested.
 G2b.2 ships the byte-identical facet migration + `folder:`/`path:` + negation (no `OR`/`()` in the Browse box). Signed
 off (defer OR/() to G3).
+
+## Addendum — G3 scope (2026-09-25, save-as-deck + scoped card-explorer)
+
+Scoped from the SoT (`deck_creation.md`, `browse.md`) + a deck-creation code-map. Three pieces:
+
+- **The recursive `OR`/`()` parser + a `CardQuery` → text renderer** (`core/query`/`core/search`). The deck-lens
+  text form parses the full mini-language — `(folder:korean/ OR tag:korean) tier:1 -tag:done` — into one `CardQuery`
+  tree (no chips to reconcile, unlike Browse), and the renderer turns a stored lens back into text so a complex lens
+  is editable. Precedence: **`OR` lowest, implicit `AND`, `-`/`!` tightest** → `a OR (b AND c)` (frozen once a lens
+  persists an `OR`). The parser stays **total** (never throws / no match-all from a typo), like `parseQuery`.
+- **"Save this Browse filter as a deck"** — a Browse action that composes the current filter to a `CardQuery`,
+  **strips dynamic `StateIs` leaves** (`stripDynamic`: a persisted lens is structural — `Deck.select` passes no
+  context, so a persisted `StateIs` would select *nothing*), and opens the deck editor pre-filled. Free text isn't a
+  query leaf, so it's dropped with a note (the lens is the structural part). This is the browse.md "same engine → save
+  a filter as a deck falls out for free."
+- **The scoped card-explorer in DECK CREATION** (not Browse — browse.md keeps Browse deck-scoped). The lens builder is
+  **hybrid** (signed off): the default is simple/tap-driven — quick-picks + suggestions surfaced from vault
+  commonalities (top folders / frequent tags) — with an **advanced text field** (the mini-language) as the power
+  option, auto-shown when a lens is too complex for the simple picks (honoring browse.md's "advanced form as a power
+  option, not the default", while `deck_creation.md`'s `tags:… && !tags:…` examples are the advanced form). A live
+  **"N included / M excluded"** count runs over the **whole vault**; it counts `.cards` (incl. drafts) for the preview
+  but labels that the persisted member set is `.studyCards` (drafts excluded — the stable set `deckMemberCardIds`
+  uses). Card-by-card picking stays non-MVP (deck_creation.md).
+
+**Other rulings:** deck-id **slug collisions auto-suffix** (`korean`, `korean-2`) — reuse the `createCard` dedup;
+lens **`TextMatches`** membership stays **deferred** (fuzzy/derived membership fights the stable-member-set invariant
+readiness depends on). **Sequencing:** **G3.0** recursive parser + text renderer (+ fuzz) → **G3.1** `stripDynamic` +
+Browse save-as-deck + the deck-editor complex-lens text form → **G3.2** the scoped explorer (live N/M) + lens
+suggestions.
