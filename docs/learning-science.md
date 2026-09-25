@@ -118,6 +118,63 @@ the response it depends on.
 
 ---
 
+## AI-mediated learning: elicit, don't explain
+
+Onyx uses AI as a coach/tutor (today's study coach; the planned **first-exposure tutor**, #26).
+The evidence on AI tutoring is sharply **double-edged**, so the design principle here is
+load-bearing: **the AI's job is to make the *learner* do the thinking — ask, don't tell.**
+
+### The dominant risk: an AI that *explains* manufactures an illusion of competence
+**Confidence: High** (converging 2024–25 evidence). When a learner lets AI generate the answer
+or explanation, short-term *performance* rises but durable *learning* does not — the
+**performance ≠ learning** gap (above) in its most acute form. Studies report AI-assisted
+learners producing better immediate work with **no gain on delayed tests**, plus **less
+self-correction and reflection** ("metacognitive laziness" / cognitive offloading). Sources:
+[KQED — metacognitive laziness](https://www.kqed.org/mindshift/65511/university-students-offload-critical-thinking-other-hard-work-to-ai);
+[OECD, "fast AI"](https://www.thesify.ai/blog/impact-generative-ai-student-learning-oecd);
+[distinguishing performance gains from learning (2026)](https://arxiv.org/pdf/2605.13731).
+**Implication:** an AI that *lectures the concept at* the learner is the *worst* version of a
+tutor — avoid it.
+
+### The fix: the AI asks; the learner generates
+**Confidence: Medium–High.** Socratic, question-driven tutoring (the AI elicits reasoning) beats
+didactic AI for reflection and critical thinking; a purpose-tuned Socratic model outperformed
+GPT-4 on teaching quality by ~12% ([SocraticLM, NeurIPS 2024](https://proceedings.neurips.cc/paper_files/paper/2024/hash/9bae399d1f34b8650351c1bd3692aeae-Abstract-Conference.html);
+[ChatGPT vs. human tutors for critical thinking, Frontiers 2025](https://www.frontiersin.org/journals/education/articles/10.3389/feduc.2025.1528603/full)).
+The mechanism is our own principles: a well-aimed question forces **active recall / generation**
+and **self-explanation**, keeping the cognitive work with the learner. **Design rule:** the
+tutor's move is *a question that makes the learner explain*, never a mini-lecture.
+
+### But questioning has moderators — scaffold it at first exposure
+**Confidence: Medium.** Elaborative interrogation ("why is that true?") and self-explanation are
+**moderate-utility** — real, but below retrieval practice / spacing — and their benefit **shrinks
+when prior knowledge is low** and grows when elaborations are **self-generated and precise**
+([Dunlosky et al. 2013](https://pubmed.ncbi.nlm.nih.gov/26173288/)). First exposure is *exactly*
+low-prior-knowledge, so a **cold** interrogation is weak and frustrating. Scaffold it: let the
+learner engage the **source material** first, then ask questions grounded in what they just read
+(self-explain it), rather than quizzing a blank slate.
+
+### A productive guess *before* the answer helps
+**Confidence: High.** The **pretesting effect**: an *unsuccessful* retrieval attempt before seeing
+the material improves later retention (with feedback) versus errorless study
+([Richland, Kornell & Kao 2009](https://pubmed.ncbi.nlm.nih.gov/19751074/)). So "guess first, then
+read/discuss" is well-founded — and Onyx's Learn already does mental-attempt → reveal for cue
+sections.
+
+### Guardrail: LLM tutors leak the answer
+**Confidence: High** (engineering finding). Told to "tutor," off-the-shelf LLMs readily give the
+answer away; staying Socratic needs an explicit **answer-withholding** discipline (a supervisor /
+withholding layer) ([Teaching an LLM tutor to withhold the answer, 2026](https://arxiv.org/pdf/2608.12292)).
+Onyx's coach persona (`grading:false`, hint-laddered) already leans this way; a first-exposure
+tutor needs the same in its prompt + behavior.
+
+**Net for the #26 tutor:** ask questions that make the learner **explain the content**, **grounded
+in the source** (not a cold quiz), ideally after a **guess**, with the AI **withholding answers**
+and **never lecturing** — short, learner-generated exchanges (effort helps only on *success*; don't
+let the AI do the thinking).
+
+---
+
 ## What the Research Confirms
 
 ### 1. Rule-based encoding produces more durable retention than rote memorization
