@@ -346,9 +346,22 @@ model before we add features, so we build on the right shape.
   - **1f.2 (deferred): in-editor "update this card" AI edit-chat** — the one unbuilt card.md authoring mode.
     Needs a keying decision (an authoring draft/new card has no `cardId::sectionSlug` conversation key) and must
     reuse/extend the existing AI seam rather than fork a third surface (coach + generation already exist).
-- **1g · Shared authoring + query API** (→ deck_creation, browse): one card-authoring entry API and
-  one query/lens API (Browse filters == the lens language); the scoped card-explorer for building a
-  lens.
+- **1g · Shared authoring + query/lens API — SCOPED [ADR-0013](adr/0013-unified-query-lens-engine.md) (2026-09-25)** (→ deck_creation, browse).
+  Scoped via a 5-stream investigation (SoT + authoring code-map + query/deck-lens code-map + ADRs/invariants + web
+  research on query/lens UX). **Finding:** the *authoring* half is ~80% done (`showCardEditor` is already the single
+  editor entry); the real work is the *query/lens* half — today Browse (`CardFilter`) and deck membership
+  (`MembershipQuery`) are **two disjoint query languages**, contradicting browse.md's Accepted "same engine". **Decision
+  (ADR-0013):** one serializable, evaluable query IR (`core/query/`, a full `And/Or/Not` tree) behind BOTH surfaces;
+  `MembershipQuery` folds in, `CardFilter` becomes a projection. **Deck membership is structural-only** (tag/folder/
+  type/tier/text → stable member set for readiness/plan/analytics); study-state (`is:due`) stays a Browse-only
+  transient filter. Engine + text mini-language support **full nesting** (Anki/Obsidian convention: `OR`, `()`, `-`);
+  the structured builder is the default (visual depth an MVP scope knob, tunable, zero-migration) with the text form a
+  read-mostly mirror. "Save this Browse filter as a deck" + the deck-creation **scoped card-explorer** (live N/M counts
+  + lens suggestions) fall out. **Slices:** **G0** characterize (pin `Deck.select`+JSON and the Browse pipeline byte-
+  identical) → **G1** the IR + fold in membership → **G2** Browse on the IR (+ recursive parser, `folder:`, negation,
+  `OR`) → **G3** save-as-deck + scoped card-explorer → **G4** authoring reuse (deck-creation/onboarding compose
+  `showCardEditor`). **Deferred:** rich visual nested-group builder, link-neighborhood/explicit-list membership,
+  dynamic "smart decks", user-editable saved-lens text (→ **#84**).
 - **1h · Engine conformance + bugs** (→ architecture invariants). *Mapped 2026-09-24 (Explore agent):*
   - **#90 debrief ✅ DONE (2026-09-24)** — the built-but-orphaned `/debrief` screen is now wired from
     the interview sheet: a live **occurred** interview gets an inline "Debrief with coach" button, an
