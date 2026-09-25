@@ -283,3 +283,35 @@ Set<MasteryFilter> cardMastery(
   }
   return out;
 }
+
+/// Strips the dynamic ([StateIs]) leaves from [q], returning a purely structural
+/// query safe to persist as a deck lens (ADR-0013 §Addendum). Deck membership is
+/// evaluated with NO [QueryContext], so a persisted [StateIs] matches nothing —
+/// dropping it degrades a study-state constraint to "no constraint" (a wider
+/// lens) rather than silently emptying the deck. An all-dynamic query (e.g. just
+/// `is:due`, or `-is:due`) → [CardQuery.everything], never the empty set.
+CardQuery stripDynamic(CardQuery q) => _strip(q) ?? CardQuery.everything;
+
+/// The structural core of [q], or null when [q] constrains ONLY by study state —
+/// so a parent [And]/[Or] drops it as "no constraint" instead of keeping a leaf
+/// that can never match a lens (which has no context).
+CardQuery? _strip(CardQuery q) => switch (q) {
+      StateIs() => null,
+      And(:final of) => _stripJoin(of, and: true),
+      Or(:final of) => _stripJoin(of, and: false),
+      Not(:final q) => switch (_strip(q)) {
+          null => null,
+          final s => Not(s),
+        },
+      _ => q, // structural leaf (incl. Everything)
+    };
+
+CardQuery? _stripJoin(List<CardQuery> of, {required bool and}) {
+  final kept = [
+    for (final c in of)
+      if (_strip(c) case final s?) s,
+  ];
+  if (kept.isEmpty) return null;
+  if (kept.length == 1) return kept.single;
+  return and ? And(kept) : Or(kept);
+}

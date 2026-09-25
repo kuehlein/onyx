@@ -7,7 +7,7 @@ import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/query/card_query.dart';
+import '../../core/deck/deck.dart'; // also re-exports core/query/card_query
 import '../../core/search/card_filter.dart';
 import '../../core/search/card_search.dart';
 import '../../core/template/active_template.dart';
@@ -18,6 +18,7 @@ import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../editor/card_editor_screen.dart';
 import '../generation/card_generation_sheet.dart';
+import '../home/deck_editor_sheet.dart';
 import 'browse_filters.dart';
 import 'import_deck_sheet.dart';
 
@@ -68,6 +69,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             .toSet()
             .length ??
         0;
+    // The current filter is savable as its own deck lens (ADR-0013 §Addendum) —
+    // offer it only when there's actually a filter to save.
+    final refining = _query.trim().isNotEmpty || !_chipFilter.isEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -88,6 +92,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             tooltip: 'Import a deck',
             onPressed: () => showImportDeckSheet(context),
           ),
+          if (refining)
+            IconButton(
+              icon: const Icon(Icons.bookmark_add_outlined),
+              tooltip: 'Save as deck',
+              onPressed: () => _saveAsDeck(deck),
+            ),
           if (unresolvedTargets > 0)
             IconButton(
               icon: Badge(
@@ -123,6 +133,26 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
           return _body(cards, states);
         },
       ),
+    );
+  }
+
+  /// Turn the current filter into a new deck lens (ADR-0013 §Addendum). The lens
+  /// is what you SEE: the active deck's own lens AND the filter you've layered on.
+  /// Study-state (`is:due`) is stripped — a persisted lens is structural — and the
+  /// free-text search isn't part of a lens, so it's dropped with a note.
+  void _saveAsDeck(Deck? deck) {
+    final parsed = parseQuery(_query.trim());
+    final filter =
+        _and2(_chipFilter.merge(parsed.facets).toQuery(), parsed.extra);
+    final lens = _and2(deck?.membership ?? CardQuery.everything, filter);
+    final structural = stripDynamic(lens);
+    final text = parsed.text.trim();
+    showDeckEditor(
+      context,
+      initialMembership: structural,
+      note: text.isEmpty
+          ? null
+          : 'The text search "$text" isn\'t saved — a deck is defined by its filters.',
     );
   }
 

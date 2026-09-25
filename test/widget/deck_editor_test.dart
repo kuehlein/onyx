@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/deck/deck.dart';
+import 'package:onyx/core/search/card_filter.dart' show renderLens;
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/features/home/deck_editor_sheet.dart';
@@ -9,12 +10,39 @@ import 'package:onyx/shared/providers/decks.dart';
 import 'package:onyx/shared/providers/template.dart';
 
 class _CapturingGoals extends Decks {
+  _CapturingGoals([this._initial = const []]);
+  final List<Deck> _initial;
   Deck? upserted;
   @override
-  Future<List<Deck>> build() async => const [];
+  Future<List<Deck>> build() async => _initial;
   @override
   Future<void> upsert(Deck goal) async => upserted = goal;
 }
+
+Future<void> _open(
+  WidgetTester tester,
+  _CapturingGoals cap,
+  void Function(BuildContext) onOpen,
+) =>
+    tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          decksProvider.overrideWith(() => cap),
+          templateRegistryProvider.overrideWith((ref) async =>
+              TemplateRegistry.single(softwareInterviewsTemplate)),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => onOpen(ctx),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 
 void main() {
   testWidgets('creating a goal from the editor upserts it', (tester) async {
@@ -119,5 +147,66 @@ void main() {
     expect(a1.id, 'a1');
     expect(
         [a1.levelId, a1.contextId, a1.trackId], ['senior', 'faang', 'backend']);
+  });
+
+  testWidgets(
+      'a complex initialMembership opens Advanced, pre-filled + saves it',
+      (tester) async {
+    final cap = _CapturingGoals();
+    final membership = And([TagIs('korean'), const TypeIs('flashcard')]);
+    await _open(tester, cap,
+        (ctx) => showDeckEditor(ctx, initialMembership: membership));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // The lens the radio can't express opens in the Advanced text field, filled
+    // with its rendered query (name field is .first, the Query field is .last).
+    final advanced = tester.widget<TextField>(find.byType(TextField).last);
+    expect(advanced.controller!.text, 'tags:korean type:flashcard');
+
+    await tester.enterText(find.byType(TextField).first, 'Korean flashcards');
+    await tester.pump();
+    await tester.tap(find.text('Create deck'));
+    await tester.pumpAndSettle();
+
+    // Round-trips through parseLens on save (structurally identical).
+    expect(cap.upserted, isNotNull);
+    expect(renderLens(cap.upserted!.membership), 'tags:korean type:flashcard');
+  });
+
+  testWidgets('a StateIs in the lens is stripped on save (structural only)',
+      (tester) async {
+    final cap = _CapturingGoals();
+    // A dynamic study-state leaf must never persist — Deck.select has no context.
+    const membership = And([TypeIs('flashcard'), StateIs(MasteryFilter.due)]);
+    await _open(tester, cap,
+        (ctx) => showDeckEditor(ctx, initialMembership: membership));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'X');
+    await tester.pump();
+    await tester.tap(find.text('Create deck'));
+    await tester.pumpAndSettle();
+
+    // And([TypeIs, StateIs]) → TypeIs (the dynamic conjunct dropped).
+    expect(cap.upserted!.membership, isA<TypeIs>());
+  });
+
+  testWidgets('a colliding deck-name slug auto-suffixes the id',
+      (tester) async {
+    final cap = _CapturingGoals(
+        [const Deck(id: 'korean', name: 'Korean', templateId: 's')]);
+    await _open(tester, cap, (ctx) => showDeckEditor(ctx));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Korean');
+    await tester.pump();
+    await tester.tap(find.text('Create deck'));
+    await tester.pumpAndSettle();
+
+    // `upsert` keys by id — a second "korean" must not overwrite the first.
+    expect(cap.upserted!.id, 'korean-2');
   });
 }

@@ -366,8 +366,11 @@ model before we add features, so we build on the right shape.
     **G2 ✅** (Browse on the IR — `DomainIs` first-tag, byte-identical; `folder:`/negation; total parser + fuzz; legacy
     `matchesFilter`/`parseSearchQuery` deleted; adversarially reviewed) · **G3 SCOPED** (ADR-0013 §Addendum, hybrid
     lens builder): **G3.0 ✅** (`parseLens`/`renderLens` — recursive `OR`/`()`/`&&`/`-`·`!` + `foo/` shorthand; total;
-    render→parse faithful under fuzz; `tag:`=first-tag == Browse, `tags:`=any-tag lens-only) → **G3.1** `stripDynamic`
-    + Browse save-as-deck + complex-lens text form → **G3.2** scoped card-explorer (live N/M) + lens suggestions.
+    render→parse faithful under fuzz; `tag:`=first-tag == Browse, `tags:`=any-tag lens-only) → **G3.1 ✅**
+    (`stripDynamic` drops `StateIs` — an all-dynamic lens → whole vault, never empty; Browse "Save as deck" composes
+    active-lens ∧ filter, strips, drops free text with a note; deck editor gains an **Advanced** query field —
+    complex lenses open pre-filled via `renderLens`; new-deck ids auto-suffix on slug collision) → **G3.2** scoped
+    card-explorer (live N/M) + lens suggestions.
 - **1h · Engine conformance + bugs** (→ architecture invariants). *Mapped 2026-09-24 (Explore agent):*
   - **#90 debrief ✅ DONE (2026-09-24)** — the built-but-orphaned `/debrief` screen is now wired from
     the interview sheet: a live **occurred** interview gets an inline "Debrief with coach" button, an
