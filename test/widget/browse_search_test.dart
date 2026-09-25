@@ -116,4 +116,18 @@ void main() {
     expect(find.text('Binary Search'), findsNothing);
     expect(find.text('Dijkstra'), findsNothing);
   });
+
+  // G0 (ADR-0013): pin the tag: operator through the real pipeline (parse →
+  // filter → render) before G2 rebuilds it on the unified query engine.
+  testWidgets('query operators filter (tag:graphs)', (tester) async {
+    await tester.pumpWidget(_app(index));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'tag:graphs');
+    await tester.pumpAndSettle();
+    expect(find.text('Dijkstra'), findsOneWidget);
+    expect(find.text('Binary Search'), findsNothing);
+    expect(find.text('Two Pointers'), findsNothing);
+    expect(find.text('Design a URL shortener'), findsNothing);
+  });
 }
