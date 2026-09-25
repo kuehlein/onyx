@@ -302,7 +302,7 @@ model before we add features, so we build on the right shape.
   is correctly cloud-absent; deck creation exists (Settings → Decks). #86's folder-first-vs-three-choices
   tension is resolved in the SoT (folder first; on-ramps inside step 2). Tests: `onboarding_test.dart`,
   `vault_scaffold_test.dart`. *Resolves #86.* Parked non-MVP: QR class/org quick-setup (Phase 5).
-- **1f · Card model — NEXT; SCOPED [ADR-0012](adr/0012-card-model-shared-components.md) (2026-09-24)** (→ card).
+- **1f · Card model — IN PROGRESS (S0–S4 ✅; only the learn/quiz *adopt* + 1f.1/1f.2 remain); SCOPED [ADR-0012](adr/0012-card-model-shared-components.md) (2026-09-24)** (→ card).
   Scoped via a 10-agent workflow (SoT + code-map of all ~7 spread surfaces + arch + UX → plan → 3 adversarial
   critics). **Decision:** deliver a shared component **LAYER** (`CardScaffold` · `CardSection` (single section
   renderer) · `CardHead` · `CardMetaChip` · `CardLinks` · `sectionExpandDefault`), composed by each thin
@@ -319,7 +319,12 @@ model before we add features, so we build on the right shape.
   draft-review; S4 adds the stub CTA) and AI "make a card about X" ships as `card_generation` — so the
   authoring MVP is met; the in-editor **"update this card" AI edit-chat is deferred** (its coach-seam reuse
   keys on a real `cardId::sectionSlug` a draft lacks, and a fresh panel would fork a 3rd AI surface) → **1f.2**
-  below → **S4** stub screen (References from the unresolved graph; barred from queues; "create" → authoring).
+  below → **S4 ✅** stub screen (`StubNoteScreen` off the unresolved-links target header; References from the
+  unresolved graph filtered by target; a plain screen, not a synthetic Card, so no id-guards leak into study;
+  "create" seeds the editor with `createSlug` == the raw target so `createCard` writes the stem **verbatim** and
+  every `[[target]]` resolves on re-index — `humanizeSlug` + a pure round-trip test guard it).
+  - **Remaining in 1f:** learn/quiz **adopt** `CardSectionPanel` for the revealed body (additive — keep their
+    own notifiers + grade-sets + reveal gates; migrate one screen at a time, proven against S0). Then 1f.1 / 1f.2.
   - **1f.1 (engine gaps, each ADR-noted + off-switch + before/after golden):** mastered auto-collapse (retention
     threshold via core/srs `getCardRetrievability`, display-only) + per-card `quizzable:false` (pure DENY;
     precedence deny > allowlist > policy; `quizzable:true` a no-op for MVP). **neverQuizzed** stays read-only
