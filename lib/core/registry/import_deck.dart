@@ -1,3 +1,4 @@
+import '../vault/card_markdown.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
@@ -19,7 +20,7 @@ import 'deck.dart';
 /// Pure-ish: takes a [VaultSource] and no provider deps, so it's unit-testable
 /// against a temp desktop source.
 Future<int> importDeck(VaultSource source, DeckManifest manifest) async {
-  final deckSlug = _slugify(manifest.deckId);
+  final deckSlug = slugify(manifest.deckId);
   var written = 0;
   for (final file in manifest.files) {
     final path = '$deckSlug/${_normalizeRel(file.path)}';
@@ -50,15 +51,9 @@ String _stampedForImport(String deckId, String content) {
   final body = m.group(2) ?? '';
   final kept = m.group(1)!.split('\n').where((l) => !_deckOrStatus.hasMatch(l));
   final frontmatter =
-      ['deck: ${_scalar(deckId)}', 'status: draft', ...kept].join('\n');
+      ['deck: ${yamlScalar(deckId)}', 'status: draft', ...kept].join('\n');
   return '---\n$frontmatter\n---\n$body';
 }
-
-/// A double-quoted YAML scalar for a frontmatter value, so a value with
-/// YAML-special characters round-trips intact. Registry deck ids are slugs
-/// (already safe); quoting defends against messier inputs.
-String _scalar(String value) =>
-    '"${value.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
 
 /// Normalizes a deck-relative path to safe POSIX: forward slashes, no leading
 /// slash, and no `..` segments (a pulled deck can only ever write *inside* its
@@ -68,10 +63,3 @@ String _normalizeRel(String path) => path
     .split('/')
     .where((seg) => seg.isNotEmpty && seg != '.' && seg != '..')
     .join('/');
-
-/// Lowercases and collapses non-alphanumerics to single hyphens (trimming ends)
-/// — a filesystem-safe slug for the deck folder. (Matches `CardParser.slugify`.)
-String _slugify(String value) => value
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-    .replaceAll(RegExp(r'^-+|-+$'), '');

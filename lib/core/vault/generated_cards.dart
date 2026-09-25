@@ -1,4 +1,5 @@
 import '../ai/card_generation.dart';
+import 'card_markdown.dart';
 import 'vault_source.dart';
 
 /// Writes an AI-generated [GeneratedBatch] into the study folder as **local
@@ -29,12 +30,12 @@ Future<int> writeGeneratedCards(
   GeneratedBatch batch, {
   String? sourceLabel,
 }) async {
-  final nameSlug = _slugify(batch.name);
+  final nameSlug = slugify(batch.name);
   final folder = nameSlug.isEmpty ? 'generated' : nameSlug;
   final used = <String>{};
   var written = 0;
   for (final card in batch.cards) {
-    final slug = _uniqueSlug(_slugify(card.title), used);
+    final slug = _uniqueSlug(slugify(card.title), used);
     final path = '$folder/$slug.md';
     await source.writeFile(path, _cardMarkdown(slug, card, sourceLabel));
     written++;
@@ -66,17 +67,17 @@ String _cardMarkdown(
 ) {
   final buffer = StringBuffer()
     ..writeln('---')
-    ..writeln('id: ${_scalar(id)}')
+    ..writeln('id: ${yamlScalar(id)}')
     ..writeln('type: "flashcard"')
     ..writeln('status: draft')
-    ..writeln('tags: ${_flowList(card.tags)}')
+    ..writeln('tags: ${yamlFlowList(card.tags)}')
     ..writeln('---')
     ..writeln()
-    ..writeln('# ${_oneLine(card.title)}');
+    ..writeln('# ${oneLine(card.title)}');
   for (final section in card.sections) {
     buffer
       ..writeln()
-      ..writeln('## ${_oneLine(section.heading)}')
+      ..writeln('## ${oneLine(section.heading)}')
       ..writeln()
       ..writeln(section.content);
   }
@@ -101,29 +102,3 @@ String? _provenance(String? sourceLabel) {
   final safe = clipped.replaceAll('-->', '— >');
   return '<!-- generated: $safe -->';
 }
-
-/// A YAML flow-sequence the parser accepts (`_stringList` reads a `YamlList`),
-/// e.g. `["tcp", "networking"]`, or `[]` when empty.
-String _flowList(List<String> tags) => '[${tags.map(_scalar).join(', ')}]';
-
-/// Collapses internal line breaks (and surrounding whitespace) to a single space
-/// so a title/heading written into a one-line `#`/`##` markdown line can't split
-/// the line and shift section boundaries on re-parse (the H1/H2 regexes are
-/// single-line). Mirrors the flattening `_provenance` already does.
-String _oneLine(String value) =>
-    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
-
-/// A double-quoted YAML scalar so a value carrying YAML-special characters (`#`,
-/// `:`, leading `-`, etc.) round-trips intact rather than being reinterpreted.
-/// (Duplicated from import_deck.dart — the two write paths keep their own tiny
-/// helpers so neither depends on the other's private internals.)
-String _scalar(String value) =>
-    '"${value.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
-
-/// Lowercases and collapses every run of non-alphanumerics to a single hyphen,
-/// trimming leading/trailing hyphens — a filesystem-safe slug for the folder and
-/// card filename. (Matches `CardParser.slugify`'s rule.)
-String _slugify(String value) => value
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-    .replaceAll(RegExp(r'^-+|-+$'), '');

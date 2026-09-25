@@ -10,6 +10,7 @@
 /// [VaultSource], so both layers are unit-testable against a temp desktop source.
 library;
 
+import 'card_markdown.dart';
 import 'vault_source.dart';
 
 /// Frontmatter block: a leading `---` line, YAML, then a closing `---` line.
@@ -68,13 +69,13 @@ String newCardMarkdown({
   String? deckId,
 }) {
   final buffer = StringBuffer()
-    ..writeln('id: ${_scalar(id)}')
-    ..writeln('type: ${_scalar(type)}')
+    ..writeln('id: ${yamlScalar(id)}')
+    ..writeln('type: ${yamlScalar(type)}')
     ..writeln('status: active');
   if (deckId != null && deckId.isNotEmpty) {
-    buffer.writeln('deck: ${_scalar(deckId)}');
+    buffer.writeln('deck: ${yamlScalar(deckId)}');
   }
-  buffer.write('tags: ${_flowList(tags)}');
+  buffer.write('tags: ${yamlFlowList(tags, spaced: true)}');
   return _assemble(buffer.toString(), title: title, body: body);
 }
 
@@ -89,7 +90,7 @@ String _assemble(String yaml, {required String title, required String body}) {
     ..writeln(yaml)
     ..writeln('---')
     ..writeln()
-    ..write('# ${_oneLine(title)}')
+    ..write('# ${oneLine(title)}')
     ..write('\n');
   if (trimmedBody.isNotEmpty) {
     buffer
@@ -114,7 +115,7 @@ String _assemble(String yaml, {required String title, required String body}) {
 /// `tags:` key at all, the new flow line is appended (so a tag edit still lands).
 String _replaceTags(String yaml, List<String> tags) {
   final lines = yaml.split('\n');
-  final flow = 'tags: ${_flowList(tags)}';
+  final flow = 'tags: ${yamlFlowList(tags, spaced: true)}';
 
   var start = -1;
   for (var i = 0; i < lines.length; i++) {
@@ -144,34 +145,6 @@ String _replaceTags(String yaml, List<String> tags) {
   final rebuilt = [...lines.sublist(0, start), flow, ...lines.sublist(end)];
   return rebuilt.join('\n');
 }
-
-/// A YAML flow-sequence the parser accepts (`_stringList` reads a `YamlList`),
-/// e.g. `[ "tcp", "networking" ]`, or `[]` when empty. Values are double-quoted
-/// so a tag carrying YAML-special characters round-trips intact.
-String _flowList(List<String> tags) =>
-    tags.isEmpty ? '[]' : '[ ${tags.map(_scalar).join(', ')} ]';
-
-/// Collapses internal line breaks (and surrounding whitespace) to a single space
-/// so a title written into the one-line `# ` H1 can't split the line and shift
-/// the remainder into the body on re-parse (the parser's H1 regex is
-/// single-line). A pasted multi-line title is the realistic source.
-String _oneLine(String value) =>
-    value.replaceAll(RegExp(r'\s*[\r\n]+\s*'), ' ').trim();
-
-/// A double-quoted YAML scalar so a value carrying YAML-special characters (`#`,
-/// `:`, leading `-`, etc.) round-trips intact rather than being reinterpreted.
-/// (Mirrors generated_cards.dart / import_deck.dart — each write path keeps its
-/// own tiny helper so none depends on another's private internals.)
-String _scalar(String value) =>
-    '"${value.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
-
-/// Lowercases and collapses every run of non-alphanumerics to a single hyphen,
-/// trimming leading/trailing hyphens — a filesystem-safe slug for a new card's
-/// filename + id. (Matches `CardParser.slugify`'s rule.)
-String slugifyTitle(String value) => value
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-    .replaceAll(RegExp(r'^-+|-+$'), '');
 
 /// The section-slug delta of an edit (ADR-0012 edit-identity): which section
 /// slugs an edit drops ([lost]) vs introduces ([gained]), each in document order.
@@ -264,7 +237,7 @@ Future<String> createCard(
   String? slug,
 }) async {
   final existing = (await source.listCardPaths()).toSet();
-  final base = (slug != null && slug.isNotEmpty) ? slug : slugifyTitle(title);
+  final base = (slug != null && slug.isNotEmpty) ? slug : slugify(title);
   final root = base.isEmpty ? 'card' : base;
   var stem = root;
   var n = 2;

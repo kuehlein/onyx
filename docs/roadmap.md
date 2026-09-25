@@ -346,7 +346,7 @@ model before we add features, so we build on the right shape.
   - **1f.2 (deferred): in-editor "update this card" AI edit-chat** — the one unbuilt card.md authoring mode.
     Needs a keying decision (an authoring draft/new card has no `cardId::sectionSlug` conversation key) and must
     reuse/extend the existing AI seam rather than fork a third surface (coach + generation already exist).
-- **1g · Shared authoring + query/lens API — SCOPED [ADR-0013](adr/0013-unified-query-lens-engine.md) (2026-09-25)** (→ deck_creation, browse).
+- **1g · Shared authoring + query/lens API — ✅ DONE [ADR-0013](adr/0013-unified-query-lens-engine.md) (2026-09-25)** (→ deck_creation, browse).
   Scoped via a 5-stream investigation (SoT + authoring code-map + query/deck-lens code-map + ADRs/invariants + web
   research on query/lens UX). **Finding:** the *authoring* half is ~80% done (`showCardEditor` is already the single
   editor entry); the real work is the *query/lens* half — today Browse (`CardFilter`) and deck membership
@@ -371,8 +371,11 @@ model before we add features, so we build on the right shape.
     active-lens ∧ filter, strips, drops free text with a note; deck editor gains an **Advanced** query field —
     complex lenses open pre-filled via `renderLens`; new-deck ids auto-suffix on slug collision) · **G3.2 ✅** (scoped
     card-explorer in deck creation: live "N of T cards" over the whole vault — `studyCards` count, drafts surfaced
-    separately; tap-to-add suggestions from top folders / frequent tags). **Remaining: G4** (authoring reuse —
-    deck-creation/onboarding compose `showCardEditor`).
+    separately; tap-to-add suggestions from top folders / frequent tags) · **G4 ✅** (authoring reuse: code-map
+    confirmed `showCardEditor` is *already* the sole hand-authored create/edit entry, and onboarding/deck-creation
+    legitimately don't author cards — nothing to compose; the real work was the frontmatter-assembly dedup — the
+    thrice-copied `_scalar`/`_flowList`/`_oneLine`/`_slugify` extracted to `core/vault/card_markdown.dart`, byte-identical
+    (proven by the write-path suites) + a direct escaping test). **1g COMPLETE (G0–G4).**
 - **1h · Engine conformance + bugs** (→ architecture invariants). *Mapped 2026-09-24 (Explore agent):*
   - **#90 debrief ✅ DONE (2026-09-24)** — the built-but-orphaned `/debrief` screen is now wired from
     the interview sheet: a live **occurred** interview gets an inline "Debrief with coach" button, an
