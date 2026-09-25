@@ -168,6 +168,21 @@ class SettingsScreen extends ConsumerWidget {
                       ref.read(loadCheckInProvider.notifier).setEnabled(v),
                 ),
               ),
+          ref.watch(masteredCollapseProvider).when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (on) => SwitchListTile(
+                  secondary: const Icon(Icons.unfold_less),
+                  title: const Text('Collapse mastered sections'),
+                  subtitle: const Text(
+                      'In a card, fold up sections you’ve mastered (well-retained '
+                      'and spaced out) behind a badge. Display only — it never '
+                      'changes what’s scheduled for review.'),
+                  value: on,
+                  onChanged: (v) =>
+                      ref.read(masteredCollapseProvider.notifier).setEnabled(v),
+                ),
+              ),
           // Workload knobs (new-sections/day, algorithm min/max, the pace-planner)
           // were removed — the engine derives the study mix from the budget + aims
           // + FSRS + urgency (ADR-0010). The daily budget above is the one dial.

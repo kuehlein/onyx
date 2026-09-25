@@ -267,3 +267,23 @@ class GymMode extends _$GymMode {
     ref.invalidateSelf();
   }
 }
+
+/// Global off-switch for the card view's display-only "mastered" auto-collapse
+/// (ADR-0012 #6, task 1f.1). On by default; when off, sections fall back to the
+/// legacy due-date expand proxy and no Mastered badge shows. Purely a display
+/// preference — it never affects scheduling. This is the ONLY control the feature
+/// exposes: the thresholds themselves are fixed engine constants (see
+/// core/srs/mastery.dart), per ADR-0011's minimize-the-knobs stance.
+@Riverpod(keepAlive: true)
+class MasteredCollapse extends _$MasteredCollapse {
+  static const prefKey = 'mastered_collapse_enabled';
+
+  @override
+  Future<bool> build() async =>
+      (await ref.watch(preferencesRepositoryProvider).get(prefKey)) != 'false';
+
+  Future<void> setEnabled(bool value) async {
+    await ref.read(preferencesRepositoryProvider).set(prefKey, '$value');
+    ref.invalidateSelf();
+  }
+}

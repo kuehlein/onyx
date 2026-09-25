@@ -113,6 +113,21 @@ what learn/quiz newly adopt is the shared **chrome**: `CardMetaChip` (replacing 
 byte-identical) and a new shared `ViewFullCardButton` (the study→full-card link that was duplicated verbatim in
 both). No grade-path funnel; S0 stays green. `CardScaffold`/`CardHead` remain the deferred pieces of the layer.
 
+**Amendment (2026-09-24) — mastered-collapse: a stability floor + fixed constants (1f.1 built).** #6 above said
+"collapse a review section when **R ≥ threshold**, a single engine constant." Building it surfaced a gap: Onyx
+graduates Learn straight into the FSRS **review** state with `lastReview = now`, so a *just-learned* section has
+R≈1 — a pure R-threshold would stamp "Mastered" on material seen ten seconds ago. So "mastered" gained a second
+gate: **review state · not due · FSRS stability ≥ `kMasteredStabilityDays` (21d) · retrievability ≥
+`kMasteredRetention` (0.9)** — i.e. retained *and* survived real spacing (`core/srs/mastery.dart`, R from the
+`fsrs` package's `getCardRetrievability`). The expand rule became **"collapse only what's mastered; new, due, and
+still-settling sections all expand"** (replaces the due-date proxy); the global off-switch (`MasteredCollapse`
+pref, on by default, surfaced as a Settings › Learning toggle) restores the legacy proxy and hides the badge.
+Both thresholds are **fixed engine constants, not per-deck/card dials** (signed off): the feature is display-only
+(never scheduling), the units are subject-agnostic (a probability; an interval in days), and ADR-0011's
+minimize-the-knobs stance applies — the off-switch is the only control, and a future *template*-level override, if
+ever needed, is a small change (build-when-consumed). Shipped as **1f.1a** (`quizzable:false` DENY, parser) +
+**1f.1b** (mastered-collapse) with the before/after in `card_detail_view_test`.
+
 ## Alternatives considered
 
 - **A universal `CardView(mode)` container.** Rejected — a mode-switch over disjoint bodies is its own smell,

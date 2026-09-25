@@ -2,22 +2,27 @@
 import 'package:flutter/material.dart' hide Card;
 
 import '../../core/database/database.dart';
+import '../../core/srs/mastery.dart';
 import '../design/onyx_design.dart';
 import '../models/card.dart';
 import 'card_markdown.dart';
+import 'status_pill.dart';
 
 /// Whether a section should open by default: supplementary sections stay
-/// collapsed; a quizzable section opens if it's new (never studied) or due, and
-/// collapses once it's been reviewed and scheduled into the future (mastered).
+/// collapsed; a quizzable section opens unless it's **mastered** — new, due, and
+/// still-settling sections all show, and only what you've mastered folds away.
 ///
-/// The single home for the card view's section expand policy (was
-/// `card_detail._expandByDefault`). The retention-threshold-based "mastered"
-/// collapse + badge is a later, ADR-backed refinement (1f.1); today this proxies
-/// mastery on the due date.
-bool sectionExpandDefault(CardSection section, SrsState? state, DateTime now) {
+/// The single home for the card view's section expand policy. With
+/// [masteredCollapse] on (the default), "mastered" is the retrievability +
+/// spacing signal from core/srs ([isSectionMastered]); the global off-switch
+/// restores the legacy due-date proxy (collapse once scheduled ahead). Neither
+/// path affects scheduling (ADR-0012 #6, task 1f.1).
+bool sectionExpandDefault(CardSection section, SrsState? state, DateTime now,
+    {bool masteredCollapse = true}) {
   if (section.quizzable) {
-    if (state == null) return true;
-    return !state.dueAt.isAfter(now);
+    if (state == null) return true; // never studied → expand
+    if (masteredCollapse) return !isSectionMastered(state, now);
+    return !state.dueAt.isAfter(now); // off-switch: the legacy due-date proxy
   }
   // Non-quizzable: expand the implementation/code reference (the reason to open
   // the full card); keep other supplementary sections (resources, related)
@@ -31,10 +36,18 @@ bool sectionExpandDefault(CardSection section, SrsState? state, DateTime now) {
 /// headings are accented and flagged as study units either way.
 class CardSectionPanel extends StatelessWidget {
   const CardSectionPanel(
-      {super.key, required this.section, required this.initiallyExpanded});
+      {super.key,
+      required this.section,
+      required this.initiallyExpanded,
+      this.mastered = false});
 
   final CardSection section;
   final bool initiallyExpanded;
+
+  /// A quizzable section you've mastered (retained + spaced — see
+  /// [isSectionMastered]): folds up by default with a calm *Mastered* badge in
+  /// place of the plain study-unit marker. Display-only (ADR-0012 #6).
+  final bool mastered;
 
   @override
   Widget build(BuildContext context) {
@@ -89,11 +102,19 @@ class CardSectionPanel extends StatelessWidget {
                           ),
                         ),
                         if (section.quizzable)
-                          Tooltip(
-                            message: 'Scheduled for review',
-                            child: Icon(Icons.check_circle_outline,
-                                size: Dim.iconMd, color: scheme.primary),
-                          ),
+                          if (mastered)
+                            const StatusPill(
+                              tone: StatusTone.good,
+                              label: 'Mastered',
+                              icon: Icons.verified_outlined,
+                              dense: true,
+                            )
+                          else
+                            Tooltip(
+                              message: 'Scheduled for review',
+                              child: Icon(Icons.check_circle_outline,
+                                  size: Dim.iconMd, color: scheme.primary),
+                            ),
                       ],
                     ),
                     children: [CardMarkdown(section.content)],

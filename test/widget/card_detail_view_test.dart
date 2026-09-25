@@ -8,6 +8,7 @@ import 'package:onyx/core/database/database.dart';
 import 'package:onyx/features/browse/card_detail_screen.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
+import 'package:onyx/shared/providers/settings.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/vault.dart';
 import 'package:onyx/shared/widgets/card_section_panel.dart';
@@ -28,6 +29,62 @@ final bool _sqlite = () {
     return false;
   }
 }();
+
+/// Forces the mastered-collapse off-switch off (the legacy due-date proxy).
+class _MasteredOff extends MasteredCollapse {
+  @override
+  Future<bool> build() async => false;
+}
+
+/// A card with one mastered section (Alpha) and one due section (Beta).
+Card _masteryCard() => testCard('M1', 'Mastery', sections: const [
+      CardSection(
+          heading: 'Alpha', slug: 'alpha', content: 'a', quizzable: true),
+      CardSection(heading: 'Beta', slug: 'beta', content: 'b', quizzable: true),
+    ]);
+
+SectionStates _masteryStates() {
+  final now = DateTime.now();
+  SrsState st(String slug, {required Duration due, required Duration since}) =>
+      SrsState(
+        cardId: 'M1',
+        sectionSlug: slug,
+        stability: 40, // ≥ 21d spacing floor
+        difficulty: 5,
+        state: 2, // review
+        dueAt: now.add(due),
+        lastReview: now.subtract(since),
+        reviewCount: 3,
+      );
+  return SectionStates({
+    // Spaced, retained, not due → mastered.
+    'M1::alpha': st('alpha',
+        due: const Duration(days: 30), since: const Duration(days: 10)),
+    // Overdue → never mastered (must stay shown).
+    'M1::beta': st('beta',
+        due: const Duration(days: -1), since: const Duration(days: 45)),
+  });
+}
+
+Future<void> _pumpMastery(WidgetTester tester,
+    {bool masteredOff = false}) async {
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      appDatabaseProvider.overrideWith((ref) {
+        final db = AppDatabase.withExecutor(NativeDatabase.memory());
+        ref.onDispose(db.close);
+        return db;
+      }),
+      vaultIndexProvider
+          .overrideWith((ref) async => testIndex([_masteryCard()])),
+      srsStatesProvider.overrideWith((ref) async => _masteryStates()),
+      if (masteredOff) masteredCollapseProvider.overrideWith(_MasteredOff.new),
+    ],
+    child: MaterialApp(
+        theme: OnyxTheme.dark(), home: const CardDetailScreen(cardId: 'M1')),
+  ));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   testWidgets('VIEW: flow label + tier chip + section panels + expand policy',
@@ -79,5 +136,38 @@ void main() {
         panels.firstWhere((p) => p.section.heading == heading);
     expect(panel('When to Use').initiallyExpanded, isTrue);
     expect(panel('Resources').initiallyExpanded, isFalse);
+  });
+
+  // Before/after for the mastered auto-collapse (ADR-0012 #6, 1f.1).
+  testWidgets('ON: mastered section collapses with a badge; due stays expanded',
+      (tester) async {
+    if (!_sqlite) return;
+    await _pumpMastery(tester);
+    final panels =
+        tester.widgetList<CardSectionPanel>(find.byType(CardSectionPanel));
+    CardSectionPanel panel(String h) =>
+        panels.firstWhere((p) => p.section.heading == h);
+
+    // Exactly the mastered section carries the badge + folds; the due one shows.
+    expect(find.text('Mastered'), findsOneWidget);
+    expect(panel('Alpha').mastered, isTrue);
+    expect(panel('Alpha').initiallyExpanded, isFalse);
+    expect(panel('Beta').mastered, isFalse);
+    expect(panel('Beta').initiallyExpanded, isTrue);
+  });
+
+  testWidgets('OFF: legacy due-date proxy — no badge, not-due collapses',
+      (tester) async {
+    if (!_sqlite) return;
+    await _pumpMastery(tester, masteredOff: true);
+    final panels =
+        tester.widgetList<CardSectionPanel>(find.byType(CardSectionPanel));
+    CardSectionPanel panel(String h) =>
+        panels.firstWhere((p) => p.section.heading == h);
+
+    expect(find.text('Mastered'), findsNothing);
+    expect(panel('Alpha').mastered, isFalse);
+    expect(panel('Alpha').initiallyExpanded, isFalse); // not due → collapsed
+    expect(panel('Beta').initiallyExpanded, isTrue); // due → expanded
   });
 }

@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/srs/mastery.dart';
 import '../../core/template/active_template.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
+import '../../shared/providers/settings.dart';
 import '../../shared/providers/srs.dart';
 import '../../shared/providers/vault.dart';
 import '../../shared/url.dart';
@@ -81,6 +83,10 @@ class _CardDetail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isApproach = card.isApproachCard;
     final now = DateTime.now();
+    // Display-only "mastered" collapse (ADR-0012 #6); on unless the user has
+    // switched it off, in which case sections use the legacy due-date proxy.
+    final masteredCollapse =
+        ref.watch(masteredCollapseProvider).asData?.value ?? true;
     // The card's type label + icon come from its flow (config), never a
     // `card.type ==` branch (invariant #2) — resolved from the active template,
     // matching Browse's resolution exactly.
@@ -176,7 +182,11 @@ class _CardDetail extends ConsumerWidget {
                       section,
                       states?['${card.id}::${section.slug}'],
                       now,
+                      masteredCollapse: masteredCollapse,
                     ),
+                    mastered: masteredCollapse &&
+                        isSectionMastered(
+                            states?['${card.id}::${section.slug}'], now),
                   ),
                 CardLinks(cardId: card.id),
               ],

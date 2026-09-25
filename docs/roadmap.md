@@ -302,7 +302,7 @@ model before we add features, so we build on the right shape.
   is correctly cloud-absent; deck creation exists (Settings → Decks). #86's folder-first-vs-three-choices
   tension is resolved in the SoT (folder first; on-ramps inside step 2). Tests: `onboarding_test.dart`,
   `vault_scaffold_test.dart`. *Resolves #86.* Parked non-MVP: QR class/org quick-setup (Phase 5).
-- **1f · Card model — IN PROGRESS (S0–S4 ✅ + learn/quiz *adopt* ✅; only 1f.1/1f.2 remain); SCOPED [ADR-0012](adr/0012-card-model-shared-components.md) (2026-09-24)** (→ card).
+- **1f · Card model — IN PROGRESS (S0–S4 ✅ + *adopt* ✅ + 1f.1 ✅; only the deferred 1f.2 remains); SCOPED [ADR-0012](adr/0012-card-model-shared-components.md) (2026-09-24)** (→ card).
   Scoped via a 10-agent workflow (SoT + code-map of all ~7 spread surfaces + arch + UX → plan → 3 adversarial
   critics). **Decision:** deliver a shared component **LAYER** (`CardScaffold` · `CardSection` (single section
   renderer) · `CardHead` · `CardMetaChip` · `CardLinks` · `sectionExpandDefault`), composed by each thin
@@ -329,11 +329,20 @@ model before we add features, so we build on the right shape.
     `CardSectionPanel` is view/stub-only by design — forcing it into study would double the cue heading (breaking
     S0) and add an unwanted collapse affordance (see ADR-0012 Amendment 2026-09-24). Notifiers/grade-sets/reveal
     gates untouched; S0 green.
-  - **Remaining in 1f:** **1f.1** then **1f.2** (below). `CardScaffold`/`CardHead` stay the deferred layer pieces.
-  - **1f.1 (engine gaps, each ADR-noted + off-switch + before/after golden):** mastered auto-collapse (retention
-    threshold via core/srs `getCardRetrievability`, display-only) + per-card `quizzable:false` (pure DENY;
-    precedence deny > allowlist > policy; `quizzable:true` a no-op for MVP). **neverQuizzed** stays read-only
-    (per-card override covers MVP; user-editable per-deck set → **#84**, per settings.md).
+  - **Remaining in 1f:** only the deferred **1f.2** (below). `CardScaffold`/`CardHead` stay the deferred layer pieces.
+  - **1f.1 ✅ DONE (2026-09-24)** — the two engine gaps, each shipped green with its guard:
+    - **1f.1a** per-card `quizzable:false` **DENY** (parser): precedence deny > `quiz:` allowlist > FlowSpec policy;
+      `quizzable:true` a deliberate no-op for MVP (won't re-open excluded sections → no silent study-set drift).
+      Existing allowlist/blocklist/approachOnly cards byte-identical.
+    - **1f.1b** mastered auto-collapse (display-only): a review section folds up with a *Mastered* badge when it's
+      **spaced + retained** — FSRS `stability ≥ 21d` AND `R ≥ 0.9` (R from core/srs `getCardRetrievability`,
+      `core/srs/mastery.dart`); a stability floor was added over the ADR's R-only spec because Learn graduates
+      straight to review with R≈1 (would falsely flag just-learned material). Rule: *collapse only what's
+      mastered; new/due/settling all expand* (replaces the due-date proxy). Both thresholds are **fixed engine
+      constants** (not per-deck dials — display-only, subject-agnostic units, ADR-0011 minimize-knobs); the global
+      **off-switch** (`MasteredCollapse`, Settings › Learning) restores the legacy proxy. Before/after in
+      `card_detail_view_test`.
+    - **neverQuizzed** stays read-only (per-card override covers MVP; user-editable per-deck set → **#84**).
   - **1f.2 (deferred): in-editor "update this card" AI edit-chat** — the one unbuilt card.md authoring mode.
     Needs a keying decision (an authoring draft/new card has no `cardId::sectionSlug` conversation key) and must
     reuse/extend the existing AI seam rather than fork a third surface (coach + generation already exist).
