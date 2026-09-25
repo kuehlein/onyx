@@ -480,14 +480,17 @@ The MVP-tagged stories, cloud still absent:
     → **#26**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
-- **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc: state-aware
-  **est-minutes** + optimizer-from-history + the desired-retention knob (#32), the **capped retention
-  floor** est-minutes fidelity (#106, its reviews-first slice already shipped), then flip the workload
-  guardrails from **fixed → derived** (budget/urgency-aware new + practice quantities under the flow-aware
-  ceiling) and add the **budget → ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the
-  shipped fixed guardrails already produce a sane, SoT-conformant plan — but this is where "the engine
-  derives the quantities" becomes fully real. (**#114 Phase C** — engine-initiated proposals + notify —
-  waits further, on #110 + usage evidence.)
+- **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc.
+  **#32 (ADR-0014):** ✅ the **desired-retention knob** (one global dial, shifts the band, preserves the
+  Priority offset, byte-identical at 0.90) + ✅ **guarded Learn-Easy** (a new card's Easy first interval
+  capped at 2× Good via stability scaling); **optimizer-from-history DEFERRED** (no fitter in the `fsrs`
+  package; needs ~1000+ reviews to beat defaults — revisit at data scale + tooling). Remaining arc:
+  state-aware **est-minutes** + the **capped retention floor** est-minutes fidelity (#106, its reviews-first
+  slice already shipped), then flip the workload guardrails from **fixed → derived** (budget/urgency-aware
+  new + practice quantities under the flow-aware ceiling) and add the **budget → ready-by date-shift**
+  readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already produce a sane,
+  SoT-conformant plan — but this is where "the engine derives the quantities" becomes fully real. (**#114
+  Phase C** — engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
   **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
@@ -513,7 +516,8 @@ The MVP-tagged stories, cloud still absent:
 ## Old-backlog mapping (#NN)
 - **Reframed into Phase 1:** #30 / #88 / G7 (→ 1a), #85 (→ 1d), #86 (resolved → 1e), #68 (aims),
   #57 (daily plan), #90 / #91 / #87 / #92 (→ 1c/1h).
-- **Kept as-is:** #32 (FSRS engine tuning), #82 / #61 (ship), #83 / #63 / #84 (stretch/cloud),
+- **Kept as-is:** #32 (FSRS engine tuning — retention knob + guarded Learn-Easy shipped; optimizer deferred,
+  ADR-0014), #82 / #61 (ship), #83 / #63 / #84 (stretch/cloud),
   #22 / #25 / #26 / #58 (features).
 - **Dropped / parked (contradicts the direction):** #50 second-brain expansion.
 - **Done arcs, re-shaped onto decks/aims in Phase 1:** #33 / #54 / #59 (practice tracks),
