@@ -32,9 +32,9 @@ Card _card(
     );
 
 void main() {
-  group('parseQuery — facet pooling (byte-identical to the legacy parser)', () {
-    test('pools tag/type/tier/is operators and keeps free text', () {
-      final r = parseQuery('trees tag:ds-a is:due tier:1 type:interview');
+  group('parseQuery — facet pooling', () {
+    test('pools domain/type/tier/is operators and keeps free text', () {
+      final r = parseQuery('trees domain:ds-a is:due tier:1 type:interview');
       expect(r.text, 'trees');
       expect(r.facets.domains, {'ds-a'});
       expect(r.facets.mastery, {MasteryFilter.due});
@@ -43,13 +43,19 @@ void main() {
       expect(r.extra, isA<Everything>());
     });
 
-    test('domain: is an alias for tag:', () {
-      expect(parseQuery('domain:graphs').facets.domains, {'graphs'});
+    test('tag:/tags: are any-tag (TagIs) → extra, NOT the domain facet', () {
+      // ADR-0013 §Addendum 2: tag: is any-tag now, so it AND-s on via extra
+      // rather than pooling into the first-tag Domain facet.
+      final r = parseQuery('tag:ds-a');
+      expect(r.facets.isEmpty, isTrue);
+      expect(r.extra, isA<TagIs>());
+      expect((r.extra as TagIs).tag, 'ds-a');
+      expect(parseQuery('tags:ds-a').extra, isA<TagIs>());
     });
 
     test('same-field operators pool (union), values lowercased', () {
       expect(parseQuery('tier:1 tier:2').facets.tiers, {1, 2});
-      expect(parseQuery('tag:DS-A').facets.domains, {'ds-a'});
+      expect(parseQuery('domain:DS-A').facets.domains, {'ds-a'});
     });
 
     test('unrecognized operator → free text', () {
@@ -86,9 +92,11 @@ void main() {
       expect(r.facets.isEmpty, isTrue);
       expect(r.extra, isA<Not>());
       final inner = (r.extra as Not).q;
-      expect(inner, isA<DomainIs>());
-      expect((inner as DomainIs).domain, 'done');
+      expect(inner, isA<TagIs>()); // tag: is any-tag (ADR-0013 §Addendum 2)
+      expect((inner as TagIs).tag, 'done');
       expect(parseQuery('!type:flashcard').extra, isA<Not>());
+      // a negated first-tag domain still works too
+      expect((parseQuery('-domain:done').extra as Not).q, isA<DomainIs>());
     });
 
     test('a negated NON-operator stays free text (with its prefix)', () {

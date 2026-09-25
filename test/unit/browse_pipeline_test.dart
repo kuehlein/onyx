@@ -119,7 +119,7 @@ void main() {
     });
   });
 
-  group('DOMAIN is first-tag only (the anti-any-tag guard)', () {
+  group('DOMAIN chip + domain: are first-tag; tag:/tags: are any-tag', () {
     test('domain chip ds-a excludes tcp (ds-a is only its SECOND tag)', () {
       final r = _run(chip: const CardFilter(domains: {'ds-a'}));
       expect(r, ['bfs', 'binary-search', 'two-sum']);
@@ -127,15 +127,22 @@ void main() {
           reason: 'tcp domain = networking (tags.first)');
     });
 
-    test('tag:ds-a operator matches identically (first-tag), NOT any-tag', () {
-      expect(_run(query: 'tag:ds-a'), ['bfs', 'binary-search', 'two-sum']);
+    test('domain:ds-a operator == the chip (first-tag)', () {
+      expect(_run(query: 'domain:ds-a'), ['bfs', 'binary-search', 'two-sum']);
     });
 
-    test('domain:algorithms matches NOTHING — algorithms is never a first tag',
-        () {
-      // The exact divergence: any-tag TagIs("algorithms") would match two-sum+bfs.
-      expect(_run(query: 'domain:algorithms'), isEmpty);
-      expect(_run(query: 'tag:algorithms'), isEmpty);
+    test('tag:/tags:ds-a are ANY-tag → include tcp (ADR-0013 §Addendum 2)', () {
+      // The convention-aligned semantics: any card carrying ds-a, incl. tcp
+      // (where it's the 2nd tag).
+      expect(
+          _run(query: 'tag:ds-a'), ['bfs', 'binary-search', 'tcp', 'two-sum']);
+      expect(
+          _run(query: 'tags:ds-a'), ['bfs', 'binary-search', 'tcp', 'two-sum']);
+    });
+
+    test('domain:algorithms matches NOTHING; tag:algorithms is any-tag', () {
+      expect(_run(query: 'domain:algorithms'), isEmpty); // never a FIRST tag
+      expect(_run(query: 'tag:algorithms'), ['bfs', 'two-sum']); // any-tag
     });
   });
 

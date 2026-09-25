@@ -10,7 +10,7 @@ export '../query/card_query.dart'
 
 /// A composable set of Browse filters. An empty facet means "no constraint on
 /// this facet"; within a facet the selected values are OR'd, and facets are
-/// AND'd together. Filters set via chips and via query operators (`tag:`,
+/// AND'd together. Filters set via chips and via query operators (`domain:`,
 /// `type:`, `tier:`, `is:`) share this type and merge by union.
 class CardFilter {
   const CardFilter({
@@ -77,12 +77,12 @@ class CardFilter {
 CardQuery _anyOf(List<CardQuery> leaves) =>
     leaves.length == 1 ? leaves.single : Or(leaves);
 
-/// Parses a raw Browse query into structural [facets] (the `tag`/`type`/`tier`/`is`
-/// operators, pooled into a [CardFilter] exactly as the legacy parser did — so
-/// `chip.merge(facets)` keeps the chip+operator same-field UNION byte-identical),
-/// an [extra] `CardQuery` for the non-facet operators (`folder:`/`path:` and
-/// negated `-`/`!` leaves, AND-ed on), and the remaining free-[text]. Unrecognized
-/// or empty-value operators fall through to free text.
+/// Parses a raw Browse query into structural [facets] (the `domain:`/`type:`/
+/// `tier:`/`is:` operators, pooled into a [CardFilter] so `chip.merge(facets)`
+/// gives the chip+operator same-field UNION), an [extra] `CardQuery` for the
+/// non-facet operators (`tag:`/`tags:` any-tag, `folder:`/`path:`, and negated
+/// `-`/`!` leaves — all AND-ed on), and the remaining free-[text]. Unrecognized or
+/// empty-value operators fall through to free text.
 ///
 /// **Total** — never throws, and never builds a match-everything/‑nothing leaf
 /// from a typo (`tag:`/`folder:` with no value → free text). `OR`/`()` grouping is
@@ -147,6 +147,11 @@ CardQuery _anyOf(List<CardQuery> leaves) =>
 CardQuery? _opLeaf(String key, String val, String rawVal) {
   switch (key) {
     case 'tag':
+    case 'tags':
+      // ANY tag (ADR-0013 §Addendum 2, 2026-09-25) — the convention every
+      // mainstream tool uses (Anki/Obsidian/GitHub/Gmail). `domain:` (+ the Domain
+      // chip) is the first-tag selector.
+      return TagIs(val);
     case 'domain':
       return DomainIs(val);
     case 'type':
@@ -220,13 +225,12 @@ MasteryFilter? _parseMastery(String v) => switch (v) {
 // It is TOTAL (never throws; a typo degrades, never becomes a bogus match-all)
 // and empty → [CardQuery.everything] (the whole-vault lens).
 //
-// Tag semantics (a deliberate, documented split — the sensitive area ADR-0013's
-// adversarial pass flagged): `tag:`/`domain:` = the PRIMARY domain (first tag,
-// [DomainIs]) — identical to Browse, so `tag:` never means two things. `tags:`
-// (plural) = ANY tag ([TagIs]) — the lens-only any-tag selector, matching
-// deck_creation.md's `tags:korean` example and round-tripping the tag lenses
-// folded in at G1. Browse's [parseQuery] is untouched (no `tags:`), so this adds
-// a capability rather than changing any Browse result.
+// Tag semantics (ADR-0013 §Addendum 2, 2026-09-25 — convention-aligned after the
+// adversarial review): `tag:`/`tags:` = ANY tag ([TagIs]) — what Anki/Obsidian/
+// GitHub/Gmail all mean, and what the deck editor's simple "Tag" pick produces.
+// `domain:` = the PRIMARY domain (first tag, [DomainIs]) — the Browse "Domain"
+// chip. Shared between Browse and the lens (one operator table), so `tag:` means
+// the same thing everywhere.
 
 /// Parses the deck-lens mini-language into one [CardQuery]. See the section
 /// comment above for the grammar, totality, and tag semantics.
@@ -238,8 +242,8 @@ CardQuery parseLens(String input) =>
 /// Parens are added only where precedence needs them (an `Or` inside an `And`).
 String renderLens(CardQuery q) => switch (q) {
       Everything() => '',
-      TagIs(:final tag) => 'tags:$tag',
-      DomainIs(:final domain) => 'tag:$domain',
+      TagIs(:final tag) => 'tag:$tag',
+      DomainIs(:final domain) => 'domain:$domain',
       FolderUnder(:final path) => 'folder:$path',
       TypeIs(:final type) => 'type:$type',
       TierIs(:final tier) => 'tier:$tier',
@@ -350,7 +354,9 @@ CardQuery? _lensTerm(String tok) {
   if (i > 0 && i < tok.length - 1) {
     final key = tok.substring(0, i).toLowerCase();
     final rawVal = tok.substring(i + 1);
-    return _lensLeaf(key, rawVal.toLowerCase(), rawVal);
+    // The lens shares Browse's operator table (`_opLeaf`) — `tag:`/`tags:` any-tag,
+    // `domain:` first-tag, plus type/tier/is/folder.
+    return _opLeaf(key, rawVal.toLowerCase(), rawVal);
   }
   if (tok.endsWith('/')) {
     final f = FolderUnder(tok); // trims trailing slashes
@@ -358,9 +364,3 @@ CardQuery? _lensTerm(String tok) {
   }
   return null;
 }
-
-/// The lens operator table: `tags:` → any-tag ([TagIs]); everything else reuses
-/// the shared [_opLeaf] (`tag:`/`domain:` → [DomainIs], `type:`/`tier:`/`is:`/
-/// `folder:`/`path:`), keeping `tag:` identical to Browse.
-CardQuery? _lensLeaf(String key, String val, String rawVal) =>
-    key == 'tags' ? TagIs(val) : _opLeaf(key, val, rawVal);

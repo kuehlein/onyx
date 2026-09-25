@@ -68,19 +68,21 @@ List<String> _lens(String s) => _match(parseLens(s));
 
 void main() {
   group('parseLens — leaves', () {
-    test('tag:/domain: are first-tag (DomainIs), == Browse', () {
-      expect(parseLens('tag:ds-a'), isA<DomainIs>());
-      expect((parseLens('tag:ds-a') as DomainIs).domain, 'ds-a');
-      expect(_lens('tag:ds-a'), ['bfs', 'two-sum']); // NOT tcp (ds-a is 2nd)
-      expect(_lens('domain:ds-a'), ['bfs', 'two-sum']);
-      expect(_lens('tag:algorithms'), isEmpty); // never a first tag
-    });
-
-    test('tags: (plural) is any-tag (TagIs), lens-only', () {
+    test('tag:/tags: are any-tag (TagIs); domain: is first-tag (DomainIs)', () {
+      // ADR-0013 §Addendum 2: tag:/tags: = any-tag (the convention); domain: = the
+      // primary (first) tag.
+      expect(parseLens('tag:ds-a'), isA<TagIs>());
       expect(parseLens('tags:ds-a'), isA<TagIs>());
-      expect(_lens('tags:ds-a'), ['bfs', 'tcp', 'two-sum']); // includes tcp
-      expect(_lens('tags:algorithms'), ['bfs', 'two-sum']);
-      expect(_lens('tags:ai-infra'), ['rate-limiter']);
+      expect(parseLens('domain:ds-a'), isA<DomainIs>());
+      // any-tag ds-a → every card carrying ds-a (incl. tcp, where it's 2nd)
+      expect(_lens('tag:ds-a'), ['bfs', 'tcp', 'two-sum']);
+      expect(_lens('tags:ds-a'), ['bfs', 'tcp', 'two-sum']);
+      // first-tag ds-a → only cards whose FIRST tag is ds-a (not tcp)
+      expect(_lens('domain:ds-a'), ['bfs', 'two-sum']);
+      // algorithms is a non-first tag on two-sum + bfs
+      expect(_lens('tag:algorithms'), ['bfs', 'two-sum']);
+      expect(_lens('domain:algorithms'), isEmpty); // never a FIRST tag
+      expect(_lens('tag:ai-infra'), ['rate-limiter']);
     });
 
     test('type: / tier: / folder: / path: / is:', () {
@@ -153,8 +155,8 @@ void main() {
 
   group('renderLens — inverse of parseLens', () {
     test('leaves render to their operator', () {
-      expect(renderLens(const DomainIs('ds-a')), 'tag:ds-a');
-      expect(renderLens(TagIs('ds-a')), 'tags:ds-a');
+      expect(renderLens(TagIs('ds-a')), 'tag:ds-a');
+      expect(renderLens(const DomainIs('ds-a')), 'domain:ds-a');
       expect(renderLens(FolderUnder('graphs/')), 'folder:graphs');
       expect(renderLens(const TypeIs('flashcard')), 'type:flashcard');
       expect(renderLens(const TierIs(1)), 'tier:1');
@@ -163,9 +165,9 @@ void main() {
     });
 
     test('negation renders - for a leaf, !(...) for a group', () {
-      expect(renderLens(Not(TagIs('done'))), '-tags:done');
+      expect(renderLens(Not(TagIs('done'))), '-tag:done');
       expect(
-          renderLens(Not(Or([TagIs('a'), TagIs('b')]))), '!(tags:a OR tags:b)');
+          renderLens(Not(Or([TagIs('a'), TagIs('b')]))), '!(tag:a OR tag:b)');
     });
 
     test('an Or inside an And is parenthesized; And inside Or is not', () {

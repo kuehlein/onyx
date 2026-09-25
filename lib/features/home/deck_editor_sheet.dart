@@ -420,13 +420,13 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
                   decoration: const InputDecoration(
                     labelText: 'Query',
                     hintText:
-                        'e.g. tags:korean OR folder:korean/  -tags:archived',
+                        'e.g. tag:korean OR folder:korean/  -tag:archived',
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: Dim.space1),
                 Text(
-                  'Operators: tags: · type: · tier: · folder:  ·  '
+                  'Operators: tag: · type: · tier: · folder:  ·  '
                   'combine with OR, group with ( ), exclude with -',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

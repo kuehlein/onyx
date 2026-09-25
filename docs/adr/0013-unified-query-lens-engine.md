@@ -214,3 +214,25 @@ lens **`TextMatches`** membership stays **deferred** (fuzzy/derived membership f
 readiness depends on). **Sequencing:** **G3.0** recursive parser + text renderer (+ fuzz) → **G3.1** `stripDynamic` +
 Browse save-as-deck + the deck-editor complex-lens text form → **G3.2** the scoped explorer (live N/M) + lens
 suggestions.
+
+## Addendum 2 — `tag:` reversed to any-tag (2026-09-25, post-adversarial review)
+
+A six-agent adversarial pass over the finished G0–G4 work (with web research) flagged the earlier tag decision as
+a **footgun that inverts universal convention**. Anki, Obsidian, GitHub, and Gmail all treat `tag:` / `label:` as
+**any-tag** membership; none has a "primary/first tag" notion. Our earlier "`tag:` = first tag (`DomainIs`)" was
+non-conventional **and** internally inconsistent — the deck editor's simple "Tag" pick already produced any-tag
+(`TagIs`), so the same word meant two different things in one sheet.
+
+**Reversed (supersedes Addendum 1's tag paragraph):** `tag:` **and** `tags:` → **any-tag (`TagIs`)** — the
+convention, and consistent with the "Tag" pick + the tag lenses folded in at G1. **`domain:`** → the **first tag
+(`DomainIs`)** — the Browse "Domain" chip's selector. One shared operator table (`_opLeaf`) backs Browse and the lens,
+so `tag:` means the same thing everywhere. In `parseQuery`, `tag:`/`tags:` now AND-on via `extra` (they're not the
+first-tag Domain facet); the Domain chip + `domain:` still pool into the Domain facet. `renderLens`: `TagIs` → `tag:`,
+`DomainIs` → `domain:`. The `DomainIs` **leaf** is unchanged (first-tag == `tags.first`); only its operator surface
+moved. Now that the G2b byte-identical migration is proven complete, this is a **deliberate** Browse behavior change —
+the pipeline goldens (`browse_pipeline_test`) were updated to the any-tag results, not preserved.
+
+The same review's other fixes ride alongside (not ADR-level): value **quoting** in `renderLens`/the tokenizer (so a
+lens value with spaces round-trips); `stripDynamic` dropping a whole `Not` whose subtree is dynamic (it could
+otherwise *narrow*); `stripDynamic` applied on **load** (`Deck.fromJson`), not just save; split Tag/Folder editor
+controllers; and save-as-deck / advanced-field feedback for the no-op-clone and fail-open-widen cases.

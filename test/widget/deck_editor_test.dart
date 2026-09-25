@@ -189,7 +189,7 @@ void main() {
     // The lens the radio can't express opens in the Advanced text field, filled
     // with its rendered query (name field is .first, the Query field is .last).
     final advanced = tester.widget<TextField>(find.byType(TextField).last);
-    expect(advanced.controller!.text, 'tags:korean type:flashcard');
+    expect(advanced.controller!.text, 'tag:korean type:flashcard');
 
     await tester.enterText(find.byType(TextField).first, 'Korean flashcards');
     await tester.pump();
@@ -198,7 +198,7 @@ void main() {
 
     // Round-trips through parseLens on save (structurally identical).
     expect(cap.upserted, isNotNull);
-    expect(renderLens(cap.upserted!.membership), 'tags:korean type:flashcard');
+    expect(renderLens(cap.upserted!.membership), 'tag:korean type:flashcard');
   });
 
   testWidgets('a StateIs in the lens is stripped on save (structural only)',
