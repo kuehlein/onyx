@@ -131,23 +131,24 @@ class FolderUnder extends CardQuery {
 }
 
 /// Cards whose PRIMARY domain (`card.domain` = the first tag) is [domain]. This is
-/// the Browse "Domain" facet + the `tag:`/`domain:` operator — deliberately
-/// first-tag, NOT any-tag (`TagIs`): the vault is full of multi-tag cards, so
-/// matching any tag would silently widen the filter (ADR-0013 §Addendum).
+/// the Browse "Domain" facet + the `domain:` operator — deliberately first-tag, NOT
+/// any-tag (`TagIs`, `tag:`/`tags:`): the vault is full of multi-tag cards, so
+/// matching any tag would silently widen the filter (ADR-0013 §Addendum 2).
 ///
-/// Comparison is raw `==` (no normalization inside the leaf) to stay byte-identical
-/// with the legacy `matchesFilter`: the `tag:`/`domain:` operator lowercases its
-/// value while the Domain chip passes it raw — exactly as before. Vault domains are
-/// lowercase in practice, so the asymmetry never bites; a consistent
-/// case-insensitive normalization is a deferred hardening (it would change results,
-/// so it's out of the byte-identical G2b slice).
+/// The match is **case-insensitive** (like [TagIs]) — so it doesn't matter that the
+/// `domain:` operator lowercases its value while the Domain chip passes it raw, and
+/// a rendered `domain:Graphs` re-parses to the same member set. (Vault domains are
+/// lowercase in practice, so this is byte-identical for the shipped content; it only
+/// matters once a card's first tag is mixed-case, where raw `==` used to corrupt the
+/// member set on a renderLens→parseLens round-trip — the post-review fix.)
 class DomainIs extends CardQuery {
   const DomainIs(this.domain);
 
   final String domain;
 
   @override
-  bool matches(Card card, [QueryContext? ctx]) => card.domain == domain;
+  bool matches(Card card, [QueryContext? ctx]) =>
+      card.domain?.toLowerCase() == domain.toLowerCase();
 
   @override
   Map<String, dynamic> toJson() => {'kind': 'domain', 'value': domain};

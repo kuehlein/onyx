@@ -143,7 +143,8 @@ CardQuery _anyOf(List<CardQuery> leaves) =>
 
 /// The leaf for a `key:value` operator, or null if unrecognized / invalid. [val]
 /// is lowercased; [rawVal] keeps case for the path leaf (`filePath` is
-/// case-sensitive). Domain/tag both map to the first-tag [DomainIs] (ADR-0013).
+/// case-sensitive). `tag:`/`tags:` → any-tag [TagIs]; `domain:` → first-tag
+/// [DomainIs] (ADR-0013 §Addendum 2).
 CardQuery? _opLeaf(String key, String val, String rawVal) {
   switch (key) {
     case 'tag':

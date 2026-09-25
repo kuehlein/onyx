@@ -85,6 +85,19 @@ void main() {
       expect(_lens('tag:ai-infra'), ['rate-limiter']);
     });
 
+    test('domain: is case-insensitive (mixed-case first tag round-trips)', () {
+      // Regression: raw `==` corrupted the member set on a renderLens→parseLens
+      // round-trip (`domain:Graphs` → DomainIs('graphs') matched different cards).
+      final mixed = _c('gx', type: 'flashcard', tags: ['Graphs']);
+      expect(parseLens('domain:graphs').matches(mixed, _ctx), isTrue);
+      expect(parseLens('domain:Graphs').matches(mixed, _ctx), isTrue);
+      expect(const DomainIs('GRAPHS').matches(mixed), isTrue);
+      // render → parse preserves the match.
+      expect(
+          parseLens(renderLens(const DomainIs('Graphs'))).matches(mixed, _ctx),
+          isTrue);
+    });
+
     test('type: / tier: / folder: / path: / is:', () {
       expect(_lens('type:flashcard'), ['bfs', 'tcp']);
       expect(_lens('type:interview'), ['two-sum']); // alias
