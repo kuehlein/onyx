@@ -444,8 +444,18 @@ The MVP-tagged stories, cloud still absent:
     (out-of-app apply/register orientation — a deliberate identity decision the SoT currently fences) and
     the **artifact-flow generalization** (the STAR "bank" is n=1; generalize `FlowSpec.produces` only
     when a 2nd artifact-flow appears).
-- The daily loop + Aims + readiness end-to-end for one deck *and* several; the three on-ramps
-  (existing lens / create cards / pull); light authoring; deck-scoped Browse/Analytics/Settings.
+- **Daily loop + Aims + readiness end-to-end — ✅ VERIFIED (2026-09-25).** A read-only audit found every
+  journey WIRED (0 bugs); the gap was no full-journey integration coverage, now filled by a live
+  in-memory-DB widget harness (`pumpLiveApp`) + a temp-dir on-ramp harness:
+  - **E1** live harness (real in-mem DB; srs/queues/plan/readiness derive, not stubbed).
+  - **E2** daily loop, one deck: Home → learn → grade → **persists to DB** → Home **recomputes** (flow clears).
+  - **E3** multi-deck: ≥2 decks → lanes hub → focus → study **scoped** to the deck (deck.select through the UI).
+  - **E5** deck-scoped **Browse + Insights**; an aim on the deck → Home "Your target" (aim→readiness surface).
+  - **E4** on-ramps (real temp-dir vault + indexer, ProviderContainer): **create-card** → reindex → studyable;
+    **import → draft → promote** → studyable (drafts excluded until promoted). *(A pumped-widget FS harness was
+    tried + dropped — real IO doesn't advance under pumpAndSettle; the container pattern is the right tool.)*
+  - Suite 857 → **1161**. Remaining sub-items below (light-authoring UI + the pull/registry UI are unit-covered;
+    their deeper widget journeys are optional follow-ups).
 - **Feature calls — decided 2026-09-25** (survey: none was cleanly Accepted; each needed a call):
   - **#22 quiz/session customization — ❌ DROPPED.** A per-session domain/mix override contradicts
     [ADR-0010](adr/0010-workload-budget-and-proportions.md)/[0011](adr/0011-load-control-auto-mix-propose-size.md):
