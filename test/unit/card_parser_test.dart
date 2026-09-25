@@ -173,6 +173,56 @@ a
 b
 ''';
 
+/// `quizzable: false` — the per-card DENY: stop testing the whole card, over
+/// both the flow policy and the `quiz:` allowlist (ADR-0012 §5).
+const _denyCard = '''
+---
+id: 66666666-6666-4666-8666-666666666666
+type: flashcard
+tags: [ds-a]
+quizzable: false
+quiz:
+  - when-to-use
+created: 2026-08-19
+---
+
+# Deny Test
+
+o
+
+## When to Use
+
+a
+
+## Key Properties
+
+b
+''';
+
+/// `quizzable: true` is a no-op for MVP — sections still follow the flow policy
+/// (here: the concept blocklist), NOT force-opened.
+const _quizzableTrueCard = '''
+---
+id: 77777777-7777-4777-8777-777777777777
+type: flashcard
+tags: [ds-a]
+quizzable: true
+created: 2026-08-19
+---
+
+# Quizzable True Test
+
+o
+
+## When to Use
+
+a
+
+## Resources
+
+b
+''';
+
 void main() {
   group('CardParser.slugify', () {
     test('collapses non-alphanumerics to single hyphens', () {
@@ -291,6 +341,27 @@ void main() {
       final card = _parser.parse(_overrideCard, filePath: 'o.md')!;
       expect(card.quizOverride, ['when-to-use']);
       expect(card.quizzableSections.map((s) => s.slug), ['when-to-use']);
+    });
+  });
+
+  group('per-card quizzable override (ADR-0012 §5)', () {
+    test('quizzable:false denies every section (over policy AND allowlist)',
+        () {
+      final card = _parser.parse(_denyCard, filePath: 'd.md')!;
+      // Even though `quiz: [when-to-use]` allowlists a section and the concept
+      // policy would quiz it, the card-level DENY wins: nothing is quizzable.
+      expect(card.sections.every((s) => !s.quizzable), isTrue);
+      expect(card.quizzableSections, isEmpty);
+    });
+
+    test('quizzable:true is a no-op — sections still follow the flow policy',
+        () {
+      final card = _parser.parse(_quizzableTrueCard, filePath: 't.md')!;
+      final byHeading = {for (final s in card.sections) s.heading: s.quizzable};
+      // Policy unchanged: a normal section is quizzable, a blocklisted one is not
+      // (quizzable:true must NOT force-open 'Resources').
+      expect(byHeading['When to Use'], isTrue);
+      expect(byHeading['Resources'], isFalse);
     });
   });
 

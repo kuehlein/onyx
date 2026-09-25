@@ -130,9 +130,19 @@ class CardParser {
     }
 
     final quizOverride = _stringList(frontmatter['quiz']);
+    // Per-card quizzability override (ADR-0012 §5). `quizzable: false` is a DENY
+    // that stops testing the WHOLE card — top precedence over the `quiz:`
+    // allowlist and the flow policy (the explicit "stop testing this" action).
+    // `quizzable: true` is a deliberate no-op for MVP: it must NOT re-open
+    // sections the allowlist/policy excluded, which would silently move an
+    // existing deck's study set; the editable open-set defers to #84.
+    final cardQuizzable = frontmatter['quizzable'] is bool
+        ? frontmatter['quizzable'] as bool
+        : null;
     final sections = [
       for (final raw in rawSections)
-        _buildSection(raw.heading, raw.content, subject, type, quizOverride),
+        _buildSection(raw.heading, raw.content, subject, type, quizOverride,
+            cardQuizzable),
     ];
 
     return Card(
@@ -181,10 +191,15 @@ class CardParser {
     DeckTemplate subject,
     String type,
     List<String>? quizOverride,
+    bool? cardQuizzable,
   ) {
     final slug = slugify(heading);
     final bool quizzable;
-    if (quizOverride != null && quizOverride.isNotEmpty) {
+    if (cardQuizzable == false) {
+      // Per-card DENY (`quizzable: false`) — top precedence: stop testing every
+      // section, over the allowlist and the flow policy (ADR-0012 §5).
+      quizzable = false;
+    } else if (quizOverride != null && quizOverride.isNotEmpty) {
       quizzable = quizOverride.contains(slug);
     } else {
       // Which sections are quizzable is the flow's policy (task #30 Phase 3),
