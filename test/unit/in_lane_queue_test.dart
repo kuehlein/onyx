@@ -73,7 +73,7 @@ void main() {
       id: 'alpha',
       name: 'Alpha',
       templateId: 'software-interviews',
-      membership: FolderMembership('alpha'),
+      membership: FolderUnder('alpha'),
     ));
     addTearDown(c.dispose);
     c.listen(learnQueueProvider, (_, __) {});
@@ -90,7 +90,7 @@ void main() {
       id: 'beta',
       name: 'Beta',
       templateId: 'software-interviews',
-      membership: FolderMembership('beta'),
+      membership: FolderUnder('beta'),
     ));
     addTearDown(c.dispose);
     c.listen(learnQueueProvider, (_, __) {});

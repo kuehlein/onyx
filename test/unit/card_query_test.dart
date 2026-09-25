@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/deck/membership_query.dart';
+import 'package:onyx/core/query/card_query.dart';
 import 'package:onyx/core/vault/card_parser.dart';
 import 'package:onyx/shared/models/card.dart';
 
-/// A goal's member-selection is the "lens over the vault" that decides which
-/// cards a goal studies — and every readiness denominator downstream. A wrong
-/// `startsWith` or a bad fromJson fallback silently changes the study set, so
+/// The `CardQuery` IR (ADR-0013) is the lens over the vault that decides which
+/// cards a deck studies — and every readiness denominator downstream. A wrong
+/// `startsWith` or a bad `fromJson` fallback silently changes the study set, so
 /// these pin the pure selector logic directly. Cards are built through the real
-/// [CardParser] so `tags`/`filePath` are exactly what the app sees.
+/// [CardParser] so `tags`/`filePath` are exactly what the app sees. (This is the
+/// former `membership_query_test`, moved onto the folded-in IR in G1.)
 
 const _parser = CardParser();
 
@@ -19,9 +20,9 @@ Card _card({List<String> tags = const [], String path = 'note.md'}) {
 }
 
 void main() {
-  group('TagMembership', () {
+  group('TagIs', () {
     test('matches a card carrying the tag, ignoring case and a leading #', () {
-      final q = TagMembership('#DS-A');
+      final q = TagIs('#DS-A');
       expect(q.tag, 'ds-a', reason: 'normalized: lowercased, no leading #');
       expect(q.matches(_card(tags: ['ds-a'])), isTrue);
       expect(q.matches(_card(tags: ['DS-A'])), isTrue);
@@ -31,9 +32,9 @@ void main() {
     });
   });
 
-  group('FolderMembership', () {
+  group('FolderUnder', () {
     test('matches the subtree and an exact file, but NOT a sibling prefix', () {
-      final q = FolderMembership('ds-a');
+      final q = FolderUnder('ds-a');
       expect(q.matches(_card(path: 'ds-a/trees.md')), isTrue, reason: 'child');
       expect(q.matches(_card(path: 'ds-a/graphs/dfs.md')), isTrue,
           reason: 'deep child');
@@ -45,26 +46,26 @@ void main() {
     });
 
     test('an exact file path matches itself', () {
-      final q = FolderMembership('ds-a/trees.md');
+      final q = FolderUnder('ds-a/trees.md');
       expect(q.matches(_card(path: 'ds-a/trees.md')), isTrue);
       expect(q.matches(_card(path: 'ds-a/graphs.md')), isFalse);
     });
 
     test('trailing slashes are trimmed from the path', () {
-      expect(FolderMembership('ds-a/').path, 'ds-a');
-      expect(FolderMembership('ds-a///').path, 'ds-a');
+      expect(FolderUnder('ds-a/').path, 'ds-a');
+      expect(FolderUnder('ds-a///').path, 'ds-a');
     });
 
     test('an empty path matches everything (whole vault)', () {
-      final q = FolderMembership('');
+      final q = FolderUnder('');
       expect(q.matches(_card(path: 'anything/deep/here.md')), isTrue);
       expect(q.matches(_card(path: 'root.md')), isTrue);
     });
   });
 
-  group('AllCards', () {
+  group('Everything', () {
     test('matches every card', () {
-      const q = AllCards();
+      const q = Everything();
       expect(q.matches(_card()), isTrue);
       expect(q.matches(_card(tags: ['x'], path: 'a/b.md')), isTrue);
     });
@@ -72,37 +73,44 @@ void main() {
 
   group('fromJson', () {
     test('round-trips tag / folder / all', () {
-      final tag = MembershipQuery.fromJson({'kind': 'tag', 'value': 'ds-a'});
-      expect(tag, isA<TagMembership>());
-      expect((tag as TagMembership).tag, 'ds-a');
+      final tag = CardQuery.fromJson({'kind': 'tag', 'value': 'ds-a'});
+      expect(tag, isA<TagIs>());
+      expect((tag as TagIs).tag, 'ds-a');
 
-      final folder =
-          MembershipQuery.fromJson({'kind': 'folder', 'value': 'a/b'});
-      expect(folder, isA<FolderMembership>());
-      expect((folder as FolderMembership).path, 'a/b');
+      final folder = CardQuery.fromJson({'kind': 'folder', 'value': 'a/b'});
+      expect(folder, isA<FolderUnder>());
+      expect((folder as FolderUnder).path, 'a/b');
 
-      expect(MembershipQuery.fromJson({'kind': 'all'}), isA<AllCards>());
+      expect(CardQuery.fromJson({'kind': 'all'}), isA<Everything>());
     });
 
     test(
-        'unknown/malformed kind falls back to AllCards (never selects nothing)',
+        'unknown/malformed kind falls back to Everything (never selects nothing)',
         () {
-      expect(MembershipQuery.fromJson({'kind': 'bogus'}), isA<AllCards>());
-      expect(MembershipQuery.fromJson(const {}), isA<AllCards>());
+      expect(CardQuery.fromJson({'kind': 'bogus'}), isA<Everything>());
+      expect(CardQuery.fromJson(const {}), isA<Everything>());
       // A missing value coerces to '' rather than throwing.
-      expect(MembershipQuery.fromJson({'kind': 'tag'}), isA<TagMembership>());
-      expect(MembershipQuery.fromJson({'kind': 'folder'}),
-          isA<FolderMembership>());
+      expect(CardQuery.fromJson({'kind': 'tag'}), isA<TagIs>());
+      expect(CardQuery.fromJson({'kind': 'folder'}), isA<FolderUnder>());
     });
 
     test('toJson/fromJson is stable across a round-trip', () {
       for (final q in [
-        const AllCards(),
-        TagMembership('ds-a'),
-        FolderMembership('a/b'),
+        const Everything(),
+        TagIs('ds-a'),
+        FolderUnder('a/b'),
       ]) {
-        expect(MembershipQuery.fromJson(q.toJson()).toJson(), q.toJson());
+        expect(CardQuery.fromJson(q.toJson()).toJson(), q.toJson());
       }
+    });
+
+    test('writes the LEGACY JSON shape (existing decks unchanged on re-save)',
+        () {
+      // The three folded-in kinds serialize byte-for-byte as before the G1 fold,
+      // so a saved deck's `_meta` JSON doesn't churn when Onyx rewrites it.
+      expect(const Everything().toJson(), {'kind': 'all'});
+      expect(TagIs('#DS-A').toJson(), {'kind': 'tag', 'value': 'ds-a'});
+      expect(FolderUnder('a/b/').toJson(), {'kind': 'folder', 'value': 'a/b'});
     });
   });
 }

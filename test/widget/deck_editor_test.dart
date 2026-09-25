@@ -63,7 +63,7 @@ void main() {
     expect(cap.upserted, isNotNull);
     expect(cap.upserted!.name, 'Korean');
     expect(cap.upserted!.id, 'korean');
-    expect(cap.upserted!.membership, isA<TagMembership>());
+    expect(cap.upserted!.membership, isA<TagIs>());
   });
 
   testWidgets('editing a deck preserves its aims + knobs (no data loss)',

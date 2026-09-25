@@ -38,27 +38,27 @@ void main() {
     _card('d', path: 'Math/Calculus/101/limits.md'),
   ];
 
-  group('MembershipQuery', () {
-    test('AllCards selects everything', () {
-      expect(const AllCards().matches(cards.first), isTrue);
+  group('CardQuery', () {
+    test('Everything selects everything', () {
+      expect(const Everything().matches(cards.first), isTrue);
     });
 
-    test('TagMembership is cross-cutting and case/# insensitive', () {
-      final q = TagMembership('#Scripture');
+    test('TagIs is cross-cutting and case/# insensitive', () {
+      final q = TagIs('#Scripture');
       final members = cards.where(q.matches).map((c) => c.id).toList();
       // Gathers scattered cards across folders, ignoring structure.
       expect(members, ['a', 'c']);
-      expect(TagMembership('history').matches(cards[1]), isTrue);
+      expect(TagIs('history').matches(cards[1]), isTrue);
     });
 
-    test('FolderMembership scopes to a subtree', () {
-      expect(FolderMembership('Math/Calculus').matches(cards[3]), isTrue);
-      expect(FolderMembership('Math/Calculus/101').matches(cards[3]), isTrue);
-      expect(FolderMembership('Bible').matches(cards[3]), isFalse);
+    test('FolderUnder scopes to a subtree', () {
+      expect(FolderUnder('Math/Calculus').matches(cards[3]), isTrue);
+      expect(FolderUnder('Math/Calculus/101').matches(cards[3]), isTrue);
+      expect(FolderUnder('Bible').matches(cards[3]), isFalse);
       // A folder prefix must be a path boundary, not a substring.
-      expect(FolderMembership('Math/Calc').matches(cards[3]), isFalse);
+      expect(FolderUnder('Math/Calc').matches(cards[3]), isFalse);
       // Empty path matches all.
-      expect(FolderMembership('').matches(cards[3]), isTrue);
+      expect(FolderUnder('').matches(cards[3]), isTrue);
     });
   });
 
@@ -68,7 +68,7 @@ void main() {
         id: 'debate',
         name: 'Saints debate',
         templateId: 'demo',
-        membership: TagMembership('scripture'),
+        membership: TagIs('scripture'),
       );
       expect(goal.select(cards).map((c) => c.id), ['a', 'c']);
       expect(goal.isActive, isTrue);
@@ -78,7 +78,7 @@ void main() {
       final goal = defaultDeckFor(_template);
       expect(goal.id, defaultDeckId);
       expect(goal.templateId, 'demo');
-      expect(goal.membership, isA<AllCards>());
+      expect(goal.membership, isA<Everything>());
       expect(goal.select(cards).length, cards.length);
     });
 

@@ -149,7 +149,7 @@ void main() {
         id: 'dsa',
         name: 'DSA',
         templateId: 'swe',
-        membership: TagMembership('ds-a'),
+        membership: TagIs('ds-a'),
       )
     ]);
     addTearDown(c.dispose);
@@ -169,7 +169,7 @@ void main() {
         id: 'dsa',
         name: 'DSA',
         templateId: 'swe',
-        membership: TagMembership('ds-a'),
+        membership: TagIs('ds-a'),
       ),
     ]);
     addTearDown(c.dispose);
@@ -325,15 +325,12 @@ void main() {
         statesOverride: twoDeckStates,
         goals: [
           Deck(
-              id: 'a',
-              name: 'A',
-              templateId: 'swe',
-              membership: TagMembership('ds-a')),
+              id: 'a', name: 'A', templateId: 'swe', membership: TagIs('ds-a')),
           Deck(
               id: 'b',
               name: 'B',
               templateId: 'swe',
-              membership: TagMembership('system-design')),
+              membership: TagIs('system-design')),
         ]);
     addTearDown(c.dispose);
 

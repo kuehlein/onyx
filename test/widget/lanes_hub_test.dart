@@ -23,7 +23,7 @@ void main() {
     id: 'korean',
     name: 'Korean',
     templateId: 'korean',
-    membership: TagMembership('korean'),
+    membership: TagIs('korean'),
   );
   const cs = Deck(id: 'cs', name: 'CS interview', templateId: 'swe');
 

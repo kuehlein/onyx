@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../../shared/models/card.dart';
-import '../deck/membership_query.dart';
+import '../query/card_query.dart';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
@@ -67,7 +67,7 @@ Future<DeckManifest> buildFolderDeck({
   required String author,
   String? license,
 }) {
-  final lens = FolderMembership(folder);
+  final lens = FolderUnder(folder);
   return buildDeckManifest(
     source: source,
     deckId: deckId,

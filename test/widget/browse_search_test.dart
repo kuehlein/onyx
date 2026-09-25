@@ -63,7 +63,7 @@ void main() {
             id: 'dsa',
             name: 'DSA',
             templateId: 't',
-            membership: TagMembership('ds-a'))));
+            membership: TagIs('ds-a'))));
     await tester.pumpAndSettle();
 
     expect(find.text('Binary Search'), findsOneWidget);

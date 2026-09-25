@@ -38,16 +38,16 @@ class _FakeSource implements VaultSource {
 void main() {
   group('serialization round-trip', () {
     test('membership queries survive JSON', () {
-      for (final q in <MembershipQuery>[
-        const AllCards(),
-        TagMembership('#Scripture'),
-        FolderMembership('Math/Calculus/101'),
+      for (final q in <CardQuery>[
+        const Everything(),
+        TagIs('#Scripture'),
+        FolderUnder('Math/Calculus/101'),
       ]) {
-        final back = MembershipQuery.fromJson(q.toJson());
+        final back = CardQuery.fromJson(q.toJson());
         expect(back.toJson(), q.toJson());
       }
-      // Unknown kind is a safe AllCards.
-      expect(MembershipQuery.fromJson({'kind': 'zzz'}), isA<AllCards>());
+      // Unknown kind is a safe Everything.
+      expect(CardQuery.fromJson({'kind': 'zzz'}), isA<Everything>());
     });
 
     test('a full study goal survives JSON', () {
@@ -55,7 +55,7 @@ void main() {
         id: 'debate',
         name: 'Saints debate',
         templateId: 'orthodoxy',
-        membership: TagMembership('intercession'),
+        membership: TagIs('intercession'),
         budgetWeight: 0.4,
         state: DeckState.paused,
         // Post-S5 the target lives on the aim, not deck slots.
@@ -85,12 +85,12 @@ void main() {
             id: 'korean',
             name: 'Korean',
             templateId: 'korean',
-            membership: FolderMembership('korean')),
+            membership: FolderUnder('korean')),
       ];
       await store.save(goals);
       final back = await store.load();
       expect(back.single.id, 'korean');
-      expect(back.single.membership, isA<FolderMembership>());
+      expect(back.single.membership, isA<FolderUnder>());
 
       src.meta[DeckStore.fileName] = '{not json';
       expect(await store.load(), isEmpty);
@@ -149,7 +149,7 @@ void main() {
         id: 'korean',
         name: 'Korean',
         templateId: 'korean',
-        membership: FolderMembership('korean'),
+        membership: FolderUnder('korean'),
       );
       final src = _FakeSource({
         DeckStore.fileName: jsonEncode([
@@ -173,7 +173,7 @@ void main() {
         id: 'korean',
         name: 'Korean',
         templateId: 'korean',
-        membership: FolderMembership('korean'),
+        membership: FolderUnder('korean'),
         state: DeckState.graduated,
       );
       final src = _FakeSource({

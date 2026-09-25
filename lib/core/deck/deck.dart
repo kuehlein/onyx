@@ -10,12 +10,12 @@
 library;
 
 import '../../shared/models/card.dart';
+import '../query/card_query.dart';
 import '../template/deck_template.dart';
 import 'aim.dart';
-import 'membership_query.dart';
 
 export 'aim.dart';
-export 'membership_query.dart';
+export '../query/card_query.dart';
 
 /// Where a goal sits in its lifecycle. Only [active] goals draw from the daily
 /// budget; [paused] keeps state but drops out of the plan; [graduated] is
@@ -28,7 +28,7 @@ class Deck {
     required this.id,
     required this.name,
     required this.templateId,
-    this.membership = const AllCards(),
+    this.membership = CardQuery.everything,
     this.budgetWeight = 1.0,
     this.state = DeckState.active,
     this.aims = const [],
@@ -45,7 +45,7 @@ class Deck {
   final String templateId;
 
   /// The card selector — what makes this goal a lens over the vault.
-  final MembershipQuery membership;
+  final CardQuery membership;
 
   /// Relative share of the daily budget among active goals (renormalized across
   /// the active set; see G4).
@@ -128,9 +128,8 @@ class Deck {
       name: m['name'] is String ? m['name'] as String : id,
       templateId: m['templateId'] is String ? m['templateId'] as String : '',
       membership: m['membership'] is Map
-          ? MembershipQuery.fromJson(
-              (m['membership'] as Map).cast<String, dynamic>())
-          : const AllCards(),
+          ? CardQuery.fromJson((m['membership'] as Map).cast<String, dynamic>())
+          : CardQuery.everything,
       budgetWeight: m['budgetWeight'] is num
           ? (m['budgetWeight'] as num).toDouble()
           : 1.0,
@@ -145,7 +144,7 @@ class Deck {
   Deck copyWith({
     String? name,
     String? templateId,
-    MembershipQuery? membership,
+    CardQuery? membership,
     double? budgetWeight,
     DeckState? state,
     List<Aim>? aims,
@@ -171,7 +170,7 @@ Deck defaultDeckFor(DeckTemplate template) => Deck(
       id: defaultDeckId,
       name: template.id,
       templateId: template.id,
-      membership: const AllCards(),
+      membership: CardQuery.everything,
     );
 
 /// A non-empty string, or null — coerces both a wrong type and an empty string to

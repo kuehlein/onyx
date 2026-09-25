@@ -28,8 +28,8 @@ class _GoalsManagerSheet extends ConsumerWidget {
   const _GoalsManagerSheet();
 
   static String _membership(Deck g) => switch (g.membership) {
-        TagMembership(:final tag) => '#$tag',
-        FolderMembership(:final path) => '$path/',
+        TagIs(:final tag) => '#$tag',
+        FolderUnder(:final path) => '$path/',
         _ => 'Whole vault',
       };
 
@@ -87,14 +87,14 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       TextEditingController(text: widget.goal?.name ?? '');
   late final TextEditingController _value = TextEditingController(
       text: switch (widget.goal?.membership) {
-    TagMembership(:final tag) => tag,
-    FolderMembership(:final path) => path,
+    TagIs(:final tag) => tag,
+    FolderUnder(:final path) => path,
     _ => '',
   });
   late String? _templateId = widget.goal?.templateId;
   late _Kind _kind = switch (widget.goal?.membership) {
-    TagMembership() => _Kind.tag,
-    FolderMembership() => _Kind.folder,
+    TagIs() => _Kind.tag,
+    FolderUnder() => _Kind.folder,
     _ => _Kind.all,
   };
   late double _weight = widget.goal?.budgetWeight ?? 1.0;
@@ -119,9 +119,9 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
     final name = _name.text.trim();
     final value = _value.text.trim();
     final membership = switch (_kind) {
-      _Kind.all => const AllCards(),
-      _Kind.tag => TagMembership(value),
-      _Kind.folder => FolderMembership(value),
+      _Kind.all => CardQuery.everything,
+      _Kind.tag => TagIs(value),
+      _Kind.folder => FolderUnder(value),
     };
     final existing = widget.goal;
     // Editing must PRESERVE everything not on this form — the deck's aims and its
