@@ -39,3 +39,5 @@ belong in code comments + the PR description, not an ADR.
 | [0010](0010-workload-budget-and-proportions.md) | Study workload: user sets budget + proportions; the engine derives the mix | Accepted |
 | [0011](0011-load-control-auto-mix-propose-size.md) | Load control: the engine auto-adjusts the mix; it proposes (never auto-writes) the size | Accepted |
 | [0012](0012-card-model-shared-components.md) | Card model: a shared component layer (not a mode-widget), quizzability precedence, edit-identity | Accepted |
+| [0013](0013-unified-query-lens-engine.md) | One query/lens engine: Browse filters == deck membership | Accepted |
+| [0014](0014-fsrs-tuning-retention-knob-learn-easy-optimizer.md) | FSRS tuning (#32): global retention knob, guarded Learn-Easy, deferred optimizer | Accepted |
