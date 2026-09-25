@@ -1,5 +1,11 @@
 import 'package:fsrs/fsrs.dart' as fsrs;
 
+/// Learn's guarded-Easy cap (n0014): a NEW card graded Easy is limited to this
+/// multiple of what Good would seed the same fresh card. FSRS's native Easy seeds a
+/// ~15-day first interval — unearned for a just-seen card — so an already-known card
+/// skips ahead only "a bit longer than Good," not weeks. Review mode is uncapped.
+const learnEasyMaxIntervalFactor = 2.0;
+
 /// The outcome of reviewing a section: the new persisted FSRS state plus the
 /// values to append to the review log. Times are UTC.
 class ReviewOutcome {
@@ -84,10 +90,17 @@ class SrsScheduler {
   /// reviewed for the first time. [reviewedAt] is coerced to UTC.
   /// [desiredRetention] shortens/lengthens intervals for higher/lower-priority
   /// material (default 0.9).
+  ///
+  /// [newCardMaxEasyFactor] guards Learn's Easy (n0014): for a NEW card graded Easy
+  /// it caps the first interval at that multiple of what Good would seed the same
+  /// fresh card, by scaling the seeded stability (interval ∝ stability, so state
+  /// stays self-consistent — no due-date hacking). Null (Review's default) = native
+  /// FSRS. Good/Hard sit at or below their own value, so they're never clipped.
   ReviewOutcome review({
     required int grade,
     required DateTime reviewedAt,
     double desiredRetention = _defaultRetention,
+    double? newCardMaxEasyFactor,
     double? stability,
     double? difficulty,
     int? state,
@@ -121,12 +134,31 @@ class SrsScheduler {
     );
     final updated = result.card;
 
+    var outcomeStability = updated.stability ?? 0;
+    var outcomeDue = updated.due;
+    // Guarded Learn-Easy (n0014): cap a NEW Easy first interval at the factor × what
+    // Good would seed this same fresh card. interval ∝ stability, so scaling the
+    // stability by the same ratio keeps stability and due mutually consistent.
+    if (isNew && newCardMaxEasyFactor != null && grade >= 4) {
+      final good = _for(desiredRetention)
+          .reviewCard(fsrs.Card(cardId: 0), fsrs.Rating.good,
+              reviewDateTime: now)
+          .card;
+      final cap = good.due.difference(now) * newCardMaxEasyFactor;
+      final easyInterval = outcomeDue.difference(now);
+      if (easyInterval > cap && easyInterval.inSeconds > 0) {
+        outcomeStability =
+            outcomeStability * (cap.inSeconds / easyInterval.inSeconds);
+        outcomeDue = now.add(cap);
+      }
+    }
+
     return ReviewOutcome(
-      stability: updated.stability ?? 0,
+      stability: outcomeStability,
       difficulty: updated.difficulty ?? 0,
       state: updated.state.value,
       step: updated.step,
-      due: updated.due,
+      due: outcomeDue,
       lastReview: updated.lastReview ?? now,
       elapsedDays: elapsedDays,
     );

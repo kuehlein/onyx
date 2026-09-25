@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';
 import '../../core/srs/learn_queue.dart';
+import '../../core/srs/srs_scheduler.dart' show learnEasyMaxIntervalFactor;
 import '../../core/template/study_policy.dart'
     show retentionDefault, retentionForPriority;
 import '../models/card.dart';
@@ -149,6 +150,9 @@ class LearnSession extends _$LearnSession {
         grade: grade,
         reviewedAt: clock.now(),
         desiredRetention: retention,
+        // Guard first-exposure Easy so an already-known card skips ahead without
+        // FSRS's unearned ~15-day jump (n0014).
+        newCardMaxEasyFactor: learnEasyMaxIntervalFactor,
       );
       await repo.seedState(
         cardId: item.card.id,

@@ -232,8 +232,8 @@ class _LearnView extends StatelessWidget {
 }
 
 /// Reveal before attempting; after, a grade bar. Again/Hard re-study this
-/// session; Good graduates the section into review. Easy is deliberately absent
-/// in Learn — see [learnGrades].
+/// session; Good/Easy graduate the section into review. Easy is offered but the
+/// scheduler caps a new card's Easy interval (n0014) — see [learnGrades].
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.revealed,

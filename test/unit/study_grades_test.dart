@@ -9,16 +9,16 @@ void main() {
           studyGrades.map((g) => g.label), ['Again', 'Hard', 'Good', 'Easy']);
     });
 
-    test(
-        'Learn excludes Easy — a first-seen card can graduate with Good at most',
-        () {
-      expect(learnGrades.map((g) => g.value), [1, 2, 3]);
-      expect(learnGrades.any((g) => g.label == 'Easy'), isFalse);
-      // Good (>= 3, the graduation threshold in LearnSession) is still offered.
-      expect(learnGrades.last.value, 3);
+    test('Learn now offers the full set incl. Easy (guarded, n0014)', () {
+      // Easy was excluded pre-n0014 (its ~15-day first interval was unearned); now
+      // it's offered but the scheduler CAPS a new card's Easy interval, so the grade
+      // set can safely mirror Review's.
+      expect(learnGrades.map((g) => g.value), [1, 2, 3, 4]);
+      expect(learnGrades.any((g) => g.label == 'Easy'), isTrue);
     });
 
-    test('learnGrades mirror the review grades for the values it keeps', () {
+    test('learnGrades mirror the review grades exactly', () {
+      expect(learnGrades, same(studyGrades));
       for (final g in learnGrades) {
         final review = studyGrades.firstWhere((s) => s.value == g.value);
         expect(g.label, review.label);

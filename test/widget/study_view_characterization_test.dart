@@ -102,7 +102,7 @@ void main() {
       expect(find.text('Good'), findsNothing); // no grade bar before reveal
     });
 
-    testWidgets('reveal shows the body + a 3-grade bar with NO Easy',
+    testWidgets('reveal shows the body + the full grade bar incl. Easy (n0014)',
         (tester) async {
       await tester.pumpWidget(_learnApp(LearnItem(
         card: _card(id: 'L', sections: [
@@ -118,11 +118,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('the answer body'), findsOneWidget);
-      // Learn grades: Again / Hard / Good — never Easy (unearned on first sight).
+      // Learn now offers the full set; Easy is safe because the scheduler caps a
+      // new card's Easy interval (n0014), not by withholding the grade.
       expect(find.text('Again'), findsOneWidget);
       expect(find.text('Hard'), findsOneWidget);
       expect(find.text('Good'), findsOneWidget);
-      expect(find.text('Easy'), findsNothing);
+      expect(find.text('Easy'), findsOneWidget);
       // A non-quizzable section is reachable via "View full card".
       expect(find.text('View full card'), findsOneWidget);
     });
@@ -159,11 +160,13 @@ void main() {
     });
   });
 
-  group('grade sets stay distinct', () {
-    test('Review offers Easy; Learn does not', () {
+  group('grade sets', () {
+    test(
+        'both Review and Learn offer Easy (Learn caps it at the scheduler, n0014)',
+        () {
       expect(studyGrades.any((g) => g.value == 4 && g.label == 'Easy'), isTrue);
-      expect(learnGrades.any((g) => g.label == 'Easy'), isFalse);
-      expect(learnGrades.length, 3);
+      expect(learnGrades.any((g) => g.label == 'Easy'), isTrue);
+      expect(learnGrades.length, 4);
       expect(studyGrades.length, 4);
     });
   });

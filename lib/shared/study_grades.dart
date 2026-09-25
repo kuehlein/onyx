@@ -13,16 +13,12 @@ const studyGrades = <({int value, String label, Color color})>[
   (value: 4, label: 'Easy', color: StatusColor.info),
 ];
 
-/// Grades offered in **Learn** (first exposure). Excludes Easy: on a brand-new
-/// card FSRS's Easy jumps to a ~15-day first interval, which is unearned for
-/// something you've only just seen — so new material graduates with Good at
-/// most. Review mode keeps the full set (Easy included) for genuinely mastered
-/// cards.
-const learnGrades = <({int value, String label, Color color})>[
-  (value: 1, label: 'Again', color: StatusColor.bad),
-  (value: 2, label: 'Hard', color: StatusColor.warn),
-  (value: 3, label: 'Good', color: StatusColor.good),
-];
+/// Grades offered in **Learn** (first exposure) — the full set, including Easy. Easy
+/// is safe here because it's GUARDED at the scheduler (n0014): a new card's Easy first
+/// interval is capped at [learnEasyMaxIntervalFactor]× what Good would seed, so an
+/// already-known card can skip ahead without FSRS's unearned ~15-day jump. (Review
+/// keeps native, uncapped Easy for genuinely mastered cards.)
+const learnGrades = studyGrades;
 
 /// The accent color for a grade value (1–4), falling back to muted. Lets other
 /// graded flows (e.g. the algorithm solve outcomes, which map onto FSRS grades)
