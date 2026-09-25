@@ -429,16 +429,17 @@ model before we add features, so we build on the right shape.
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
   Needs a short research spike on the robust integration (Figma API / MCP + a UX-review agent).
 - a11y pass (large-text, tap-targets, semantics — carry the #78–#81 discipline forward).
-- **Foundations & evidence-base doc [new, your ask; #110].** Dig up + formalize the learning-science
-  principles the app rests on, **with citations**, so design decisions are grounded + auditable (and
-  drift is harder to introduce). Cover at least: **Miller's pyramid** (knows → knows how → shows how →
-  does), **retrieval practice / the testing effect**, **spaced repetition / FSRS**, **desirable
-  difficulties**, the **knowing-doing & performance≠learning gap**, **transfer of learning** (near/far),
-  **implementation intentions** (the basis for action nudges), and **notification-fatigue** limits.
-  Expand `docs/learning-science.md` into (or beside) a cited foundations doc; link it from the
-  user-stories backbone so it's discoverable. Seed citations were already gathered in the S5/behavioral
-  design investigation (2026-09-23) — pull from there rather than starting cold. Can be pulled earlier
-  than Phase 2 since it grounds decisions we're making now.
+- **Foundations & evidence-base doc [your ask; #110] — ✅ DONE (2026-09-25).** `learning-science.md` now
+  opens with a **Foundational frames** section — **Miller's pyramid** (mapped to Onyx's flow ladder:
+  Learn=knows, Review=knows-how, practice/mock=shows-how, real interview=does), **performance≠learning /
+  the knowing–doing gap** (Soderstrom & Bjork 2015 — grounds guarded Learn-Easy + mastered-collapse +
+  distrust-self-report), **near vs far transfer** (Barnett & Ceci 2002 — names the transfer gap),
+  **implementation intentions** (Gollwitzer & Sheeran 2006, d=.65 — the basis for the daily-plan + action
+  nudges), and **notification-fatigue** (Ancker 2017 — grounds ADR-0011 silence-default). Retrieval
+  practice / spacing / desirable difficulties were already covered. Web-verified citations; a scope note
+  frames the principles as subject-general (SWE = worked example); linked from the user-stories backbone
+  (Stance + a new **Foundations** line in §Files). *Remaining/adjacent (separate tasks):* the proactive
+  **notify** surface stays deferred (ADR-0011 Phase C / #114); #26 tutor ADR can now cite this base.
 
 ## Phase 3 — Finish the MVP
 The MVP-tagged stories, cloud still absent:

@@ -57,8 +57,10 @@ A recurring, still-open tension flagged per view: **deck-level scope vs vault-le
   to a knowledge base and never requires one. Authoring is a **light on-ramp**, not a feature we
   deepen. Whole-vault features (browse-all, cross-deck analytics) are considered only where
   cheap *and* clearly valuable.
-- **Evidence-based motivation.** Honest signals; no gamification / streaks / guilt (see the
-  learning-science + gamification research).
+- **Evidence-based motivation.** Honest signals; no gamification / streaks / guilt (see
+  [learning-science.md](../learning-science.md) — the app's cited **evidence base**: Miller's
+  pyramid, retrieval practice, spacing, desirable difficulties, performance≠learning, transfer,
+  implementation intentions, notification-fatigue).
 - **MVP discipline.** Each story tags MVP vs later; hard, low-value flows are deferred.
 
 ## How we use this (the anti-drift contract)
@@ -127,3 +129,7 @@ so this is now a straight description, not a to-reshape list.
 [onboarding](onboarding.md) · [deck_selection](deck_selection.md) · [deck_creation](deck_creation.md)
 · [home](home.md) · [your_target](your_target.md) · [scheduler](scheduler.md) · [card](card.md)
 · [browse](browse.md) · [analytics](analytics.md) · [settings](settings.md) · [personas](personas.md)
+
+**Foundations (the *why* behind the stories):** [learning-science.md](../learning-science.md) (evidence
+base) · [architecture.md](../architecture.md) (invariants) · [adr/](../adr/README.md) (decisions) ·
+[roadmap.md](../roadmap.md) (sequenced work) · [glossary.md](../glossary.md).

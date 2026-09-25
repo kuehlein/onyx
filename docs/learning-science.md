@@ -5,6 +5,117 @@ SWE interview preparation, and what the evidence-based design implications are
 for Onyx's card schema and quiz architecture. Claims are graded by their
 evidentiary basis.
 
+**Scope & purpose (#110, 2026-09-25).** Onyx is now a general, multi-subject study
+platform; the principles here are **subject-general** — SWE interview prep is the
+running *worked example* (it's the built content today), not the boundary. This is
+the app's **evidence base**: the load-bearing decisions (the ADRs, the coach, the
+schedule, the flow taxonomy) trace back to principles below, so a reviewer can audit
+*why* a choice was made and drift is harder to introduce. Citations are given inline;
+where a source is established canon but not re-verified in a given pass, that's marked.
+The **Foundational frames** section (next) is the top-level orientation; the detailed
+card-formulation, presentation, and cadence sections follow.
+
+---
+
+## Foundational frames (what the whole app rests on)
+
+Four cross-cutting frames orient every flow and schedule decision. The detailed,
+card-level research follows in later sections.
+
+### Miller's pyramid — the competence ladder the flows target
+
+**Confidence: High** | Source: Miller GE, "The Assessment of Clinical
+Skills/Competence/Performance," *Academic Medicine* 1990;65(9 Suppl):S63–7.
+
+Competence rises through four levels — **Knows → Knows how → Shows how → Does** — and
+each level needs a *different* assessment: the bottom two are tested in writing, "shows
+how" in a simulation, "does" only by observing real independent performance. Onyx's flow
+taxonomy is deliberately a Miller ladder:
+
+| Level | What it is | Onyx surface |
+|---|---|---|
+| **Knows** | facts / declarative recall | a card's declarative sections; first exposure in **Learn** |
+| **Knows how** | apply the knowledge; recognition | **Review** retrieval (recall the principle + recognition triggers) — where flashcards top out |
+| **Shows how** | perform in a simulated setting | the **practice/mock tracks** (algo re-solve, system-design mock, behavioral mock, `/practice`) |
+| **Does** | independent real-world performance | the actual interview / on-the-job — **outside the app** (the "glue/next-steps" layer, #109); Onyx *logs* outcomes but can't administer "does" |
+
+**Design implication:** flashcards alone reach **knows / knows-how**; "shows how" needs
+the practice tracks (this is *why* the app pairs a card library with mock flows, and why
+readiness must reflect where you are on the ladder, not just recall %). It is the same
+boundary the transfer gap names below — Miller is the vocabulary for it.
+
+### Performance ≠ learning (the knowing–doing gap)
+
+**Confidence: High** | Source: Soderstrom NC, Bjork RA, "Learning versus performance:
+An integrative review," *Perspectives on Psychological Science* 2015;10(2):176–199
+(doi:10.1177/1745691615569000).
+
+*Performance* (what you can do **during** a session) is an unreliable index of *learning*
+(durable, later-retrievable change). Performance can spike while learning doesn't — and
+desirable difficulties depress performance while **improving** learning. So in-the-moment
+ease must never be trusted as evidence of durable mastery. This directly grounds:
+
+- **Guarded Learn-Easy** ([[fsrs-exam-targeting]]; ADR-0014 / n0014): a single "Easy" on a
+  just-seen card is *performance*, not proof of durable learning — so its first interval is
+  capped rather than believed (`core/srs/srs_scheduler.dart`).
+- **Mastered auto-collapse** needs `stability ≥ 21d` **and** `R ≥ 0.9` — not one good grade —
+  because durable learning shows as retained stability *across spacing*, not a lucky rep
+  (`core/srs/mastery.dart`, 1f.1b).
+- **The coach distrusts self-report**, fusing it with adherence + retrieval accuracy (cadence
+  section) — self-rated ease is performance-flavored and biased.
+
+### Transfer of learning — near vs far
+
+**Confidence: High** | Source: Barnett SM, Ceci SJ, "When and where do we apply what we
+learn? A taxonomy for far transfer," *Psychological Bulletin* 2002;128(4):612–637
+(PMID 12081085).
+
+Transfer is applying what you learned in a *new* context; it runs on a **near ↔ far**
+continuum (Barnett & Ceci give 9 dimensions across *content* — what transfers — and
+*context* — when/where: knowledge domain, physical/temporal/functional/social setting,
+modality). **Near** transfer (a trained pattern, lightly varied) is reachable by retrieval
+practice; **far** transfer (a genuinely novel problem/domain) is hard and needs *varied*
+practice, not more reps of the same. This formalizes the "transfer gap" (§2 below): Onyx's
+cards build the **near** substrate (fast, reliable pattern recall); the **far** skill —
+recognizing which pattern a novel problem wants — is trained by the practice tracks +
+real problems, and the app is honest that flashcards can't manufacture it alone.
+
+### Implementation intentions — the basis for action nudges
+
+**Confidence: High** | Sources: Gollwitzer PM, "Implementation intentions: Strong effects
+of simple plans," *American Psychologist* 1999;54(7):493–503; Gollwitzer PM, Sheeran P,
+"Implementation intentions and goal achievement: A meta-analysis of effects and
+processes," *Advances in Experimental Social Psychology* 2006;38:69–119.
+
+A goal intention ("study more") is far weaker than an **implementation intention** — a
+concrete *if-then* plan ("**when** it's after dinner, **then** I do today's plan"). The
+2006 meta-analysis (94 tests, N > 8,000) found a **medium-to-large effect (d = .65)** on
+goal attainment; if-then plans help initiate action, shield ongoing pursuit, and enable
+disengagement from failing courses. This grounds:
+
+- **The daily plan is an implementation intention made concrete** — "today = *these* flows,
+  *this* budget," not a vague "review some cards."
+- **Action-oriented, specific nudges** over generic ones (the behavioral "about ready" nudge
+  should say *what to do next*, not just a status — #107); the one-tap adaptive-load nudge.
+- **"Two taps to first review"** onboarding — collapse the gap between intent and first action.
+
+### Notification fatigue — the basis for silence-by-default
+
+**Confidence: High** | Source: Ancker JS et al., "Effects of workload, work complexity, and
+repeated alerts on alert fatigue in a clinical decision support system," *BMC Medical
+Informatics and Decision Making* 2017;17:36 (doi:10.1186/s12911-017-0430-8); the broader
+healthcare **alarm-fatigue** canon (e.g. Joint Commission Sentinel Event Alert 50, 2013)
+generalizes.
+
+More alerts → **worse** response: acceptance dropped ~**30% for each additional reminder**
+per encounter, via desensitization from repeated exposure (clinicians override 49–96% of
+interruptive alerts). A study app that pushes notifications to "drive engagement" trains the
+user to ignore it. This grounds [[coach-feedback-design]] and **ADR-0011's silence-default**:
+the engine adjusts the invisible *mix* silently; it **proposes only on a real signal**, is
+**pull-based** (surfaces when the user opens the app) and **one-tap**; proactive/ambient
+notify is **deferred** (#110 / ADR-0011 Phase C) precisely because notification volume erodes
+the response it depends on.
+
 ---
 
 ## What the Research Confirms
@@ -150,6 +261,10 @@ just don't fight the scheduler (no cramming semantics baked into cards).
 ---
 
 ## The Three Knowledge Types — and Why Conditional Knowledge Is the Priority
+
+This is a *complementary* lens to Miller's pyramid above: Miller ranks the **level of
+competence** (knows → does); this ranks the **kind of knowledge**. They meet at the top —
+*conditional* knowledge (when/why) is what powers "knows how / shows how."
 
 Research on knowledge types distinguishes:
 
