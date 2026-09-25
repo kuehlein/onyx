@@ -167,4 +167,66 @@ void main() {
     // is:due strips to Everything == the whole-vault active deck → warn, no clone.
     expect(find.textContaining('whole vault'), findsOneWidget);
   });
+
+  // The second no-op branch: the active deck is NOT the whole vault, and the
+  // filter adds nothing structural, so the composed lens equals the deck's own
+  // lens — a clone. The note distinguishes this from the whole-vault case.
+  testWidgets('Save as deck warns it just re-creates a non-vault deck',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        vaultIndexProvider.overrideWith((ref) async => index),
+        srsStatesProvider.overrideWith((ref) async => const SectionStates({})),
+        activeDeckProvider.overrideWith((ref) async => Deck(
+            id: 'algo',
+            name: 'Algo',
+            templateId: 't',
+            membership: TagIs('ds-a'))),
+        decksProvider.overrideWith(_EmptyDecks.new),
+        templateRegistryProvider.overrideWith(
+            (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
+      ],
+      child: const MaterialApp(home: BrowseScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    // is:due strips to nothing → composed lens == the ds-a deck's lens (a clone).
+    await tester.enterText(find.byType(TextField), 'is:due');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save as deck'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('re-creates the current deck'), findsOneWidget);
+    expect(find.textContaining('whole vault'), findsNothing);
+  });
+
+  // The non-no-op branch WITH free text: a real structural filter is added (so it
+  // isn't a clone), but the ranked free-text term can't live in a lens — the note
+  // says so rather than silently dropping it.
+  testWidgets('Save as deck notes that free text is not saved', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        vaultIndexProvider.overrideWith((ref) async => index),
+        srsStatesProvider.overrideWith((ref) async => const SectionStates({})),
+        activeDeckProvider.overrideWith((ref) async =>
+            const Deck(id: 'default', name: 'All', templateId: 't')),
+        decksProvider.overrideWith(_EmptyDecks.new),
+        templateRegistryProvider.overrideWith(
+            (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
+      ],
+      child: const MaterialApp(home: BrowseScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    // type:flashcard = a real structural filter; "dijkstra" = ranked free text.
+    await tester.enterText(find.byType(TextField), 'type:flashcard dijkstra');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save as deck'));
+    await tester.pumpAndSettle();
+
+    // Assert on note-unique text ("dijkstra" alone also matches the search field).
+    expect(find.textContaining("text search \"dijkstra\" isn't saved"),
+        findsOneWidget);
+    expect(find.textContaining('whole vault'), findsNothing);
+  });
 }

@@ -34,7 +34,10 @@ void main() {
             membership: TagIs('ds-a')),
       ],
     );
-    if (db == null) return; // sqlite unavailable — skip
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
     addTearDown(db.close);
 
     // Browse → only the deck's member (ds-a); the networking card is out of scope.
@@ -77,7 +80,10 @@ void main() {
         ),
       ],
     );
-    if (db == null) return; // sqlite unavailable — skip
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
     addTearDown(db.close);
 
     // The deck's aim resolves into a set target → Home shows "Your target",

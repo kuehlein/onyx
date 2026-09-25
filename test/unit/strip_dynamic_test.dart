@@ -104,6 +104,29 @@ void main() {
       expect(stripDynamic(const Not(TypeIs('flashcard'))), isA<Not>());
     });
 
+    test(
+        'a Not INSIDE an Or drops just that dynamic disjunct (keeps structural)',
+        () {
+      // `-is:due OR type:flashcard` typed into the Advanced field. The dynamic
+      // disjunct can't be evaluated by a lens, so it's dropped and the STRUCTURAL
+      // disjunct kept — a faithful, non-empty degradation (deliberately NOT widened
+      // to the whole vault, NOT emptied). Pins the chosen semantics for a mixed Or
+      // (an unpinned edge the review flagged; the structural-remnant choice is more
+      // faithful to what the user typed than collapsing the Or to Everything).
+      const q = Or([Not(StateIs(MasteryFilter.due)), TypeIs('flashcard')]);
+      expect(_members(stripDynamic(q)), _members(const TypeIs('flashcard')));
+      expect(_hasState(stripDynamic(q)), isFalse);
+    });
+
+    test('a Not OVER a dynamic Or is dropped whole (widens to everything)', () {
+      // `!(is:due OR is:strong)` — the entire negation is dropped (widens), never
+      // reduced to a narrowing structural remnant.
+      const q =
+          Not(Or([StateIs(MasteryFilter.due), StateIs(MasteryFilter.strong)]));
+      expect(stripDynamic(q), isA<Everything>());
+      expect(_hasState(stripDynamic(q)), isFalse);
+    });
+
     test('Deck.fromJson strips a persisted StateIs on LOAD (defense-in-depth)',
         () {
       // A StateIs that reached the file would otherwise empty the deck (Deck.select

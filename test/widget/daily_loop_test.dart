@@ -16,7 +16,10 @@ void main() {
       testCard('a', 'Alpha'),
       testCard('b', 'Beta'),
     ]);
-    if (db == null) return; // sqlite unavailable in this env — skip
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
     addTearDown(db.close);
 
     // A full live render (real DB + derived study providers) threw nothing.
@@ -34,7 +37,10 @@ void main() {
       testCard('a', 'Alpha'),
       testCard('b', 'Beta'),
     ]);
-    if (db == null) return; // sqlite unavailable — skip
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
     addTearDown(db.close);
 
     // Home derived a "learn" flow from the two fresh cards (plan → TodayFlows).

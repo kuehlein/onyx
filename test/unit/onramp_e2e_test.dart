@@ -60,7 +60,10 @@ ProviderContainer _container(DesktopVaultSource source, AppDatabase db) {
 void main() {
   group('authoring on-ramps (real temp-dir vault + indexer)', () {
     test('create-card: createCard → reindex → present + studyable', () async {
-      if (!_sqliteAvailable) return; // no native sqlite → skip
+      if (!_sqliteAvailable) {
+        markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+        return;
+      }
       final root = Directory.systemTemp.createTempSync('onyx_e4_create_');
       final db = AppDatabase.withExecutor(NativeDatabase.memory());
       addTearDown(() async {
@@ -90,7 +93,10 @@ void main() {
 
     test('import → draft → promote → studyable (schedule never travels)',
         () async {
-      if (!_sqliteAvailable) return;
+      if (!_sqliteAvailable) {
+        markTestSkipped('no native sqlite');
+        return;
+      }
       final root = Directory.systemTemp.createTempSync('onyx_e4_import_');
       final db = AppDatabase.withExecutor(NativeDatabase.memory());
       addTearDown(() async {

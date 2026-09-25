@@ -11,6 +11,9 @@ import 'support/harness.dart';
 /// deck's own Home, and studying it is scoped to that deck's members. Built on the
 /// live in-memory-DB harness (E1). Guarded on sqlite availability.
 
+Finder _navDest(String label) =>
+    find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
+
 void main() {
   testWidgets('multi-deck: lanes hub → focus a deck → study scoped to it',
       (tester) async {
@@ -36,7 +39,10 @@ void main() {
             membership: TagIs('networking')),
       ],
     );
-    if (db == null) return; // sqlite unavailable — skip
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
     addTearDown(db.close);
 
     // Two active decks → the "Today's mix" lanes hub (the ≥2 degradation
@@ -49,6 +55,19 @@ void main() {
     await tester.tap(find.text('Algorithms'));
     await tester.pumpAndSettle();
     expect(find.text("Today's mix"), findsNothing);
+
+    // Focusing the lane scopes the whole app to that deck. Browse lists the FULL
+    // member set (not one card at a time), so a scoping regression would surface
+    // Beta here — a stronger proof than the single-card study queue below, whose
+    // one-card view could hide a leak by accident.
+    await tester.tap(_navDest('Browse'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alpha Card'), findsOneWidget);
+    expect(find.text('Beta Card'), findsNothing);
+
+    // Back to this deck's Home to study.
+    await tester.tap(_navDest('Home'));
+    await tester.pumpAndSettle();
 
     // Study from the focused deck → scoped to ITS member only (ds-a → Alpha Card;
     // the Networking deck's Beta Card is not in this session).

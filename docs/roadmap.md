@@ -366,7 +366,8 @@ model before we add features, so we build on the right shape.
     **G2 ✅** (Browse on the IR — `DomainIs` first-tag, byte-identical; `folder:`/negation; total parser + fuzz; legacy
     `matchesFilter`/`parseSearchQuery` deleted; adversarially reviewed) · **G3 ✅ DONE** (ADR-0013 §Addendum, hybrid
     lens builder): **G3.0 ✅** (`parseLens`/`renderLens` — recursive `OR`/`()`/`&&`/`-`·`!` + `foo/` shorthand; total;
-    render→parse faithful under fuzz; `tag:`=first-tag == Browse, `tags:`=any-tag lens-only) · **G3.1 ✅**
+    render→parse faithful under fuzz; `tag:`/`tags:`=any-tag [`TagIs`], `domain:`=first-tag [`DomainIs`], per
+    ADR-0013 §Addendum 2) · **G3.1 ✅**
     (`stripDynamic` drops `StateIs` — an all-dynamic lens → whole vault, never empty; Browse "Save as deck" composes
     active-lens ∧ filter, strips, drops free text with a note; deck editor gains an **Advanced** query field —
     complex lenses open pre-filled via `renderLens`; new-deck ids auto-suffix on slug collision) · **G3.2 ✅** (scoped

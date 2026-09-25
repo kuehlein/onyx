@@ -9,8 +9,8 @@ import 'package:onyx/shared/models/card.dart';
 /// editable as text. Load-bearing properties pinned here:
 ///   • precedence OR (lowest) < implicit/`&&` AND < `-`/`!` NOT
 ///   • TOTAL: never throws; a typo degrades to free/ignored, never a match-all
-///   • tag semantics: `tag:`/`domain:` = first-tag (DomainIs, == Browse);
-///     `tags:` = any-tag (TagIs, lens-only)
+///   • tag semantics (ADR-0013 §Addendum 2): `tag:`/`tags:` = any-tag (TagIs);
+///     `domain:` = first-tag (DomainIs, == Browse's Domain facet)
 ///   • render→parse is FAITHFUL (same cards match) over a corpus + fuzz
 
 Card _c(
@@ -233,6 +233,18 @@ void main() {
       final f = parseLens(renderLens(FolderUnder('x (y)')));
       expect(f, isA<FolderUnder>());
       expect((f as FolderUnder).path, 'x (y)');
+    });
+
+    test('a value containing a double-quote round-trips via \\" escaping', () {
+      // The escape path: _qv emits `\"`, the tokenizer keeps it verbatim, and
+      // _unquoteVal resolves it. Folder paths can legitimately carry a quote.
+      expect(renderLens(FolderUnder('a "b" c')), r'folder:"a \"b\" c"');
+      final f = parseLens(renderLens(FolderUnder('a "b" c')));
+      expect(f, isA<FolderUnder>());
+      expect((f as FolderUnder).path, 'a "b" c');
+      // And it survives inside a compound tree (escaped quote + spaces + AND).
+      final tree = And([FolderUnder('a "b"'), TagIs('t')]);
+      expect(renderLens(parseLens(renderLens(tree))), renderLens(tree));
     });
   });
 
