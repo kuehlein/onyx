@@ -818,11 +818,18 @@ class _BudgetReadyLine extends ConsumerWidget {
     if (f == null || f.alreadyReady) return const SizedBox.shrink();
     final date = f.currentReadyDate;
     if (date == null) return const SizedBox.shrink();
+    // Only offer "speed up" when a bigger budget would actually pull the date
+    // sooner. At the max budget — or the sustainable new-material ceiling, where
+    // more time buys no more new/day — the curve has flattened, so don't dangle a
+    // false affordance. (Monotone in budget → earliest is the largest budget's date.)
+    final cur = f.currentReadyDay;
+    final earliest = f.earliestReadyDay;
+    final canSpeedUp = cur != null && earliest != null && earliest < cur;
     return Padding(
       padding: const EdgeInsets.only(top: Dim.space1),
       child: Text(
-        'At this budget, on track to be ready ~${_fmtReadyDate(date)} — '
-        'speed up anytime.',
+        'At this budget, on track to be ready ~${_fmtReadyDate(date)}'
+        '${canSpeedUp ? ' — speed up anytime.' : '.'}',
         style: theme.textTheme.labelSmall
             ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
