@@ -53,23 +53,23 @@ void main() {
 
   ReadinessForecast fc({
     required double start,
-    required int perDay,
-    required List<PacePoint> curve,
+    int perDay = 8,
+    double currentBudget = 150,
+    List<BudgetPoint> curve = const [],
   }) =>
       ReadinessForecast(
         curve: curve,
+        currentBudget: currentBudget,
         currentPerDay: perDay,
         today: today,
         startReadiness: start,
         threshold: 0.75,
       );
 
-  // backend role → makes the date; frontend role → only at a faster pace.
-  final onTrack = fc(start: 0.3, perDay: 8, curve: const [PacePoint(8, 10)]);
-  final behind = fc(
-      start: 0.3,
-      perDay: 8,
-      curve: const [PacePoint(8, 30), PacePoint(16, 15)]);
+  // backend role → makes the date; frontend role → only at a bigger budget.
+  final onTrack = fc(start: 0.3, curve: const [BudgetPoint(150, 10)]);
+  final behind =
+      fc(start: 0.3, curve: const [BudgetPoint(150, 30), BudgetPoint(300, 15)]);
 
   final forecastByTrack =
       readinessForecastForProvider.overrideWith((ref, dims) async {
@@ -106,7 +106,7 @@ void main() {
     expect(list[0].feasibility.status, FeasibilityStatus.onTrack);
     expect(list[1].aim.id, 'b');
     expect(list[1].feasibility.status, FeasibilityStatus.behind);
-    expect(list[1].feasibility.requiredPerDay, 16);
+    expect(list[1].feasibility.requiredBudget, 300);
   });
 
   test('an aim with no scheduled round → open-ended (coverage)', () async {

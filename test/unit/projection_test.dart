@@ -78,53 +78,56 @@ void main() {
         greaterThan(fast.trajectory.first.readiness));
   });
 
-  test('scenarios are ordered: push ≤ current ≤ chill (days to ready)', () {
-    final s = projectScenarios(
+  test('a bigger daily budget reaches readiness no later (budget-native)', () {
+    final empty = <String, SectionSrsState>{};
+    final lean = projectReadiness(
       cards: deck,
-      stateByKey: const {},
+      stateByKey: empty,
       target: senior,
-      currentPerDay: 3,
+      pace: const PacePolicy(budgetMinutes: 90),
       today: today,
     );
-    final chill = s['chill']!.readyDay;
-    final cur = s['current']!.readyDay;
-    final push = s['push']!.readyDay;
-    expect(push, isNotNull);
-    expect(cur, isNotNull);
-    expect(chill, isNotNull);
-    // Strictly non-increasing as pace rises — the projection is deterministic
-    // (fuzz disabled for forecasts), so no wobble tolerance is needed.
-    expect(push!, lessThanOrEqualTo(cur!));
-    expect(cur, lessThanOrEqualTo(chill!));
+    final rich = projectReadiness(
+      cards: deck,
+      stateByKey: empty,
+      target: senior,
+      pace: const PacePolicy(budgetMinutes: 240),
+      today: today,
+    );
+    expect(lean.readyDay, isNotNull);
+    expect(rich.readyDay, isNotNull);
+    // More budget → derives more new/day each day → ready no later (deterministic).
+    expect(rich.readyDay!, lessThanOrEqualTo(lean.readyDay!));
   });
 
   test(
-      'pace curve + forecast: faster pace reaches no later, required-pace '
+      'budget curve + forecast: a bigger budget reaches no later, required-budget '
       'rises for a tighter deadline', () {
-    final c = projectPaceCurve(
+    final c = projectBudgetCurve(
       cards: deck,
       stateByKey: const {},
       target: senior,
-      currentPerDay: 4,
+      currentBudget: 150,
       today: today,
     );
     final reached = c.curve.where((p) => p.readyDay != null).toList();
     expect(reached.length, greaterThan(1));
-    // ready-day is non-increasing as pace rises (deterministic — fuzz disabled).
+    // ready-day is non-increasing as the budget rises (deterministic — fuzz disabled).
     for (var i = 1; i < reached.length; i++) {
       expect(reached[i].readyDay!, lessThanOrEqualTo(reached[i - 1].readyDay!));
     }
     final f = ReadinessForecast(
       curve: c.curve,
-      currentPerDay: 4,
+      currentBudget: 150,
+      currentPerDay: 8,
       today: today,
       startReadiness: c.startReadiness,
       threshold: 0.75,
     );
-    final easy = f.requiredPerDayFor(300); // generous deadline
-    final tight = f.requiredPerDayFor(60); // tight deadline
+    final easy = f.requiredBudgetFor(300); // generous deadline
+    final tight = f.requiredBudgetFor(60); // tight deadline
     expect(easy, isNotNull);
     if (tight != null) expect(tight, greaterThanOrEqualTo(easy!));
-    expect(f.readyDateFor(f.currentPerDay), isNotNull);
+    expect(f.readyDateForBudget(f.currentBudget), isNotNull);
   });
 }

@@ -3,19 +3,22 @@ import 'package:onyx/core/readiness/feasibility.dart';
 import 'package:onyx/core/readiness/projection.dart';
 
 /// S4b: the per-aim feasibility signal — "can you be durably ready by [date] at
-/// your pace?" — classified purely from a ReadinessForecast vs the aim's date.
+/// your budget?" — classified purely from a ReadinessForecast vs the aim's date.
+/// The lever is the daily time budget (ADR-0010), so `requiredBudget` is minutes.
 void main() {
   final today = DateTime(2026, 1, 1);
   final date = today.add(const Duration(days: 20));
 
   ReadinessForecast forecast({
     required double start,
-    required int currentPerDay,
-    required List<PacePoint> curve,
+    double currentBudget = 150,
+    List<BudgetPoint> curve = const [], // ascending by budgetMinutes
   }) =>
       ReadinessForecast(
-        curve: curve, // ascending by perDay
-        currentPerDay: currentPerDay,
+        curve: curve,
+        currentBudget: currentBudget,
+        currentPerDay:
+            8, // felt quantity — unused by these classification tests
         today: today,
         startReadiness: start,
         threshold: 0.75,
@@ -35,45 +38,42 @@ void main() {
   test('already at the bar → ready', () {
     final f = classifyAimFeasibility(
       date: date,
-      forecast: forecast(start: 0.8, currentPerDay: 8, curve: const []),
+      forecast: forecast(start: 0.8),
     );
     expect(f.status, FeasibilityStatus.ready);
   });
 
-  test('current pace makes the date → onTrack', () {
+  test('the current budget makes the date → onTrack', () {
     final f = classifyAimFeasibility(
       date: date, // +20d
-      forecast: forecast(
-          start: 0.3, currentPerDay: 8, curve: const [PacePoint(8, 10)]),
+      forecast: forecast(start: 0.3, curve: const [BudgetPoint(150, 10)]),
     );
     expect(f.status, FeasibilityStatus.onTrack);
     expect(f.readyBy, today.add(const Duration(days: 10)));
-    expect(f.requiredPerDay, 8);
+    expect(f.requiredBudget, 150);
   });
 
-  test('reachable only at a faster pace → behind', () {
+  test('reachable only at a bigger budget → behind', () {
     final f = classifyAimFeasibility(
       date: date, // +20d
       forecast: forecast(
           start: 0.3,
-          currentPerDay: 8,
-          curve: const [PacePoint(8, 30), PacePoint(16, 15)]),
+          curve: const [BudgetPoint(150, 30), BudgetPoint(300, 15)]),
     );
     expect(f.status, FeasibilityStatus.behind);
-    expect(f.requiredPerDay, 16); // needs a faster pace than 8
+    expect(f.requiredBudget, 300); // needs a bigger budget than the current 150
     expect(f.needsAttention, isTrue);
   });
 
-  test('even the fastest pace misses → infeasible', () {
+  test('even the largest budget misses → infeasible', () {
     final f = classifyAimFeasibility(
       date: date, // +20d
       forecast: forecast(
           start: 0.3,
-          currentPerDay: 8,
-          curve: const [PacePoint(8, 30), PacePoint(16, 25)]),
+          curve: const [BudgetPoint(150, 30), BudgetPoint(300, 25)]),
     );
     expect(f.status, FeasibilityStatus.infeasible);
-    expect(f.requiredPerDay, isNull);
+    expect(f.requiredBudget, isNull);
     expect(f.needsAttention, isTrue);
   });
 
@@ -87,8 +87,7 @@ void main() {
       date: today.subtract(const Duration(days: 5)),
       forecast: forecast(
           start: 0.3,
-          currentPerDay: 8,
-          curve: const [PacePoint(8, 30), PacePoint(16, 25)]),
+          curve: const [BudgetPoint(150, 30), BudgetPoint(300, 25)]),
     );
     expect(f.status, FeasibilityStatus.openEnded);
     expect(f.needsAttention, isFalse);

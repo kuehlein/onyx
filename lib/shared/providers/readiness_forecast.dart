@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/deck/deck.dart';
+import '../../core/plan/daily_plan.dart' show kDailyTargetMinutes;
 import '../../core/plan/practice_plan.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
@@ -166,14 +167,15 @@ Future<ReadinessForecast?> readinessForecastFor(
       ),
   };
 
-  // The engine-DERIVED new-material allowance (ADR-0016) at THIS deck's budget slice
-  // + today's due-review load — so the forecast, and the budget → ready-by readout
-  // (ADR-0011 §D5), respond to the budget dial rather than noisy recent history. The
-  // simulation still runs a fixed per-day pace (as before); re-deriving day-by-day as
-  // review-debt grows is a later refinement. A 0-budget (inactive/paused) deck falls
-  // back to the gentle default so its outlook still renders.
+  // The deck's budget slice is the forecast's lever (ADR-0010). An inactive/paused
+  // lane isn't in the split (budget 0) → forecast at a standard day so its outlook
+  // still renders ("if you focused this deck").
   final budgets = await budgetsF;
-  final budget = budgets[dims.deckId] ?? 0;
+  final rawBudget = budgets[dims.deckId] ?? 0;
+  final budget = rawBudget > 0 ? rawBudget : kDailyTargetMinutes;
+
+  // Today's due-review load (state-aware, #133) → the engine-derived new/day at this
+  // budget (ADR-0016) — the felt quantity shown alongside the budget, not a dial.
   var dueReviewMinutes = 0.0;
   for (final card in cards) {
     for (final section in card.quizzableSections) {
@@ -184,19 +186,21 @@ Future<ReadinessForecast?> readinessForecastFor(
           stability: st.stability, fsrsState: st.state);
     }
   }
-  var perDay = sustainableNewCount(
+  final perDay = sustainableNewCount(
       budgetMinutes: budget, dueReviewMinutes: dueReviewMinutes);
-  if (perDay < 1) perDay = kDefaultDailyNew;
 
-  final c = projectPaceCurve(
+  // The budget → ready-day curve — each sampled budget re-derives its new-count each
+  // day (ADR-0016), so it's the honest "at this budget, ready when".
+  final c = projectBudgetCurve(
     cards: cards,
     stateByKey: stateByKey,
     target: target,
-    currentPerDay: perDay,
+    currentBudget: budget,
     today: today,
   );
   return ReadinessForecast(
     curve: c.curve,
+    currentBudget: budget,
     currentPerDay: perDay,
     today: today,
     startReadiness: c.startReadiness,

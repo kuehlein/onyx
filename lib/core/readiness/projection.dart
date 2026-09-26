@@ -1,14 +1,19 @@
+import '../plan/practice_plan.dart'
+    show kReviewMinutes, reviewEst, sustainableNewCount;
 import '../srs/srs_scheduler.dart';
 import '../../shared/models/card.dart';
 import 'readiness.dart';
 import 'target.dart';
 
 /// Forward-simulation projection of recall readiness (#49). It answers "at this
-/// pace, when will my relevance-weighted recall readiness cross the target?" by
-/// rolling the deck forward day-by-day through the REAL FSRS scheduler: each day
-/// clears the due-review queue and introduces up to `newSectionsPerDay` new
-/// sections (essential-first), advancing per-section stability, then samples
-/// [computeReadiness] to find the crossing day.
+/// daily time budget, when will my relevance-weighted recall readiness cross the
+/// target?" by rolling the deck forward day-by-day through the REAL FSRS scheduler:
+/// each day clears the due-review queue, then introduces the new sections the budget
+/// affords — DERIVED via [sustainableNewCount] from the budget minus that day's
+/// review load (ADR-0016), re-derived daily so review-debt honestly throttles intake
+/// (essential-first) — advancing per-section stability, then samples
+/// [computeReadiness] to find the crossing day. (A fixed `newSectionsPerDay` pace is
+/// the base primitive for the pure sim tests.)
 ///
 /// Scope + honesty: this projects RECALL maturation only (coverage growth +
 /// FSRS stability growth) — the applied/mock (transfer) dimension is a separate
@@ -38,15 +43,29 @@ class SectionSrsState {
   bool get studied => state != null;
 }
 
-/// A study-pace policy to project under. Reviews are assumed cleared daily; the
-/// lever is how many NEW sections/day are introduced.
+/// A study-pace policy to project under. Reviews are cleared first each day; the
+/// lever for NEW material is either a fixed count or — the budget-native forecast
+/// (ADR-0016) — a daily time [budgetMinutes] the engine converts to a new-count.
 class PacePolicy {
   const PacePolicy({
-    required this.newSectionsPerDay,
+    this.newSectionsPerDay = 0,
+    this.budgetMinutes,
     this.desiredRetention = 0.9,
-  });
+  }) : assert(newSectionsPerDay > 0 || budgetMinutes != null,
+            'a pace needs a fixed new/day or a budget');
 
+  /// Fixed new-sections/day. The base primitive (used by the pure sim tests);
+  /// IGNORED when [budgetMinutes] is set.
   final int newSectionsPerDay;
+
+  /// When set, the day's new-count is DERIVED from this daily time budget minus that
+  /// day's due-review load ([sustainableNewCount], ADR-0016) — and re-derived EACH
+  /// simulated day, so growing review-debt honestly throttles new intake (the same
+  /// dynamic the real daily plan runs). This is what makes the ready-date respond to
+  /// the user's budget dial, and it's why the forecast is honest for a fresh deck
+  /// (whose intake naturally slows as reviews pile up).
+  final double? budgetMinutes;
+
   final double desiredRetention;
 }
 
@@ -80,28 +99,41 @@ class ReadinessProjection {
   bool get unreachable => readyDay == null;
 }
 
-/// One point on the pace → ready-day curve.
-class PacePoint {
-  const PacePoint(this.perDay, this.readyDay);
-  final int perDay;
-  final int?
-      readyDay; // days-from-today; null if unreachable within the horizon
+/// One point on the **budget → ready-day** curve: at this daily time budget
+/// (minutes), the target is reached in [readyDay] days (null if unreachable within
+/// the horizon). The user's lever is the budget (ADR-0010), so the curve is keyed on
+/// it — not on the derived new/day.
+class BudgetPoint {
+  const BudgetPoint(this.budgetMinutes, this.readyDay);
+  final double budgetMinutes;
+  final int? readyDay;
 }
 
-/// The forecast surfaced in the UI. Holds a pace → ready-day CURVE so the same
-/// data powers the ready-date readout, the "to hit a chosen date, study ~N/day"
-/// feasibility answer, and the Phase-3 what-if slider — no per-interaction
-/// recompute.
+/// The daily-time-budget span (minutes) the forecast samples over — a light day up
+/// to an ambitious one. Beyond ~[kMaxForecastBudget] a day isn't sustainable (see
+/// `budgetZone`), so a date needing more reads as infeasible rather than prescribing
+/// an unrealistic budget.
+const double kMinForecastBudget = 30;
+const double kMaxForecastBudget = 300;
+
+/// The forecast surfaced in the UI, keyed on the user's actual lever — the daily
+/// time **budget** (ADR-0010). Holds a budget → ready-day CURVE so the same data
+/// powers the ready-date readout, the "to hit a chosen date, raise your budget to
+/// ~N min" answer, and the budget-dial date-shift (ADR-0011 §D5) — no per-interaction
+/// recompute. [currentPerDay] is the engine-DERIVED new/day at [currentBudget]
+/// (ADR-0016) — a felt quantity for display, never a dial.
 class ReadinessForecast {
   const ReadinessForecast({
     required this.curve,
+    required this.currentBudget,
     required this.currentPerDay,
     required this.today,
     required this.startReadiness,
     required this.threshold,
   });
 
-  final List<PacePoint> curve; // ascending by perDay
+  final List<BudgetPoint> curve; // ascending by budgetMinutes
+  final double currentBudget;
   final int currentPerDay;
   final DateTime today;
   final double startReadiness;
@@ -112,12 +144,11 @@ class ReadinessForecast {
   DateTime? _date(int? day) =>
       day == null ? null : today.add(Duration(days: day));
 
-  PacePoint? _pointAt(int perDay) {
-    PacePoint? best;
-    var bestD = 1 << 30;
+  BudgetPoint? _pointAt(double budget) {
+    BudgetPoint? best;
+    var bestD = double.infinity;
     for (final p in curve) {
-      if (p.perDay == perDay) return p;
-      final d = (p.perDay - perDay).abs();
+      final d = (p.budgetMinutes - budget).abs();
       if (d < bestD) {
         bestD = d;
         best = p;
@@ -126,30 +157,36 @@ class ReadinessForecast {
     return best;
   }
 
-  int? readyDayFor(int perDay) => alreadyReady ? 0 : _pointAt(perDay)?.readyDay;
-  DateTime? readyDateFor(int perDay) => _date(readyDayFor(perDay));
+  int? readyDayForBudget(double budget) =>
+      alreadyReady ? 0 : _pointAt(budget)?.readyDay;
+  DateTime? readyDateForBudget(double budget) =>
+      _date(readyDayForBudget(budget));
 
-  int? get currentReadyDay => readyDayFor(currentPerDay);
+  int? get currentReadyDay => readyDayForBudget(currentBudget);
   DateTime? get currentReadyDate => _date(currentReadyDay);
 
-  int get chillPerDay => (currentPerDay * 0.5).round().clamp(1, 1 << 20);
-  int get pushPerDay => (currentPerDay * 2).clamp(1, 1 << 20);
-  DateTime? get chillReadyDate => readyDateFor(chillPerDay);
-  DateTime? get pushReadyDate => readyDateFor(pushPerDay);
+  double get chillBudget =>
+      (currentBudget * 0.66).clamp(kMinForecastBudget, kMaxForecastBudget);
+  double get pushBudget =>
+      (currentBudget * 1.5).clamp(kMinForecastBudget, kMaxForecastBudget);
+  DateTime? get chillReadyDate => readyDateForBudget(chillBudget);
+  DateTime? get pushReadyDate => readyDateForBudget(pushBudget);
 
-  /// Smallest sampled pace that reaches the target within [daysFromToday], or
-  /// null if even the fastest sampled pace can't (within the horizon).
-  int? requiredPerDayFor(int daysFromToday) {
-    if (alreadyReady) return curve.isEmpty ? currentPerDay : curve.first.perDay;
+  /// Smallest sampled BUDGET that reaches the target within [daysFromToday], or null
+  /// if even the largest sampled budget can't. Ascending budget → the first that
+  /// meets the deadline is the minimum (more budget → sooner, so this is monotone).
+  double? requiredBudgetFor(int daysFromToday) {
+    if (alreadyReady) {
+      return curve.isEmpty ? currentBudget : curve.first.budgetMinutes;
+    }
     for (final p in curve) {
-      // ascending pace → the first that meets the deadline is the minimum
       final rd = p.readyDay;
-      if (rd != null && rd <= daysFromToday) return p.perDay;
+      if (rd != null && rd <= daysFromToday) return p.budgetMinutes;
     }
     return null;
   }
 
-  /// The soonest day any sampled pace reaches the target (fastest curve point).
+  /// The soonest day any sampled budget reaches the target (fastest curve point).
   int? get earliestReadyDay {
     if (alreadyReady) return 0;
     int? best;
@@ -162,43 +199,57 @@ class ReadinessForecast {
 
   DateTime? get earliestReadyDate => _date(earliestReadyDay);
 
-  /// The fastest pace we sampled (curve max) — used to phrase "even at ~N/day…".
-  int get maxSampledPerDay => curve.isEmpty ? currentPerDay : curve.last.perDay;
+  /// The largest budget we sampled — used to phrase "even at ~N min/day…".
+  double get maxSampledBudget =>
+      curve.isEmpty ? currentBudget : curve.last.budgetMinutes;
 }
 
-/// Runs the projection across a spread of paces (plus chill/current/push) to
-/// build the pace → ready-day curve, returning it with the shared start
-/// readiness (pace doesn't affect day 0).
-({List<PacePoint> curve, double startReadiness}) projectPaceCurve({
+/// Runs the projection across a spread of daily-time BUDGETS (plus the current + a
+/// push/ease around it) to build the budget → ready-day curve, with the shared start
+/// readiness (budget doesn't affect day 0). Each budget re-derives its new-count
+/// per day (ADR-0016), so the curve is the honest "at this budget, ready when".
+({List<BudgetPoint> curve, double startReadiness}) projectBudgetCurve({
   required List<Card> cards,
   required Map<String, SectionSrsState> stateByKey,
   required ReadinessTarget target,
-  required int currentPerDay,
+  required double currentBudget,
   required DateTime today,
   double desiredRetention = 0.9,
   double threshold = 0.75,
   int horizonDays = 365,
 }) {
-  final chill = (currentPerDay * 0.5).round().clamp(1, 1 << 20);
-  final push = (currentPerDay * 2).clamp(1, 1 << 20);
-  final paces = <int>{1, 2, 3, 5, 8, 13, 21, 34, chill, currentPerDay, push}
-      .toList()
+  final cur = currentBudget.clamp(kMinForecastBudget, kMaxForecastBudget);
+  final chill = (cur * 0.66).clamp(kMinForecastBudget, cur);
+  final push = (cur * 1.5).clamp(cur, kMaxForecastBudget);
+  final budgets = <double>{
+    30,
+    60,
+    90,
+    120,
+    150,
+    180,
+    210,
+    240,
+    300,
+    chill,
+    cur,
+    push,
+  }.toList()
     ..sort();
-  final points = <PacePoint>[];
+  final points = <BudgetPoint>[];
   var start = 0.0;
-  for (final p in paces) {
+  for (final b in budgets) {
     final proj = projectReadiness(
       cards: cards,
       stateByKey: stateByKey,
       target: target,
-      pace:
-          PacePolicy(newSectionsPerDay: p, desiredRetention: desiredRetention),
+      pace: PacePolicy(budgetMinutes: b, desiredRetention: desiredRetention),
       today: today,
       threshold: threshold,
       horizonDays: horizonDays,
     );
     start = proj.startReadiness;
-    points.add(PacePoint(p, proj.readyDay));
+    points.add(BudgetPoint(b, proj.readyDay));
   }
   return (curve: points, startReadiness: start);
 }
@@ -305,17 +356,27 @@ ReadinessProjection projectReadiness({
   var newIdx = 0;
   for (var day = 1; day <= horizonDays; day++) {
     final date = today.add(Duration(days: day));
-    // 1. clear due reviews
+    // 1. clear due reviews, tallying their est-minutes (at pre-review maturity) so
+    // the budget-native path knows how much of today the budget goes to reviews.
+    var reviewMinutes = 0.0;
     for (final entry in work.entries) {
       final due = entry.value.due;
       if (due != null && !due.isAfter(date)) {
+        if (pace.budgetMinutes != null) {
+          reviewMinutes += reviewEst(kReviewMinutes,
+              stability: entry.value.stability, fsrsState: entry.value.state);
+        }
         reviewInto(entry.key, entry.value, date);
       }
     }
-    // 2. introduce new sections (essential-first)
-    for (var i = 0;
-        i < pace.newSectionsPerDay && newIdx < unstudied.length;
-        i++, newIdx++) {
+    // 2. introduce new sections (essential-first). The count is either the fixed
+    // pace or — the budget-native forecast (ADR-0016) — DERIVED from the budget minus
+    // today's review load, re-derived each day so growing review-debt throttles it.
+    final newCount = pace.budgetMinutes != null
+        ? sustainableNewCount(
+            budgetMinutes: pace.budgetMinutes!, dueReviewMinutes: reviewMinutes)
+        : pace.newSectionsPerDay;
+    for (var i = 0; i < newCount && newIdx < unstudied.length; i++, newIdx++) {
       final key = unstudied[newIdx].key;
       final sim = _SecSim(const SectionSrsState());
       reviewInto(key, sim, date);
@@ -344,35 +405,4 @@ ReadinessProjection projectReadiness({
     horizonDays: horizonDays,
     startReadiness: start,
   );
-}
-
-/// Convenience: project three pace scenarios (chill / current / push) so the UI
-/// can show a range rather than a false-precise single date.
-Map<String, ReadinessProjection> projectScenarios({
-  required List<Card> cards,
-  required Map<String, SectionSrsState> stateByKey,
-  required ReadinessTarget target,
-  required int currentPerDay,
-  required DateTime today,
-  double desiredRetention = 0.9,
-  double threshold = 0.75,
-  int horizonDays = 365,
-}) {
-  final chill = (currentPerDay * 0.5).round().clamp(1, 1 << 20);
-  final push = (currentPerDay * 2).clamp(1, 1 << 20);
-  ReadinessProjection run(int perDay) => projectReadiness(
-        cards: cards,
-        stateByKey: stateByKey,
-        target: target,
-        pace: PacePolicy(
-            newSectionsPerDay: perDay, desiredRetention: desiredRetention),
-        today: today,
-        threshold: threshold,
-        horizonDays: horizonDays,
-      );
-  return {
-    'chill': run(chill),
-    'current': run(currentPerDay.clamp(1, 1 << 20)),
-    'push': run(push),
-  };
 }

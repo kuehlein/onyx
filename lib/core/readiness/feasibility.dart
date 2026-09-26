@@ -26,23 +26,24 @@ enum FeasibilityStatus {
   infeasible,
 }
 
-/// A dated aim's feasibility. `requiredPerDay` is the minimum new-sections/day that
-/// still hits the date (null when infeasible); `readyBy` is the projected ready
-/// date at the *current* pace.
+/// A dated aim's feasibility. `requiredBudget` is the minimum daily time-budget
+/// (minutes) that still hits the date (null when infeasible) — the user's actual
+/// lever (ADR-0010), not a new/day dial; `readyBy` is the projected ready date at
+/// the *current* budget.
 class AimFeasibility {
   const AimFeasibility({
     required this.status,
     this.date,
     this.readyBy,
-    this.requiredPerDay,
-    this.currentPerDay,
+    this.requiredBudget,
+    this.currentBudget,
   });
 
   final FeasibilityStatus status;
   final DateTime? date;
   final DateTime? readyBy;
-  final int? requiredPerDay;
-  final int? currentPerDay;
+  final double? requiredBudget;
+  final double? currentBudget;
 
   /// The aim needs more attention now — the urgency signal S3 weights on and the
   /// coach warns from (behind = ramp up; infeasible = the cram-coherence case).
@@ -74,23 +75,23 @@ AimFeasibility classifyAimFeasibility({
     // exactly like an open-ended aim.
     return const AimFeasibility(status: FeasibilityStatus.openEnded);
   }
-  final required = forecast.requiredPerDayFor(daysLeft);
+  final required = forecast.requiredBudgetFor(daysLeft);
   final FeasibilityStatus status;
   if (forecast.alreadyReady) {
     status = FeasibilityStatus.ready;
   } else if (required == null) {
-    status =
-        FeasibilityStatus.infeasible; // even the fastest pace misses the date
+    status = FeasibilityStatus
+        .infeasible; // even the largest sustainable budget misses the date
   } else if (readyBy != null && !readyBy.isAfter(date)) {
-    status = FeasibilityStatus.onTrack; // current pace makes it
+    status = FeasibilityStatus.onTrack; // the current budget makes it
   } else {
-    status = FeasibilityStatus.behind; // reachable, needs a faster pace
+    status = FeasibilityStatus.behind; // reachable, needs a bigger budget
   }
   return AimFeasibility(
     status: status,
     date: date,
     readyBy: readyBy,
-    requiredPerDay: required,
-    currentPerDay: forecast.currentPerDay,
+    requiredBudget: required,
+    currentBudget: forecast.currentBudget,
   );
 }

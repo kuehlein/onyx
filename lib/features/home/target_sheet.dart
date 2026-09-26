@@ -338,12 +338,15 @@ class _ForecastBlock extends ConsumerWidget {
           style: theme.textTheme.bodyMedium?.copyWith(
               color: StatusColor.good, fontWeight: FontWeight.w600)));
     } else {
+      // The user's lever is the daily time budget (ADR-0010); the derived new/day is
+      // shown as a felt quantity, not a dial.
       final curDate = f.currentReadyDate;
+      final budgetLabel = '~${f.currentBudget.round()} min/day';
       if (curDate == null) {
         final earliest = f.earliestReadyDate;
         rows.add(Text(
-            'At ~${f.currentPerDay} new/day you won’t hit your target within a '
-            'year. Even at ~${f.maxSampledPerDay}/day the earliest is '
+            'At $budgetLabel you won’t hit your target within a year. Even at '
+            '~${f.maxSampledBudget.round()} min/day the earliest is '
             '${earliest == null ? "over a year out" : _fmtDate(earliest)}.',
             style: theme.textTheme.bodySmall?.copyWith(color: muted)));
       } else {
@@ -352,7 +355,9 @@ class _ForecastBlock extends ConsumerWidget {
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: theme.colorScheme.onSurface),
             children: [
-              TextSpan(text: 'At ~${f.currentPerDay} new/day, ready by '),
+              TextSpan(
+                  text:
+                      'At $budgetLabel (≈${f.currentPerDay} new/day), ready by '),
               TextSpan(
                   text: _fmtDate(curDate),
                   style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -364,37 +369,37 @@ class _ForecastBlock extends ConsumerWidget {
         final chill = f.chillReadyDate;
         rows.add(const SizedBox(height: Dim.space1));
         rows.add(Text(
-          'Push ~${f.pushPerDay}/day → ${push == null ? '1yr+' : _fmtDate(push)}'
+          'Raise ~${f.pushBudget.round()} min → ${push == null ? '1yr+' : _fmtDate(push)}'
           '    ·    '
-          'Ease ~${f.chillPerDay}/day → ${chill == null ? '1yr+' : _fmtDate(chill)}',
+          'Ease ~${f.chillBudget.round()} min → ${chill == null ? '1yr+' : _fmtDate(chill)}',
           style: theme.textTheme.bodySmall?.copyWith(color: muted),
         ));
       }
 
       if (chosenDate != null) {
         final days = chosenDate!.difference(f.today).inDays;
-        final req = f.requiredPerDayFor(days);
+        final req = f.requiredBudgetFor(days);
         rows.add(const SizedBox(height: Dim.space2));
         if (req == null) {
           final earliest = f.earliestReadyDate;
           rows.add(_note(
               Icons.block,
-              'Even at ~${f.maxSampledPerDay}/day you can’t be ready by '
-              '${_fmtDate(chosenDate!)} — earliest is '
+              'Even at ~${f.maxSampledBudget.round()} min/day you can’t be ready '
+              'by ${_fmtDate(chosenDate!)} — earliest is '
               '${earliest == null ? "over a year out" : _fmtDate(earliest)}.',
               StatusColor.bad,
               theme));
-        } else if (req <= f.currentPerDay) {
+        } else if (req <= f.currentBudget) {
           rows.add(_note(
               Icons.check_circle_outline,
-              'On track — your pace reaches ${_fmtDate(chosenDate!)}.',
+              'On track — your budget reaches ${_fmtDate(chosenDate!)}.',
               StatusColor.good,
               theme));
         } else {
           rows.add(_note(
               Icons.bolt,
-              'To be ready by ${_fmtDate(chosenDate!)}, study ~$req/day '
-              '(up from ~${f.currentPerDay}).',
+              'To be ready by ${_fmtDate(chosenDate!)}, raise to ~${req.round()} '
+              'min/day (up from ~${f.currentBudget.round()}).',
               StatusColor.warn,
               theme));
         }
