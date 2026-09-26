@@ -14,7 +14,7 @@ FSRS — when, at the current pace, you'll be ready for each.
 ## What it does
 - **Schedule tests / interviews** — a dated aim. [MVP]
   - An **interview loop** (screen → onsite, follow-ups) is one aim with **ordered rounds**
-    (already modelled: `InterviewAim.rounds`). An **exam** maps to a single-round aim.
+    (already modelled: `Aim.rounds`). An **exam** maps to a single-round aim.
     **Rec:** generalize "rounds" to **"milestones"** so non-interview domains (a jury, a
     multi-part exam) fit the same shape.
 - **Project timelines on a calendar** — from readiness + FSRS, the ready-by date per aim, shown

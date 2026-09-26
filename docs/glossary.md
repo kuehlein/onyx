@@ -10,7 +10,7 @@ apart from the code again. The **model** itself lives in
 | Term | What it is | Code | User-facing copy |
 |---|---|---|---|
 | **Vault** | The plain folder of markdown you own; the single source of truth. Content in user-land, config in an untouchable `_meta/`. | `VaultSource`, `vaultIndex` | "study folder" / "folder" |
-| **Deck** | **A query lens over the vault** — a saved folder path or tag expression selecting a card subset. The primary unit you work in. Decks may overlap. | `Deck` (+ `MembershipQuery`), `core/deck/` | **"deck"** |
+| **Deck** | **A query lens over the vault** — a saved folder path or tag expression selecting a card subset. The primary unit you work in. Decks may overlap. | `Deck` (+ `CardQuery`), `core/deck/` | **"deck"** |
 | **Aim** | One of a **set** of things a deck points at — a dated assessment or open-ended mastery. Carries 4 knobs: difficulty, domain emphasis, durability bar, date-or-open. Readiness = weakest-link across active aims. | `Aim` (list on `Deck.aims`) | the deck's `Vocabulary.assessmentNoun` — **"interview"** (SWE), **"exam"/"test"/"target"** (others) |
 | **DeckTemplate** | The per-directory **template** a deck is configured by (flows, parse rules, vocabulary, target dimensions). Lives in `_meta`; shared by many decks. Formerly "Subject". | `DeckTemplate`, `TemplateRegistry`, `core/template/` | (rarely surfaced) "template" |
 | **Flow** | A study/practice mode, described as data and keyed to a card `type:`. Scheduling = recall / two-clock / mock. | `FlowSpec` | "Flashcard" / "Algorithm" / "System design" / … |

@@ -7,7 +7,7 @@ duplicating them.
 
 ## Read first
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — full conventions (setup, commands, commits, tests, review).
-- **[docs/INDEX.md](docs/INDEX.md)** — the doc map + reading order.
+- **[docs/README.md](docs/README.md)** — the doc map + reading order.
 - **[docs/user_stories/](docs/user_stories/index.md)** — product intent + the anti-drift contract. **This is the source of truth.**
 - **[docs/roadmap.md](docs/roadmap.md)** — sequenced work (what to build next). **Drive work from here, not from memory.**
 - **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records: the *why* behind load-bearing choices.

@@ -1,8 +1,8 @@
 # Contributing to Onyx
 
 Onyx is a calm, local-first study app (Flutter/Dart). This guide is the entry
-point for a human maintainer or reviewer. Start with **[`docs/product-direction.md`](docs/product-direction.md)**
-(what Onyx is) and **[`docs/INDEX.md`](docs/INDEX.md)** (the doc map and reading order).
+point for a human maintainer or reviewer. Start with **[`docs/user_stories/`](docs/user_stories/index.md)**
+(what Onyx is — the source of truth) and **[`docs/README.md`](docs/README.md)** (the doc map and reading order).
 
 > **AI coding agents:** start with **[`AGENTS.md`](AGENTS.md)** — the terse agent-facing
 > entry (commands, boundaries, working norms) that all agent tools read; it links back
@@ -84,7 +84,8 @@ against it (see the triage in the project notes). Consequences for reviewers:
 - [ ] New/changed behaviour is covered by tests; correctness-critical logic has a
       pure, deterministic test.
 - [ ] A load-bearing decision has an ADR; the code references it.
-- [ ] No regression of the locked principles in `docs/product-direction.md` §10
-      (honesty, calm, anti-gamification, local-first degradation, per-goal truth).
-- [ ] User-facing copy honors the terminology rules (“folder” not “vault”, “AI”
-      not “Claude”, “milestone” not “interview”).
+- [ ] No regression of the load-bearing invariants in `docs/architecture.md`
+      (honesty, calm, anti-gamification, local-first degradation, per-aim/weakest-link truth).
+- [ ] User-facing copy stays subject-neutral via the `Vocabulary` seam (“folder”
+      not “vault”, “AI” not “Claude”; assessment nouns like “interview” come from the
+      subject template, never hardcoded in shared engine copy).
