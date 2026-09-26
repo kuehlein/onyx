@@ -467,8 +467,10 @@ The MVP-tagged stories, cloud still absent:
     subject data.** SWE behavior byte-identical (same 35/28), covered by a new default-absent test. The
     "about ready" nudge already carries apply-orientation copy (from the behavioral build); deeper out-of-app
     apply orientation stays fenced to **#109** per the SoT.
-  - **#108 — hygiene (small):** `Story.lastRehearsed` is dead code; decide competency-level freshness
-    (delete it) vs per-story (wire a mock to stamp the story it exercised).
+  - **#108 — hygiene — ✅ DONE (2026-09-26):** `Story.lastRehearsed` was dead code (serialized round-trip
+    only, never stamped, never read). **Decided: competency-level freshness → deleted the field** (freshness
+    already comes from recent mocks in `behavioral_readiness.dart`, not per-story), rather than wire a
+    story↔mock stamp. No test/vault referenced it; drops the `last_rehearsed` frontmatter key.
   - **#109 — deferred design revisit (touches the SoT):** the **glue / real-world next-steps layer**
     (out-of-app apply/register orientation — a deliberate identity decision the SoT currently fences) and
     the **artifact-flow generalization** (the STAR "bank" is n=1; generalize `FlowSpec.produces` only
