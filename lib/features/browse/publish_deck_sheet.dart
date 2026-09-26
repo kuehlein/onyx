@@ -153,11 +153,12 @@ class _PublishDeckSheetState extends ConsumerState<_PublishDeckSheet> {
                 const SizedBox(height: Dim.space5),
                 FilledButton.icon(
                   onPressed: canPublish ? () => _publish(cards) : null,
+                  // Busy state: a static glyph, not a looping spinner
+                  // (design-system §2.6/§8 progressPolicy — a spinning ring loops
+                  // forever + ignores Reduce-Motion). The 'Publishing…' label
+                  // carries the in-flight meaning.
                   icon: _publishing
-                      ? const SizedBox(
-                          width: Dim.iconSm,
-                          height: Dim.iconSm,
-                          child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const Icon(Icons.hourglass_empty, size: Dim.iconMd)
                       : const Icon(Icons.upload_outlined, size: Dim.iconMd),
                   label: Text(_publishing ? 'Publishing…' : 'Publish'),
                 ),

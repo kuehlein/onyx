@@ -419,9 +419,18 @@ class _TodayHero extends ConsumerWidget {
         width: _ringDiameter,
         child: LoadingView(),
       ),
-      error: (_, __) => const SizedBox(
+      // Compact, honest error in the reserved ring slot — not a full EmptyState
+      // (too heavy for the hero) and not a silent/cryptic dash.
+      error: (_, __) => SizedBox(
         height: _ringDiameter,
-        child: Center(child: Text('—')),
+        child: Center(
+          child: Text(
+            "Couldn't load today",
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
       ),
       data: (p) {
         final ring = p.nothingScheduled

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,7 +33,12 @@ class LanesHub extends ConsumerWidget {
 
     return goalsAsync.when(
       loading: () => const LoadingView(),
-      error: (_, __) => const Center(child: Text('—')),
+      error: (_, __) => const EmptyState(
+        icon: Icons.error_outline,
+        title: "Couldn't load your decks",
+        message: 'Something went wrong reading your study folder. '
+            'Reopen the app to try again.',
+      ),
       data: (goals) {
         final live = [
           for (final g in goals)

@@ -160,7 +160,8 @@ class SettingsScreen extends ConsumerWidget {
           // preserved, near-deadline ramp on top).
           ref.watch(targetRetentionProvider).when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, __) => const _UnavailableSetting(
+                    icon: Icons.tune_outlined, title: 'Target retention'),
                 data: (r) => ListTile(
                   leading: const Icon(Icons.tune_outlined),
                   title: const Text('Target retention'),
@@ -182,7 +183,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
           ref.watch(loadCheckInProvider).when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, __) => const _UnavailableSetting(
+                    icon: Icons.favorite_outline,
+                    title: 'Weekly load check-in'),
                 data: (checkIn) => SwitchListTile(
                   secondary: const Icon(Icons.favorite_outline),
                   title: const Text('Weekly load check-in'),
@@ -196,7 +199,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
           ref.watch(masteredCollapseProvider).when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, __) => const _UnavailableSetting(
+                    icon: Icons.unfold_less,
+                    title: 'Collapse mastered sections'),
                 data: (on) => SwitchListTile(
                   secondary: const Icon(Icons.unfold_less),
                   title: const Text('Collapse mastered sections'),
@@ -353,6 +358,9 @@ class SettingsScreen extends ConsumerWidget {
                   'database and dev snapshot — real progress is untouched.',
               onConfirmed: () => _resetProgress(context, ref),
             ),
+            // Dev-only tools (this whole section is dev-gated): silent-hide on
+            // error is fine — no release user sees them, so an honest error frame
+            // isn't worth the row. User-facing prefs above use _UnavailableSetting.
             ref.watch(devSimDayProvider).when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
@@ -738,6 +746,25 @@ String _prettyMinutes(int minutes) {
 /// The in-the-moment sustainability readout under the daily-budget dial
 /// (ADR-0011's "informed override"): an honest zone as the user moves the dial,
 /// never a red "wrong" — a bigger day is their choice, flagged plainly.
+/// The honest fallback when a user-facing preference row's provider errors (a
+/// local read failed): the setting stays visible but disabled, with a calm
+/// reason — never a silently vanishing row (design-system §6: no silent failure).
+class _UnavailableSetting extends StatelessWidget {
+  const _UnavailableSetting({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        enabled: false,
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: const Text(
+            "Couldn't load this setting — reopen Settings to try again."),
+      );
+}
+
 class _BudgetZoneLine extends StatelessWidget {
   const _BudgetZoneLine({required this.minutes});
 
