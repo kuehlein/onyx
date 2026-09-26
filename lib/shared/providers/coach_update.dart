@@ -114,6 +114,10 @@ Future<CoachUpdate?> coachUpdate(Ref ref) async {
     // A neutral subject (no assessment noun) suppresses the "prove it with a
     // mock" nudge — it has no mock/interview to prove it with (G7e).
     hasAssessment: subject.vocabulary.hasAssessment,
+    // Behavioral last-mile timing is subject template data now, not an engine
+    // constant (task #107); absent → no timed behavioral nudge for this subject.
+    behavioralForecastDays: subject.behavioralTiming?.forecastDays,
+    behavioralWindowDays: subject.behavioralTiming?.windowDays,
   );
   return buildCoachUpdate(signals);
 }

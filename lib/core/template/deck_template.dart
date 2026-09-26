@@ -239,6 +239,24 @@ class ParseProfile {
 /// A configured study subject. Grows across the #30 phases; currently [id],
 /// [target] (Phase 0/2), [flows] (Phase 3), [vocabulary] (G3), and
 /// [parseProfile] (G4).
+/// Optional, assessment-only timing for the behavioral last-mile nudge (task
+/// #107). The *mechanic* is general (see `CoachSignals.behavioralDue`); only
+/// these day-windows are subject data. **Default-absent:** a subject that doesn't
+/// frame study around a job-application-style assessment simply gets no timed
+/// behavioral nudge. The SWE reference opts in.
+class BehavioralTiming {
+  const BehavioralTiming(
+      {required this.forecastDays, required this.windowDays});
+
+  /// When the readiness forecast puts "ready" within this many days, it's time to
+  /// start applying — and to begin behavioral prep (the primary trigger).
+  final int forecastDays;
+
+  /// Within this many days of a scheduled assessment, surface behavioral prep
+  /// regardless of the forecast (the imminent safety net).
+  final int windowDays;
+}
+
 class DeckTemplate {
   const DeckTemplate({
     required this.id,
@@ -248,10 +266,15 @@ class DeckTemplate {
     this.vocabulary = Vocabulary.neutral,
     this.parseProfile = ParseProfile.standard,
     this.domainLabels = const {},
+    this.behavioralTiming,
   });
 
   final String id;
   final TargetSpec target;
+
+  /// Subject timing for the behavioral last-mile nudge, or null when the subject
+  /// doesn't frame study around a job-application-style assessment (task #107).
+  final BehavioralTiming? behavioralTiming;
 
   /// Assessment terminology for shared engine copy. Neutral by default; the SWE
   /// reference sets "interviewer" so its UI is unchanged.

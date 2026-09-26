@@ -104,6 +104,8 @@ class CoachSignals {
     this.daysToReady,
     this.behavioralStage,
     this.hasAssessment = true,
+    this.behavioralForecastDays,
+    this.behavioralWindowDays,
   });
 
   /// Any section studied at all (else the deck is untouched).
@@ -158,29 +160,33 @@ class CoachSignals {
   /// the provider sets it from the active goal's vocabulary.
   final bool hasAssessment;
 
-  /// Within this many days of a scheduled interview, behavioral practice is worth
-  /// surfacing regardless of the readiness forecast (imminent — no time to wait).
-  /// This is the safety net; the primary trigger is [behavioralForecastDays].
-  static const behavioralWindowDays = 28;
+  /// Within this many days of a scheduled assessment, behavioral practice is worth
+  /// surfacing regardless of the readiness forecast (imminent — no time to wait) —
+  /// the safety net. **Subject data** (`DeckTemplate.behavioralTiming`), null when
+  /// the subject doesn't configure behavioral timing → no timed nudge (task #107).
+  final int? behavioralWindowDays;
 
   /// When the readiness forecast says you're within this many days of ready, it's
-  /// time to start applying — and to begin behavioral prep. Chosen at ~a month so
-  /// stories are built and rehearsed before interviews (which you land only after
-  /// applying) actually arrive, not scrambled after one is scheduled.
-  static const behavioralForecastDays = 35;
+  /// time to start applying — and to begin behavioral prep (the primary trigger).
+  /// **Subject data**, null when unconfigured — the mechanic stays general; only
+  /// the SWE-specific windows are subject data (task #107). See the SWE template
+  /// for the ~35/28-day rationale.
+  final int? behavioralForecastDays;
 
   /// Whether an actual interview is imminent (a scheduled prep-goal round soon).
   bool get _interviewImminent =>
+      behavioralWindowDays != null &&
       daysToInterview != null &&
       daysToInterview! >= 0 &&
-      daysToInterview! <= behavioralWindowDays;
+      daysToInterview! <= behavioralWindowDays!;
 
   /// Whether the pace forecast puts "ready to interview" within reach — the cue
   /// to start applying (and thus to start behavioral prep).
   bool get _readySoon =>
+      behavioralForecastDays != null &&
       daysToReady != null &&
       daysToReady! >= 0 &&
-      daysToReady! <= behavioralForecastDays;
+      daysToReady! <= behavioralForecastDays!;
 
   /// Behavioral delivery isn't sharp yet AND it's time to work it — either the
   /// forecast says you're about ready to apply, or an interview is already close.
@@ -365,8 +371,10 @@ CoachUpdate? buildCoachUpdate(CoachSignals s) {
     // An imminent scheduled interview is the more urgent framing; otherwise lead
     // with the "ready to apply" forecast.
     final d = s.daysToInterview;
-    final imminent =
-        d != null && d >= 0 && d <= CoachSignals.behavioralWindowDays;
+    final imminent = s.behavioralWindowDays != null &&
+        d != null &&
+        d >= 0 &&
+        d <= s.behavioralWindowDays!;
     return CoachUpdate(
       kind: CoachInsightKind.behavioralPrep,
       tone: imminent && d <= 14 ? CoachTone.caution : CoachTone.info,

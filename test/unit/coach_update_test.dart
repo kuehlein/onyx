@@ -28,6 +28,11 @@ CoachSignals sig({
   int? daysToReady,
   BehavioralStage? behavioralStage,
   bool hasAssessment = true,
+  // Default to the SWE reference timing so existing behavioral tests keep
+  // exercising the 35/28-day thresholds; pass null to model a subject whose
+  // template configures no behavioral timing (task #107).
+  int? behavioralForecastDays = 35,
+  int? behavioralWindowDays = 28,
 }) =>
     CoachSignals(
       anyStudied: anyStudied,
@@ -53,6 +58,8 @@ CoachSignals sig({
       daysToReady: daysToReady,
       behavioralStage: behavioralStage,
       hasAssessment: hasAssessment,
+      behavioralForecastDays: behavioralForecastDays,
+      behavioralWindowDays: behavioralWindowDays,
     );
 
 void main() {
@@ -98,6 +105,22 @@ void main() {
           buildCoachUpdate(sig(behavioralStage: BehavioralStage.notStarted))
               ?.kind,
           isNot(CoachInsightKind.behavioralPrep));
+    });
+
+    test('default-absent template timing → no timed behavioral nudge (#107)',
+        () {
+      // The 35/28-day windows are SWE-template data, not an engine constant. A
+      // subject that doesn't configure behavioral timing gets no timed nudge —
+      // even ready-soon with an imminent interview and a live stage. The mechanic
+      // stays general; only the windows are subject data.
+      final u = buildCoachUpdate(sig(
+        behavioralForecastDays: null,
+        behavioralWindowDays: null,
+        daysToReady: 20,
+        daysToInterview: 5,
+        behavioralStage: BehavioralStage.readyToRehearse,
+      ));
+      expect(u?.kind, isNot(CoachInsightKind.behavioralPrep));
     });
 
     test('health/overload still outranks the behavioral nudge', () {

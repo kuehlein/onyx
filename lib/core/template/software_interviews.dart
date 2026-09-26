@@ -39,6 +39,13 @@ const softwareInterviewsTemplate = DeckTemplate(
   // Pretty domain labels the generic title-caser can't produce (SWE-specific);
   // shared readiness/insights copy reads these instead of a hardcoded switch.
   domainLabels: {'ds-a': 'DS & A', 'system-design': 'System design'},
+  // Behavioral last-mile timing (task #107) — SWE-job-hunt-specific, so it's
+  // template data, not an engine constant. Forecast (primary): when readiness is
+  // ~a month out, start applying + build stories, so they're rehearsed before
+  // interviews (which you land only after applying) actually arrive — not
+  // scrambled after one is scheduled. Window (safety net): an interview within
+  // four weeks is imminent enough to surface regardless of the forecast.
+  behavioralTiming: BehavioralTiming(forecastDays: 35, windowDays: 28),
   target: TargetSpec(
     // level → tier-depth curve (was _tierRelevanceByLevel in target.dart).
     levels: [
