@@ -274,4 +274,69 @@ void main() {
     expect(state.error, contains("Couldn't reach Claude"));
     expect(state.busy, isFalse);
   });
+
+  test(
+      'first-exposure: no grade, no applied attempt, <tutor-done/> ends it (n0015)',
+      () async {
+    final c = _container(
+      // ASCII only: http.Response defaults to latin1, so a non-ASCII char (e.g.
+      // an em-dash) in the mock body throws a spurious "network" error.
+      claude: _replying('What makes halving work here?\n<tutor-done/>'),
+      db: db,
+    );
+    addTearDown(c.dispose);
+    final card = _card();
+    final section = card.sections.first;
+
+    // Keep the provider alive so send()'s in-memory state (incl. the ephemeral
+    // `done` flag) isn't clobbered by an autodispose rebuild reloading from the DB.
+    final tutor = coachProvider('c1', 'complexity', kind: CoachKind.tutor);
+    c.listen(tutor, (_, __) {});
+    await c.read(tutor.future);
+    await c.read(tutor.notifier).send('it halves the space each step',
+        card: card,
+        section: section,
+        revealed: true,
+        grading: false,
+        firstExposure: true);
+
+    final state = c.read(tutor).asData!.value;
+    // Sentinel stripped from the visible text; the exchange is marked done.
+    expect(state.messages.last.text, 'What makes halving work here?');
+    expect(state.messages.last.suggestedGrade, isNull); // never graded
+    expect(state.done, isTrue);
+    // First exposure is grading:false → nothing logged to applied_attempts.
+    expect(await db.select(db.appliedAttempts).get(), isEmpty);
+  });
+
+  test('first-exposure enforces the hard learner-turn cap (n0015)', () async {
+    final c =
+        _container(claude: _replying('Keep going.'), db: db); // never "done"
+    addTearDown(c.dispose);
+    final card = _card();
+    final section = card.sections.first;
+    final tutor = coachProvider('c1', 'complexity', kind: CoachKind.tutor);
+    c.listen(tutor, (_, __) {}); // keep alive across sends (see the test above)
+    Future<void> ask(String t) => c.read(tutor.notifier).send(t,
+        card: card,
+        section: section,
+        revealed: true,
+        grading: false,
+        firstExposure: true);
+
+    await c.read(tutor.future);
+    for (var i = 0; i < firstExposureMaxLearnerTurns; i++) {
+      await ask('turn $i');
+    }
+    var state = c.read(tutor).asData!.value;
+    expect(state.messages.where((m) => m.role == CoachRole.user).length,
+        firstExposureMaxLearnerTurns); // reached the cap
+    expect(state.done, isTrue); // wrapped up at the cap
+
+    // A further send is a no-op — the cap is a hard ceiling, not a suggestion.
+    await ask('one more');
+    state = c.read(tutor).asData!.value;
+    expect(state.messages.where((m) => m.role == CoachRole.user).length,
+        firstExposureMaxLearnerTurns); // still capped, no 4th turn
+  });
 }

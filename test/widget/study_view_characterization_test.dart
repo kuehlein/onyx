@@ -127,6 +127,48 @@ void main() {
       // A non-quizzable section is reachable via "View full card".
       expect(find.text('View full card'), findsOneWidget);
     });
+
+    testWidgets(
+        'a substantial section shows the "Talk it through" chip post-reveal (n0015)',
+        (tester) async {
+      const substantial = CardSection(
+        heading: 'When to Use',
+        slug: 'when-to-use',
+        content: 'Reach for this when X.\n\n- signal one\n- signal two',
+        quizzable: true,
+      );
+      await tester.pumpWidget(_learnApp(LearnItem(
+        card: _card(id: 'L', sections: [substantial]),
+        section: substantial,
+      )));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start learning'));
+      await tester.pumpAndSettle();
+      // Learner-invited + post-reveal: no chip while still guessing.
+      expect(find.text('Talk it through'), findsNothing);
+      await tester.tap(find.widgetWithText(FilledButton, 'Reveal'));
+      await tester.pumpAndSettle();
+      expect(find.text('Talk it through'), findsOneWidget);
+    });
+
+    testWidgets('a one-line stub section shows no tutor chip (n0015)',
+        (tester) async {
+      const stub = CardSection(
+        heading: 'Variants', // not a pretest heading → shown immediately
+        slug: 'variants',
+        content: 'A single short line.',
+        quizzable: true,
+      );
+      await tester.pumpWidget(_learnApp(LearnItem(
+        card: _card(id: 'L', sections: [stub]),
+        section: stub,
+      )));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start learning'));
+      await tester.pumpAndSettle();
+      // Already revealed (read section), but too thin to elicit → no chip.
+      expect(find.text('Talk it through'), findsNothing);
+    });
   });
 
   group('Review view', () {

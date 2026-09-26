@@ -389,6 +389,12 @@ final _tutorDoneTag = RegExp(r'<tutor-done\s*/?>', caseSensitive: false);
   return (text: text, done: done);
 }
 
+/// The hard cap on LEARNER turns in a first-exposure tutor exchange (n0015),
+/// enforced in code (not just the prompt): first exposure is the thinnest-
+/// knowledge moment, so the exchange stays short — "effort helps only on success".
+/// The prompt aims for 2; this is the ceiling the UI never lets the learner exceed.
+const firstExposureMaxLearnerTurns = 3;
+
 AppliedAssessment? _parseAssessment(String raw) {
   final match = _assessmentTag.firstMatch(raw);
   if (match == null) return null;

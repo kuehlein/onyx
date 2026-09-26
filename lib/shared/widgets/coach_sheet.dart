@@ -21,13 +21,16 @@ import 'sheet_header.dart';
 /// Open the coach as a modal bottom sheet for [card]. In a study session pass
 /// the [section] under review, the current [revealed] state, and `grading:
 /// true` (so it may offer an advisory grade). When browsing a card, pass
-/// `section: null`, `revealed: true`, `grading: false`.
+/// `section: null`, `revealed: true`, `grading: false`. Set [firstExposure] for
+/// the Learn first-exposure tutor (n0015): a post-reveal, grounding-only Socratic
+/// step that elicits self-explanation, capped at a few turns and never graded.
 Future<void> showCoachSheet(
   BuildContext context, {
   required Card card,
   CardSection? section,
   required bool revealed,
   required bool grading,
+  bool firstExposure = false,
   String? interviewContext,
 }) {
   return showOnyxSheet<void>(
@@ -42,6 +45,7 @@ Future<void> showCoachSheet(
       section: section,
       revealed: revealed,
       grading: grading,
+      firstExposure: firstExposure,
       interviewContext: interviewContext,
     ),
   );
@@ -79,6 +83,7 @@ class CoachSheet extends ConsumerStatefulWidget {
     required this.section,
     required this.revealed,
     required this.grading,
+    this.firstExposure = false,
     this.interviewContext,
   });
 
@@ -86,6 +91,10 @@ class CoachSheet extends ConsumerStatefulWidget {
   final CardSection? section;
   final bool revealed;
   final bool grading;
+
+  /// The Learn first-exposure tutor (n0015): a grounding-only, capped, ungraded
+  /// Socratic step. Shapes the opener + the send, and disables input once done.
+  final bool firstExposure;
 
   /// When set (a themed mock from a prep goal), the interviewer tailors the mock
   /// to this role, e.g. "Google · Senior · Backend".
@@ -189,6 +198,7 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
           section: widget.section,
           revealed: widget.revealed,
           grading: widget.grading,
+          firstExposure: widget.firstExposure,
           interviewContext: widget.interviewContext,
         );
     _scrollToEnd();
@@ -264,7 +274,9 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                             ),
                             const SizedBox(height: Dim.space3),
                             if (state.isEmpty)
-                              _EmptyHint(revealed: widget.revealed)
+                              _EmptyHint(
+                                  revealed: widget.revealed,
+                                  firstExposure: widget.firstExposure)
                             else
                               for (final m in state.messages)
                                 _Bubble(
@@ -291,10 +303,23 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
                     style: TextStyle(color: theme.colorScheme.onErrorContainer),
                   ),
                 ),
+              // First-exposure tutor wrapped up (n0015): a calm close, no grade
+              // nudge — input disabled below (the learner grades on their own).
+              if (widget.firstExposure && state.done)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Dim.space4, vertical: Dim.space2),
+                  child: Text(
+                    "That's a good place to stop — close when you're ready.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
               _InputBar(
                 controller: _input,
                 focusNode: _focus,
-                busy: state.busy || !ready,
+                busy: state.busy || !ready || state.done,
                 grading: widget.grading,
                 listening: _listening,
                 micAvailable: _sttAvailable,
@@ -357,22 +382,28 @@ class _Header extends StatelessWidget {
 /// Placeholder shown before the first message; its wording adapts to whether
 /// the answer is hidden (hint) or revealed (discuss).
 class _EmptyHint extends StatelessWidget {
-  const _EmptyHint({required this.revealed});
+  const _EmptyHint({required this.revealed, this.firstExposure = false});
 
   final bool revealed;
+  final bool firstExposure;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // The first-exposure tutor opens with a grounding, not a quiz (n0015): a
+    // local template (no API call) — the learner answers, then the tutor reacts.
+    final text = firstExposure
+        ? 'You can see it now — in your own words, what is the one idea here? '
+            "I'll ask, you explain."
+        : revealed
+            ? 'Ask anything about this card — for a clearer explanation, an '
+                'example, or a sanity check on what you recalled.'
+            : "Stuck? Ask for a hint and I'll nudge you without giving it away.";
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Dim.space6),
         child: Text(
-          revealed
-              ? 'Ask anything about this card — for a clearer explanation, an '
-                  'example, or a sanity check on what you recalled.'
-              : "Stuck? Ask for a hint and I'll nudge you without giving it "
-                  'away.',
+          text,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

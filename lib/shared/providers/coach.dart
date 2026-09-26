@@ -45,6 +45,7 @@ class CoachState {
     this.messages = const [],
     this.busy = false,
     this.error,
+    this.done = false,
   });
 
   final List<CoachMessage> messages;
@@ -54,6 +55,11 @@ class CoachState {
 
   /// A user-presentable failure from the last send (network/auth), or null.
   final String? error;
+
+  /// First-exposure tutor only (n0015): the exchange has wrapped up — the tutor
+  /// emitted `<tutor-done/>` or the learner-turn cap was reached. The UI stops
+  /// soliciting more turns. Always false for the coach/examiner personas.
+  final bool done;
 
   bool get isEmpty => messages.isEmpty;
 
@@ -71,11 +77,13 @@ class CoachState {
     bool? busy,
     String? error,
     bool clearError = false,
+    bool? done,
   }) =>
       CoachState(
         messages: messages ?? this.messages,
         busy: busy ?? this.busy,
         error: clearError ? null : (error ?? this.error),
+        done: done ?? this.done,
       );
 }
 
@@ -126,11 +134,22 @@ class Coach extends _$Coach {
     CardSection? section,
     required bool revealed,
     required bool grading,
+    bool firstExposure = false,
     String? interviewContext,
   }) async {
     final current = state.asData?.value ?? const CoachState();
     final trimmed = text.trim();
-    if (trimmed.isEmpty || current.busy) return;
+    if (trimmed.isEmpty || current.busy || current.done) return;
+
+    // First-exposure tutor (n0015): a HARD learner-turn cap enforced in code, not
+    // just the prompt. Once the learner has used their allowed turns, wrap up
+    // rather than send again.
+    if (firstExposure &&
+        current.messages.where((m) => m.role == CoachRole.user).length >=
+            firstExposureMaxLearnerTurns) {
+      state = AsyncData(current.copyWith(done: true));
+      return;
+    }
 
     final claude = ref.read(claudeServiceProvider);
     if (claude == null) {
@@ -153,6 +172,7 @@ class Coach extends _$Coach {
           section: section,
           revealed: revealed,
           grading: grading,
+          firstExposure: firstExposure,
           interviewContext: interviewContext,
           skill: _skill, // resolved in build(); no await gap here
         ),
@@ -164,6 +184,22 @@ class Coach extends _$Coach {
             ),
         ],
       );
+      if (firstExposure) {
+        // First exposure never grades: parse only text + the <tutor-done/> close
+        // (no applied assessment). Wrap up on the sentinel or the learner-turn cap.
+        final fe = parseFirstExposureReply(reply);
+        await _persist(
+            db, card.id, section?.slug, CoachRole.assistant, fe.text, null);
+        final done = fe.done ||
+            history.where((m) => m.role == CoachRole.user).length >=
+                firstExposureMaxLearnerTurns;
+        state = AsyncData(current.copyWith(
+          messages: [...history, CoachMessage(CoachRole.assistant, fe.text)],
+          busy: false,
+          done: done,
+        ));
+        return;
+      }
       final parsed = parseCoachReply(reply);
       await _persist(db, card.id, section?.slug, CoachRole.assistant,
           parsed.text, parsed.grade);

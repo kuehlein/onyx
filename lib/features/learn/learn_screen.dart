@@ -92,6 +92,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                 section: current.section,
                 revealed: revealed,
                 grading: false, // Learn uses the tutor persona.
+                // Post-reveal, the Learn tutor IS the first-exposure tutor
+                // (n0015): grounding-only Socratic, capped, ungraded. Pre-reveal
+                // it stays the generic no-spoiler hint tutor.
+                firstExposure: revealed,
               ),
             ),
         ],
@@ -211,6 +215,30 @@ class _LearnView extends StatelessWidget {
                     if (revealed) ...[
                       const SizedBox(height: Dim.space3),
                       CardMarkdown(section.content),
+                      // First-exposure tutor (n0015): a subtle, LEARNER-INVITED
+                      // affordance under the content — it never auto-opens, and
+                      // only appears on a section with enough to elicit (not a
+                      // one-line stub). The grade bar below stays live throughout.
+                      if (sectionHasSubstance(section))
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => showCoachSheet(
+                              context,
+                              card: item.card,
+                              section: section,
+                              revealed: true,
+                              grading: false,
+                              firstExposure: true,
+                            ),
+                            icon: const Icon(Icons.forum_outlined,
+                                size: Dim.iconMd),
+                            label: const Text('Talk it through'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
                       // Reference sections (e.g. the implementation) aren't
                       // quizzed — read them here without leaving the flow.
                       ViewFullCardButton(card: item.card),

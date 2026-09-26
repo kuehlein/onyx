@@ -119,4 +119,23 @@ void main() {
       expect(isPretestSection('Time & Space Complexity'), isFalse);
     });
   });
+
+  group('sectionHasSubstance (n0015 first-exposure chip gate)', () {
+    CardSection sec(String content) =>
+        CardSection(heading: 'H', slug: 'h', content: content, quizzable: true);
+
+    test('a one-line stub or empty section has no substance', () {
+      expect(sectionHasSubstance(sec('A single short line.')), isFalse);
+      expect(sectionHasSubstance(sec('')), isFalse);
+      expect(sectionHasSubstance(sec('   ')), isFalse);
+      expect(sectionHasSubstance(sec('- just one bullet')), isFalse);
+    });
+
+    test('two+ paragraphs or list items count as substance', () {
+      expect(sectionHasSubstance(sec('First para.\n\nSecond para.')), isTrue);
+      expect(sectionHasSubstance(sec('- one\n- two')), isTrue);
+      expect(sectionHasSubstance(sec('1. one\n2. two')), isTrue);
+      expect(sectionHasSubstance(sec('Intro.\n\n- a')), isTrue); // two blocks
+    });
+  });
 }

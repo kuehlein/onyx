@@ -116,3 +116,23 @@ bool isPretestSection(String heading) {
   ];
   return cues.any(h.contains);
 }
+
+/// Whether a section has enough substance to be worth a first-exposure tutor
+/// dialogue (n0015): at least two "blocks" — paragraphs (blank-line separated) or
+/// list items. A one-line stub (e.g. a bare "Variants") has nothing to elicit, so
+/// it doesn't earn the "Talk it through" affordance. Structure-based, so it's
+/// subject- and language-neutral (NOT English heading matching, unlike the
+/// pretest cue list above).
+bool sectionHasSubstance(CardSection section) {
+  final content = section.content.trim();
+  if (content.isEmpty) return false;
+  final listItems = content
+      .split('\n')
+      .where((l) => RegExp(r'^\s*([-*]|\d+[.)])\s').hasMatch(l))
+      .length;
+  final paragraphs = content
+      .split(RegExp(r'\n\s*\n'))
+      .where((p) => p.trim().isNotEmpty)
+      .length;
+  return listItems >= 2 || paragraphs >= 2;
+}
