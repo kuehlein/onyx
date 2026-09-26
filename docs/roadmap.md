@@ -540,12 +540,13 @@ The MVP-tagged stories, cloud still absent:
   capped at 2× Good via stability scaling); **optimizer-from-history DEFERRED** (no fitter in the `fsrs`
   package; needs ~1000+ reviews to beat defaults — revisit at data scale + tooling). Remaining arc:
   ✅ **state-aware est-minutes** (#133, done 2026-09-27 — first-time cost × FSRS maturity, per-flow floors,
-  algo mode-aware) → the **capped retention floor** (#106, its reviews-first slice already shipped; now has
-  the est-minutes fidelity it needed to size the due-queue cap), then flip the workload guardrails from
-  **fixed → derived** (budget/urgency-aware new + practice quantities under the flow-aware ceiling) and add
-  the **budget → ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already produce a sane,
-  SoT-conformant plan — but this is where "the engine derives the quantities" becomes fully real. (**#114
-  Phase C** — engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
+  algo mode-aware) → ✅ **capped retention floor** (#106, done 2026-09-27 — packer floor+cap wired to the
+  review track, now est-minutes-sized so a heavy-mature day packs honestly, end-to-end tested). **Both
+  prereqs done → #114 Phase B is now UNBLOCKED:** flip the workload guardrails from **fixed → derived**
+  (budget/urgency-aware new + practice quantities under the flow-aware ceiling) and add the **budget →
+  ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already
+  produce a sane, SoT-conformant plan — but this is where "the engine derives the quantities" becomes fully
+  real. (**#114 Phase C** — engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
   **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
