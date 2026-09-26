@@ -9,6 +9,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/srs/review_queue.dart';
 import '../../shared/providers/backup.dart';
 import '../../shared/url.dart';
+import '../../core/ai/coach.dart' show CoachKind;
 import '../../shared/providers/coach.dart';
 import '../../shared/providers/learn.dart';
 import '../../shared/providers/practice.dart';
@@ -64,7 +65,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     // The coach's latest advisory grade for this section (only once revealed).
     final suggestedGrade = (current != null && _revealed)
         ? ref
-            .watch(coachProvider(current.card.id, current.section.slug))
+            .watch(coachProvider(current.card.id, current.section.slug,
+                kind: CoachKind.examiner))
             .asData
             ?.value
             .suggestedGrade

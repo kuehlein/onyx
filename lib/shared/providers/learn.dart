@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/ai/coach.dart' show CoachKind;
 import '../../core/clock.dart';
 import '../../core/srs/learn_queue.dart';
 import '../../core/srs/srs_scheduler.dart' show learnEasyMaxIntervalFactor;
@@ -119,7 +120,8 @@ class LearnSession extends _$LearnSession {
     // Fresh session: clear stale per-section coach chats (symmetric with the
     // review session). Browse chats are untouched; within a session, chats
     // persist to the DB so they survive closing/reopening the coach.
-    await clearTestCoachConversations(ref.read(appDatabaseProvider));
+    await clearTestCoachConversations(
+        ref.read(appDatabaseProvider), CoachKind.tutor);
     return LearnSessionState(queue: queue, graduated: 0);
   }
 

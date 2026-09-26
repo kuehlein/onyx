@@ -31,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   /// Deletes all study progress — schedule, review log, activity, coach chats,
   /// and applied (mock) attempts — while leaving preferences (settings/target)
@@ -46,14 +46,22 @@ class AppDatabase extends _$AppDatabase {
         await delete(recognitionStates).go();
       });
 
-  // Pre-release: no databases exist in the wild, and this SQLite file is a
-  // derived cache — the real study progress lives in the vault snapshot
-  // (srs_state / reviews / applied attempts) and is restored on an empty DB. So
-  // there's nothing to migrate: schema v1 just creates every table fresh. Add
-  // incremental onUpgrade steps only once there are real users to carry forward.
+  // Pre-release: this SQLite file is a derived cache — the real study progress
+  // lives in the vault snapshot (srs_state / reviews / applied attempts) and is
+  // restored on an empty DB, so `onCreate` builds every table fresh. The one
+  // `onUpgrade` step below carries an existing local DB forward (coach chats are
+  // local-only, not in the vault) rather than forcing a wipe; keep adding narrow
+  // steps here as the schema evolves.
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          // v2 (n0015): a `kind` discriminator on coach_messages so the Learn
+          // first-exposure tutor and the Review examiner don't share/clear one
+          // transcript on the same (cardId, sectionSlug). Legacy rows → 'coach'.
+          if (from < 2) await m.addColumn(coachMessages, coachMessages.kind);
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

@@ -111,6 +111,12 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
   ({String cardId, String? sectionSlug}) get _scope =>
       (cardId: widget.card.id, sectionSlug: widget.section?.slug);
 
+  /// Which coach surface this sheet is (n0015) — derived from grading + whether
+  /// it's section-scoped, so a Learn tutor and a Review examiner keep separate
+  /// transcripts on the same section.
+  CoachKind get _coachKind =>
+      coachKindFor(grading: widget.grading, hasSection: widget.section != null);
+
   @override
   void initState() {
     super.initState();
@@ -175,7 +181,8 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
     // Keep focus so the learner can keep typing without re-tapping the field.
     _focus.requestFocus();
     await ref
-        .read(coachProvider(_scope.cardId, _scope.sectionSlug).notifier)
+        .read(coachProvider(_scope.cardId, _scope.sectionSlug, kind: _coachKind)
+            .notifier)
         .send(
           text,
           card: widget.card,
@@ -204,7 +211,8 @@ class _CoachSheetState extends ConsumerState<CoachSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final async = ref.watch(coachProvider(_scope.cardId, _scope.sectionSlug));
+    final async = ref.watch(
+        coachProvider(_scope.cardId, _scope.sectionSlug, kind: _coachKind));
     // Persisted history loads from the DB; until it's in, hold the input.
     final ready = async.hasValue;
     final state = async.asData?.value ?? const CoachState();

@@ -90,8 +90,15 @@ class Coach extends _$Coach {
   /// window on the slow vault read). Re-resolved whenever the skill changes.
   CoachSkill _skill = CoachSkill.none;
 
+  /// The surface this conversation belongs to (n0015) — set from the [build]
+  /// family arg and used to scope BOTH the load filter and every persisted row,
+  /// so a tutor and an examiner never share a transcript on one `(card, section)`.
+  CoachKind _kind = CoachKind.coach;
+
   @override
-  Future<CoachState> build(String cardId, String? sectionSlug) async {
+  Future<CoachState> build(String cardId, String? sectionSlug,
+      {CoachKind kind = CoachKind.coach}) async {
+    _kind = kind;
     // Register both deps before the first await (disposal hazard: a rebuild while
     // the vault read is pending must not leave a post-await `ref.watch`).
     final skillFuture = ref.watch(coachSkillProvider.future);
@@ -103,6 +110,7 @@ class Coach extends _$Coach {
           ..where((m) => sectionSlug == null
               ? m.sectionSlug.isNull()
               : m.sectionSlug.equals(sectionSlug))
+          ..where((m) => m.kind.equals(kind.name))
           ..orderBy([(m) => OrderingTerm(expression: m.id)]))
         .get();
     return CoachState(messages: rows.map(_toMessage).toList());
@@ -247,6 +255,7 @@ class Coach extends _$Coach {
       db.into(db.coachMessages).insert(CoachMessagesCompanion.insert(
             cardId: cardId,
             sectionSlug: Value(sectionSlug),
+            kind: Value(_kind.name),
             role: role == CoachRole.user ? 'user' : 'assistant',
             body: body,
             suggestedGrade: Value(suggestedGrade),
@@ -260,13 +269,18 @@ class Coach extends _$Coach {
       );
 }
 
-/// Deletes every test-scoped (per-section) coach conversation, leaving Browse
-/// (whole-card, null-section) chats intact. Called at the start of each study
-/// session so a previous session's test chats never resurface, while a chat
-/// still survives closing/reopening the coach and tab switches *within* a
-/// session (it's reloaded from the DB).
-Future<void> clearTestCoachConversations(AppDatabase db) =>
-    (db.delete(db.coachMessages)..where((m) => m.sectionSlug.isNotNull())).go();
+/// Deletes the per-section coach conversations **of one [kind]**, leaving Browse
+/// (whole-card, null-section) chats and the *other* kind intact. Called at the
+/// start of each study session so a previous session's chats never resurface —
+/// scoped by kind (n0015) so a Learn session clearing its [CoachKind.tutor] rows
+/// no longer wipes the Review [CoachKind.examiner] transcript, and vice-versa. A
+/// chat still survives closing/reopening the coach *within* a session (reloaded
+/// from the DB).
+Future<void> clearTestCoachConversations(AppDatabase db, CoachKind kind) =>
+    (db.delete(db.coachMessages)
+          ..where((m) => m.sectionSlug.isNotNull())
+          ..where((m) => m.kind.equals(kind.name)))
+        .go();
 
 /// Turn raw API failures into something calm and actionable for the learner.
 String _friendly(ClaudeException e) {

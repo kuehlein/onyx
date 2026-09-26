@@ -6,6 +6,22 @@ import '../interview/assessment.dart';
 /// Who authored a coach turn.
 enum CoachRole { user, assistant }
 
+/// Which coach surface a conversation belongs to. Persisted on each
+/// `coach_messages` row (its [name]) so transcripts that share a
+/// `(cardId, sectionSlug)` don't clear or interleave each other (n0015):
+///  - [coach]    — the general / browse (whole-card) chat.
+///  - [tutor]    — the Learn first-exposure tutor (grading off, per section).
+///  - [examiner] — the Review / mock examiner (grading on, per section).
+enum CoachKind { coach, tutor, examiner }
+
+/// The [CoachKind] for a surface, from whether it grades and whether it's scoped
+/// to a section: a whole-card (browse) chat is [CoachKind.coach]; a per-section
+/// chat is the [CoachKind.examiner] when grading, else the [CoachKind.tutor].
+CoachKind coachKindFor({required bool grading, required bool hasSection}) =>
+    !hasSection
+        ? CoachKind.coach
+        : (grading ? CoachKind.examiner : CoachKind.tutor);
+
 /// One turn in a coach conversation. Assistant turns may carry an advisory
 /// [suggestedGrade] (1–4) parsed out of the reply — the app highlights that
 /// grade button, but the learner always taps for themselves.

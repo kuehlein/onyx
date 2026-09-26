@@ -110,6 +110,12 @@ class CoachMessages extends Table {
   TextColumn get role => text()();
   TextColumn get body => text()();
 
+  /// Which coach surface owns this row (a [CoachKind] name): 'coach' (general /
+  /// browse), 'tutor' (Learn first-exposure), or 'examiner' (Review / mock). Lets
+  /// a tutor and an examiner transcript share a `(cardId, sectionSlug)` without
+  /// clearing or interleaving each other (n0015). Legacy rows default to 'coach'.
+  TextColumn get kind => text().withDefault(const Constant('coach'))();
+
   /// Advisory grade (1–4) offered on an assistant turn; null otherwise.
   IntColumn get suggestedGrade => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();

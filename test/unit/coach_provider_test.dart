@@ -210,11 +210,45 @@ void main() {
         .send('browse q', card: _card(), revealed: true, grading: false);
     expect((await db.select(db.coachMessages).get()).length, 4); // 2 + 2
 
-    await clearTestCoachConversations(db);
+    await clearTestCoachConversations(db, CoachKind.coach);
 
     final remaining = await db.select(db.coachMessages).get();
     expect(remaining.every((m) => m.sectionSlug == null), isTrue);
     expect(remaining.length, 2); // only the Browse turns survive
+  });
+
+  test('tutor and examiner keep separate transcripts on one section (n0015)',
+      () async {
+    final c = _container(claude: _replying('ok'), db: db);
+    addTearDown(c.dispose);
+    final card = _card();
+    final section = card.sections.first;
+
+    // A Learn tutor and a Review examiner both discuss the SAME (card, section).
+    await c
+        .read(coachProvider('c1', 'complexity', kind: CoachKind.tutor).notifier)
+        .send('learn q',
+            card: card, section: section, revealed: true, grading: false);
+    await c
+        .read(coachProvider('c1', 'complexity', kind: CoachKind.examiner)
+            .notifier)
+        .send('review q',
+            card: card, section: section, revealed: true, grading: true);
+
+    // Each surface reloads ONLY its own turns — no interleaving.
+    final tutor = await c
+        .read(coachProvider('c1', 'complexity', kind: CoachKind.tutor).future);
+    final examiner = await c.read(
+        coachProvider('c1', 'complexity', kind: CoachKind.examiner).future);
+    expect(tutor.messages.any((m) => m.text == 'learn q'), isTrue);
+    expect(tutor.messages.any((m) => m.text == 'review q'), isFalse);
+    expect(examiner.messages.any((m) => m.text == 'review q'), isTrue);
+
+    // A Learn session clears only tutor rows; the examiner transcript survives.
+    await clearTestCoachConversations(db, CoachKind.tutor);
+    final rows = await db.select(db.coachMessages).get();
+    expect(rows.any((m) => m.kind == 'tutor'), isFalse); // tutor wiped
+    expect(rows.any((m) => m.kind == 'examiner'), isTrue); // examiner survives
   });
 
   test('network failure keeps the user turn (persisted) and a friendly message',

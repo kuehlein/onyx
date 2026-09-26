@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/ai/coach.dart' show CoachKind;
 import '../../core/clock.dart';
 import '../../core/database/database.dart';
 import '../../core/readiness/readiness.dart';
@@ -137,7 +138,8 @@ class StudySession extends _$StudySession {
     // a previous session so they never resurface. Browse chats are untouched;
     // within a session, chats persist to the DB (survive close/reopen + tab
     // switches).
-    await clearTestCoachConversations(ref.read(appDatabaseProvider));
+    await clearTestCoachConversations(
+        ref.read(appDatabaseProvider), CoachKind.examiner);
 
     // Snapshot readiness before the session so the completion screen can show
     // how far this session moved the user toward their goal. Uses `read` (not
