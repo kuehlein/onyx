@@ -422,8 +422,13 @@ model before we add features, so we build on the right shape.
 - **Design-system application — ✅ largely satisfied** (audit 2026-09-25): the reframe surfaces were
   built on the design layer as they went — **zero raw color literals**; `Dim` tokens / `StatusColor` /
   `showOnyxSheet` / `StatusPill` applied consistently across home · aims · browse · insights · settings ·
-  deck-editor. **Remaining polish:** motion / transitions + a deliberate **empty & loading-state** pass
-  across surfaces (the token layer is done; the *states* aren't audited).
+  deck-editor. **Error-state pass — ✅ DONE (2026-09-25):** silent async-error swallows routed through calm
+  frames (settings prefs → a disabled `_UnavailableSetting` row; lanes-hub → `EmptyState`; home ring → a
+  short reserved-height line) and the publish button's looping spinner swapped to a static glyph
+  (progressPolicy). **Remaining polish:** motion / transitions + a fuller **empty-state** sweep (first-run
+  surfaces beyond the 11 already using `EmptyState`). *(Provider-error branches aren't widget-testable under
+  this riverpod + flutter_test — an AsyncNotifier build error doesn't reach `ref.watch` in fake-async;
+  correct at runtime.)*
 - **Design tooling — Figma + UI/UX agents [new, your ask].** Wire a solid design workflow so quality
   isn't gated on hand-crafting: a **Figma source-of-truth** for components/screens + an **agent loop**
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
