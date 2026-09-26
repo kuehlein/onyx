@@ -42,12 +42,21 @@ class TodayRing extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(
-          painter: _RingPainter(
-            fraction: done ? 1 : fraction.clamp(0.0, 1.0),
-            color: ringColor,
-            track: cs.surfaceContainerHighest,
-            stroke: size * 0.075,
+        // The ring eases from empty to today's fraction on load, and to the new
+        // fill after each completed item. context.motionBase is pre-gated on
+        // reduce-motion (→ zero duration → an instant, un-animated jump).
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: done ? 1.0 : fraction.clamp(0.0, 1.0)),
+          duration: context.motionBase,
+          curve: context.tokens.easeStandard,
+          builder: (context, value, child) => CustomPaint(
+            painter: _RingPainter(
+              fraction: value,
+              color: ringColor,
+              track: cs.surfaceContainerHighest,
+              stroke: size * 0.075,
+            ),
+            child: child,
           ),
           child: Center(
             child: Column(

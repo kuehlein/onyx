@@ -296,11 +296,19 @@ class _Track extends StatelessWidget {
         height: _trackHeight,
         color: cs.surfaceContainerHighest,
         alignment: Alignment.centerLeft,
+        // The fill eases from empty to its fraction (design-system "bar-fill",
+        // motionBase). context.motionBase is pre-gated on reduce-motion → an
+        // instant jump when the OS setting is on.
         child: fraction == null
             ? null
-            : FractionallySizedBox(
-                widthFactor: fraction!.clamp(0.0, 1.0),
-                child: Container(color: color),
+            : TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: fraction!.clamp(0.0, 1.0)),
+                duration: context.motionBase,
+                curve: context.tokens.easeStandard,
+                builder: (context, value, _) => FractionallySizedBox(
+                  widthFactor: value,
+                  child: Container(color: color),
+                ),
               ),
       ),
     );
