@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/deck/deck.dart';
+import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/shared/providers/analytics.dart';
 import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/database.dart';
+import 'package:onyx/shared/providers/interview.dart';
 import 'package:onyx/shared/providers/readiness.dart';
 import 'package:onyx/shared/providers/srs.dart';
 import 'package:onyx/shared/providers/decks.dart';
@@ -153,6 +155,75 @@ void main() {
     final retBeta = await c.read(deckRetentionByDomainProvider('beta').future);
     expect(retAlpha.map((d) => d.domain), ['algebra']);
     expect(retBeta.map((d) => d.domain), ['biology']);
+  });
+
+  test(
+      'struggling + retention-by-tag + applied-summary scope to members (#30d)',
+      () async {
+    if (!_sqliteAvailable) return;
+    final c = make();
+    addTearDown(c.dispose);
+
+    final now = DateTime.now();
+    final srs = c.read(srsRepositoryProvider);
+    await srs.seedStudied([
+      (cardId: 'a1', sectionSlug: 'definition', stability: 12.0),
+      (cardId: 'b1', sectionSlug: 'definition', stability: 12.0),
+    ], at: now);
+    // Two lapses per card (topStruggling's minLapses) — one in each lens.
+    await srs.seedReviews([
+      (cardId: 'a1', sectionSlug: 'definition', grade: 1, stability: 2.0),
+      (cardId: 'a1', sectionSlug: 'definition', grade: 1, stability: 2.0),
+      (cardId: 'b1', sectionSlug: 'definition', grade: 1, stability: 2.0),
+      (cardId: 'b1', sectionSlug: 'definition', grade: 1, stability: 2.0),
+    ], at: now);
+    // An applied attempt in each lens's domain.
+    final applied = c.read(appliedRepositoryProvider);
+    await applied.record(
+        cardId: 'a1',
+        domain: 'algebra',
+        source: 'flashcard',
+        occurredAt: now,
+        assessment: const AppliedAssessment(appliedScore: 70));
+    await applied.record(
+        cardId: 'b1',
+        domain: 'biology',
+        source: 'flashcard',
+        occurredAt: now,
+        assessment: const AppliedAssessment(appliedScore: 70));
+
+    for (final id in ['alpha', 'beta']) {
+      c.listen(deckStrugglingCardsProvider(id), (_, __) {});
+      c.listen(deckRetentionByTagProvider(id), (_, __) {});
+      c.listen(deckAppliedSummaryProvider(id), (_, __) {});
+    }
+
+    // retention-by-tag: each lens sees only its own tag, never the other's.
+    expect(
+        (await c.read(deckRetentionByTagProvider('alpha').future))
+            .map((d) => d.domain),
+        ['algebra']);
+    expect(
+        (await c.read(deckRetentionByTagProvider('beta').future))
+            .map((d) => d.domain),
+        ['biology']);
+
+    // struggling cards: scoped to the lens's members — the other lane's lapsing
+    // card is never surfaced (the "per-goal lie" this refactor closes).
+    final sa = (await c.read(deckStrugglingCardsProvider('alpha').future))
+        .map((s) => s.cardId)
+        .toSet();
+    final sb = (await c.read(deckStrugglingCardsProvider('beta').future))
+        .map((s) => s.cardId)
+        .toSet();
+    expect(sa, {'a1'});
+    expect(sb, {'b1'});
+
+    // applied summary: scoped to the lens's member cards → only its domain.
+    expect((await c.read(deckAppliedSummaryProvider('alpha').future)).keys,
+        ['algebra']);
+    expect((await c.read(deckAppliedSummaryProvider('beta').future)).keys,
+        ['biology']);
   });
 
   test('pause redistributes the budget; remove degrades to one goal', () async {
