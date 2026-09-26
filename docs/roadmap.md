@@ -490,8 +490,8 @@ The MVP-tagged stories, cloud still absent:
     `_meta/coach.md` skill. Locked in **[ADR-0015](adr/0015-ai-tutor-first-exposure.md)** + the story
     (card.md/home.md/index.md). Prereqs: a `kind` discriminator on `CoachMessages` (tutor|examiner
     collision), prompt caching, a **red-team eval** (no answer-leak across 3 subjects), and a **delayed-
-    retention durability metric** gating any default-on rollout. Two points under human review: kill-switch
-    (rec: none) + rollout gating (rec: opt-in + measure). → **#26**.
+    retention durability metric** gating any default-on rollout. Confirmed 2026-09-25: no kill-switch
+    (key + tap is consent); ship opt-in, default-on gated on the retention signal. → **#26**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
 - **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc.

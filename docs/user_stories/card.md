@@ -79,8 +79,8 @@
   subject-general (questions derive from the content). The skill is authored in `_meta/coach.md`
   (a `## First exposure` tone block + per-card confusable-siblings), not a new file.
   **Status.** Accepted — design in [ADR-0015](../adr/0015-ai-tutor-first-exposure.md); build sliced.
-  Two points under human review: any **kill-switch** (rec: none — key + tap is consent) and whether a
-  **wider default-on rollout** is gated on a measured delayed-retention signal (rec: yes).
+  Confirmed 2026-09-25: **no kill-switch** (key + tap is consent); ship **opt-in**, with any wider
+  **default-on rollout gated** on a measured delayed-retention signal.
 
 ## Cross-refs
 [browse](browse.md) (entry + stubs) · [deck_creation](deck_creation.md) (authoring) ·

@@ -80,11 +80,11 @@ vault**. The load-bearing verified facts:
    overview; `card.source` per-section grounding is deferred (0 cards use it).
 9. **Consent / kill-switch — [Decision #1, recommended]:** **no new per-behavior toggle**; consent
    is *key present + the tap* (identical to today's coach). At most **one shared "AI coaching"**
-   switch, never a per-flow dial (ADR-0011). *(Under human review.)*
+   switch, never a per-flow dial (ADR-0011). *(Confirmed 2026-09-25.)*
 10. **Rollout — [Decision #4, recommended]:** ship **opt-in** (learner-invited, off the happy path
     by construction) + instrument the retention join, and **hard-gate any default-on / broader
     rollout** on a non-negative delayed-retention signal vs. untutored first exposures.
-    *(Under human review.)*
+    *(Confirmed 2026-09-25.)*
 
 ## Alternatives considered
 
