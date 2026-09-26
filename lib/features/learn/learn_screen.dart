@@ -94,8 +94,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                 grading: false, // Learn uses the tutor persona.
                 // Post-reveal, the Learn tutor IS the first-exposure tutor
                 // (n0015): grounding-only Socratic, capped, ungraded. Pre-reveal
-                // it stays the generic no-spoiler hint tutor.
-                firstExposure: revealed,
+                // it stays the generic no-spoiler hint tutor. Gated on the same
+                // subject-neutral substance floor as the inline chip (n0015 §8) so
+                // a thin stub falls back to the generic discuss persona, not a
+                // Socratic drill with nothing to elicit.
+                firstExposure: revealed && sectionHasSubstance(current.section),
               ),
             ),
         ],
