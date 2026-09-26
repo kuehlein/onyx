@@ -102,19 +102,27 @@ class TargetSpec {
   final String fallbackContextId;
   final String fallbackTrackId;
 
+  // The inner fallback lookups carry a final `orElse: … .first` so a bogus
+  // fallback id (e.g. a typo in a hand-authored onyx-subject.yaml, which the YAML
+  // loader accepts verbatim) degrades to the first slot instead of throwing a
+  // StateError at readiness time — past the loader's try/catch. Lists are always
+  // non-empty here (the YAML parser + built-ins guarantee it).
   LevelValue levelById(String id) => levels.firstWhere(
         (v) => v.id == id,
-        orElse: () => levels.firstWhere((v) => v.id == fallbackLevelId),
+        orElse: () => levels.firstWhere((v) => v.id == fallbackLevelId,
+            orElse: () => levels.first),
       );
 
   ContextValue contextById(String id) => contexts.firstWhere(
         (v) => v.id == id,
-        orElse: () => contexts.firstWhere((v) => v.id == fallbackContextId),
+        orElse: () => contexts.firstWhere((v) => v.id == fallbackContextId,
+            orElse: () => contexts.first),
       );
 
   TrackValue trackById(String id) => tracks.firstWhere(
         (v) => v.id == id,
-        orElse: () => tracks.firstWhere((v) => v.id == fallbackTrackId),
+        orElse: () => tracks.firstWhere((v) => v.id == fallbackTrackId,
+            orElse: () => tracks.first),
       );
 
   /// Relevance (0..1) of knowledge at [tier] for [levelId]. Mirrors the legacy

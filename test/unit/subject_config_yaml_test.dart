@@ -159,4 +159,54 @@ parse: {sectionHeadingLevel: 9, fileExtensions: []}
       expect(p.neverQuizzed, isNull); // absent → engine's built-in blocklist
     });
   });
+
+  group('behavioralTiming (#107)', () {
+    test('parses forecastDays + windowDays when present', () {
+      final cfg = deckTemplateFromYaml('''
+id: x
+target:
+  levels: [{id: only}]
+  contexts: [{id: c}]
+  tracks: [{id: tr}]
+behavioralTiming: {forecastDays: 40, windowDays: 21}
+''');
+      expect(cfg.behavioralTiming?.forecastDays, 40);
+      expect(cfg.behavioralTiming?.windowDays, 21);
+    });
+
+    test('absent or partial block → null (no timed nudge)', () {
+      expect(deckTemplateFromYaml(_demoYaml).behavioralTiming, isNull);
+      final partial = deckTemplateFromYaml('''
+id: x
+target:
+  levels: [{id: only}]
+  contexts: [{id: c}]
+  tracks: [{id: tr}]
+behavioralTiming: {forecastDays: 40}
+''');
+      expect(partial.behavioralTiming, isNull); // windowDays missing
+    });
+  });
+
+  group('fallback-id crash defense', () {
+    test('a bogus fallback id degrades to the first slot, not a StateError',
+        () {
+      // A hand-authored config with a typo'd fallback: the YAML loader accepts it
+      // verbatim, so the lookups must degrade to .first rather than throw a
+      // StateError at readiness time (past the loader's try/catch).
+      final t = deckTemplateFromYaml('''
+id: x
+target:
+  levels: [{id: a1, tierCurve: [1.0, 0.5]}, {id: b1, tierCurve: [1.0, 0.9]}]
+  contexts: [{id: casual, stabilityTargetDays: 60}]
+  tracks: [{id: speaking}]
+  fallback: {level: TYPO, context: TYPO, track: TYPO}
+''').target;
+      expect(t.levelById('nope').id, 'a1');
+      expect(t.contextById('nope').id, 'casual');
+      expect(t.trackById('nope').id, 'speaking');
+      expect(
+          t.tierRelevance('nope', 2), 0.5); // a1's curve, via .first fallback
+    });
+  });
 }

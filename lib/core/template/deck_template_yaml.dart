@@ -18,6 +18,7 @@ import 'deck_template.dart';
 ///   fallback: {level: a1, context: casual, track: speaking}   # optional
 /// flows:     [{cardType: flashcard, scheduling: recall, quizzability: blocklist}, ...]
 /// vocabulary: {examinerNoun: interviewer, assessmentNoun: interview}  # optional (G3/G7)
+/// behavioralTiming: {forecastDays: 35, windowDays: 28}  # optional (#107); else no timed nudge
 /// parse:                                           # optional (G4); else built-in
 ///   sectionHeadingLevel: 2        # 2 = `##`, 3 = `###`
 ///   fileExtensions: [md]          # lowercase, dot optional
@@ -37,7 +38,21 @@ DeckTemplate deckTemplateFromYaml(String yaml) {
     vocabulary: _vocabulary(root['vocabulary']),
     parseProfile: _parseProfile(root['parse']),
     domainLabels: _domainLabels(root['domainLabels']),
+    behavioralTiming: _behavioralTiming(root['behavioralTiming']),
   );
+}
+
+/// The optional `behavioralTiming:` block (task #107) — how far ahead of "ready"
+/// / an imminent assessment to surface behavioral prep. Absent or malformed →
+/// null (no timed behavioral nudge for the subject); the *mechanic* stays general.
+/// ```yaml
+/// behavioralTiming: {forecastDays: 35, windowDays: 28}
+/// ```
+BehavioralTiming? _behavioralTiming(Object? node) {
+  if (node is! Map) return null;
+  final f = node['forecastDays'], w = node['windowDays'];
+  if (f is! int || w is! int) return null;
+  return BehavioralTiming(forecastDays: f, windowDays: w);
 }
 
 /// Cheaply reads just the `id:` from a subject-config YAML without a full parse —
