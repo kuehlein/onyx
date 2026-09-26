@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/deck/deck.dart';
+import '../../core/plan/practice_plan.dart';
 import '../../core/readiness/ladder.dart';
 import '../../core/readiness/pace.dart';
 import '../../core/readiness/projection.dart';
@@ -8,6 +9,7 @@ import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/template/deck_template.dart';
 import 'clock.dart';
+import 'daily_plan.dart';
 import 'decks.dart';
 import 'readiness.dart';
 import 'srs.dart';
@@ -130,6 +132,7 @@ Future<ReadinessForecast?> readinessForecastFor(
   final registryF =
       ref.watch(templateRegistryProvider.future); // register first
   final decksF = ref.watch(decksProvider.future);
+  final budgetsF = ref.watch(deckBudgetsProvider.future);
   final index = await ref.watch(vaultIndexProvider.future);
   final states = await ref.watch(srsStatesProvider.future);
   final today = (await ref.watch(clockProvider.future)).today();
@@ -163,18 +166,27 @@ Future<ReadinessForecast?> readinessForecastFor(
       ),
   };
 
-  // Recent new-sections/day, computed like readinessPace. With no history yet,
-  // assume a standard daily plan so we can still show an outlook.
-  const window = 14;
-  final repo = ref.watch(srsRepositoryProvider);
-  final started = await repo
-      .sectionsStartedSince(today.subtract(const Duration(days: window)));
-  final denom = recentPaceDenominator(
-      firstLearnDate: await repo.firstLearnDate(),
-      today: today,
-      window: window);
-  var perDay = (started / denom).round();
-  if (perDay < 1) perDay = 8;
+  // The engine-DERIVED new-material allowance (ADR-0016) at THIS deck's budget slice
+  // + today's due-review load — so the forecast, and the budget → ready-by readout
+  // (ADR-0011 §D5), respond to the budget dial rather than noisy recent history. The
+  // simulation still runs a fixed per-day pace (as before); re-deriving day-by-day as
+  // review-debt grows is a later refinement. A 0-budget (inactive/paused) deck falls
+  // back to the gentle default so its outlook still renders.
+  final budgets = await budgetsF;
+  final budget = budgets[dims.deckId] ?? 0;
+  var dueReviewMinutes = 0.0;
+  for (final card in cards) {
+    for (final section in card.quizzableSections) {
+      final st = stateByKey['${card.id}::${section.slug}'];
+      if (st == null || !st.studied) continue;
+      if (st.due != null && st.due!.isAfter(today)) continue; // not due yet
+      dueReviewMinutes += reviewEst(card.estMinutes ?? kReviewMinutes,
+          stability: st.stability, fsrsState: st.state);
+    }
+  }
+  var perDay = sustainableNewCount(
+      budgetMinutes: budget, dueReviewMinutes: dueReviewMinutes);
+  if (perDay < 1) perDay = kDefaultDailyNew;
 
   final c = projectPaceCurve(
     cards: cards,

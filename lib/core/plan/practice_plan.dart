@@ -104,6 +104,16 @@ double scaleEstMinutes(
   return t0 * (1.0 - (1.0 - floor) * ramp);
 }
 
+/// Review est-minutes for a section from its FSRS primitives: the first-time cost
+/// [t0] when unseen or state-unknown, else [scaleEstMinutes] at the review floor
+/// (#133). The single place the review track, the derived new-allowance (ADR-0016),
+/// and the ready-date forecast all size a due review, so they stay consistent.
+double reviewEst(double t0, {double? stability, int? fsrsState}) =>
+    (stability == null || fsrsState == null)
+        ? t0
+        : scaleEstMinutes(t0,
+            stability: stability, fsrsState: fsrsState, floor: kReviewFloor);
+
 // ── Retention floor + new-material ceiling (task #106 / #114 Phase B · ADR-0016)
 // The two levers that size the day's balance of review vs. new. The retention floor
 // (below) reserves review time first (#106); the new-material ceiling (`sustainableNewCount`)

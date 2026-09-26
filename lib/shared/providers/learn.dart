@@ -45,17 +45,14 @@ Future<int> dailyNewAllowance(Ref ref) async {
   final budget = budgets[goal.id] ?? 0;
   if (budget <= 0) return 0;
 
-  // Today's due-review load in minutes, state-aware (#133) — mirrors the review
-  // track's `_est` in practice_plan.dart so the derived count reflects the time
-  // reviews will actually take (a mature-heavy backlog leaves more room for new).
+  // Today's due-review load in minutes, state-aware (#133) via the shared [reviewEst]
+  // so the derived count reflects the time reviews will actually take (a mature-heavy
+  // backlog leaves more room for new).
   var dueReviewMinutes = 0.0;
   for (final it in reviewData.queue) {
-    final t0 = it.card.estMinutes ?? kReviewMinutes;
     final st = srs[it.key];
-    dueReviewMinutes += st == null
-        ? t0
-        : scaleEstMinutes(t0,
-            stability: st.stability, fsrsState: st.state, floor: kReviewFloor);
+    dueReviewMinutes += reviewEst(it.card.estMinutes ?? kReviewMinutes,
+        stability: st?.stability, fsrsState: st?.state);
   }
 
   return sustainableNewCount(

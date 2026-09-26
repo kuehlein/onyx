@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/deck/deck.dart';
 import 'package:onyx/core/interview/assessment.dart';
+import 'package:onyx/core/readiness/projection.dart';
 import 'package:onyx/core/readiness/readiness.dart';
 import 'package:onyx/core/readiness/target.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/template_registry.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/shared/models/card.dart';
+import 'package:onyx/shared/providers/daily_plan.dart';
 import 'package:onyx/shared/providers/database.dart';
 import 'package:onyx/shared/providers/interview.dart';
 import 'package:onyx/shared/providers/readiness.dart';
@@ -348,5 +350,51 @@ void main() {
     // A's strong cards → higher current readiness than B's weak cards; EQUAL would
     // mean both forecasts used one deck's card sliver (the #113 bug).
     expect(fa!.startReadiness, greaterThan(fb!.startReadiness));
+  });
+
+  test(
+      'the forecast pace is budget-derived — a bigger budget → more new/day '
+      '(#114 B2 / ADR-0016)', () async {
+    if (!_sqliteAvailable) return;
+    final db = AppDatabase.withExecutor(NativeDatabase.memory());
+    addTearDown(() => db.close());
+
+    // A fresh deck (no reviews due) → the derived pace is sustainableNewCount(budget,
+    // 0): the review-debt bound (budget/12) gives 90 → 7 and the hard-max caps 240 → 20.
+    // Before B2 the pace came from recent history and ignored the budget entirely.
+    ForecastDims dims() => (
+          deckId: 'default',
+          level: SeniorityLevel.senior,
+          company: CompanyTier.faang,
+          track: Track.backend,
+        );
+    Future<ReadinessForecast?> at(double budget) async {
+      final c = ProviderContainer(overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        vaultIndexProvider.overrideWith((ref) async => index),
+        srsStatesProvider.overrideWith((ref) async => const SectionStates({})),
+        templateRegistryProvider.overrideWith(
+            (ref) async => TemplateRegistry.single(softwareInterviewsTemplate)),
+        decksProvider.overrideWith(() => _FixedGoals(
+            const [Deck(id: 'default', name: 'All', templateId: 'swe')])),
+        deckBudgetsProvider.overrideWith((ref) async => {'default': budget}),
+      ]);
+      addTearDown(c.dispose);
+      return c.read(readinessForecastForProvider(dims()).future);
+    }
+
+    final lean = await at(90);
+    final rich = await at(240);
+    expect(
+        lean!.currentPerDay, 7); // sustainableNewCount(90, 0): budget/12 bound
+    expect(
+        rich!.currentPerDay, 20); // sustainableNewCount(240, 0): hard-max bound
+    expect(rich.currentPerDay, greaterThan(lean.currentPerDay));
+    // More new/day never finishes later (sooner or, if both unreachable, equal).
+    final leanDay = lean.currentReadyDay;
+    final richDay = rich.currentReadyDay;
+    if (leanDay != null && richDay != null) {
+      expect(richDay, lessThanOrEqualTo(leanDay));
+    }
   });
 }
