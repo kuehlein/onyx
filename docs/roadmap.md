@@ -81,10 +81,14 @@ model before we add features, so we build on the right shape.
         because indivisible lumpy units (a 40-min SD problem) break hard partitions; soft fair-queuing
         absorbs that and routes leftover time to the behind aim's *divisible* work.
         - *Follow-ups surfaced 2026-09-22 (separable from S3, don't fold in):*
-          **(i) time-estimate fidelity** — `PracticeUnit.estMinutes` is flat-per-type (review 1.5 /
-          learn 3 / SD 40 / mock 20, with an optional `est_minutes` per-card override), NOT state-aware;
-          make it reflect item state (mature review ≈ 0.5, first-time algo ≈ 45, familiar re-solve ≈ 15)
-          so bin-packing is tighter for *any* allocation — near **#32**.
+          **(i) time-estimate fidelity — ✅ DONE (2026-09-27, #133).** `PracticeUnit.estMinutes` is now the
+          FIRST-TIME cost (per-type/authored `est_minutes`) scaled by FSRS maturity: `scaleEstMinutes` ramps
+          ×1.0 (new) → ×floor at 21d stability, lapsed ×1.2. The stability curve is universal (scales across
+          subjects); the per-flow **floor** carries compressibility (review 0.33, algo-solve 0.5, algo-explain
+          0.4) — content-heavy outliers ride a bigger authored `est_minutes`. Also **mode-aware for algos**:
+          the two-clock EXPLAIN is sized as a short recognition pass, not a full solve. Learn stays flat (it
+          IS first time); **SD/mock flat → variable-length SD design is #135; measured/learned T0 is a later
+          option** (with #32C). Pure helper unit-tested; suite 1217.
           **(ii) leftover-budget backfill** — big blocky chunks that don't fit defer, and review/learn
           (small, divisible) naturally soak up the remainder; backfilling with *extra* re-exposure
           beyond due when the day under-fills is **#58** (overflow) + **#104** (cram session) territory.
@@ -535,10 +539,11 @@ The MVP-tagged stories, cloud still absent:
   Priority offset, byte-identical at 0.90) + ✅ **guarded Learn-Easy** (a new card's Easy first interval
   capped at 2× Good via stability scaling); **optimizer-from-history DEFERRED** (no fitter in the `fsrs`
   package; needs ~1000+ reviews to beat defaults — revisit at data scale + tooling). Remaining arc:
-  state-aware **est-minutes** + the **capped retention floor** est-minutes fidelity (#106, its reviews-first
-  slice already shipped), then flip the workload guardrails from **fixed → derived** (budget/urgency-aware
-  new + practice quantities under the flow-aware ceiling) and add the **budget → ready-by date-shift**
-  readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already produce a sane,
+  ✅ **state-aware est-minutes** (#133, done 2026-09-27 — first-time cost × FSRS maturity, per-flow floors,
+  algo mode-aware) → the **capped retention floor** (#106, its reviews-first slice already shipped; now has
+  the est-minutes fidelity it needed to size the due-queue cap), then flip the workload guardrails from
+  **fixed → derived** (budget/urgency-aware new + practice quantities under the flow-aware ceiling) and add
+  the **budget → ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already produce a sane,
   SoT-conformant plan — but this is where "the engine derives the quantities" becomes fully real. (**#114
   Phase C** — engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
