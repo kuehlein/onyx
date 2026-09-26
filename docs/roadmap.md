@@ -425,9 +425,12 @@ model before we add features, so we build on the right shape.
   deck-editor. **Error-state pass — ✅ DONE (2026-09-25):** silent async-error swallows routed through calm
   frames (settings prefs → a disabled `_UnavailableSetting` row; lanes-hub → `EmptyState`; home ring → a
   short reserved-height line) and the publish button's looping spinner swapped to a static glyph
-  (progressPolicy). **Remaining polish:** motion / transitions + a fuller **empty-state** sweep (first-run
-  surfaces beyond the 11 already using `EmptyState`). *(Provider-error branches aren't widget-testable under
-  this riverpod + flutter_test — an AsyncNotifier build error doesn't reach `ref.watch` in fake-async;
+  (progressPolicy). **Empty-state sweep — ✅ DONE (2026-09-25):** four hand-rolled full-area empties (report /
+  practice / interview debrief + planner) routed through the shared `EmptyState` (−59 lines, icon normalized
+  to accent; the 3 AI-key states now share one glyph). Left inline by design: ChatView openers, the weak-area
+  'unlock with AI' CTA (below live stats), the generation sheet's left-aligned notes, per-chart insights
+  `_NoData`. **Remaining polish:** motion / transitions. *(Provider-error branches aren't widget-testable
+  under this riverpod + flutter_test — an AsyncNotifier build error doesn't reach `ref.watch` in fake-async;
   correct at runtime.)*
 - **Design tooling — Figma + UI/UX agents [new, your ask].** Wire a solid design workflow so quality
   isn't gated on hand-crafting: a **Figma source-of-truth** for components/screens + an **agent loop**
