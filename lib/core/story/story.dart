@@ -13,7 +13,6 @@ import 'package:yaml/yaml.dart';
 /// level: staff
 /// companies: [amazon]
 /// created: 2026-09-12
-/// last_rehearsed: 2026-09-20
 /// ---
 /// # The Kafka migration
 /// ## Situation …
@@ -35,7 +34,6 @@ class Story {
     this.result = '',
     this.learning = '',
     this.created,
-    this.lastRehearsed,
   });
 
   /// Filename slug (without `.md`) — the stable id and the vault path stem.
@@ -48,7 +46,6 @@ class Story {
   final List<String> companies;
   final String situation, task, action, result, learning;
   final DateTime? created;
-  final DateTime? lastRehearsed;
 
   /// Rough "has a quantified result" check (a digit in the Result) — the single
   /// highest-signal behavioral element and the one most often missing.
@@ -72,7 +69,6 @@ class Story {
     String? result,
     String? learning,
     Object? created = _unset,
-    Object? lastRehearsed = _unset,
   }) =>
       Story(
         id: id ?? this.id,
@@ -86,9 +82,6 @@ class Story {
         result: result ?? this.result,
         learning: learning ?? this.learning,
         created: created == _unset ? this.created : created as DateTime?,
-        lastRehearsed: lastRehearsed == _unset
-            ? this.lastRehearsed
-            : lastRehearsed as DateTime?,
       );
 
   String toMarkdown() {
@@ -107,9 +100,6 @@ class Story {
     }
     if (created != null) {
       b.writeln('created: ${date(created!)}');
-    }
-    if (lastRehearsed != null) {
-      b.writeln('last_rehearsed: ${date(lastRehearsed!)}');
     }
     b
       ..writeln('---')
@@ -169,7 +159,6 @@ class Story {
       result: sections['result'] ?? '',
       learning: sections['learning'] ?? '',
       created: _date(fm['created']),
-      lastRehearsed: _date(fm['last_rehearsed']),
     );
   }
 
