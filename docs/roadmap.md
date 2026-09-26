@@ -479,19 +479,24 @@ The MVP-tagged stories, cloud still absent:
     "you keep failing X — focus here" **struggling-items** nudge (persistent-fail signal; analytics has
     `deckStrugglingCards`). Speculative + overlaps **#103**; revisit ONLY if usage shows the ordered Home
     + reports are insufficient. A short spike, not a feature. → **#25**.
-  - **#26 AI-tutor first exposure — ✅ DESIGNED (spike + story + ADR done 2026-09-25); build sliced, not
-    yet started.** An AI **tutor that asks the learner questions** to build understanding at first exposure —
-    ask-don't-tell (the dominant risk is AI-that-explains → illusion of competence; see learning-science.md
-    "AI-mediated learning"). Design spike ran as an **adversarial workflow** (research → synthesize → 5
-    critics → harden), whose critics verified claims against code/vault and reversed the first draft:
-    **learner-invited** ("Talk it through" after reveal, never auto-open), **grounding-only** self-explanation
-    (no transfer, no answer-leak), **non-blocking** (grade bar always live, FSRS untouched), **not a flow /
-    not gated** (the learn step's internal pedagogy), reusing the coach seam with a `firstExposure` flag +
-    `_meta/coach.md` skill. Locked in **[ADR-0015](adr/0015-ai-tutor-first-exposure.md)** + the story
-    (card.md/home.md/index.md). Prereqs: a `kind` discriminator on `CoachMessages` (tutor|examiner
-    collision), prompt caching, a **red-team eval** (no answer-leak across 3 subjects), and a **delayed-
-    retention durability metric** gating any default-on rollout. Confirmed 2026-09-25: no kill-switch
-    (key + tap is consent); ship opt-in, default-on gated on the retention signal. → **#26**.
+  - **#26 AI-tutor first exposure — ✅ DESIGNED + ✅ BUILT (opt-in v1 live, 2026-09-25).** An AI **tutor that
+    asks the learner questions** at first exposure — ask-don't-tell (the dominant risk is AI-that-explains →
+    illusion of competence; see learning-science.md "AI-mediated learning"). Design via an **adversarial
+    workflow** (research → synthesize → 5 critics → harden); locked in
+    **[ADR-0015](adr/0015-ai-tutor-first-exposure.md)** + the story (card.md/home.md/index.md). **Learner-
+    invited** ("Talk it through" after reveal, never auto-open), **grounding-only** self-explanation, **non-
+    blocking** (grade bar always live, FSRS untouched), **not a flow / not gated** — the learn step's internal
+    pedagogy, on the coach seam via a `firstExposure` flag + `_meta/coach.md` skill. Confirmed: no kill-switch
+    (key + tap is consent); ship opt-in, default-on gated on the retention signal. **Shipped:** PREREQ-A
+    `kind` discriminator; S1 prompt seam; S4+S5 Learn wiring (chip + opener + hard turn cap + done); S2
+    confusable-siblings injection; PREREQ-B opt-in multi-turn prompt caching. **Follow-ups (tracked, both are
+    *measurement*, non-blocking for opt-in v1):** **#120** S3 red-team eval — needs a **live-AI / CI-with-key**
+    harness (answer-leak can't be mocked); **#121** S6 durability metric — an **on-device** join
+    (`reviews` × `srs_state` × `coach_messages.kind`; the data is already local, no telemetry needed) that
+    gates any default-on. *Method:* opt-in ⇒ observational/self-selected, so treat it as a **negative
+    guardrail** (harm-catch), not proof; a clean causal read needs a **randomized offer/cohort**; cross-user
+    aggregation waits on the deferred cloud + **opt-in, privacy-preserving, aggregate-only** telemetry (no raw
+    content/PII). → **#26**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
 - **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc.
