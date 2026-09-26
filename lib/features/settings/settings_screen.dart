@@ -139,10 +139,12 @@ class SettingsScreen extends ConsumerWidget {
                           'and ramps to this as the habit sticks; the app derives '
                           'the mix and eases new material as a deadline nears.'),
                       const SizedBox(height: Dim.space1),
-                      // The in-the-moment "informed override" readout (ADR-0011):
-                      // an honest sustainability zone as you move the dial. A
-                      // date-shift readout waits on Phase B (budget → new-count).
+                      // The in-the-moment "informed override" readout (ADR-0011 §D5):
+                      // an honest sustainability zone + the active goal's projected
+                      // ready-date at this budget — both move live as you step the
+                      // dial, so the consequence of the move is visible (budget → B2).
                       _BudgetZoneLine(minutes: target),
+                      const _BudgetReadyLine(),
                     ],
                   ),
                   trailing: _Stepper(
@@ -798,4 +800,40 @@ class _BudgetZoneLine extends StatelessWidget {
           ?.copyWith(color: color, fontWeight: FontWeight.w600),
     );
   }
+}
+
+/// The budget → ready-by "informed override" readout (ADR-0011 §D5): the active
+/// goal's projected ready-date at the current budget (via the budget-native forecast,
+/// #114 B2), so moving the daily-time dial shows its consequence. Neutral — never a
+/// red countdown, always "speed up anytime". Silent when there's no forecast (no
+/// goal/cards), the target is already met, or it's unreachable within the horizon
+/// (no nagging with a false "1yr+").
+class _BudgetReadyLine extends ConsumerWidget {
+  const _BudgetReadyLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final f = ref.watch(readinessForecastProvider).asData?.value;
+    if (f == null || f.alreadyReady) return const SizedBox.shrink();
+    final date = f.currentReadyDate;
+    if (date == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: Dim.space1),
+      child: Text(
+        'At this budget, on track to be ready ~${_fmtReadyDate(date)} — '
+        'speed up anytime.',
+        style: theme.textTheme.labelSmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
+String _fmtReadyDate(DateTime d) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' //
+  ];
+  return '${months[d.month - 1]} ${d.day}';
 }
