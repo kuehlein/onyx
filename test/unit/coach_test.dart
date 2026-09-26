@@ -325,4 +325,53 @@ void main() {
       expect(r.text, isNot(contains('suggest-grade')));
     });
   });
+
+  group('confusableSiblings + first-exposure injection (n0015 SLICE 2)', () {
+    Card cardWith(List<CardSection> sections) => Card(
+          id: 'c',
+          type: 'flashcard',
+          title: 'Heap',
+          overview: '',
+          tags: const ['ds-a'],
+          tiers: const {'ds-a': 1},
+          sections: sections,
+          wikilinks: const [],
+          filePath: 'c.md',
+        );
+    const complexity = CardSection(
+        heading: 'Complexity',
+        slug: 'complexity',
+        content: 'O(log n).',
+        quizzable: true);
+    const vs = CardSection(
+        heading: 'vs. Confusable Siblings',
+        slug: 'vs',
+        content: 'Heap vs. BST: a heap only gives min/max, not range queries.',
+        quizzable: false);
+
+    test('finds a confusable-siblings section, else null', () {
+      expect(confusableSiblings(cardWith([complexity, vs])),
+          contains('Heap vs. BST'));
+      expect(confusableSiblings(cardWith([complexity])), isNull);
+    });
+
+    test(
+        'the first-exposure prompt injects the siblings (targets interference)',
+        () {
+      final card = cardWith([complexity, vs]);
+      final p = buildCoachSystem(
+          card: card,
+          section: complexity,
+          revealed: true,
+          grading: false,
+          firstExposure: true);
+      expect(p, contains('easily CONFUSED'));
+      expect(p, contains('Heap vs. BST'));
+      // Not injected outside first exposure (the examiner/generic tutor).
+      expect(
+          buildCoachSystem(
+              card: card, section: complexity, revealed: true, grading: false),
+          isNot(contains('easily CONFUSED')));
+    });
+  });
 }

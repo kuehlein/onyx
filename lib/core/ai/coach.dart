@@ -121,6 +121,23 @@ CoachSkill coachSkillFromMarkdown(String md) {
   );
 }
 
+/// The card's "confusable siblings" note, if any — the content of a section whose
+/// heading names the sibling concepts this one is easily mixed up with (the vault
+/// convention `## vs. Confusable Siblings`, or any `X vs. Y` contrast heading).
+/// Interference is the top cause of forgetting (learning-science.md), so the
+/// first-exposure tutor (n0015) uses it to target misconceptions. Matched by
+/// heading, subject-neutrally; null when the card carries no such section.
+String? confusableSiblings(Card card) {
+  for (final s in card.sections) {
+    final h = s.heading.toLowerCase();
+    if (h.contains('confusable') || h.contains('vs.') || h.contains(' vs ')) {
+      final body = s.content.trim();
+      if (body.isNotEmpty) return body;
+    }
+  }
+  return null;
+}
+
 /// Builds the system prompt for a coaching conversation. The prompt embeds the
 /// card (and, in a study session, the specific section being recalled) so the
 /// coach can reason about the exact material without another round-trip.
@@ -278,6 +295,17 @@ String buildCoachSystem({
             'them), then emit <tutor-done/> on its own final line.')
         ..writeln('- NEVER emit a grade or any grade/assessment tag. Be '
             'concise: 2–3 sentences, plain Markdown, no headings.');
+      // Interference is the top cause of forgetting (learning-science.md): if the
+      // card names the sibling concepts it's confused with, target them — without
+      // naming them first (n0015, SLICE 2).
+      final siblings = confusableSiblings(card);
+      if (siblings != null) {
+        b
+          ..writeln('- This concept is easily CONFUSED with the following — do '
+              'NOT name them first, but if the learner conflates them, ask a '
+              'question that surfaces the distinguishing signal:')
+          ..writeln(siblings);
+      }
     } else {
       if (skill.learnAugment != null) {
         b.writeln('For this material: ${skill.learnAugment}');
