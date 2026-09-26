@@ -117,6 +117,9 @@ class FlowRunnerSession extends _$FlowRunnerSession {
           skill: skill, problem: card.overview, frontier: frontier),
       dimensions: flowRubricDimensions.toSet(),
       onGraded: (grade) async {
+        // The flow screen may have been dismissed during grading (autodispose):
+        // every ref.read/invalidate below throws uncaught on a disposed notifier.
+        if (!ref.mounted) return;
         final now = (await ref.read(clockProvider.future)).now();
         await ref.read(appliedRepositoryProvider).record(
               cardId: card.id,

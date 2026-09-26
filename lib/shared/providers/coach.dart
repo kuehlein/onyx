@@ -193,6 +193,9 @@ class Coach extends _$Coach {
         final fe = parseFirstExposureReply(reply);
         await _persist(
             db, card.id, section?.slug, CoachRole.assistant, fe.text, null);
+        // The sheet may have closed mid-reply (autodispose): the reply is already
+        // persisted, but touching state/ref after disposal throws uncaught.
+        if (!ref.mounted) return;
         final done = fe.done ||
             history.where((m) => m.role == CoachRole.user).length >=
                 firstExposureMaxLearnerTurns;
@@ -206,6 +209,10 @@ class Coach extends _$Coach {
       final parsed = parseCoachReply(reply);
       await _persist(db, card.id, section?.slug, CoachRole.assistant,
           parsed.text, parsed.grade);
+      // The sheet may have closed mid-reply (autodispose): the reply is already
+      // persisted, but the ref.read/invalidate + state write below throw uncaught
+      // on a disposed notifier. Bail — the applied attempt is a best-effort log.
+      if (!ref.mounted) return;
       // In a mock interview, log the coach's structured applied assessment —
       // separate from the human FSRS grade; it only feeds readiness.
       if (grading && parsed.assessment != null) {

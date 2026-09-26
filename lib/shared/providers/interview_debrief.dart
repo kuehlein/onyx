@@ -119,6 +119,7 @@ class InterviewDebrief extends _$InterviewDebrief {
         messages: coachChatTurns(history),
       );
       final parsed = parseDebriefReply(raw);
+      if (!ref.mounted) return; // sheet closed mid-reply (autodispose)
       state = state.copyWith(
         messages: [...history, CoachMessage(CoachRole.assistant, parsed.text)],
         result: parsed.result, // keep prior result if this reply has none

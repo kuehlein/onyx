@@ -96,6 +96,7 @@ class InterviewPlanner extends _$InterviewPlanner {
         messages: coachChatTurns(history),
       );
       final parsed = parseInterviewPlannerReply(raw);
+      if (!ref.mounted) return; // sheet closed mid-reply (autodispose)
       state = state.copyWith(
         messages: [...history, CoachMessage(CoachRole.assistant, parsed.text)],
         plan: parsed.plan, // keep prior plan if this reply has none
