@@ -43,3 +43,4 @@ belong in code comments + the PR description, not an ADR.
 | [0014](0014-fsrs-tuning-retention-knob-learn-easy-optimizer.md) | FSRS tuning (#32): global retention knob, guarded Learn-Easy, deferred optimizer | Accepted |
 | [0015](0015-ai-tutor-first-exposure.md) | AI-tutor first exposure (#26): a learner-invited, grounding-only Socratic step in Learn | Accepted |
 | [0016](0016-derived-new-material-ceiling.md) | Derived new-material count: the sustainable ceiling (#114 Phase B) | Accepted |
+| [0017](0017-per-aim-importance-allocation.md) | Per-aim importance: a user weight on allocation (not readiness) (#136) | Accepted |

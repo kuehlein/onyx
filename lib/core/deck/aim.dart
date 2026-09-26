@@ -15,6 +15,32 @@ import '../util.dart';
 /// The outcome of an interview (or a single round of one).
 enum AimOutcome { pending, passed, failed }
 
+/// How much of the study plan an aim pulls, relative to its siblings — a USER-set
+/// **importance** (a dream role vs a backup; a final vs a quiz), deliberately
+/// distinct from the engine-derived **urgency** (how behind an aim is). It scales
+/// the aim's allocation share in the daily plan (ADR-0007 / #136); it does NOT touch
+/// readiness, which stays an honest weakest-link across aims (de-weighting a backup
+/// there would hide a real gap). [normal] is the neutral default (no skew).
+enum AimImportance { high, normal, low }
+
+extension AimImportanceWeight on AimImportance {
+  /// Multiplier on the aim's urgency share in `deckPlanDomainWeights`. Tunable;
+  /// [normal] = 1.0 so an all-normal deck allocates byte-identically (invariant #8).
+  double get weight => switch (this) {
+        AimImportance.high => 1.5,
+        AimImportance.normal => 1.0,
+        AimImportance.low => 0.5,
+      };
+
+  /// Short UI label (subject-neutral — the "dream vs backup" framing is the user's
+  /// mental model, not engine copy).
+  String get label => switch (this) {
+        AimImportance.high => 'High',
+        AimImportance.normal => 'Normal',
+        AimImportance.low => 'Low',
+      };
+}
+
 /// Where an interview sits in its lifecycle. [active] loops still have a current
 /// upcoming round; the rest are ended and live in the "past" section — kept for
 /// the record rather than deleted (archive-by-default).
@@ -138,6 +164,7 @@ class Aim {
     this.levelId,
     this.contextId,
     this.trackId,
+    this.importance = AimImportance.normal,
   });
 
   /// Stable id, unique within the parent goal's [Deck.aims] — the key
@@ -178,6 +205,11 @@ class Aim {
   final String? levelId;
   final String? contextId;
   final String? trackId;
+
+  /// User-set importance — how much of the plan this aim pulls vs its siblings
+  /// (#136). Scales its allocation share (urgency × importance) in the daily plan,
+  /// NOT readiness. [AimImportance.normal] by default (no skew).
+  final AimImportance importance;
 
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
   /// [rounds] is the source of truth now (S5c — the deck-level deadline fallback is
@@ -238,6 +270,7 @@ class Aim {
     Object? levelId = _unset,
     Object? contextId = _unset,
     Object? trackId = _unset,
+    AimImportance? importance,
   }) =>
       Aim(
         id: id ?? this.id,
@@ -255,6 +288,7 @@ class Aim {
         levelId: levelId == _unset ? this.levelId : levelId as String?,
         contextId: contextId == _unset ? this.contextId : contextId as String?,
         trackId: trackId == _unset ? this.trackId : trackId as String?,
+        importance: importance ?? this.importance,
       );
 
   Map<String, dynamic> toJson() => {
@@ -271,6 +305,7 @@ class Aim {
         if (levelId != null) 'levelId': levelId,
         if (contextId != null) 'contextId': contextId,
         if (trackId != null) 'trackId': trackId,
+        if (importance != AimImportance.normal) 'importance': importance.name,
       };
 
   static Aim fromJson(Map<String, dynamic> m) => Aim(
@@ -293,6 +328,8 @@ class Aim {
         levelId: _str(m['levelId']),
         contextId: _str(m['contextId']),
         trackId: _str(m['trackId']),
+        importance: enumByName(AimImportance.values, m['importance']) ??
+            AimImportance.normal,
       );
 }
 

@@ -190,6 +190,16 @@ class _AimEditorSheetState extends ConsumerState<_AimEditorSheet> {
                   labelOf: (v) => v.label,
                   onSelected: (v) => _set(aim.copyWith(trackId: v.id)),
                 ),
+                // Importance (#136): how much of the plan this aim pulls vs the
+                // deck's other aims — a dream role over a backup, a final over a
+                // quiz. Scales its allocation share, not readiness.
+                _ChipGroup<AimImportance>(
+                  label: 'Importance',
+                  values: AimImportance.values,
+                  selected: aim.importance,
+                  labelOf: (v) => v.label,
+                  onSelected: (v) => _set(aim.copyWith(importance: v)),
+                ),
                 const SizedBox(height: Dim.space3),
                 // Forecast readout ABOVE the calendar (the headline outcome).
                 _ForecastBlock(chosenDate: date, dims: dims),

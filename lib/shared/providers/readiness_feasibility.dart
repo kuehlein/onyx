@@ -110,9 +110,14 @@ Future<Map<String, double>> deckPlanDomainWeights(
     return {for (final d in domains) d: domainWeight(base, d)};
   }
 
-  // Normalized urgency shares across the active aims. All-ready (Σurgency 0) → equal
-  // shares (a plain average) so the plan still has an emphasis to pack on.
-  final urg = [for (final e in feas) aimUrgency(e.feasibility, today: today)];
+  // Normalized urgency shares across the active aims, each scaled by the aim's
+  // user-set importance (#136) — a high-importance aim pulls more of the day even at
+  // equal urgency; normal = ×1.0 (byte-identical). All-ready (Σ 0) → equal shares (a
+  // plain average) so the plan still has an emphasis to pack on.
+  final urg = [
+    for (final e in feas)
+      aimUrgency(e.feasibility, today: today) * e.aim.importance.weight
+  ];
   final total = urg.fold(0.0, (s, u) => s + u);
   final shares = total > 0
       ? [for (final u in urg) u / total]

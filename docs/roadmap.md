@@ -280,11 +280,12 @@ model before we add features, so we build on the right shape.
   config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
   (Pace/Algo removed). **Remaining:** a vault-level **cross-deck** allocation view (all shares +
   warnings together — deck_selection.md) is optional/later. **Settings prune + bug-fix → #115.**
-  **Allocation refinements (post-Phase-B, engine-derived + user-overridable):** engine-**recommended
-  deck proportions** from feasibility (**#116**) is the deck-level slice of the broader **dynamic
-  deck/aim allocation by need** (**#137**) — so **#116 ⊂ #137**; plus **per-aim importance weighting**
-  (dream-company vs backups; final vs quiz — **#136**). All three keep the user's explicit override
-  winning (ADR-0010/0011).
+  **Allocation refinements (engine-derived + user-overridable).** ✅ **#136 (2026-09-27,
+  [ADR-0017](adr/0017-per-aim-importance-allocation.md)):** per-aim **importance** (high/normal/low) scales
+  an aim's allocation share (dream role vs backup; final vs quiz) — plan only, readiness stays honest;
+  `normal` default is byte-identical. **Still pending:** engine-**recommended deck proportions** from
+  feasibility (**#116**) — the deck-level slice of the broader **dynamic deck/aim allocation by need**
+  (**#137**), so **#116 ⊂ #137**; these *propose*, never auto-write, the user's proportion (ADR-0010/0011).
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user

@@ -35,6 +35,33 @@ void main() {
     });
   });
 
+  group('Aim importance (#136)', () {
+    test('defaults to normal and is omitted from JSON', () {
+      const aim = Aim(id: 'a');
+      expect(aim.importance, AimImportance.normal);
+      expect(aim.toJson().containsKey('importance'), isFalse);
+    });
+
+    test('JSON round-trips a non-default importance', () {
+      const aim = Aim(id: 'a', importance: AimImportance.high);
+      expect(Aim.fromJson(aim.toJson()).importance, AimImportance.high);
+    });
+
+    test('copyWith sets importance, leaving it otherwise untouched', () {
+      const aim = Aim(id: 'a', importance: AimImportance.low);
+      expect(aim.copyWith(importance: AimImportance.high).importance,
+          AimImportance.high);
+      expect(aim.copyWith(companyName: 'x').importance, AimImportance.low);
+    });
+
+    test('the weight multiplier orders high > normal > low, normal = 1.0', () {
+      expect(AimImportance.normal.weight, 1.0);
+      expect(
+          AimImportance.high.weight, greaterThan(AimImportance.normal.weight));
+      expect(AimImportance.low.weight, lessThan(AimImportance.normal.weight));
+    });
+  });
+
   group('ReadinessTarget.forAim', () {
     test('uses the aim\'s own knobs when set', () {
       const aim =

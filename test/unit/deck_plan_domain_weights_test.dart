@@ -173,4 +173,31 @@ void main() {
     final w = await c.read(deckPlanDomainWeightsProvider('g').future);
     expect(w['sd'], 2.0); // averaged, not summed to 3.0
   });
+
+  test('importance tilts emphasis toward the higher-importance aim (#136)',
+      () async {
+    // Both aims ON TRACK (equal urgency 0.3) → without importance they'd split
+    // evenly. Aim 'a' (sd) is HIGH importance, 'b' (ui) is LOW → sd outweighs ui.
+    final c = container([
+      (
+        aim: const Aim(
+            id: 'a',
+            domainWeights: {'sd': 1.0},
+            importance: AimImportance.high),
+        feasibility:
+            AimFeasibility(status: FeasibilityStatus.onTrack, date: farDate)
+      ),
+      (
+        aim: const Aim(
+            id: 'b', domainWeights: {'ui': 1.0}, importance: AimImportance.low),
+        feasibility:
+            AimFeasibility(status: FeasibilityStatus.onTrack, date: farDate)
+      ),
+    ]);
+    final w = await c.read(deckPlanDomainWeightsProvider('g').future);
+    expect(w['sd']!, greaterThan(w['ui']!));
+    // shares: high 0.3·1.5=0.45, low 0.3·0.5=0.15; total 0.6 → 0.75 / 0.25.
+    expect(w['sd']!, closeTo(0.75 * 2 + 0.25 * 1, 0.01)); // 1.75
+    expect(w['ui']!, closeTo(0.75 * 1 + 0.25 * 2, 0.01)); // 1.25
+  });
 }
