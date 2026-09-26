@@ -70,4 +70,38 @@ void main() {
       expect(p.status, PaceStatus.behind);
     });
   });
+
+  group('recentPaceDenominator', () {
+    test('no history → the full window (plan-based outlook, not a spike)', () {
+      expect(recentPaceDenominator(firstLearnDate: null, today: today), 14);
+      expect(
+          recentPaceDenominator(firstLearnDate: null, today: today, window: 30),
+          30);
+    });
+
+    test('short history uses the ACTUAL days, not a flat window', () {
+      // 5 days in → denom 5, so 10 started sections read as 2/day (not 10/14).
+      expect(
+          recentPaceDenominator(firstLearnDate: inDays(-5), today: today), 5);
+    });
+
+    test('history at/over the window clamps down to it', () {
+      expect(
+          recentPaceDenominator(firstLearnDate: inDays(-14), today: today), 14);
+      expect(
+          recentPaceDenominator(firstLearnDate: inDays(-40), today: today), 14);
+    });
+
+    test('a same-day first learn clamps up to 1 (never divides by zero)', () {
+      expect(recentPaceDenominator(firstLearnDate: today, today: today), 1);
+    });
+
+    test('is date-only — ignores the first-learn time of day', () {
+      expect(
+          recentPaceDenominator(
+              firstLearnDate: inDays(-5).add(const Duration(hours: 14)),
+              today: today),
+          5);
+    });
+  });
 }

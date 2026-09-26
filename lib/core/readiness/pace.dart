@@ -94,3 +94,22 @@ PaceEstimate computePace({
     status: status,
   );
 }
+
+/// The denominator for the recent new-sections/day rate: the ACTUAL days of
+/// history — from [firstLearnDate] (date-only) to [today] — clamped to
+/// `[1, window]`. Never a flat [window]: a short history (e.g. 5 days in) would
+/// otherwise read at a fraction of its real daily rate and falsely trip
+/// "behind". With no history ([firstLearnDate] null) it assumes the full [window]
+/// so an untouched deck shows a plan-based outlook, not a spike. Clamped to ≥ 1
+/// so a same-day first learn never divides by zero.
+int recentPaceDenominator({
+  required DateTime? firstLearnDate,
+  required DateTime today,
+  int window = 14,
+}) {
+  final f = firstLearnDate;
+  final historyDays = f == null
+      ? window
+      : today.difference(DateTime(f.year, f.month, f.day)).inDays;
+  return historyDays.clamp(1, window);
+}
