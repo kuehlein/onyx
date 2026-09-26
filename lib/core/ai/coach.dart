@@ -443,7 +443,8 @@ AppliedAssessment? _parseAssessment(String raw) {
       rubric: rubric,
       novel: j['novel'] == true,
       hintLevel: ((j['hintLevel'] as num?)?.round() ?? 0).clamp(0, 5).toInt(),
-      note: j['note'] is String ? j['note'] as String : null,
+      // No `note`: the examiner <assessment> schema doesn't emit one (that field
+      // is the flow-grader's), so reading j['note'] was always null. Defaults null.
     );
   } catch (_) {
     return null;

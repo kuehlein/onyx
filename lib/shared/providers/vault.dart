@@ -59,13 +59,14 @@ class VaultRefController extends _$VaultRefController {
     state = source;
 
     // Restore the incoming folder's snapshot into the (now-scoped) cache so its
-    // schedule is live immediately, not only after the next launch. A missing or
-    // malformed snapshot just means "start fresh here".
+    // schedule is live immediately, not only after the next launch.
     final newSource = _tryResolve(source);
     if (newSource != null) {
       try {
         await SnapshotService(db, newSource).restore();
-      } catch (_) {}
+      } catch (_) {
+        // A missing or malformed snapshot just means "start fresh here".
+      }
     }
 
     ref.invalidate(vaultIndexProvider);
