@@ -460,10 +460,13 @@ The MVP-tagged stories, cloud still absent:
 - **Behavioral flow — follow-ups & revisit** *(from the 2026-09-23/24 behavioral/readiness design pass;
   full record + rationale in Phase 1's S5 "Behavioral & readiness model" block).* The behavioral flow
   ships and works as-is; these are the agreed next touches — **important to revisit**:
-  - **#107 — nudge refinement (③, near-term/small):** de-hardcode the SWE timing constants
-    (`behavioralForecastDays=35` / `behavioralWindowDays=28`) out of `coach_update.dart` → the SWE
-    template (optional, assessment-only, default-absent); enrich the "about ready" nudge with
-    apply-orientation copy. Content = template data, mechanic stays general.
+  - **#107 — nudge refinement (③) — ✅ DONE (2026-09-26):** the SWE 35/28-day timing constants moved out of
+    `CoachSignals` (were `static const`) → **`DeckTemplate.behavioralTiming`** (optional, default-absent); the
+    SWE reference opts in, other subjects get no timed behavioral nudge. `CoachSignals` now takes nullable
+    `behavioralForecastDays/windowDays` that no-op when unset — **mechanic stays general, only the windows are
+    subject data.** SWE behavior byte-identical (same 35/28), covered by a new default-absent test. The
+    "about ready" nudge already carries apply-orientation copy (from the behavioral build); deeper out-of-app
+    apply orientation stays fenced to **#109** per the SoT.
   - **#108 — hygiene (small):** `Story.lastRehearsed` is dead code; decide competency-level freshness
     (delete it) vs per-story (wire a mock to stamp the story it exercised).
   - **#109 — deferred design revisit (touches the SoT):** the **glue / real-world next-steps layer**
