@@ -90,16 +90,8 @@ const double kDefaultBaseWeight = 0.5;
 /// recencyLoad=1 a track's priority is cut by this fraction.
 const double kRecencyPenalty = 0.6;
 
-/// The default share of the day the retention floor (due reviews) may claim before
-/// the remainder is fair-queued to new/practice — the retention-floor cap
-/// (ADR-0010 Phase B / #106). Due reviews clear FIRST up to this fraction, so
-/// retrieval never loses to new material; the cap keeps a heavy backlog from eating
-/// the whole day (a slice always remains for practice/new). Any budget no other
-/// track can use still flows back to reviews (they're never dropped to waste time),
-/// so on a normal day — due-load well under the cap — this changes nothing. 0.8
-/// mirrors the field consensus: reviews are the priority, but a backlog is shed at
-/// the *new* lever, not by letting reviews consume every minute.
-const double kRetentionFloorCap = 0.8;
+// The retention-floor cap ([kRetentionFloorCap]) lives in practice_plan.dart — the
+// pure plan-sizing home it shares with the new-material ceiling (sustainableNewCount).
 
 /// Inputs to [buildDailyPlan] beyond raw availability. Populated later phases from
 /// readiness (level/domain weights), recent activity, and cadence; injected here

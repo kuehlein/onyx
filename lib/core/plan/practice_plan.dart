@@ -12,6 +12,8 @@
 /// task list. Nothing here schedules; it only describes what's available.
 library;
 
+import 'dart:math' as math;
+
 /// The four practice-track ids (String, to prepare for config-driven tracks).
 ///
 /// The practice-track ids deliberately equal the SWE FlowSpec `cardType` values
@@ -100,6 +102,83 @@ double scaleEstMinutes(
   if (stability <= 0) return t0;
   final ramp = (stability / _kMatureStabilityDays).clamp(0.0, 1.0);
   return t0 * (1.0 - (1.0 - floor) * ramp);
+}
+
+// ── Retention floor + new-material ceiling (task #106 / #114 Phase B · ADR-0016)
+// The two levers that size the day's balance of review vs. new. The retention floor
+// (below) reserves review time first (#106); the new-material ceiling (`sustainableNewCount`)
+// then derives how much NEW to introduce from what's left, capped so novelty can't
+// out-run the review capacity it creates. The constants are the v1 calibration — the
+// *shape* is load-bearing (ADR-0016), the numbers are tunables to validate via
+// telemetry (#122).
+
+/// The default share of the day the retention floor (due reviews) may claim before
+/// the remainder is fair-queued to new/practice — the retention-floor cap
+/// (ADR-0010 Phase B / #106). Due reviews clear FIRST up to this fraction, so
+/// retrieval never loses to new material; the cap keeps a heavy backlog from eating
+/// the whole day (a slice always remains for practice/new). Any budget no other
+/// track can use still flows back to reviews (they're never dropped to waste time),
+/// so on a normal day — due-load well under the cap — this changes nothing. 0.8
+/// mirrors the field consensus: reviews are the priority, but a backlog is shed at
+/// the *new* lever, not by letting reviews consume every minute.
+const double kRetentionFloorCap = 0.8;
+
+/// The gentle default daily new-count (the Phase-A value) — the calibration anchor
+/// the derivation lands on for a typical day, and the fallback when no budget is
+/// known (nADR-0016).
+const int kDefaultDailyNew = 8;
+
+/// Share of the post-review budget new material may claim (the time bound). Tuned so
+/// a default day (~[kDailyTargetMinutes], reviews ≈ half in steady state) lands at
+/// ≈[kDefaultDailyNew]; a bigger budget scales new up until a debt/cognitive bound
+/// binds. See [sustainableNewCount]. (At the default 150-min budget with reviews
+/// taking half the day, `floor(0.32·75/3) = 8`.)
+const double kNewShare = 0.32;
+
+/// Minutes of daily review each new item, sustained per day, eventually costs at
+/// steady state — the review-debt bound is `budget ÷ this`. From the verified ~10:1
+/// review:new ratio (Anki, graded in ADR-0016) at ~1 min a mature review, rounded up
+/// for headroom. Caps front-loading on a light / brand-new-deck day, and scales the
+/// ceiling *with* the budget (a bigger day supports a higher sustainable rate).
+const double kSustainableMinutesPerNew = 12;
+
+/// Absolute cognitive cap on new items/day regardless of time (cognitive-load /
+/// dropout evidence, ADR-0016) — the firehose limit on cheap-card decks the time
+/// bound alone wouldn't hold.
+const int kNewHardMax = 20;
+
+/// The sustainable daily new-material count (task #114 Phase B · ADR-0016): the
+/// minimum of three research-backed bounds, over the retention floor. Replaces the
+/// fixed Phase-A guardrail (`newCardLimit`) with a count DERIVED from the day's
+/// [budgetMinutes] and its [dueReviewMinutes] (the est-minutes of today's due
+/// reviews). Pure — sizes the plan, never schedules.
+///
+///  - **Time:** new gets [newShare] of the budget left AFTER due reviews take their
+///    retention-floor share ([floorCap]·budget, #106), at [costPerNew] min each — so
+///    a heavy-review day sheds new, a light day / bigger budget allow more. This is
+///    the "more budget → sooner" lever, review-debt-aware by construction.
+///  - **Review-debt:** ≤ `budget ÷ [minutesPerNew]` — you can't sustainably learn
+///    faster than you can review what you learn (the ~10:1 ratio); caps front-loading.
+///  - **Cognitive:** a hard [hardMax]/day (CLT / dropout) — the cap on cheap decks
+///    where the time bound alone would permit dozens.
+int sustainableNewCount({
+  required double budgetMinutes,
+  required double dueReviewMinutes,
+  double newShare = kNewShare,
+  double costPerNew = kLearnMinutes,
+  double floorCap = kRetentionFloorCap,
+  double minutesPerNew = kSustainableMinutesPerNew,
+  int hardMax = kNewHardMax,
+}) {
+  if (budgetMinutes <= 0) return 0;
+  final reviewClaim = math.min(dueReviewMinutes, floorCap * budgetMinutes);
+  final postReview = (budgetMinutes - reviewClaim).clamp(0.0, budgetMinutes);
+  // +1e-9 so an exact-integer boundary (e.g. 0.32·75/3 = 8.0) doesn't fall to 7 on
+  // a hair-below float — the same guard the packer's nextFitting uses.
+  final byTime = (newShare * postReview / costPerNew + 1e-9).floor();
+  final byDebt = (budgetMinutes / minutesPerNew + 1e-9).floor();
+  final n = math.min(byTime, math.min(byDebt, hardMax));
+  return n < 0 ? 0 : n;
 }
 
 /// One schedulable unit of work in a flow (a due card section, a new section, an

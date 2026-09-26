@@ -45,10 +45,14 @@ void main() {
       appDatabaseProvider.overrideWithValue(db),
       // Freeze the clock so "today" is deterministic (no midnight race).
       clockProvider.overrideWith((ref) async => _FixedClock(_fixedNow)),
+      // Pin the derived allowance so this isolates the "subtract learned-today"
+      // logic; the derivation itself is covered by sustainable_new_count_test +
+      // est_minutes_provider_test.
+      dailyNewAllowanceProvider.overrideWith((ref) async => 8),
     ]);
     addTearDown(container.dispose);
 
-    // Limit defaults to 8; nothing learned yet → full allowance.
+    // Allowance pinned to 8; nothing learned yet → full allowance.
     expect(await container.read(dailyNewRemainingProvider.future), 8);
 
     // Learn 3 sections today (each writes an activity_log 'learn' event).
@@ -85,6 +89,8 @@ void main() {
       appDatabaseProvider.overrideWithValue(db),
       // "Today" is the fixed day; yesterday's learns don't count against it.
       clockProvider.overrideWith((ref) async => _FixedClock(_fixedNow)),
+      // Pin the derived allowance (see the note in the first test).
+      dailyNewAllowanceProvider.overrideWith((ref) async => 8),
     ]);
     addTearDown(container.dispose);
 

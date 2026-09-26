@@ -10,6 +10,7 @@ import '../../core/clock.dart';
 import '../../core/dev.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/plan/daily_plan.dart' show BudgetZone, budgetZone;
+import '../../core/plan/practice_plan.dart' show kDefaultDailyNew;
 import '../../core/vault/card_parser.dart' show cardParsingRules;
 import '../../shared/models/card.dart';
 import '../../shared/providers/ai.dart';
@@ -369,9 +370,9 @@ class SettingsScreen extends ConsumerWidget {
                     title: const Text('Simulate study progress'),
                     subtitle: Text(day == 0
                         ? 'Build a realistic history: each step = one day at '
-                            'your "New sections per day" pace (learns that many '
-                            'new sections + a mock, clock advances a day). Tap '
-                            'to watch the dashboard evolve at true speed.'
+                            "the engine's daily new-material pace (learns that "
+                            'many new sections + a mock, clock advances a day). '
+                            'Tap to watch the dashboard evolve at true speed.'
                         : 'Day $day simulated — cumulative recall + mock '
                             'evidence at your real daily pace. Keep tapping to '
                             'advance; "Reset local progress" clears it.'),
@@ -492,7 +493,10 @@ class SettingsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final index = await ref.read(vaultIndexProvider.future);
     final clock0 = ref.read(clockProvider).asData?.value ?? Clock.real;
-    final perDay = await ref.read(newCardLimitProvider.future); // real cadence
+    // The engine-derived daily new-material pace (ADR-0016) — a representative
+    // per-day cadence for the sim; fall back to the gentle default if unknown.
+    final derived = await ref.read(dailyNewAllowanceProvider.future);
+    final perDay = derived > 0 ? derived : kDefaultDailyNew;
     final repo = ref.read(appliedRepositoryProvider);
     final srsRepo = ref.read(srsRepositoryProvider);
     final startDay = ref.read(devSimDayProvider).asData?.value ?? 0;

@@ -23,34 +23,6 @@ void main() {
     });
   });
 
-  group('NewCardLimit', () {
-    ProviderContainer container() => ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)]);
-
-    test('defaults when unset', () async {
-      final c = container();
-      addTearDown(c.dispose);
-      expect(
-          await c.read(newCardLimitProvider.future), NewCardLimit.defaultValue);
-    });
-
-    test('set persists (survives a fresh container) and clamps to range',
-        () async {
-      final c = container();
-      addTearDown(c.dispose);
-      await c.read(newCardLimitProvider.future);
-      await c.read(newCardLimitProvider.notifier).set(35);
-      expect(await c.read(newCardLimitProvider.future), 35);
-
-      await c.read(newCardLimitProvider.notifier).set(999); // over max
-      expect(await c.read(newCardLimitProvider.future), NewCardLimit.max);
-
-      final c2 = container();
-      addTearDown(c2.dispose);
-      expect(await c2.read(newCardLimitProvider.future), NewCardLimit.max);
-    });
-  });
-
   group('TargetRetention (the global retention knob, n0014)', () {
     ProviderContainer container() => ProviderContainer(
         overrides: [appDatabaseProvider.overrideWithValue(db)]);

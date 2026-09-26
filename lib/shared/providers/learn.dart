@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/coach.dart' show CoachKind;
 import '../../core/clock.dart';
+import '../../core/plan/practice_plan.dart';
 import '../../core/srs/learn_queue.dart';
 import '../../core/srs/srs_scheduler.dart' show learnEasyMaxIntervalFactor;
 import '../../core/template/study_policy.dart'
@@ -9,6 +10,7 @@ import '../../core/template/study_policy.dart'
 import '../models/card.dart';
 import 'clock.dart';
 import 'coach.dart';
+import 'daily_plan.dart';
 import 'database.dart';
 import 'readiness.dart';
 import 'settings.dart';
@@ -18,19 +20,64 @@ import 'vault.dart';
 
 part 'learn.g.dart';
 
-/// How many brand-new sections may still be started today. The new-card limit is
-/// a DAILY allowance (not per-session): once you've learned that many today,
-/// there's nothing new until tomorrow — mirroring how reviews are time-gated, so
-/// new material doesn't pile up unbounded. Learned-today is counted from the
-/// activity log against the (dev-adjustable) clock's day.
+/// The engine-DERIVED daily new-material allowance (task #114 Phase B · ADR-0016):
+/// [sustainableNewCount] over the active deck's budget slice and today's due-review
+/// load. This replaces the old fixed `newCardLimit` guardrail — the user sets the
+/// day's SIZE (the vault budget + each deck's proportion, ADR-0010); the engine
+/// derives how much of it is new, capped so novelty can't out-run the review it
+/// creates. Reviews are sized in the SAME state-aware est-minutes the daily-plan
+/// packer uses (#133), computed here from the review queue directly (NOT via
+/// practiceAvailability, which would cycle back through the learn queue).
+@riverpod
+Future<int> dailyNewAllowance(Ref ref) async {
+  // Register every dependency synchronously (before the first await) so a mid-flight
+  // invalidation can't leave this using a disposed ref. None of these transitively
+  // read the learn queue, so there is no dependency cycle.
+  final deckF = ref.watch(activeDeckProvider.future);
+  final budgetsF = ref.watch(deckBudgetsProvider.future);
+  final reviewF = ref.watch(reviewQueueProvider.future);
+  final srsF = ref.watch(srsStatesProvider.future);
+  final goal = await deckF;
+  final budgets = await budgetsF;
+  final reviewData = await reviewF;
+  final srs = await srsF;
+
+  final budget = budgets[goal.id] ?? 0;
+  if (budget <= 0) return 0;
+
+  // Today's due-review load in minutes, state-aware (#133) — mirrors the review
+  // track's `_est` in practice_plan.dart so the derived count reflects the time
+  // reviews will actually take (a mature-heavy backlog leaves more room for new).
+  var dueReviewMinutes = 0.0;
+  for (final it in reviewData.queue) {
+    final t0 = it.card.estMinutes ?? kReviewMinutes;
+    final st = srs[it.key];
+    dueReviewMinutes += st == null
+        ? t0
+        : scaleEstMinutes(t0,
+            stability: st.stability, fsrsState: st.state, floor: kReviewFloor);
+  }
+
+  return sustainableNewCount(
+    budgetMinutes: budget,
+    dueReviewMinutes: dueReviewMinutes,
+  );
+}
+
+/// How many brand-new sections may still be started today: the derived daily
+/// [dailyNewAllowanceProvider] minus what's already been learned today. A DAILY
+/// allowance (not per-session) — once you've learned that many today, there's
+/// nothing new until tomorrow, mirroring how reviews are time-gated. Learned-today
+/// is counted from the activity log against the (dev-adjustable) clock's day.
 @riverpod
 Future<int> dailyNewRemaining(Ref ref) async {
-  final limit = await ref.watch(newCardLimitProvider.future);
-  final clock = await ref.watch(clockProvider.future);
-  final learnedToday = await ref
-      .watch(srsRepositoryProvider)
-      .sectionsStartedSince(clock.today());
-  return (limit - learnedToday).clamp(0, limit);
+  final allowanceF = ref.watch(dailyNewAllowanceProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final repo = ref.watch(srsRepositoryProvider);
+  final allowance = await allowanceF;
+  final clock = await clockF;
+  final learnedToday = await repo.sectionsStartedSince(clock.today());
+  return (allowance - learnedToday).clamp(0, allowance);
 }
 
 /// The "learn new material" queue: un-seeded quizzable sections grouped by
@@ -116,7 +163,13 @@ class LearnSessionState {
 class LearnSession extends _$LearnSession {
   @override
   Future<LearnSessionState> build() async {
-    final queue = await ref.watch(learnQueueProvider.future);
+    // `read` (not `watch`): a learn session is a point-in-time snapshot. Grading
+    // invalidates srs/review state (so Home refreshes after you learn), which now
+    // cascades to the learn queue via the derived new-allowance (ADR-0016) —
+    // *watching* it would reset the in-progress session mid-grade. Fresh sessions
+    // come from autoDispose on nav (mirrors the review session's read-not-watch
+    // note in srs.dart).
+    final queue = await ref.read(learnQueueProvider.future);
     // Fresh session: clear stale per-section coach chats (symmetric with the
     // review session). Browse chats are untouched; within a session, chats
     // persist to the DB so they survive closing/reopening the coach.

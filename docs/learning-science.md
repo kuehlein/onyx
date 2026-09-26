@@ -315,6 +315,40 @@ No single optimal gap exists and delaying the first retrieval is the key desirab
 difficulty — but FSRS already handles all of this. **Nothing to author here**;
 just don't fight the scheduler (no cramming semantics baked into cards).
 
+### Study cadence — new-material rate vs. review capacity
+**Confidence: Medium** (review-debt ratio — practitioner data) **· High** (cognitive-load
+theory) | Anki deck-options docs; Sweller et al. (element interactivity / expertise
+reversal); RemNote exam scheduler. *This is the "§Study cadence" the workload ADRs
+(0010 / 0011 / 0016) cite; it grounds the derived new-material ceiling.*
+
+The **size** of the day (the time budget) is the user's to set; the **mix** within it —
+how much new vs. review — is the engine's to derive (ADR-0010). The load-bearing
+constraint is that new material is not free:
+
+- **New material generates review-debt at ~10:1.** A sustained new-card rate produces
+  roughly ten times as many daily reviews at steady state (Anki's worked figure: ~20
+  new/day → ~200 reviews/day; the ratio drifts with desired-retention + lapse rate).
+  <https://docs.ankiweb.net/deck-options.html> — a tool-vendor heuristic, not a
+  peer-reviewed constant, but the dominant field number and mechanically sound (each new
+  card seeds a decaying series of future reviews). **You cannot sustainably learn faster
+  than you can review what you learn**, so the sustainable new-rate ≈ budget ÷ (ratio ×
+  minutes-per-review) — the review-debt bound in `sustainableNewCount`.
+- **Cognitive load scales with element interactivity — simple content tolerates a higher
+  intake rate than complex.** Low-interactivity material (isolated facts, vocabulary) is
+  learnable in bulk; high-interactivity material (interdependent concepts) must be
+  sequenced simple→complex and tolerates fewer new items/day; support that helps a novice
+  can *hurt* an expert (expertise reversal). This falls out for free when the cost lever
+  is per-unit `estMinutes` (#133): complex cards cost more, so the time bound admits fewer
+  of them — no card-type special-case.
+- **A near deadline is absorbed by re-exposure, not a higher new-rate.** Goal-driven SRS
+  (RemNote's exam scheduler) meets a deadline with a **final-review pass over already-seen
+  material**, holding new-introduction at its sustainable level. So deadline pressure
+  routes to cram + a raised desired-retention (ADR-0008), never to inflating the ceiling.
+
+**Implication (ADR-0016).** The daily new count is derived as `min(time bound, review-debt
+bound, cognitive hard-max)` over the retention floor (#106): reviews first, then a share
+of the remainder on new, capped so novelty can't out-run the review capacity it creates.
+
 ---
 
 ## The Three Knowledge Types — and Why Conditional Knowledge Is the Priority

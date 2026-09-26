@@ -15,33 +15,11 @@ part 'settings.g.dart';
 PreferencesRepository preferencesRepository(Ref ref) =>
     PreferencesRepository(ref.watch(appDatabaseProvider));
 
-/// The automatic ceiling on brand-new sections introduced per day (see
-/// [dailyNewRemaining], which subtracts what's already been learned today). An
-/// INTERNAL guardrail, not a user or coach dial (ADR-0010/0011: the engine derives
-/// the study mix; the user's only load dial is the daily budget, and the coach
-/// routes through that, never a per-flow knob). Kept fixed at a gentle 8 in
-/// Phase A; Phase B derives it from budget + due-load under the sustainable
-/// ceiling. Too many new items at once raises cognitive load and hurts retention.
-@Riverpod(keepAlive: true)
-class NewCardLimit extends _$NewCardLimit {
-  static const prefKey = 'new_section_limit';
-  static const defaultValue = 8;
-  static const min = 2;
-  static const max = 50;
-  static const step = 1;
-
-  @override
-  Future<int> build() async {
-    final raw = await ref.watch(preferencesRepositoryProvider).get(prefKey);
-    return int.tryParse(raw ?? '') ?? defaultValue;
-  }
-
-  Future<void> set(int value) async {
-    final clamped = value.clamp(min, max);
-    await ref.read(preferencesRepositoryProvider).set(prefKey, '$clamped');
-    ref.invalidateSelf();
-  }
-}
+// `NewCardLimit` (the fixed new-sections/day guardrail, pref `new_section_limit`)
+// was RETIRED in Phase B: the engine now DERIVES the daily new count from budget +
+// due-load under a sustainable ceiling — see `dailyNewAllowance` (learn.dart) and
+// `sustainableNewCount` (core/plan/practice_plan.dart · ADR-0016). No user dial
+// replaces it (ADR-0010: the user owns SIZE, the engine owns MIX).
 
 /// The Algorithms track's daily size as a RANGE, paced against both clocks:
 /// - [AlgoDailyMin] is the floor — a light or quiet day still gets at least this

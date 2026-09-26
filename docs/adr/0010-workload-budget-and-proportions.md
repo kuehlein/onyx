@@ -33,11 +33,13 @@ conformance read) converged:
   **Duolingo** — **auto-derive** the daily amount from `{time budget + deadline + due-load}` and expose
   one dose knob (time). The rule that falls out: *reviews first, then spend the remaining budget on
   new/practice, skewed toward the nearest deadline.*
-- **The one hard finding (engine + research agree).** New-material intake has its **own cognitive /
-  working-memory ceiling** and generates future review-debt (~10:1). A pure time-budget bin-pack with
-  the caps removed would overload novelty on light days and spike review-debt in ~2 weeks. So the
-  manual new-cap cannot simply be **deleted** — it must be **replaced by an automatic, research-backed
-  ceiling**, not a user dial.
+- **The one hard finding.** New-material intake has its **own cognitive / working-memory ceiling** and
+  generates future review-debt at roughly **~10:1** (Anki's documented practitioner heuristic — a
+  tool-vendor rule of thumb, not a peer-reviewed constant; verified + graded in
+  [ADR-0016](0016-derived-new-material-ceiling.md)). A pure time-budget bin-pack with the caps removed
+  would overload novelty on light days and spike review-debt in ~2 weeks. So the manual new-cap cannot
+  simply be **deleted** — it must be **replaced by an automatic, research-backed ceiling**, not a user
+  dial. The Phase-B derivation of that ceiling is specified in ADR-0016.
 
 ## Decision
 
