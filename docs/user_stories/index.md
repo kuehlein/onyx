@@ -27,6 +27,10 @@ worked example, not the product.
   come in kinds: **conversational** (a system-design mock, a language conversation),
   **re-solve / execution** (algorithms), **redirective** (CS: "solve this leetcode problem",
   music: "go take this listening test," do it outside the app, return with a result).
+  The **learn/review step has its own internal pedagogy** — e.g. the first-exposure AI tutor
+  that asks questions to deepen a *foundational* card as it's learned
+  ([ADR-0015](../adr/0015-ai-tutor-first-exposure.md)). That changes *how* a foundational card
+  is learned; it is **not** itself a contingent flow (not gated, not in the taxonomy above).
 - **Aims — a set, not one target.** On top of a deck sit one or more concurrent **aims** — the
   things you're pointing at (a dated test/interview, or open-ended mastery). Each aim carries
   four knobs: **difficulty/depth**, **domain emphasis**, a **durability bar** (how locked-in

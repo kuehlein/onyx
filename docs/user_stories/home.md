@@ -14,7 +14,9 @@ deck).
 ## What it does
 - **Today's study assignments** — the daily plan for *this* deck, allocated across its active
   aims: [MVP]
-  - learn / review (the foundational cards),
+  - learn / review (the foundational cards) — at **first exposure**, an optional learner-invited
+    **AI tutor** can ask questions to deepen understanding before a card enters review
+    ([ADR-0015](../adr/0015-ai-tutor-first-exposure.md)),
   - re-solve / **redirect** flows (e.g. algorithms; music "go take this listening test"),
   - **conversational** flows (e.g. system design, a language conversation).
 - **Aims summary** (was "target") — shows the deck's active aims and links to

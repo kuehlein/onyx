@@ -11,7 +11,9 @@
 - **View** — read the whole file.
 - **Study / testing** — the Anki-style front/back. A study "card" is the **whole file or a
   parsed subset** (a section), per the deck's parsing rules; after flipping, you can see the
-  whole file.
+  whole file. At **first exposure** (Learn), an optional learner-invited **AI tutor** can ask
+  questions to deepen the grasp before the card enters spaced review
+  ([ADR-0015](../adr/0015-ai-tutor-first-exposure.md)).
 - **Authoring** — create/edit: a plain editor (self-edit), an **AI editor** (chat: "make a card
   about X" or "update this card..." informed by the deck's authoring skill), and later a file uploader / camera for AI
   extraction. [MVP: editor + light AI chat; upload/camera later]
@@ -65,6 +67,20 @@
   slices) → **skip**; the neverQuizzed + frontmatter path is the clean MVP, with per-deck section
   exclusion as the fallback you noted.
   **Status.** Accepted (query-lens sub-card granularity dropped).
+- **How should first exposure (Learn) build real understanding — not just recognition — before a
+  card enters spaced repetition? (#26)**
+  **Rec.** A **learner-invited AI tutor** at the Learn step. After the learner reveals a section, an
+  optional **"Talk it through"** affordance opens a short **Socratic** exchange that **asks questions
+  to make the learner self-explain** the content — grounded in the on-screen section (+ overview),
+  **withholding the answer** (ask, don't tell), one question per turn, ~2–3 turns, ending with a
+  *learner-authored* summary. It is **not a gate** and **not a flow**: it's the Learn step's internal
+  pedagogy. The grade bar stays live (FSRS integrity, ADR-0008), it emits **no grade**, and with no AI
+  key Learn is unchanged. Grounding is the section text today (`card.source` deferred); it's
+  subject-general (questions derive from the content). The skill is authored in `_meta/coach.md`
+  (a `## First exposure` tone block + per-card confusable-siblings), not a new file.
+  **Status.** Accepted — design in [ADR-0015](../adr/0015-ai-tutor-first-exposure.md); build sliced.
+  Two points under human review: any **kill-switch** (rec: none — key + tap is consent) and whether a
+  **wider default-on rollout** is gated on a measured delayed-retention signal (rec: yes).
 
 ## Cross-refs
 [browse](browse.md) (entry + stubs) · [deck_creation](deck_creation.md) (authoring) ·

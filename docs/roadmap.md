@@ -479,16 +479,19 @@ The MVP-tagged stories, cloud still absent:
     "you keep failing X — focus here" **struggling-items** nudge (persistent-fail signal; analytics has
     `deckStrugglingCards`). Speculative + overlaps **#103**; revisit ONLY if usage shows the ordered Home
     + reports are insufficient. A short spike, not a feature. → **#25**.
-  - **#26 reader comprehension — ♻️ REFRAMED (Accepted to EXPLORE): an AI-TUTOR first-exposure flow.** Not
-    a test-administrator quizzing you; a **tutor teaching a new concept.** At first exposure (the learn
-    stage), nudge the learner to read the **source material**, feed the AI that context, then hold a short
-    **conversational understanding-check** (Socratic/elaborative follow-ups) before the concept enters
-    spaced repetition — the doorway from "knows" → "knows how" (Miller). Ties to the **conversational**
-    contingent-flow kind + the learn stage + the card **source-linkback** seam. **Needs a design spike →
-    a story (card.md/home.md) → an ADR** (learning-science grounding: elaborative interrogation /
-    self-explanation / desirable difficulty; scheduling model: a comprehension *gate* before FSRS vs a
-    parallel unit) BEFORE any build. Highest new value of the three; a design project, not a quick feature.
-    → **#26**.
+  - **#26 AI-tutor first exposure — ✅ DESIGNED (spike + story + ADR done 2026-09-25); build sliced, not
+    yet started.** An AI **tutor that asks the learner questions** to build understanding at first exposure —
+    ask-don't-tell (the dominant risk is AI-that-explains → illusion of competence; see learning-science.md
+    "AI-mediated learning"). Design spike ran as an **adversarial workflow** (research → synthesize → 5
+    critics → harden), whose critics verified claims against code/vault and reversed the first draft:
+    **learner-invited** ("Talk it through" after reveal, never auto-open), **grounding-only** self-explanation
+    (no transfer, no answer-leak), **non-blocking** (grade bar always live, FSRS untouched), **not a flow /
+    not gated** (the learn step's internal pedagogy), reusing the coach seam with a `firstExposure` flag +
+    `_meta/coach.md` skill. Locked in **[ADR-0015](adr/0015-ai-tutor-first-exposure.md)** + the story
+    (card.md/home.md/index.md). Prereqs: a `kind` discriminator on `CoachMessages` (tutor|examiner
+    collision), prompt caching, a **red-team eval** (no answer-leak across 3 subjects), and a **delayed-
+    retention durability metric** gating any default-on rollout. Two points under human review: kill-switch
+    (rec: none) + rollout gating (rec: opt-in + measure). → **#26**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
 - **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc.

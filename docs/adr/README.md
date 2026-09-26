@@ -41,3 +41,4 @@ belong in code comments + the PR description, not an ADR.
 | [0012](0012-card-model-shared-components.md) | Card model: a shared component layer (not a mode-widget), quizzability precedence, edit-identity | Accepted |
 | [0013](0013-unified-query-lens-engine.md) | One query/lens engine: Browse filters == deck membership | Accepted |
 | [0014](0014-fsrs-tuning-retention-knob-learn-easy-optimizer.md) | FSRS tuning (#32): global retention knob, guarded Learn-Easy, deferred optimizer | Accepted |
+| [0015](0015-ai-tutor-first-exposure.md) | AI-tutor first exposure (#26): a learner-invited, grounding-only Socratic step in Learn | Accepted |
