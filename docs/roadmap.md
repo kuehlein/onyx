@@ -429,9 +429,15 @@ model before we add features, so we build on the right shape.
   practice / interview debrief + planner) routed through the shared `EmptyState` (−59 lines, icon normalized
   to accent; the 3 AI-key states now share one glyph). Left inline by design: ChatView openers, the weak-area
   'unlock with AI' CTA (below live stats), the generation sheet's left-aligned notes, per-chart insights
-  `_NoData`. **Remaining polish:** motion / transitions. *(Provider-error branches aren't widget-testable
-  under this riverpod + flutter_test — an AsyncNotifier build error doesn't reach `ref.watch` in fake-async;
-  correct at runtime.)*
+  `_NoData`. **Motion pass — ✅ DONE (2026-09-25):** the foundation was already solid (const `motionFast/
+  Base/Slow` + `easeStandard` tokens, `context.motion*` pre-gated on reduce-motion) and most animations
+  already tokenized; the gap was two static fills that popped — the Home hero ring (`TodayRing`) and the
+  shared insights bar (`_Track`) now ease 0→value via `context.motionBase` (the palette's "bar-fill"),
+  reduce-motion-safe by construction, with a `today_ring_test` locking both behaviors. Route transitions stay
+  platform-default (calm, low-risk). **→ the design-system polish arc (application · error-states · empty-
+  states · motion) is complete;** the remaining Phase 2 item is the **Design tooling (Figma + agents)** spike
+  below. *(Provider-error branches aren't widget-testable under this riverpod + flutter_test — an
+  AsyncNotifier build error doesn't reach `ref.watch` in fake-async; correct at runtime.)*
 - **Design tooling — Figma + UI/UX agents [new, your ask].** Wire a solid design workflow so quality
   isn't gated on hand-crafting: a **Figma source-of-truth** for components/screens + an **agent loop**
   that turns designs into Flutter widgets *against the design system*, plus a **design-review agent**.
