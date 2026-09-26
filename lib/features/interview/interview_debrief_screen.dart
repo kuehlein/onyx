@@ -7,6 +7,7 @@ import '../../core/ai/interview_debrief.dart';
 import '../../core/deck/aim.dart' show AimOutcome;
 import '../../core/readiness/readiness.dart' show prettyDomain;
 import '../../shared/design/onyx_design.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/providers/ai.dart';
 import '../../shared/providers/interview_debrief.dart';
@@ -41,14 +42,13 @@ class _InterviewDebriefScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final state = ref.watch(interviewDebriefProvider(widget.aimId));
     final hasKey = ref.watch(claudeServiceProvider) != null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Interview debrief')),
       body: !hasKey
-          ? _NeedsKey(theme)
+          ? const _NeedsKey()
           : ChatView(
               messages: [
                 for (final m in state.messages)
@@ -203,28 +203,15 @@ class _ChipRow extends StatelessWidget {
 }
 
 class _NeedsKey extends StatelessWidget {
-  const _NeedsKey(this.theme);
-  final ThemeData theme;
+  const _NeedsKey();
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Dim.space5),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Add your Anthropic API key to debrief an interview.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: Dim.space4),
-            FilledButton.tonal(
-              onPressed: () => context.go('/settings'),
-              child: const Text('Open Settings'),
-            ),
-          ],
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.auto_awesome_outlined,
+        title: 'Add your Anthropic API key to debrief an interview.',
+        action: FilledButton.tonal(
+          onPressed: () => context.go('/settings'),
+          child: const Text('Open Settings'),
         ),
-      ),
-    );
-  }
+      );
 }

@@ -1,5 +1,6 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -301,28 +302,12 @@ class _EmptyPractice extends StatelessWidget {
   final String domain;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Dim.space6),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined,
-                size: Dim.iconLg, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: Dim.space3),
-            Text('No practice material in ${prettyDomain(domain)} yet',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: Dim.space5),
-            FilledButton(
-              onPressed: () => context.pop(),
-              child: const Text('Back'),
-            ),
-          ],
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.inbox_outlined,
+        title: 'No practice material in ${prettyDomain(domain)} yet',
+        action: FilledButton(
+          onPressed: () => context.pop(),
+          child: const Text('Back'),
         ),
-      ),
-    );
-  }
+      );
 }

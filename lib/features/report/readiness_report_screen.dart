@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +42,6 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasKey = ref.watch(claudeServiceProvider) != null;
     final report = ref.watch(readinessReportProvider);
 
@@ -63,7 +63,7 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: Dim.maxContentWidth),
           child: !hasKey
-              ? _NeedsKey(theme)
+              ? const _NeedsKey()
               : report.busy
                   ? const _Busy()
                   : report.hasReport
@@ -76,38 +76,19 @@ class _ReadinessReportScreenState extends ConsumerState<ReadinessReportScreen> {
 }
 
 class _NeedsKey extends StatelessWidget {
-  const _NeedsKey(this.theme);
-  final ThemeData theme;
+  const _NeedsKey();
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Dim.space5),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome_outlined,
-              size: Dim.iconLg, color: theme.colorScheme.primary),
-          const SizedBox(height: Dim.space4),
-          Text('Add your Anthropic API key to generate a report.',
-              textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-          const SizedBox(height: Dim.space2),
-          Text(
-            'The report is written on-device with your own key — no Onyx server '
-            'sees your data.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: Dim.space5),
-          FilledButton.tonal(
-            onPressed: () => context.go('/settings'),
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.auto_awesome_outlined,
+        title: 'Add your Anthropic API key to generate a report.',
+        message: 'The report is written on-device with your own key — no Onyx '
+            'server sees your data.',
+        action: FilledButton.tonal(
+          onPressed: () => context.go('/settings'),
+          child: const Text('Open Settings'),
+        ),
+      );
 }
 
 class _Busy extends StatelessWidget {

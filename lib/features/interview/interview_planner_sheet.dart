@@ -12,6 +12,7 @@ import '../../shared/providers/interview_planner.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/widgets/card_markdown.dart';
 import '../../shared/widgets/chat_view.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 const _amber = StatusColor.warn;
@@ -90,30 +91,17 @@ class _NoKey extends StatelessWidget {
   const _NoKey();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Dim.space5),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Add your Anthropic API key to plan an interview.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: Dim.space4),
-            FilledButton.tonal(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.go('/settings');
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.auto_awesome_outlined,
+        title: 'Add your Anthropic API key to plan an interview.',
+        action: FilledButton.tonal(
+          onPressed: () {
+            Navigator.of(context).pop();
+            context.go('/settings');
+          },
+          child: const Text('Open Settings'),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _Opener extends StatelessWidget {
