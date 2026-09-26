@@ -154,3 +154,23 @@ pressure is **not** absorbed here (it does not inflate this ceiling): it routes 
   §Validation).
 - Deferred to B2/B3: the readiness forecast reads the derived, budget-aware count (not a fixed spread), and
   moving the budget shows a neutral ready-by date shift (ADR-0011 §D5).
+
+## Update — B2/B3 (2026-09-27): the forecast is budget-native
+
+B2/B3 landed. Two decisions worth recording (they follow from this ADR + ADR-0010/0011, so no separate ADR):
+
+- **The ready-date forecast is keyed on the BUDGET, not new/day.** The user's only load lever is the daily
+  time budget (ADR-0010), so the forecast's curve, feasibility, and copy are all budget-space now
+  (`ReadinessForecast.currentBudget` / `readyDateForBudget` / `requiredBudgetFor`; `projectBudgetCurve`;
+  `AimFeasibility.requiredBudget`). `currentPerDay` survives only as a **derived felt quantity** for display
+  (≈N new/day). This corrected a **surfacing drift**: the readout previously said *"study ~16/day"* — a
+  quantity ADR-0010 removed as a dial. It now says *"at ~150 min/day, ready by X; raise to ~N min to hit
+  your date."*
+- **The forecast sim re-derives the new-count each simulated day** (`projectReadiness` with
+  `PacePolicy.budgetMinutes` → `sustainableNewCount(budget, that day's review load)`), the same dynamic the
+  real daily plan runs. This makes the projection **honest for a fresh deck**: intake naturally slows as
+  review-debt accrues, so the date isn't the optimistic straight-line a fixed pace would give. Monotonic in
+  budget (bigger budget → sooner-or-equal), covered by tests.
+
+The date-shift readout (ADR-0011 §D5) is delivered on the daily-time dial ("on track to be ready ~Apr 18 —
+speed up anytime", neutral, off Home) and in the per-aim target sheet (push/ease budgets + required budget).

@@ -295,17 +295,15 @@ model before we add features, so we build on the right shape.
     contradiction; readyToPush is informational; check-in + chat propose a budget change); subject-neutral
     **study-load help** + a Vocabulary leak-guard test; the **budget sustainability-zone** readout on the
     daily-time dial (the user-pulled "informed override").
-  - **Phase B (workload derivation) — underway (#32/#106 prereqs done).** ✅ **B1 (2026-09-27,
-    [ADR-0016](adr/0016-derived-new-material-ceiling.md)):** the daily **new-material count is DERIVED**,
-    not a fixed `newCardLimit` — `sustainableNewCount` = min(time bound · review-debt bound · cognitive
-    hard-max) over the retention floor, calibrated so a default day still lands ≈8 and a bigger budget
-    scales up to the sustainable max (`NewCardLimit` retired). ✅ **B2 (2026-09-27):** the readiness
-    forecast's `currentPerDay` is now **budget-derived** (`sustainableNewCount` at the deck's budget +
-    due-load, was recent history), so the projected ready-date responds to the budget dial; the per-day
-    pace CURVE stays intact, so the what-if/feasibility UI is unchanged. **B3 next:** the precise **budget →
-    ready-by date-shift** readout (ADR-0011 §D5) — surface the shift when the budget moves. A *refinement*
-    — Phase A already ships a sane, SoT-conformant plan — so B3 rides in with the rest of the FSRS-tuning
-    work. Tracked on **#114**.
+  - **Phase B (workload derivation) — ✅ DONE (2026-09-27; #32/#106 prereqs + [ADR-0016](adr/0016-derived-new-material-ceiling.md)).**
+    **B1:** the daily **new-material count is DERIVED**, not a fixed `newCardLimit` — `sustainableNewCount`
+    = min(time · review-debt · cognitive hard-max) over the retention floor (default day still ≈8, a bigger
+    budget scales to the sustainable max; `NewCardLimit` retired). **B2:** the ready-date **forecast is
+    budget-native** — keyed on the daily budget (the user's lever, ADR-0010), re-deriving the new-count each
+    simulated day so a fresh deck's date is honest, not optimistic; this also fixed a surfacing drift (the
+    readout had said "study ~N/day", a removed dial). **B3:** the **budget → ready-by** readout on the
+    daily-time dial + the per-aim target sheet (ADR-0011 §D5) — "ready ~Apr 18, speed up anytime", neutral,
+    off Home. Tracked on **#114**.
   - **Phase C (proactive proposal / notify) — later, gated on #110 + real usage evidence.** The
     engine-*initiated* size **proposal** + any ambient notify surface — only after the #110
     notification-fatigue foundations (Phase 2) land and instrumentation shows the pull-based model is
@@ -550,14 +548,14 @@ The MVP-tagged stories, cloud still absent:
   ✅ **state-aware est-minutes** (#133, done 2026-09-27 — first-time cost × FSRS maturity, per-flow floors,
   algo mode-aware) → ✅ **capped retention floor** (#106, done 2026-09-27 — packer floor+cap wired to the
   review track, now est-minutes-sized so a heavy-mature day packs honestly, end-to-end tested). **Both
-  prereqs done → #114 Phase B underway.** ✅ **B1 (2026-09-27, [ADR-0016](adr/0016-derived-new-material-ceiling.md)):**
-  the daily **new-material count is DERIVED** — `sustainableNewCount` = min(time · review-debt from the
-  verified Anki ~10:1 · cognitive hard-max) over the retention floor; the default day still ≈8 and a bigger
-  budget scales to the sustainable max; the fixed `NewCardLimit` is retired. ✅ **B2:** the ready-date
-  forecast pace is now budget-derived (was recent history), so the projected date responds to the budget
-  dial. **B3 next:** the **budget → ready-by date-shift** readout (ADR-0011 §D5). Not MVP-blocking — the
-  shipped plan is already sane + SoT-conformant. (**#114 Phase C** — engine-initiated proposals + notify —
-  waits further, on #110 + usage evidence.)
+  prereqs done → #114 Phase B ✅ DONE (2026-09-27, [ADR-0016](adr/0016-derived-new-material-ceiling.md)).**
+  **B1:** the daily **new-material count is DERIVED** — `sustainableNewCount` = min(time · review-debt from
+  the verified Anki ~10:1 · cognitive hard-max) over the retention floor; the default day still ≈8, a bigger
+  budget scales to the sustainable max; `NewCardLimit` retired. **B2:** the ready-date **forecast is
+  budget-native** — keyed on the daily budget (the user's lever), re-deriving the new-count each simulated
+  day so a fresh deck's date is honest; fixed the "study ~N/day" surfacing drift. **B3:** the **budget →
+  ready-by** readout on the daily-time dial + target sheet (ADR-0011 §D5). (**#114 Phase C** —
+  engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
   **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
