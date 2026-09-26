@@ -497,6 +497,18 @@ The MVP-tagged stories, cloud still absent:
     guardrail** (harm-catch), not proof; a clean causal read needs a **randomized offer/cohort**; cross-user
     aggregation waits on the deferred cloud + **opt-in, privacy-preserving, aggregate-only** telemetry (no raw
     content/PII). → **#26**.
+  - **Feature-effectiveness / analytics measurement — SPIKE (#122), generalizes #26/S6.** How do we know a
+    learning feature actually *works*? Two layers. **(1) On-device analysis (now, no telemetry):** a small
+    reusable join over `SrsStates` × `Reviews` × a feature-exposure marker (e.g. `CoachMessages.kind`) →
+    retention / lapse / stability for exposed vs. unexposed cards; **#121 is its first consumer**. Reusable
+    **methodology** (fixed in [ADR-0015](adr/0015-ai-tutor-first-exposure.md) "Measuring the durability
+    signal"): observational/self-selected ⇒ a *negative* is a guardrail, a *positive* is confounded (not
+    proof); cut confounds with within-learner + matching (tier/domain/first-grade); the clean causal read
+    **randomizes the _offer_**, not the acceptance; **pre-register** the metric + threshold. Pre-release best
+    practice = **dogfood the on-device report**. **(2) Cloud aggregation → Phase 5**, gated on the deferred
+    cloud + consent: **opt-in, aggregate-only, privacy-preserving** telemetry — ship deltas/counts, never raw
+    content or PII; k-anonymity/threshold floors before any cohort is reported. Spike output = the on-device
+    report shape + join helper; the telemetry channel defers to cloud. → **#122**.
 - The AI **scoping / curriculum research** for deck creation (→ deck_creation) so authoring works
   for any subject, not just SWE.
 - **Engine tuning + workload derivation (#32 · #106 · #114 Phase B).** The FSRS-quality arc.
@@ -524,8 +536,10 @@ The MVP-tagged stories, cloud still absent:
 - **Cloud / registry track — gated on the parked *sync & source-of-truth decision*** (see Open
   decisions in `user_stories/index.md`): #83 registry server + accounts + class-code (P1/P5/P6
   publish/pull), read-only + auto-sync decks and local-edit handling, managed **Onyx AI**
-  (billing/quota), #63 authoring-kit distribution, #84 parse-profile editor. **Defer-hard:** the
-  public deck tier (moderation/takedown), managed AI for minors (COPPA/FERPA).
+  (billing/quota), #63 authoring-kit distribution, #84 parse-profile editor, and the **opt-in,
+  aggregate-only feature-effectiveness telemetry** channel (#122 layer 2 — cross-user retention deltas,
+  privacy-preserving, no raw content/PII). **Defer-hard:** the public deck tier (moderation/takedown),
+  managed AI for minors (COPPA/FERPA).
 - QR class/org quick-setup (→ onboarding, merge-not-overwrite); PDF/camera card authoring
   (→ deck_creation).
 - **Focus / Do-Not-Disturb while studying** (opt-in, Settings toggle) — trigger the OS Focus/DND for

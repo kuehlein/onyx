@@ -1,6 +1,7 @@
 # ADR 0015 — AI-tutor first exposure: a learner-invited, grounding-only Socratic step in Learn
 
-- **Status:** Accepted (design; build sliced — not yet implemented)
+- **Status:** Accepted — opt-in v1 built 2026-09-25 (PREREQ-A/B, S1, S2, S4, S5). S3 red-team eval
+  (#120) + S6 durability metric (#121) tracked; default-on gated on S6.
 - **Date:** 2026-09-25
 - **Deciders:** Kyle Uehlein
 - **Related:** task #26; ADR-0004 (AI provider seam), ADR-0008 (FSRS integrity), ADR-0011
@@ -115,6 +116,41 @@ vault**. The load-bearing verified facts:
   misconception depth; any auto-open experiment gated on the durability evidence; caching fully
   pays off only off the Haiku default.
 
+## Measuring the durability signal (rollout gate — S6, #121)
+
+The default-on gate (Decision #10) rests on a **delayed-retention** comparison. The methodology
+matters more than the collection, so it is fixed here.
+
+**The data is already on-device — no telemetry.** The signal is a query over three local tables:
+`SrsStates` (current per-`(cardId, sectionSlug)` `stability` / `dueAt` / `reviewCount`), `Reviews`
+(the append-only log — every `grade` with the `stability` / `elapsedDays` *at that review*), and
+`CoachMessages.kind = 'tutor'` (+ `createdAt`), which marks exactly which sections got a
+first-exposure tutor turn and when. FSRS writes the outcome columns as a side effect of ordinary
+study, so S6 is an **on-device analysis**, not an instrumentation project: for sections first seen
+*with* the tutor vs. *without*, compare the next-review grade after a spacing gap, the lapse rate (an
+Again on a card that had left learning), and the stability trajectory across reviews 1–3.
+
+**Observational ⇒ a negative is a guardrail; a positive is not proof.** The tutor is opt-in, so
+whoever taps "Talk it through" is self-selected (motivation, card difficulty, prior knowledge). The
+gate is therefore a **non-negative** signal (Decision #10): if tutored sections retain *worse*, that
+is a real harm flag → do not default-on. If they retain *better*, that is *encouraging but
+confounded* — never read as "the tutor caused it."
+
+**Reduce confounds cheaply, then randomize for causality.** Before any causal claim: **within-
+learner** comparison (a user's tutored vs. untutored sections) and **match** on `tier` / `domain` /
+first-review grade — nearly free, and it kills the biggest confounds. The clean causal design is to
+**randomize the _offer_** (A/B the "Talk it through" affordance across a cohort), never the learner's
+_acceptance_. **Pre-register** the metric + threshold ("retention delta ≥ X at a ≥ N-day gap,
+n ≥ M") before looking, to avoid HARKing.
+
+**Cross-user aggregation is post-cloud.** A single vault only yields a dogfood-grade, per-learner
+read — and the honest pre-release move is exactly that: build the on-device report (#121), run it on
+a real vault after weeks of use, and treat it as a smoke-test / harm-check, not a p-value. Averaging
+across a population needs the deferred cloud layer and, consistent with local-first, an **opt-in,
+aggregate-only, privacy-preserving** channel (ship _"tutored cards retained X% better, n=…"_, never
+transcripts or PII; threshold floors before any cohort is reported). This measurement question
+generalizes beyond the tutor — see the analytics / feature-effectiveness spike on the roadmap.
+
 ## Validation
 
 - **Invariant #8 (byte-identical):** characterization tests pin `buildCoachSystem(grading:true)`
@@ -128,4 +164,6 @@ vault**. The load-bearing verified facts:
 - **FSRS integrity widget test:** the grade bar is tappable and `grade()` seeds FSRS while the
   tutor is mid-conversation.
 - **Rollout gate:** the pre-registered delayed-retention join (tutored vs. untutored first
-  exposures; stability / lapse at reviews 1–3) must be non-negative before any default-on rollout.
+  exposures; stability / lapse at reviews 1–3) must be non-negative before any default-on rollout —
+  see "Measuring the durability signal" above for the on-device join + why a negative is the
+  load-bearing read.
