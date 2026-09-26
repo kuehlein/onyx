@@ -279,8 +279,12 @@ model before we add features, so we build on the right shape.
   **too-little-time warning**: engagement floor or heaviest-flow unit cost, deck_selection.md) + the
   config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
   (Pace/Algo removed). **Remaining:** a vault-level **cross-deck** allocation view (all shares +
-  warnings together — deck_selection.md) is optional/later; **recommended** shares → **#116**. **Settings
-  prune + bug-fix → #115.**
+  warnings together — deck_selection.md) is optional/later. **Settings prune + bug-fix → #115.**
+  **Allocation refinements (post-Phase-B, engine-derived + user-overridable):** engine-**recommended
+  deck proportions** from feasibility (**#116**) is the deck-level slice of the broader **dynamic
+  deck/aim allocation by need** (**#137**) — so **#116 ⊂ #137**; plus **per-aim importance weighting**
+  (dream-company vs backups; final vs quiz — **#136**). All three keep the user's explicit override
+  winning (ADR-0010/0011).
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user
@@ -291,13 +295,15 @@ model before we add features, so we build on the right shape.
     contradiction; readyToPush is informational; check-in + chat propose a budget change); subject-neutral
     **study-load help** + a Vocabulary leak-guard test; the **budget sustainability-zone** readout on the
     daily-time dial (the user-pulled "informed override").
-  - **Phase B (workload derivation) — sequenced with the #32 engine arc (Phase 3), NOT blocking.**
-    Replace the FIXED guardrails with **DERIVED** quantities + the flow-aware automatic ceiling; add the
-    precise **budget → ready-by date-shift** readout (moving the budget doesn't shift ready-by until it
-    derives the new-count). Needs the **est-minutes fidelity** sliver of **#32** + **#106**. It's a
-    *refinement*: Phase A already ships a sane, SoT-conformant plan (the engine derives the mix via the
-    packer; the caps are fixed placeholders), so this waits behind the Phase 1 conformance items (1e–1g)
-    and rides in with the FSRS-tuning work. Tracked on **#114** (+ #32/#106).
+  - **Phase B (workload derivation) — underway (#32/#106 prereqs done).** ✅ **B1 (2026-09-27,
+    [ADR-0016](adr/0016-derived-new-material-ceiling.md)):** the daily **new-material count is DERIVED**,
+    not a fixed `newCardLimit` — `sustainableNewCount` = min(time bound · review-debt bound · cognitive
+    hard-max) over the retention floor, calibrated so a default day still lands ≈8 and a bigger budget
+    scales up to the sustainable max (`NewCardLimit` retired). **B2 next:** make the readiness forecast
+    **budget-aware** (today it forecasts off a fixed new-per-day spread) → **B3:** the precise **budget →
+    ready-by date-shift** readout (ADR-0011 §D5; moving the budget shifts ready-by only once the forecast
+    reads the derived count). A *refinement* — Phase A already ships a sane, SoT-conformant plan — so
+    B2/B3 ride in with the rest of the FSRS-tuning work. Tracked on **#114**.
   - **Phase C (proactive proposal / notify) — later, gated on #110 + real usage evidence.** The
     engine-*initiated* size **proposal** + any ambient notify surface — only after the #110
     notification-fatigue foundations (Phase 2) land and instrumentation shows the pull-based model is
@@ -542,11 +548,13 @@ The MVP-tagged stories, cloud still absent:
   ✅ **state-aware est-minutes** (#133, done 2026-09-27 — first-time cost × FSRS maturity, per-flow floors,
   algo mode-aware) → ✅ **capped retention floor** (#106, done 2026-09-27 — packer floor+cap wired to the
   review track, now est-minutes-sized so a heavy-mature day packs honestly, end-to-end tested). **Both
-  prereqs done → #114 Phase B is now UNBLOCKED:** flip the workload guardrails from **fixed → derived**
-  (budget/urgency-aware new + practice quantities under the flow-aware ceiling) and add the **budget →
-  ready-by date-shift** readout (ADR-0011 Phase B). Not MVP-blocking — the shipped fixed guardrails already
-  produce a sane, SoT-conformant plan — but this is where "the engine derives the quantities" becomes fully
-  real. (**#114 Phase C** — engine-initiated proposals + notify — waits further, on #110 + usage evidence.)
+  prereqs done → #114 Phase B underway.** ✅ **B1 (2026-09-27, [ADR-0016](adr/0016-derived-new-material-ceiling.md)):**
+  the daily **new-material count is DERIVED** — `sustainableNewCount` = min(time · review-debt from the
+  verified Anki ~10:1 · cognitive hard-max) over the retention floor; the default day still ≈8 and a bigger
+  budget scales to the sustainable max; the fixed `NewCardLimit` is retired. **B2/B3 next:** make the
+  readiness forecast **budget-aware** → the **budget → ready-by date-shift** readout (ADR-0011 §D5). Not
+  MVP-blocking — the shipped plan is already sane + SoT-conformant. (**#114 Phase C** — engine-initiated
+  proposals + notify — waits further, on #110 + usage evidence.)
 - **Cram / final-review session** *(pre-publish nice-to-have, not MVP-blocking)* — a dedicated
   **non-rescheduling** rapid re-exposure of a dated aim's due + at-risk cards ("test tomorrow, see
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
