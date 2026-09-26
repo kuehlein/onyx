@@ -239,5 +239,90 @@ void main() {
       expect(none.learnAugment, isNull);
       expect(none.topicFit, isNull);
     });
+
+    test('parses a First exposure augmentation (n0015)', () {
+      final s = coachSkillFromMarkdown('## First exposure\n\nKeep it playful.');
+      expect(s.firstExposureAugment, 'Keep it playful.');
+      expect(s.learnAugment, isNull);
+    });
+  });
+
+  group('buildCoachSystem — first exposure (n0015)', () {
+    String tutor({
+      bool firstExposure = false,
+      CoachSkill skill = CoachSkill.none,
+    }) =>
+        buildCoachSystem(
+          card: _card(),
+          section: _card().sections.first,
+          revealed: true,
+          grading: false,
+          firstExposure: firstExposure,
+          skill: skill,
+        );
+
+    test('firstExposure swaps in the withholding, self-explanation contract',
+        () {
+      final p = tutor(firstExposure: true);
+      expect(p, contains('WITHHOLD the synthesis'));
+      expect(p, contains('<tutor-done/>'));
+      expect(p, contains('SELF-EXPLANATION rung'));
+      // Capped at self-explanation — no transfer escalation at first exposure.
+      expect(p, isNot(contains('where else could you use this')));
+      // Never grades at first exposure.
+      expect(p, isNot(contains('suggest-grade')));
+    });
+
+    test('firstExposure:false keeps the existing tutor wording (unchanged)',
+        () {
+      final p = tutor(firstExposure: false);
+      expect(p, contains('help them understand it deeply'));
+      expect(p, isNot(contains('<tutor-done/>')));
+      expect(p, isNot(contains('WITHHOLD the synthesis')));
+    });
+
+    test('firstExposure consumes only firstExposureAugment, not learnAugment',
+        () {
+      const skill = CoachSkill(
+          learnAugment: 'LEARN-AUG-XYZ', firstExposureAugment: 'FIRST-AUG-XYZ');
+      final p = tutor(firstExposure: true, skill: skill);
+      expect(p, contains('FIRST-AUG-XYZ'));
+      expect(p, isNot(contains('LEARN-AUG-XYZ'))); // no SWE/learn leak
+      // The tutor foundation still stands.
+      expect(p.toLowerCase(), contains('tutor'));
+    });
+
+    test('firstExposure does not affect the examiner persona', () {
+      String examiner(bool fe) => buildCoachSystem(
+            card: _card(),
+            section: _card().sections.first,
+            revealed: true,
+            grading: true,
+            firstExposure: fe,
+          );
+      expect(examiner(true), examiner(false)); // grading path ignores it
+    });
+  });
+
+  group('parseFirstExposureReply (n0015)', () {
+    test('strips the <tutor-done/> sentinel and flags done', () {
+      final r = parseFirstExposureReply('Say it in one line.\n<tutor-done/>');
+      expect(r.done, isTrue);
+      expect(r.text, 'Say it in one line.');
+      expect(r.text, isNot(contains('tutor-done')));
+    });
+
+    test('no sentinel → not done, text unchanged', () {
+      final r = parseFirstExposureReply('What makes you say that?');
+      expect(r.done, isFalse);
+      expect(r.text, 'What makes you say that?');
+    });
+
+    test('a stray grade/assessment tag is stripped, never surfaced', () {
+      final r =
+          parseFirstExposureReply('Good.\n<suggest-grade>3</suggest-grade>');
+      expect(r.text, 'Good.');
+      expect(r.text, isNot(contains('suggest-grade')));
+    });
   });
 }

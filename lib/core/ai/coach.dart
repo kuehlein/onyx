@@ -59,7 +59,12 @@ const _foundationLearn =
 /// engine still owns the *mechanics* (hint ladder, reveal rules, grade/assessment
 /// protocol, card embedding); a skill only adds the subject's framing + emphasis.
 class CoachSkill {
-  const CoachSkill({this.reviewAugment, this.learnAugment, this.topicFit});
+  const CoachSkill({
+    this.reviewAugment,
+    this.learnAugment,
+    this.topicFit,
+    this.firstExposureAugment,
+  });
 
   /// Domain framing layered onto the grading (Review) foundation.
   final String? reviewAugment;
@@ -70,14 +75,21 @@ class CoachSkill {
   /// Optional examiner topic-fit guidance (one bullet) for the grading persona.
   final String? topicFit;
 
+  /// Optional *first-exposure* framing/tone (n0015) — discovery-stage guidance
+  /// (e.g. "keep it playful; wrong first guesses are fine"). The first-exposure
+  /// tutor consumes ONLY this, never [learnAugment]/[topicFit], so a non-SWE deck
+  /// never inherits interview/code framing at first exposure.
+  final String? firstExposureAugment;
+
   /// No vault skill — the foundation stands alone.
   static const none = CoachSkill();
 }
 
 /// Parse a vault coach skill (`_meta/coach.md`) into a [CoachSkill]. The file is
-/// markdown with any of `## Reviewing`, `## Learning`, `## Topic fit` (each body
-/// the prose up to the next H2) — ALL optional, since a skill only *augments* the
-/// foundation. Missing/empty → that field is null (foundation stands). Pure.
+/// markdown with any of `## Reviewing`, `## Learning`, `## Topic fit`,
+/// `## First exposure` (each body the prose up to the next H2) — ALL optional,
+/// since a skill only *augments* the foundation. Missing/empty → that field is
+/// null (foundation stands). Pure.
 CoachSkill coachSkillFromMarkdown(String md) {
   final sections = <String, String>{};
   String? key;
@@ -105,6 +117,7 @@ CoachSkill coachSkillFromMarkdown(String md) {
     reviewAugment: sections['reviewing'],
     learnAugment: sections['learning'],
     topicFit: sections['topic fit'],
+    firstExposureAugment: sections['first exposure'],
   );
 }
 
@@ -112,12 +125,18 @@ CoachSkill coachSkillFromMarkdown(String md) {
 /// card (and, in a study session, the specific section being recalled) so the
 /// coach can reason about the exact material without another round-trip.
 ///
-/// Two levers change its behavior:
+/// Three levers change its behavior:
 /// - [grading]: selects the persona. true → the grading *examiner* (Review):
 ///   probes, and may append an advisory grade tag. false → the *tutor*
 ///   (Learn/Browse): explains to build understanding, no grade tag.
 /// - [revealed]: before reveal the coach must *hint* without spoiling; after
 ///   reveal it may discuss the answer fully.
+/// - [firstExposure] (n0015): on the tutor persona (`grading: false`), swaps in
+///   the FIRST-EXPOSURE contract — a post-reveal-but-still-withholding Socratic
+///   step that elicits self-explanation (the learner generates), caps at the
+///   self-explanation rung (no transfer escalation — that's Review's job), and
+///   closes with a `<tutor-done/>` sentinel. Consumes only [CoachSkill.firstExposureAugment].
+///   No effect on the examiner. Assumed to run after reveal.
 ///
 /// [skill] is the subject's OPTIONAL vault-skill augmentation (loaded in
 /// production by `coachSkillProvider`). The research-backed foundation is always
@@ -128,6 +147,7 @@ String buildCoachSystem({
   CardSection? section,
   required bool revealed,
   required bool grading,
+  bool firstExposure = false,
   String? interviewContext,
   CoachSkill skill = CoachSkill.none,
 }) {
@@ -214,37 +234,83 @@ String buildCoachSystem({
   } else {
     // Foundation (always) + the subject's optional domain augmentation.
     b.writeln(_foundationLearn);
-    if (skill.learnAugment != null) {
-      b.writeln('For this material: ${skill.learnAugment}');
-    }
-    b
-      ..writeln()
-      ..writeln('- The card content is on screen — REFER to it ("look at the '
-          'second property — why does that force O(log n)?") instead of '
-          're-explaining it.')
-      ..writeln('- Prompt principle-based self-explanation ("why is that '
-          'true?"), not paraphrase. Use one small concrete example or analogy '
-          'at a time.')
-      ..writeln('- Teach for transfer: connect cue → technique → underlying '
-          'principle (the recognition trigger), contrast with a case where it '
-          'does NOT apply, and ask "where else could you use this?".')
-      ..writeln('- Calibrate: for a struggling learner add scaffolding and a '
-          'worked example; for a confident one go terser and jump to edge cases '
-          'and "when would this be wrong?". Fade help as they get it.')
-      ..writeln('- Praise the strategy, not the person ("good — you reasoned '
-          'from the invariant"); be specific; check understanding before moving '
-          'on. The learner sets their own grade.')
-      ..writeln('- Be concise: 2–4 sentences, plain Markdown, no headings.')
-      ..writeln();
-    if (revealed) {
-      b.writeln('The card content is REVEALED; help them understand it deeply, '
-          'referring to it directly.');
+    if (firstExposure) {
+      // n0015: the FIRST-EXPOSURE tutor — a distinct post-reveal-but-still-
+      // withholding contract. The learner has just revealed the section; the AI
+      // makes THEM put it into words (elicit, don't explain), grounded in the
+      // visible text, capped at self-explanation, closing with <tutor-done/>.
+      // Consumes ONLY firstExposureAugment (never learnAugment/topicFit), so a
+      // non-SWE deck never inherits interview/code framing here.
+      if (skill.firstExposureAugment != null) {
+        b.writeln('For this material: ${skill.firstExposureAugment}');
+      }
+      b
+        ..writeln()
+        ..writeln('- The card is on screen. Your job: make the LEARNER put it '
+            'into their own words — you elicit, they think. Anchor every '
+            'question to the visible text.')
+        ..writeln('- This is DISCOVERY, not a test: a wrong first guess is '
+            'EXPECTED — treat it as "a reasonable first read, let\'s check it", '
+            'never "not quite right".')
+        ..writeln('- WITHHOLD the synthesis: you MAY point to or read a line '
+            'that is on screen, but do NOT articulate the why / when-to-use / '
+            'transfer they should generate — that is theirs to produce.')
+        ..writeln('- Do NOT confirm or deny a value they propose ("so it is '
+            'O(log n)?"); reply "what makes you say that?".')
+        ..writeln('- If they assert something wrong, do NOT state why it is '
+            'wrong or give a counter-example — ask a question that leads them to '
+            'TEST their own claim.')
+        ..writeln(
+            '- ONE question per reply, at the SELF-EXPLANATION rung ("what '
+            'is this saying, in your own words?", "why is that true?"). Do NOT '
+            'escalate to transfer / "when would it break?" — that belongs to '
+            'later spaced review.')
+        ..writeln('- Hint ladder — climb ONE rung only when they stall, never '
+            're-ask: (1) point to the specific line; (2) a leading question '
+            'toward the next step; (3) a fill-in-the-blank left for THEM ("the '
+            'idea is ___ because ___") — never fill it in.')
+        ..writeln('- If their FIRST answer is empty or "I don\'t know", do NOT '
+            'quiz — switch to scaffolded reading: "No worries, it\'s new — read '
+            'it, then tell me which line didn\'t click", and build from the line '
+            'they name.')
+        ..writeln('- Aim for 2 learner turns, never exceed 3. To close, ask '
+            'THEM to summarize the idea in one line (never summarize back to '
+            'them), then emit <tutor-done/> on its own final line.')
+        ..writeln('- NEVER emit a grade or any grade/assessment tag. Be '
+            'concise: 2–3 sentences, plain Markdown, no headings.');
     } else {
-      b.writeln(
-          'The answer appears below for YOUR reference ONLY — the learner '
-          'is making a first guess. Do not quote it, state its result, or '
-          "confirm the learner's specific guess against it; guide with "
-          'questions until they reveal it.');
+      if (skill.learnAugment != null) {
+        b.writeln('For this material: ${skill.learnAugment}');
+      }
+      b
+        ..writeln()
+        ..writeln('- The card content is on screen — REFER to it ("look at the '
+            'second property — why does that force O(log n)?") instead of '
+            're-explaining it.')
+        ..writeln('- Prompt principle-based self-explanation ("why is that '
+            'true?"), not paraphrase. Use one small concrete example or analogy '
+            'at a time.')
+        ..writeln('- Teach for transfer: connect cue → technique → underlying '
+            'principle (the recognition trigger), contrast with a case where it '
+            'does NOT apply, and ask "where else could you use this?".')
+        ..writeln('- Calibrate: for a struggling learner add scaffolding and a '
+            'worked example; for a confident one go terser and jump to edge '
+            'cases and "when would this be wrong?". Fade help as they get it.')
+        ..writeln('- Praise the strategy, not the person ("good — you reasoned '
+            'from the invariant"); be specific; check understanding before '
+            'moving on. The learner sets their own grade.')
+        ..writeln('- Be concise: 2–4 sentences, plain Markdown, no headings.')
+        ..writeln();
+      if (revealed) {
+        b.writeln('The card content is REVEALED; help them understand it '
+            'deeply, referring to it directly.');
+      } else {
+        b.writeln(
+            'The answer appears below for YOUR reference ONLY — the learner '
+            'is making a first guess. Do not quote it, state its result, or '
+            "confirm the learner's specific guess against it; guide with "
+            'questions until they reveal it.');
+      }
     }
   }
 
@@ -302,6 +368,25 @@ final _assessmentTag = RegExp(r'<assessment>\s*(.*?)\s*</assessment>',
   final text =
       raw.replaceAll(_gradeTag, '').replaceAll(_assessmentTag, '').trim();
   return (text: text, grade: grade, assessment: assessment);
+}
+
+/// The sentinel a first-exposure tutor emits (n0015) to signal the exchange is
+/// complete.
+final _tutorDoneTag = RegExp(r'<tutor-done\s*/?>', caseSensitive: false);
+
+/// Parse a FIRST-EXPOSURE tutor reply: the display [text] (with the `<tutor-done/>`
+/// sentinel stripped) and whether the exchange is [done]. Kept SEPARATE from
+/// [parseCoachReply] so the shared grading path is untouched (n0015). First
+/// exposure is never graded, so any stray grade/assessment tag is stripped too and
+/// a grade is never surfaced.
+({String text, bool done}) parseFirstExposureReply(String raw) {
+  final done = _tutorDoneTag.hasMatch(raw);
+  final text = raw
+      .replaceAll(_tutorDoneTag, '')
+      .replaceAll(_gradeTag, '')
+      .replaceAll(_assessmentTag, '')
+      .trim();
+  return (text: text, done: done);
 }
 
 AppliedAssessment? _parseAssessment(String raw) {
