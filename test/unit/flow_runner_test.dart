@@ -36,6 +36,7 @@ class FakeClaudeService implements ClaudeService {
     String? system,
     String model = ClaudeService.defaultModel,
     int maxTokens = 1024,
+    bool cacheSystem = false,
   }) async {
     systemsSeen.add(system);
     // The grader system prompt is the only one carrying the `<grade>` output

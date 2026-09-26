@@ -69,11 +69,19 @@ class ClaudeService {
   /// Sends a multi-turn conversation and returns the concatenated text reply.
   /// [messages] must alternate/begin with a `user` turn (Anthropic's rule);
   /// the coach builds this from its running history.
+  ///
+  /// [cacheSystem] (n0015 PREREQ-B): mark the [system] prompt as a cacheable
+  /// prefix (`cache_control: ephemeral`), so a MULTI-turn conversation that re-sends
+  /// the same stable system (card + section + persona) pays for it once and reads it
+  /// cheaply thereafter. Leave it **false** for single-turn calls (e.g. [complete]):
+  /// there's no reuse, so the cache-write premium would be a net loss. Below the
+  /// model's minimum cacheable length it's a silent no-op.
   Future<String> chat({
     required List<({String role, String content})> messages,
     String? system,
     String model = defaultModel,
     int maxTokens = 1024,
+    bool cacheSystem = false,
   }) async {
     final http.Response response;
     try {
@@ -86,7 +94,16 @@ class ClaudeService {
         body: jsonEncode({
           'model': model,
           'max_tokens': maxTokens,
-          if (system != null) 'system': system,
+          if (system != null)
+            'system': cacheSystem
+                ? [
+                    {
+                      'type': 'text',
+                      'text': system,
+                      'cache_control': {'type': 'ephemeral'},
+                    }
+                  ]
+                : system,
           'messages': [
             for (final m in messages) {'role': m.role, 'content': m.content},
           ],

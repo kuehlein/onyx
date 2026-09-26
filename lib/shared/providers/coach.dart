@@ -183,6 +183,9 @@ class Coach extends _$Coach {
               content: m.text,
             ),
         ],
+        // A coach conversation re-sends the same stable system (card + section +
+        // persona) every turn — cache it so turns 2+ are cheap (n0015 PREREQ-B).
+        cacheSystem: true,
       );
       if (firstExposure) {
         // First exposure never grades: parse only text + the <tutor-done/> close

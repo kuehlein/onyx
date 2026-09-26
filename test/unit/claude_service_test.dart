@@ -137,5 +137,55 @@ void main() {
       expect(captured.headers['authorization'], 'Bearer onyx-token');
       expect(captured.headers.containsKey('x-api-key'), isFalse);
     });
+
+    test('cacheSystem marks the system as an ephemeral cached block (PREREQ-B)',
+        () async {
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'ok'},
+            ],
+          }),
+          200,
+        );
+      });
+
+      await ClaudeService(apiKey: 'k', client: client).chat(
+        system: 'be a tutor',
+        messages: const [(role: 'user', content: 'hi')],
+        cacheSystem: true,
+      );
+
+      final body = jsonDecode(captured.body) as Map<String, dynamic>;
+      final system = (body['system'] as List).cast<Map<String, dynamic>>();
+      expect(system.first['type'], 'text');
+      expect(system.first['text'], 'be a tutor');
+      expect(system.first['cache_control'], {'type': 'ephemeral'});
+    });
+
+    test('single-turn complete sends a plain-string system (no cache premium)',
+        () async {
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'content': [
+              {'type': 'text', 'text': 'ok'},
+            ],
+          }),
+          200,
+        );
+      });
+
+      await ClaudeService(apiKey: 'k', client: client)
+          .complete(prompt: 'x', system: 'sys');
+
+      final body = jsonDecode(captured.body) as Map<String, dynamic>;
+      expect(body['system'], 'sys'); // plain string, no cache_control block
+    });
   });
 }
