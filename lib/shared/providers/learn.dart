@@ -81,16 +81,23 @@ Future<int> dailyNewRemaining(Ref ref) async {
 /// wikilink family, foundational-first, capped by the remaining daily allowance.
 @riverpod
 Future<List<LearnItem>> learnQueue(Ref ref) async {
-  final deckF = ref.watch(activeDeckProvider.future); // register first
-  final index = await ref.watch(vaultIndexProvider.future);
+  // Register every dependency synchronously (before the first await) so a mid-flight
+  // invalidation can't leave this watching through a disposed ref — matches
+  // dailyNewAllowance/dailyPlan. None transitively read the learn queue → no cycle.
+  final deckF = ref.watch(activeDeckProvider.future);
+  final indexF = ref.watch(vaultIndexProvider.future);
+  final remainingF = ref.watch(dailyNewRemainingProvider.future);
+  final targetingF = ref.watch(activeTargetingProvider.future);
+  final planWeightsF = ref.watch(activePlanDomainWeightsProvider.future);
   final repo = ref.watch(srsRepositoryProvider);
-  final states = await repo.loadStates();
-  final remaining = await ref.watch(dailyNewRemainingProvider.future);
+  final remaining = await remainingF;
   if (remaining <= 0) return const [];
-  final targeting = await ref.watch(activeTargetingProvider.future);
+  final index = await indexF;
+  final states = await repo.loadStates();
+  final targeting = await targetingF;
   // Urgency-weighted per-domain emphasis (S3d): order new material by per-aim
   // urgency, not the blended base track. Byte-identical single-aim.
-  final planWeights = await ref.watch(activePlanDomainWeightsProvider.future);
+  final planWeights = await planWeightsF;
   final goal = await deckF;
   // Scope to the active goal's cards (task #30d, G5+) so a lane learns its own
   // material; the whole-vault default goal selects everything (unchanged).
