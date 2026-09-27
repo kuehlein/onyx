@@ -14,16 +14,19 @@ below).
   study budget** (the shared day across decks), **gym mode** (a between-sets rest timer, orthogonal
   to decks), dev tools (dev clock, wipe vault, test connection). [MVP: keys, backup, theme, budget,
   dev]
-- **Deck-level config:** parsing rules, aim defaults, the deck's **proportion** of the daily budget
-  (its share of the day), and any **flow-declared knobs** (config-driven — shown only for the flows
-  a deck runs). **Workload is NOT hand-tuned:** the engine derives the study mix from the budget +
-  aims + FSRS + urgency; the old manual new-sections/day + algo min/max knobs are removed
-  ([ADR-0010](../adr/0010-workload-budget-and-proportions.md)).
+- **Deck-level config:** parsing rules, aim defaults, the deck's **priority** — a coarse tier
+  (highest/high/normal/low) the engine turns into that deck's share of the day
+  ([ADR-0018](../adr/0018-cross-deck-allocation-priority-tiers.md), replacing the old numeric
+  proportion dial) — and any **flow-declared knobs** (config-driven — shown only for the flows a deck
+  runs). **Workload is NOT hand-tuned:** the engine derives the study mix AND the cross-deck split from
+  the budget + aims + FSRS + urgency + the priority tiers; the old manual new-sections/day + algo
+  min/max knobs are removed ([ADR-0010](../adr/0010-workload-budget-and-proportions.md)).
 - **How load *adjusts* (not just how it's configured)** — the SIZE-vs-MIX split
   ([ADR-0011](../adr/0011-load-control-auto-mix-propose-size.md)): the **engine auto-adjusts the MIX**
   (review vs new vs practice, the automatic new-material ceiling) **silently** — it never announces a
-  mix change. The day's **SIZE stays user-owned**: the user changes it by moving the daily-budget /
-  proportion dial or picking a high-level **intent** (push / steady / ease off), and sees an
+  mix change. The day's **SIZE stays user-owned**: the user changes it by moving the daily-budget
+  dial, setting a deck's **priority tier** (which the engine turns into its share — ADR-0018), or
+  picking a high-level **intent** (push / steady / ease off), and sees an
   **in-the-moment informed readout** — a zone band (ambitious / sustainable / likely-to-burn-out) + a
   **neutral forward date shift** ("finish ~Apr 18 instead of Apr 14; speed up anytime"), never a red
   behind-countdown. The **coach proposes / applies-on-request, never overrides** a user dial; an
@@ -44,8 +47,8 @@ below).
   **Status.** Accepted. On your note — the deck-config header reads **"This deck only"** with a
   **"Vault settings →"** link. **Workload is engine-derived, not a per-deck knob**
   ([ADR-0010](../adr/0010-workload-budget-and-proportions.md), superseding the earlier "pace/load per
-  deck" framing): the user sets the vault daily budget + each deck's proportion; the daily plan
-  derives the mix.
+  deck" framing): the user sets the vault daily budget + each deck's **priority tier** (a coarse
+  preference, not a number — ADR-0018); the engine derives each deck's share of the day + the mix.
 - **Should parsing be per-vault or per-deck? On the settings page or the deck's home?**
   **Rec.** **Per-deck with a vault default** (a deck may be a different domain that parses
   differently). Edit it from the deck (a "how cards are read" entry), not a global page.

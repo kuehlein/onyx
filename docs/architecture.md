@@ -75,6 +75,11 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 - **ADR-0011** — load control: the engine auto-adjusts the MIX; it PROPOSES the SIZE.
 - **ADR-0012** — card model: a shared component layer + quizzability precedence + edit-identity.
 - **ADR-0013** — one query/lens engine: Browse filters == deck membership.
+- **ADR-0014** — FSRS tuning (#32): global retention knob, guarded Learn-Easy, deferred optimizer.
+- **ADR-0015** — AI-tutor first exposure (#26): a learner-invited, grounding-only Socratic step in Learn.
+- **ADR-0016** — derived new-material count: the sustainable ceiling (#114 Phase B).
+- **ADR-0017** — per-aim importance: a user weight on allocation, not readiness (#136).
+- **ADR-0018** — cross-deck allocation: priority tiers, engine-derived split, per-deck floor (#137).
 - Add new ADRs here as decisions are made; keep this the index.
 
 ## Where the rest lives

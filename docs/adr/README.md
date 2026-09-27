@@ -44,3 +44,4 @@ belong in code comments + the PR description, not an ADR.
 | [0015](0015-ai-tutor-first-exposure.md) | AI-tutor first exposure (#26): a learner-invited, grounding-only Socratic step in Learn | Accepted |
 | [0016](0016-derived-new-material-ceiling.md) | Derived new-material count: the sustainable ceiling (#114 Phase B) | Accepted |
 | [0017](0017-per-aim-importance-allocation.md) | Per-aim importance: a user weight on allocation (not readiness) (#136) | Accepted |
+| [0018](0018-cross-deck-allocation-priority-tiers.md) | Cross-deck allocation: priority tiers, engine-derived split, per-deck floor (#137) | Accepted |

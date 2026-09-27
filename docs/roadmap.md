@@ -283,9 +283,16 @@ model before we add features, so we build on the right shape.
   **Allocation refinements (engine-derived + user-overridable).** ✅ **#136 (2026-09-27,
   [ADR-0017](adr/0017-per-aim-importance-allocation.md)):** per-aim **importance** (high/normal/low) scales
   an aim's allocation share (dream role vs backup; final vs quiz) — plan only, readiness stays honest;
-  `normal` default is byte-identical. **Still pending:** engine-**recommended deck proportions** from
-  feasibility (**#116**) — the deck-level slice of the broader **dynamic deck/aim allocation by need**
-  (**#137**), so **#116 ⊂ #137**; these *propose*, never auto-write, the user's proportion (ADR-0010/0011).
+  `normal` default is byte-identical. **#137 (scoped 2026-09-27, [ADR-0018](adr/0018-cross-deck-allocation-priority-tiers.md);
+  build next):** extend that importance×urgency model **across decks** — the user sets a coarse **priority
+  tier** (4 levels; deck default + per-aim override, generalizing #136), the engine derives each deck's
+  share of the day from `tier × budget-independent urgency (deadline + coverage)` over a per-deck floor
+  (no deck starves), and the vault view **shows the split as minutes** (never a % input). **Retires the
+  numeric `budgetWeight` share slider** and **subsumes #116** (the derived split IS the recommendation).
+  Research-grounded (mere-urgency effect; coarse ordinal tiers > cardinal; SuperMemo deprioritize-not-delete
+  — see learning-science.md §Cross-goal prioritization). Cross-deck need is **budget-independent** by
+  necessity (deckBudgets is upstream of the B2 forecast — else a cycle). Proactive "load shifted"
+  notification stays deferred (#110); the view is pulled (ADR-0011).
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user

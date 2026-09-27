@@ -17,11 +17,12 @@ From here the user can:
 - **Add a deck** → the [deck_creation](deck_creation.md) flow. [MVP]
 - **Pause a deck** — stop allocating study time to its lens (kept, just idle). [MVP]
 - **Archive a deck** — hide it without losing work. [later]
-- **Manage study-time allocation** across active decks (each deck's **proportion** of the daily
-  budget). **Warn on too-little-time**: a share that leaves a deck too few minutes to learn or retain
-  anything, or below its **heaviest flow's unit cost** — e.g. a 40-min system-design session can never
-  run in a deck allotted < 40 min/day — and on too-many-subjects. [MVP-ish] A global calendar of
-  upcoming tests across all decks is [later, tricky].
+- **Manage study-time allocation** across active decks — set each deck's **priority tier** and the
+  engine derives its share of the day ([ADR-0018](../adr/0018-cross-deck-allocation-priority-tiers.md)),
+  keeping every active deck above an engagement floor. **Warn on too-little-time**: when the shared
+  budget can't cover the active decks even at that floor (too many subjects), or a deck's floor is below
+  its **heaviest flow's unit cost** — e.g. a 40-min system-design session can never run in a deck
+  allotted < 40 min/day. [MVP-ish] A global calendar of upcoming tests across all decks is [later, tricky].
 
 ## Open questions → recommendations
 - **Should the app recommend each deck's proportion (from deadlines / aims / coverage)?**
@@ -29,10 +30,14 @@ From here the user can:
   coverage remaining, aim urgency) — but **only as suggestions the user can override.** The app can't
   model real-world urgency: learning Korean may have no "test" yet be the most urgent thing (a
   grandparent is dying and the user wants to speak with them), outweighing an SWE loop they aren't even
-  sure they want. So surface the recommendation + the too-little-time warning, but **the user's set
-  share always wins** (autonomy-supporting, SDT — like the coach: propose-with-rationale, never
-  auto-override). MVP ships manual shares + warnings; recommended shares are a later layer.
-  **Status.** Accepted (suggestions-only, later).
+  sure they want. So the app can't infer real-world urgency — but **the user's own priority always
+  wins** (autonomy-supporting, SDT — like the coach: propose-with-rationale, never auto-override).
+  **Status.** Resolved by [ADR-0018](../adr/0018-cross-deck-allocation-priority-tiers.md): the user sets
+  a coarse **priority tier** (the preference the engine can't infer — the Korean/grandparent case is
+  just "Korean = highest"), and the engine derives each deck's share from `tier × budget-independent
+  urgency (deadline + coverage)` over a floor, **shown as minutes**. There is no separate numeric
+  "suggestion" to accept — the derived split *is* the recommendation, adjusted by moving the tier; the
+  tier always wins.
 - **Archive semantics — lens only? cards too? mark + hide? or delete?**
   **Rec.** Archive the **lens only, never the cards.** Cards belong to the vault and may be
   shared across decks, so deleting them here would be surprising + destructive. Mark the deck

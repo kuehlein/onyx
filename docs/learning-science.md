@@ -349,6 +349,45 @@ constraint is that new material is not free:
 bound, cognitive hard-max)` over the retention floor (#106): reviews first, then a share
 of the remainder on new, capped so novelty can't out-run the review capacity it creates.
 
+### Cross-goal prioritization — allocating study time across concurrent goals
+**Confidence: High** (urgency-bias, elicitation, agenda) **· Medium** (switch-cost transfer, stakes
+self-report) | Verified deep-research pass, 2026-09-27; grounds ADR-0018 (cross-deck allocation). When a
+learner runs several subjects/decks at once, the engine splits a shared daily budget across them. The
+evidence shapes *how*:
+
+- **Importance must counterweight deadline-urgency.** The **"mere urgency effect"** is robust and
+  replicated: people irrationally prefer tasks with (even spurious) urgency over objectively higher-payoff
+  ones, violating dominance (Zhu, Yang & Hsee 2018, *J. Consumer Research* 45(3); well-powered replication
+  2026, n=2,374). <https://academic.oup.com/jcr/article-abstract/45/3/673/4847790>. So an engine that
+  allocates by deadline alone will **starve a low-urgency, high-stakes goal** — a user-owned **importance**
+  signal must sit alongside urgency.
+- **Elicit priority as a few coarse ordinal tiers, not numbers.** Non-experts mis-set fine cardinal values;
+  rating-scale reliability rises only to ~7 categories and 2–3 are too coarse (Preston & Colman 2000,
+  *Acta Psychologica* 104). <https://www.rangevoting.org/optinumb.pdf>. Best-worst/tier methods beat full
+  ranking on test-retest reliability (0.69 vs 0.47), and ranking is *least* reliable for middle items and
+  can't express ties (Liang et al. 2026, *Behavior Research Methods*). Drag-to-rank also fabricates "clean"
+  orderings — every item ends ranked even if one moved (UXPA *J. Usability Studies* 2022). **→ a small set
+  of named tiers (four), ties allowed, engine derives the magnitude.**
+- **Coarse value-tiers match how learners already think.** Under time pressure learners adopt a simple
+  "prioritize the high-value items" agenda that overrides item-difficulty monitoring (Ariel, Dunlosky &
+  Bailey 2009, *JEP: General* 138(3)). <https://www.k-state.edu/memory/publications/pdfs/Ariel_Robert.pdf>.
+- **Never fully starve a goal; keep work consistent.** Study *consistency* across the whole prep window
+  beats concentrating on the nearest deadline (Hsu et al. 2023, *Smart Learning Environments*, correlational;
+  Cepeda 2006 spacing meta-analysis), and SuperMemo's priority queue **deprioritizes, never deletes** under
+  overload. **→ a per-deck floor** so a de-emphasized subject slows but still progresses.
+- **Favor coherent single-subject sessions over rapid deck-hopping.** Task-switching carries a real switch
+  cost that preparation reduces but never eliminates (Monsell 2003, *TICS* 7(3)). **Caveat:** these are
+  sub-second lab effects; transfer to between-session (minutes-to-hours-apart) study switching is *not*
+  established — treat as directional, not quantitative.
+- **Stakes: an optional light tier, not a derived number.** Students self-report grade-weight/stakes as a
+  spacing driver, but self-report diverges from measured behavior, which tracks deadlines (Rawson &
+  Dunlosky ~2021, JARMAC). **→** keep stakes a coarse optional tier layered on reliably-measured deadlines;
+  don't ask students to quantify a "40% final vs 5% quiz".
+
+**Implication (ADR-0018).** The user sets a coarse priority **tier** (deck-level, per-aim overridable); the
+engine derives the cross-deck time split from `importance × a budget-independent coarse urgency` over a
+per-deck floor, and **shows** the result as minutes/day (never asks for a percentage).
+
 ---
 
 ## The Three Knowledge Types — and Why Conditional Knowledge Is the Priority
