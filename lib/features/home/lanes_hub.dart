@@ -9,6 +9,7 @@ import '../../shared/providers/clock.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/readiness.dart';
 import '../../shared/providers/decks.dart';
+import 'deck_allocation_sheet.dart';
 import 'deck_editor_sheet.dart';
 
 /// The "Today's mix" lanes hub (task #30d, G5): one lane per concurrent study
@@ -75,6 +76,14 @@ class LanesHub extends ConsumerWidget {
               const SizedBox(height: Dim.space2),
             ],
             const SizedBox(height: Dim.space2),
+            if (active.length > 1) ...[
+              OutlinedButton.icon(
+                icon: const Icon(Icons.balance),
+                label: const Text('Balance study time'),
+                onPressed: () => showDeckAllocationSheet(context),
+              ),
+              const SizedBox(height: Dim.space2),
+            ],
             OutlinedButton.icon(
               icon: const Icon(Icons.add),
               label: const Text('New deck'),
