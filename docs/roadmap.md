@@ -261,7 +261,7 @@ model before we add features, so we build on the right shape.
   status + zone-calendar), with aims decoupled from deck creation. *(#111 live-aim routing + #90
   debrief reachability both ✅ fixed 2026-09-24 — see 1h.)*
 - **1d · Deck/vault scope split — ✅ DONE (2026-09-24): Browse/Analytics + Settings/workload model
-  shipped; only refinements remain (#114 Phase B/C, #115, #116)** (→ browse, analytics, settings). **Browse** is now **deck-scoped** — it filters by the active deck's
+  shipped; only refinements remain (#114 Phase C, #115 — #114 Phase B ✅ and #116 ✅ subsumed by #137)** (→ browse, analytics, settings). **Browse** is now **deck-scoped** — it filters by the active deck's
   membership (whole-vault default deck unchanged; a lens with no members gets its own empty state).
   **Analytics/Insights** was ALREADY deck-scoped: its top-level providers are active-deck wrappers over
   member-scoped `deckX(deckId)` (via `deckMemberCardIds` = `deck.select`); only `studyConsistency`
@@ -293,7 +293,9 @@ model before we add features, so we build on the right shape.
   Research-grounded (mere-urgency effect; coarse ordinal tiers > cardinal; SuperMemo deprioritize-not-delete
   — see learning-science.md §Cross-goal prioritization). Cross-deck need is **budget-independent** by
   necessity (deckBudgets is upstream of the B2 forecast — else a cycle). Proactive "load shifted"
-  notification stays deferred (#110); the view is pulled (ADR-0011). **Shipped in 3 slices:** (1) engine —
+  notification stays deferred (#110); the view is pulled (ADR-0011). **Deferred (ADR-0018):** a
+  coverage-remaining / fraction-unstudied urgency term — it would churn deckBudgets on every graded card and
+  is partly redundant with within-deck pacing; revisit with **#122** if an under-studied deck reads starved. **Shipped in 3 slices:** (1) engine —
   `PriorityTier`, `deadlineFactor`, floor-aware `allocateBudget`, cycle-safe `deckBudgets`; (2) `budget.dart`
   rewrite + provider rewire + tests; (3a) deck-priority picker (deck settings + editor) + `budgetWeight`
   retired with a legacy→tier migration; (3b) the vault **"Balance study time"** allocation view off the
@@ -481,6 +483,18 @@ model before we add features, so we build on the right shape.
   frames the principles as subject-general (SWE = worked example); linked from the user-stories backbone
   (Stance + a new **Foundations** line in §Files). *Remaining/adjacent (separate tasks):* the proactive
   **notify** surface stays deferred (ADR-0011 Phase C / #114); #26 tutor ADR can now cite this base.
+- **Hardening pass — deck/aims arc ✅ (2026-09-27).** A six-audit review of everything built since the
+  reframe (allocation · readiness/forecast · daily-plan/learn · UI · docs↔code · test gaps), each finding
+  adversarially re-verified before acting. **Fixed:** `learnQueue` disposed-ref safety (register deps before
+  the first await); a shared `WarnBanner` (dedup the two deck too-little-time banners); a sub-floor
+  multi-deck lane's forecast that read its ready-date off the 30-min curve floor (now samples the lane's
+  real budget); **+6 edge-case tests** (zero budget, warning `<` boundaries, deadline-window edge,
+  mere-urgency cap, migration cutoffs + precedence, unreachable projection); ADR-0016/17/18 reconciled with
+  the code. **Verified sound** (no change needed): the deckBudgets↔forecast cycle constraint, max-over-aims
+  aggregation, the `budgetWeight`→tier migration, the mid-session-reset fix, honest weakest-link readiness.
+  **Deferred:** config-driven readiness/forecast for non-SWE templates (**#153**); low cleanup —
+  `DeckTemplate.label` + `goal`→deck naming residue + a few inline literals (**#154**); the coverage-remaining
+  cross-deck term (ADR-0018, revisit with #122).
 
 ## Phase 3 — Finish the MVP
 The MVP-tagged stories, cloud still absent:
@@ -597,6 +611,13 @@ The MVP-tagged stories, cloud still absent:
   schedule + cross-deck allocation (ADR-0018). Needs a share/merge model — **opt-in**, conflict rules
   (whose aim wins), and it must **never clobber a student's own aims or priority tiers**. Gated on the
   parked sync / source-of-truth decision (same gate as the cloud track).
+- **Config-driven readiness for non-SWE templates (#153, generalization; part of #30/#88).** The
+  readiness/projection/ladder layer is still SWE-enum-bound (`SeniorityLevel`/`CompanyTier`/`Track`); a
+  custom template's non-enum slot ids round-trip through the enum fallback (`ForecastDims` →
+  `ReadinessTarget`), so a custom subject's forecast role (tier weights / durability / domain weights) can
+  diverge from its headline. Retire the enum bottleneck when the AI calibration becomes config-driven (the
+  "Phase 4" `target.dart` names). **Latent** — the shipped SWE deck's ids ARE the enum names, so it
+  round-trips losslessly; surfaced + documented in-code by the 2026-09-27 hardening pass.
 - QR class/org quick-setup (→ onboarding, merge-not-overwrite); PDF/camera card authoring
   (→ deck_creation).
 - **Focus / Do-Not-Disturb while studying** (opt-in, Settings toggle) — trigger the OS Focus/DND for
