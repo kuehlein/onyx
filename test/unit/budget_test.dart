@@ -37,6 +37,19 @@ void main() {
       expect(near, greaterThan(far));
       expect(far, greaterThan(1.0));
     });
+
+    test('exactly at the window edge is still 1.0; just inside ramps up', () {
+      // The boundary is `days >= window → 1.0` (a `>` regression would jump it up).
+      expect(
+          deadlineFactor(
+              _today.add(const Duration(days: kDeadlineWindowDays)), _today),
+          1.0);
+      expect(
+          deadlineFactor(
+              _today.add(const Duration(days: kDeadlineWindowDays - 1)),
+              _today),
+          greaterThan(1.0));
+    });
   });
 
   group('deckPriorityWeight', () {
@@ -63,6 +76,17 @@ void main() {
       ]);
       expect(deckPriorityWeight(soon, _today),
           greaterThan(deckPriorityWeight(undated, _today)));
+    });
+
+    test('a near deadline never lets a low aim out-pull an undated highest',
+        () {
+      // The mere-urgency cap (ADR-0018): deadline urgency scales importance but must
+      // not dominate it. low·peak (0.5·1.5=0.75) < highest undated (2.0).
+      final lowSoon =
+          _g('a', aims: [_aim('x', PriorityTier.low, date: _today)]);
+      final highestUndated = _g('b', aims: [_aim('y', PriorityTier.highest)]);
+      expect(deckPriorityWeight(lowSoon, _today),
+          lessThan(deckPriorityWeight(highestUndated, _today)));
     });
 
     test('paused/ended aims are ignored (fall back to the deck tier)', () {
@@ -138,6 +162,13 @@ void main() {
         isEmpty,
       );
     });
+
+    test('a zero or negative total budget → empty (a rest day)', () {
+      expect(allocateBudget(goals: [_g('a')], totalMinutes: 0, today: _today),
+          isEmpty);
+      expect(allocateBudget(goals: [_g('a')], totalMinutes: -5, today: _today),
+          isEmpty);
+    });
   });
 
   group('deckAllocationWarning', () {
@@ -175,6 +206,24 @@ void main() {
         () {
       expect(deckAllocationWarning(allocatedMinutes: 5, hasLongSessions: true),
           DeckAllocationWarning.tooLittle);
+    });
+
+    test('the thresholds are exclusive: exactly floor / session cost → none',
+        () {
+      // Both checks use strict `<`, so being exactly AT the bound is fine — guards
+      // against a `<`→`<=` regression that would flip a just-adequate slice to a warn.
+      expect(
+          deckAllocationWarning(
+              allocatedMinutes: kEngagementFloorMinutes,
+              hasLongSessions: false),
+          DeckAllocationWarning.none);
+      expect(
+        deckAllocationWarning(
+            allocatedMinutes: 40,
+            hasLongSessions: true,
+            longSessionMinutes: 40),
+        DeckAllocationWarning.none,
+      );
     });
   });
 }

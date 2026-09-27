@@ -78,6 +78,26 @@ void main() {
         greaterThan(fast.trajectory.first.readiness));
   });
 
+  test('an unreachable target within the horizon → readyDay null / unreachable',
+      () {
+    // A hopeless pace (1 new/day over 60 cards) inside a short horizon never crosses
+    // the target — the branch every consumer keys "infeasible" off of.
+    final p = projectReadiness(
+      cards: deck,
+      stateByKey: const {},
+      target: senior,
+      pace: const PacePolicy(newSectionsPerDay: 1),
+      today: today,
+      horizonDays: 10,
+    );
+    expect(p.readyDay, isNull);
+    expect(p.unreachable, isTrue);
+    expect(p.trajectory, isNotEmpty);
+    expect(p.trajectory.last.readiness, lessThan(0.75));
+    // The sim is bounded — the last sample never runs past the horizon.
+    expect(p.trajectory.last.day, lessThanOrEqualTo(10));
+  });
+
   test('a bigger daily budget reaches readiness no later (budget-native)', () {
     final empty = <String, SectionSrsState>{};
     final lean = projectReadiness(

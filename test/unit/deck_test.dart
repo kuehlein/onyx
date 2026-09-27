@@ -125,6 +125,33 @@ void main() {
     });
 
     test(
+        'legacy budgetWeight→tier migration boundaries + priority-key precedence',
+        () {
+      PriorityTier tierFor(num w) => Deck.fromJson(
+              {'id': 'd', 'name': 'D', 'templateId': 't', 'budgetWeight': w})
+          .priority;
+      // Cutoffs: >=2.0 highest, >=1.3 high, <=0.7 low, else normal. Guards against a
+      // comparison off-by-one (`>` vs `>=`) silently reshuffling migrated decks.
+      expect(tierFor(2.0), PriorityTier.highest);
+      expect(tierFor(1.9), PriorityTier.high);
+      expect(tierFor(1.3), PriorityTier.high);
+      expect(tierFor(1.29), PriorityTier.normal);
+      expect(tierFor(1.0), PriorityTier.normal); // the old default
+      expect(tierFor(0.7), PriorityTier.low);
+      expect(tierFor(0.71), PriorityTier.normal);
+      // An explicit `priority` key wins over a legacy `budgetWeight`.
+      expect(
+          Deck.fromJson({
+            'id': 'd',
+            'name': 'D',
+            'templateId': 't',
+            'priority': 'low',
+            'budgetWeight': 3.0,
+          }).priority,
+          PriorityTier.low);
+    });
+
+    test(
         'the interview facet round-trips through JSON + rounds logic (Phase B)',
         () {
       final aim = Aim(
