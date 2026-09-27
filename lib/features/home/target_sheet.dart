@@ -193,9 +193,9 @@ class _AimEditorSheetState extends ConsumerState<_AimEditorSheet> {
                 // Importance (#136): how much of the plan this aim pulls vs the
                 // deck's other aims — a dream role over a backup, a final over a
                 // quiz. Scales its allocation share, not readiness.
-                _ChipGroup<AimImportance>(
+                _ChipGroup<PriorityTier>(
                   label: 'Importance',
-                  values: AimImportance.values,
+                  values: PriorityTier.values,
                   selected: aim.importance,
                   labelOf: (v) => v.label,
                   onSelected: (v) => _set(aim.copyWith(importance: v)),

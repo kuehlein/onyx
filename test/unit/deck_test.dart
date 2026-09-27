@@ -92,6 +92,22 @@ void main() {
     });
 
     test(
+        'priority defaults to normal, round-trips, omits normal from JSON (#137)',
+        () {
+      const deck = Deck(id: 'd', name: 'D', templateId: 't');
+      expect(deck.priority, PriorityTier.normal);
+      expect(deck.toJson().containsKey('priority'), isFalse);
+
+      final high = deck.copyWith(priority: PriorityTier.highest);
+      expect(high.priority, PriorityTier.highest);
+      expect(Deck.fromJson(high.toJson()).priority, PriorityTier.highest);
+      // A legacy deck with no 'priority' key loads as normal (migration-safe).
+      expect(
+          Deck.fromJson({'id': 'd', 'name': 'D', 'templateId': 't'}).priority,
+          PriorityTier.normal);
+    });
+
+    test(
         'the interview facet round-trips through JSON + rounds logic (Phase B)',
         () {
       final aim = Aim(

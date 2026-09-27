@@ -181,15 +181,13 @@ void main() {
     final c = container([
       (
         aim: const Aim(
-            id: 'a',
-            domainWeights: {'sd': 1.0},
-            importance: AimImportance.high),
+            id: 'a', domainWeights: {'sd': 1.0}, importance: PriorityTier.high),
         feasibility:
             AimFeasibility(status: FeasibilityStatus.onTrack, date: farDate)
       ),
       (
         aim: const Aim(
-            id: 'b', domainWeights: {'ui': 1.0}, importance: AimImportance.low),
+            id: 'b', domainWeights: {'ui': 1.0}, importance: PriorityTier.low),
         feasibility:
             AimFeasibility(status: FeasibilityStatus.onTrack, date: farDate)
       ),

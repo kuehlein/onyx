@@ -15,29 +15,35 @@ import '../util.dart';
 /// The outcome of an interview (or a single round of one).
 enum AimOutcome { pending, passed, failed }
 
-/// How much of the study plan an aim pulls, relative to its siblings — a USER-set
-/// **importance** (a dream role vs a backup; a final vs a quiz), deliberately
-/// distinct from the engine-derived **urgency** (how behind an aim is). It scales
-/// the aim's allocation share in the daily plan (ADR-0007 / #136); it does NOT touch
-/// readiness, which stays an honest weakest-link across aims (de-weighting a backup
-/// there would hide a real gap). [normal] is the neutral default (no skew).
-enum AimImportance { high, normal, low }
+/// A coarse USER-set **priority** tier — how much of the study plan an aim (or a
+/// coverage-only deck) pulls relative to its siblings (a dream role vs a backup; a
+/// final vs a quiz). Deliberately distinct from the engine-derived **urgency** (how
+/// behind something is): urgency says *when*, priority says *how much you care*. The
+/// **aim** carries it as the allocation unit, so aims from different decks interleave
+/// by their own priority (ADR-0018 — the Latin-exam > chem-test > Latin-quiz case).
+/// Drives allocation at both levels — cross-deck (ADR-0018) and within-deck
+/// (ADR-0007/0017) — never readiness (de-weighting a backup there would hide a real
+/// gap). Four tiers: a small named set non-experts use reliably (Todoist ships four)
+/// while 2–3 is too coarse; [normal] is the neutral default (no skew).
+enum PriorityTier { highest, high, normal, low }
 
-extension AimImportanceWeight on AimImportance {
-  /// Multiplier on the aim's urgency share in `deckPlanDomainWeights`. Tunable;
-  /// [normal] = 1.0 so an all-normal deck allocates byte-identically (invariant #8).
+extension PriorityTierWeight on PriorityTier {
+  /// Multiplier on the urgency share in allocation. Tunable (ADR-0018 calibration);
+  /// [normal] = 1.0 so an all-normal set allocates byte-identically (invariant #8).
   double get weight => switch (this) {
-        AimImportance.high => 1.5,
-        AimImportance.normal => 1.0,
-        AimImportance.low => 0.5,
+        PriorityTier.highest => 2.0,
+        PriorityTier.high => 1.5,
+        PriorityTier.normal => 1.0,
+        PriorityTier.low => 0.5,
       };
 
   /// Short UI label (subject-neutral — the "dream vs backup" framing is the user's
   /// mental model, not engine copy).
   String get label => switch (this) {
-        AimImportance.high => 'High',
-        AimImportance.normal => 'Normal',
-        AimImportance.low => 'Low',
+        PriorityTier.highest => 'Highest',
+        PriorityTier.high => 'High',
+        PriorityTier.normal => 'Normal',
+        PriorityTier.low => 'Low',
       };
 }
 
@@ -164,7 +170,7 @@ class Aim {
     this.levelId,
     this.contextId,
     this.trackId,
-    this.importance = AimImportance.normal,
+    this.importance = PriorityTier.normal,
   });
 
   /// Stable id, unique within the parent goal's [Deck.aims] — the key
@@ -208,8 +214,8 @@ class Aim {
 
   /// User-set importance — how much of the plan this aim pulls vs its siblings
   /// (#136). Scales its allocation share (urgency × importance) in the daily plan,
-  /// NOT readiness. [AimImportance.normal] by default (no skew).
-  final AimImportance importance;
+  /// NOT readiness. [PriorityTier.normal] by default (no skew).
+  final PriorityTier importance;
 
   /// The one upcoming, not-yet-resolved round — what the learner is prepping for.
   /// [rounds] is the source of truth now (S5c — the deck-level deadline fallback is
@@ -270,7 +276,7 @@ class Aim {
     Object? levelId = _unset,
     Object? contextId = _unset,
     Object? trackId = _unset,
-    AimImportance? importance,
+    PriorityTier? importance,
   }) =>
       Aim(
         id: id ?? this.id,
@@ -305,7 +311,7 @@ class Aim {
         if (levelId != null) 'levelId': levelId,
         if (contextId != null) 'contextId': contextId,
         if (trackId != null) 'trackId': trackId,
-        if (importance != AimImportance.normal) 'importance': importance.name,
+        if (importance != PriorityTier.normal) 'importance': importance.name,
       };
 
   static Aim fromJson(Map<String, dynamic> m) => Aim(
@@ -328,8 +334,8 @@ class Aim {
         levelId: _str(m['levelId']),
         contextId: _str(m['contextId']),
         trackId: _str(m['trackId']),
-        importance: enumByName(AimImportance.values, m['importance']) ??
-            AimImportance.normal,
+        importance: enumByName(PriorityTier.values, m['importance']) ??
+            PriorityTier.normal,
       );
 }
 

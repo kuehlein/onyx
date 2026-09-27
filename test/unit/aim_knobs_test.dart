@@ -38,27 +38,34 @@ void main() {
   group('Aim importance (#136)', () {
     test('defaults to normal and is omitted from JSON', () {
       const aim = Aim(id: 'a');
-      expect(aim.importance, AimImportance.normal);
+      expect(aim.importance, PriorityTier.normal);
       expect(aim.toJson().containsKey('importance'), isFalse);
     });
 
     test('JSON round-trips a non-default importance', () {
-      const aim = Aim(id: 'a', importance: AimImportance.high);
-      expect(Aim.fromJson(aim.toJson()).importance, AimImportance.high);
+      const aim = Aim(id: 'a', importance: PriorityTier.high);
+      expect(Aim.fromJson(aim.toJson()).importance, PriorityTier.high);
     });
 
     test('copyWith sets importance, leaving it otherwise untouched', () {
-      const aim = Aim(id: 'a', importance: AimImportance.low);
-      expect(aim.copyWith(importance: AimImportance.high).importance,
-          AimImportance.high);
-      expect(aim.copyWith(companyName: 'x').importance, AimImportance.low);
+      const aim = Aim(id: 'a', importance: PriorityTier.low);
+      expect(aim.copyWith(importance: PriorityTier.high).importance,
+          PriorityTier.high);
+      expect(aim.copyWith(companyName: 'x').importance, PriorityTier.low);
     });
 
-    test('the weight multiplier orders high > normal > low, normal = 1.0', () {
-      expect(AimImportance.normal.weight, 1.0);
+    test('the weight is monotone: highest > high > normal (=1) > low (#137)',
+        () {
+      expect(PriorityTier.normal.weight, 1.0);
       expect(
-          AimImportance.high.weight, greaterThan(AimImportance.normal.weight));
-      expect(AimImportance.low.weight, lessThan(AimImportance.normal.weight));
+          PriorityTier.highest.weight, greaterThan(PriorityTier.high.weight));
+      expect(PriorityTier.high.weight, greaterThan(PriorityTier.normal.weight));
+      expect(PriorityTier.low.weight, lessThan(PriorityTier.normal.weight));
+    });
+
+    test('JSON round-trips the new highest tier (#137)', () {
+      const aim = Aim(id: 'a', importance: PriorityTier.highest);
+      expect(Aim.fromJson(aim.toJson()).importance, PriorityTier.highest);
     });
   });
 

@@ -30,6 +30,7 @@ class Deck {
     required this.templateId,
     this.membership = CardQuery.everything,
     this.budgetWeight = 1.0,
+    this.priority = PriorityTier.normal,
     this.state = DeckState.active,
     this.aims = const [],
   });
@@ -48,8 +49,16 @@ class Deck {
   final CardQuery membership;
 
   /// Relative share of the daily budget among active goals (renormalized across
-  /// the active set; see G4).
+  /// the active set; see G4). **Superseded by [priority]** (ADR-0018) — the engine
+  /// derives the cross-deck split from priority tiers; kept for back-compat + the
+  /// migration until the engine slice retires it.
   final double budgetWeight;
+
+  /// The deck's coarse cross-deck **priority** tier — the fallback for a coverage-only
+  /// deck (no active aims; the "I care about Korean though there's no exam" case) and
+  /// the default a new aim starts at. When the deck HAS active aims, its cross-deck
+  /// share is driven by those aims' own priorities, not this ([PriorityTier], ADR-0018).
+  final PriorityTier priority;
 
   final DeckState state;
 
@@ -89,6 +98,7 @@ class Deck {
         'templateId': templateId,
         'membership': membership.toJson(),
         'budgetWeight': budgetWeight,
+        if (priority != PriorityTier.normal) 'priority': priority.name,
         'state': state.name,
         if (aims.isNotEmpty) 'interviews': [for (final i in aims) i.toJson()],
       };
@@ -138,6 +148,10 @@ class Deck {
       budgetWeight: m['budgetWeight'] is num
           ? (m['budgetWeight'] as num).toDouble()
           : 1.0,
+      priority: PriorityTier.values.firstWhere(
+        (t) => t.name == m['priority'],
+        orElse: () => PriorityTier.normal,
+      ),
       state: DeckState.values.firstWhere(
         (s) => s.name == m['state'],
         orElse: () => DeckState.active,
@@ -151,6 +165,7 @@ class Deck {
     String? templateId,
     CardQuery? membership,
     double? budgetWeight,
+    PriorityTier? priority,
     DeckState? state,
     List<Aim>? aims,
   }) =>
@@ -160,6 +175,7 @@ class Deck {
         templateId: templateId ?? this.templateId,
         membership: membership ?? this.membership,
         budgetWeight: budgetWeight ?? this.budgetWeight,
+        priority: priority ?? this.priority,
         state: state ?? this.state,
         aims: aims ?? this.aims,
       );
