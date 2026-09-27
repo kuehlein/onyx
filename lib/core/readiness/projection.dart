@@ -221,6 +221,11 @@ class ReadinessForecast {
   final cur = currentBudget.clamp(kMinForecastBudget, kMaxForecastBudget);
   final chill = (cur * 0.66).clamp(kMinForecastBudget, cur);
   final push = (cur * 1.5).clamp(cur, kMaxForecastBudget);
+  // Also sample the ACTUAL current budget: a low-priority multi-deck lane can fall
+  // below kMinForecastBudget, and without its own point `currentReadyDay` would be
+  // read off the clamped 30-min point and OVERSTATE progress. Clamp only to keep the
+  // sim well-defined (> 0); when the budget is already >= 30 this dedups with `cur`.
+  final actual = currentBudget.clamp(1.0, kMaxForecastBudget);
   final budgets = <double>{
     30,
     60,
@@ -234,6 +239,7 @@ class ReadinessForecast {
     chill,
     cur,
     push,
+    actual,
   }.toList()
     ..sort();
   final points = <BudgetPoint>[];

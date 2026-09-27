@@ -83,6 +83,14 @@ Future<LadderPosition> readinessLadderPosition(Ref ref) async {
 /// sharing a role (e.g. two "senior · faang · backend" loops) reuse one simulation,
 /// while two DECKS at the same role keep SEPARATE forecasts (their card sets differ
 /// — the per-deck scoping, #113).
+///
+/// The role is carried as the SWE enums, matching the readiness/projection layer's
+/// transitional enum binding (see [ReadinessTarget]; config-driven scoring is deferred
+/// to Phase 4). The deck's OWN [TargetSpec] is threaded in for durability/tier curves,
+/// but a non-SWE template whose slot ids fall outside the enum value set rounds them to
+/// the enum fallback here — so a custom subject's forecast role can diverge from its
+/// headline until that phase. The shipped SWE template's ids ARE the enum names, so it
+/// round-trips losslessly.
 typedef ForecastDims = ({
   String deckId,
   SeniorityLevel level,
