@@ -270,7 +270,8 @@ model before we add features, so we build on the right shape.
   (per-deck readiness + budget + countdown). **Deferred → #114/#115 (user direction 2026-09-24):** the
   Settings vault/deck split + workload model. **#114 was REFRAMED — [ADR-0010](adr/0010-workload-budget-and-proportions.md):**
   workload is NOT hand-tuned/per-deck; the user sets only the **vault daily budget** + each deck's
-  **proportion** (`budgetWeight`), and the engine derives the study mix (aims + FSRS + urgency), with one
+  **priority** (a coarse tier since #137; originally a numeric `budgetWeight`), and the engine derives
+  the study mix (aims + FSRS + urgency) and the cross-deck split, with one
   automatic new-material ceiling. The manual new/day + algo min/max knobs are **removed**; gym → vault;
   a **config-driven deck-flow-settings** scaffold exposes a flow's non-load knobs only when the deck
   declares it (none today). **Phase A ✅ (2026-09-24):** removed the manual knobs (fixed guardrails =
@@ -278,21 +279,25 @@ model before we add features, so we build on the right shape.
   from Home ("This deck only") — the deck's **share** of the budget (live minutes/% + a
   **too-little-time warning**: engagement floor or heaviest-flow unit cost, deck_selection.md) + the
   config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
-  (Pace/Algo removed). **Remaining:** a vault-level **cross-deck** allocation view (all shares +
-  warnings together — deck_selection.md) is optional/later. **Settings prune + bug-fix → #115.**
+  (Pace/Algo removed). The vault-level **cross-deck** allocation view (all shares together —
+  deck_selection.md) shipped with **#137** (below). **Settings prune + bug-fix → #115.**
   **Allocation refinements (engine-derived + user-overridable).** ✅ **#136 (2026-09-27,
   [ADR-0017](adr/0017-per-aim-importance-allocation.md)):** per-aim **importance** (high/normal/low) scales
   an aim's allocation share (dream role vs backup; final vs quiz) — plan only, readiness stays honest;
-  `normal` default is byte-identical. **#137 (scoped 2026-09-27, [ADR-0018](adr/0018-cross-deck-allocation-priority-tiers.md);
-  build next):** extend that importance×urgency model **across decks** — the user sets a coarse **priority
+  `normal` default is byte-identical. ✅ **#137 (2026-09-27, [ADR-0018](adr/0018-cross-deck-allocation-priority-tiers.md)):**
+  extended that importance×urgency model **across decks** — the user sets a coarse **priority
   tier** (4 levels; deck default + per-aim override, generalizing #136), the engine derives each deck's
   share of the day from `tier × budget-independent urgency (deadline + coverage)` over a per-deck floor
-  (no deck starves), and the vault view **shows the split as minutes** (never a % input). **Retires the
-  numeric `budgetWeight` share slider** and **subsumes #116** (the derived split IS the recommendation).
+  (no deck starves), and the vault view **shows the split as minutes** (never a % input). **Retired the
+  numeric `budgetWeight` share slider** and **subsumed #116** (the derived split IS the recommendation).
   Research-grounded (mere-urgency effect; coarse ordinal tiers > cardinal; SuperMemo deprioritize-not-delete
   — see learning-science.md §Cross-goal prioritization). Cross-deck need is **budget-independent** by
   necessity (deckBudgets is upstream of the B2 forecast — else a cycle). Proactive "load shifted"
-  notification stays deferred (#110); the view is pulled (ADR-0011).
+  notification stays deferred (#110); the view is pulled (ADR-0011). **Shipped in 3 slices:** (1) engine —
+  `PriorityTier`, `deadlineFactor`, floor-aware `allocateBudget`, cycle-safe `deckBudgets`; (2) `budget.dart`
+  rewrite + provider rewire + tests; (3a) deck-priority picker (deck settings + editor) + `budgetWeight`
+  retired with a legacy→tier migration; (3b) the vault **"Balance study time"** allocation view off the
+  lanes hub (per-deck minutes + proportion bar + soonest-deadline caption + tier picker, rebalancing live).
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user

@@ -1,6 +1,8 @@
 # ADR 0010 — Study workload: user sets budget + proportions; the engine derives the mix
 
-- **Status:** Accepted
+- **Status:** Accepted — **amended by [ADR-0018](0018-cross-deck-allocation-priority-tiers.md)** (2026-09-27:
+  the per-deck **proportion** changed from a numeric `budgetWeight` dial to a coarse **priority tier** +
+  engine-derived split; the `budgetWeight` field is retired with a legacy→tier migration).
 - **Date:** 2026-09-24
 - **Deciders:** Kyle Uehlein
 - **Related:** ADR-0006 (deck/aims model), ADR-0007 (daily-plan allocation across aims), ADR-0008
