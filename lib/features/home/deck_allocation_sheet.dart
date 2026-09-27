@@ -13,6 +13,7 @@ import '../../shared/providers/template.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/priority_tier_picker.dart';
 import '../../shared/widgets/sheet_header.dart';
+import '../../shared/widgets/warn_banner.dart';
 
 /// The vault-level **cross-deck allocation** view (ADR-0018 / #137): every active
 /// deck with the engine-derived minutes/day today's split gives it, a proportion
@@ -84,7 +85,7 @@ class _DeckAllocationSheet extends ConsumerWidget {
                 ),
                 if (overSubscribed) ...[
                   const SizedBox(height: Dim.space3),
-                  _WarnBanner(
+                  WarnBanner(
                     message: 'Your ${total.round()}-min day can\'t give '
                         '${active.length} decks even '
                         '~${kEngagementFloorMinutes.round()} min each. Pause a deck '
@@ -200,7 +201,7 @@ class _AllocationRow extends ConsumerWidget {
         ],
         if (longWontFit) ...[
           const SizedBox(height: Dim.space2),
-          _WarnBanner(
+          WarnBanner(
             message: 'A full practice session '
                 '(~${kSystemDesignMinutes.round()} min) won\'t fit in '
                 '~${minutes.round()} min/day, so that flow can\'t run here. Raise '
@@ -258,40 +259,6 @@ class _SplitBar extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// A compact warn-tinted banner (icon + message) for the allocation view's
-/// too-little-time cases (deck_selection.md) — mirrors the deck-settings banner so
-/// both surfaces read the same. Copy lives here (the subject-neutral UI seam).
-class _WarnBanner extends StatelessWidget {
-  const _WarnBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(Dim.space3),
-      decoration: BoxDecoration(
-        color: StatusColor.warn.withValues(alpha: Dim.fill),
-        borderRadius: Dim.brCard,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_outline,
-              size: Dim.iconMd, color: StatusColor.warn),
-          const SizedBox(width: Dim.space2),
-          Expanded(
-            child: Text(message,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: StatusColor.warn)),
-          ),
-        ],
       ),
     );
   }

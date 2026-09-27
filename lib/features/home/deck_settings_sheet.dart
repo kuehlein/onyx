@@ -12,6 +12,7 @@ import '../../shared/providers/template.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/priority_tier_picker.dart';
 import '../../shared/widgets/sheet_header.dart';
+import '../../shared/widgets/warn_banner.dart';
 
 /// The per-deck config surface — **"This deck only"** (settings.md deck/vault split,
 /// 1d). Reached from Home. Holds the deck's **share** of the shared daily budget
@@ -108,8 +109,11 @@ class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
                         .upsert(deck.copyWith(priority: v)),
                   ),
                 ],
-                if (warning != DeckAllocationWarning.none)
-                  _WarningBanner(warning: warning, minutes: allocated.round()),
+                if (warning != DeckAllocationWarning.none) ...[
+                  const SizedBox(height: Dim.space3),
+                  WarnBanner(
+                      message: _warningMessage(warning, allocated.round())),
+                ],
                 const SizedBox(height: Dim.space5),
                 Text('Flows',
                     style: theme.textTheme.titleSmall
@@ -146,17 +150,10 @@ class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
   }
 }
 
-/// The too-little-time banner for a deck's daily allocation (deck_selection.md).
-class _WarningBanner extends StatelessWidget {
-  const _WarningBanner({required this.warning, required this.minutes});
-
-  final DeckAllocationWarning warning;
-  final int minutes;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final msg = switch (warning) {
+/// The too-little-time message for a deck's daily allocation (deck_selection.md),
+/// rendered via the shared [WarnBanner]. Copy lives here — the subject-neutral seam.
+String _warningMessage(DeckAllocationWarning warning, int minutes) =>
+    switch (warning) {
       DeckAllocationWarning.tooLittle =>
         '~$minutes min/day is very little — hard to learn or retain much. Raise '
             "this deck's share or your daily budget.",
@@ -166,26 +163,3 @@ class _WarningBanner extends StatelessWidget {
             'or your daily budget.',
       DeckAllocationWarning.none => '',
     };
-    return Container(
-      margin: const EdgeInsets.only(top: Dim.space3),
-      padding: const EdgeInsets.all(Dim.space3),
-      decoration: BoxDecoration(
-        color: StatusColor.warn.withValues(alpha: Dim.fill),
-        borderRadius: Dim.brCard,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_outline,
-              size: Dim.iconMd, color: StatusColor.warn),
-          const SizedBox(width: Dim.space2),
-          Expanded(
-            child: Text(msg,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: StatusColor.warn)),
-          ),
-        ],
-      ),
-    );
-  }
-}
