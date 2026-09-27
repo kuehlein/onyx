@@ -1,14 +1,16 @@
 # ADR 0017 — Per-aim importance: a user weight on allocation (not readiness)
 
-- **Status:** Accepted
+- **Status:** Accepted — the 3-level `AimImportance` decided here was **widened to a shared 4-level
+  `PriorityTier` (adds `highest`) by [ADR-0018](0018-cross-deck-allocation-priority-tiers.md)**; the code
+  pointers + tier count below reflect that current shape.
 - **Date:** 2026-09-27
 - **Deciders:** Kyle Uehlein
 - **Related:** **Extends [ADR-0007](0007-daily-plan-allocation-across-aims.md)** (daily-plan allocation across
   aims by feasibility-urgency) and is the **aim-level analog of [ADR-0010](0010-workload-budget-and-proportions.md)**'s
   user-owned deck **proportion** — a "how much I care" preference only the user can supply. Also ADR-0006
   (deck/aims model), ADR-0009 (aims surface). Task **#136**. Code: `lib/core/deck/aim.dart`
-  (`AimImportance`), `lib/shared/providers/readiness_feasibility.dart` (`deckPlanDomainWeights`),
-  `lib/features/home/target_sheet.dart` (the editor chip).
+  (`PriorityTier`, the `Aim.importance` field), `lib/shared/providers/readiness_feasibility.dart`
+  (`deckPlanDomainWeights`), `lib/features/home/target_sheet.dart` (the editor chip).
 
 ## Context
 
@@ -21,7 +23,8 @@ knows).
 
 ## Decision
 
-**Each aim carries a user-set `importance` — `high | normal | low` — that scales its urgency share in the
+**Each aim carries a user-set `importance` — `highest | high | normal | low` (widened from the original
+three by ADR-0018) — that scales its urgency share in the
 daily-plan allocation. It shapes the PLAN only; it never touches readiness.**
 
 1. **Allocation.** In `deckPlanDomainWeights`, each aim's share becomes `aimUrgency(feasibility) ×
@@ -36,9 +39,9 @@ daily-plan allocation. It shapes the PLAN only; it never touches readiness.**
 3. **`normal` is the default → byte-identical.** An all-normal deck allocates exactly as before (weights all
    ×1.0); the field is omitted from JSON when normal. A single-aim deck is unaffected (one aim, its share is
    1 regardless).
-4. **A tier, not a slider.** Three levels (high/normal/low), matching the mental model (dream/standard/
-   backup; final/normal/quiz) and keeping the editor to one chip row — no false precision, SDT-friendly
-   (a clear, low-effort choice).
+4. **A tier, not a slider.** A few coarse levels (originally high/normal/low; ADR-0018 added `highest`
+   for a 4-tier `PriorityTier`), matching the mental model (dream/standard/backup; final/normal/quiz) and
+   keeping the editor to one chip row — no false precision, SDT-friendly (a clear, low-effort choice).
 
 ## Alternatives considered
 

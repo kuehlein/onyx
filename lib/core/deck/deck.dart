@@ -1,12 +1,12 @@
-/// A **study goal** — the primitive of the query-lens model (task #30d, see
-/// docs/multi-subject-plan.md).
+/// A **deck** — the primitive of the query-lens model (task #30d; see
+/// docs/user_stories/deck_selection.md + docs/architecture.md).
 ///
-/// A goal is a named, configured, scheduled *view* of a set of related cards: a
+/// A deck is a named, configured, scheduled *view* of a set of related cards: a
 /// [membership] query selects the cards, a [templateId] names the target
 /// vocabulary (a `DeckTemplate`), the [aims] carry the objectives (each with its
 /// own knobs + date), and a [priority] tier + [state] control its slice of the
-/// shared daily study time (ADR-0018). Readiness is computed per goal over its members (G2).
-/// Goals are app-managed state (persisted in `_meta/` by [id]), not vault content.
+/// shared daily study time (ADR-0018). Readiness is computed per deck over its members (G2).
+/// Decks are app-managed state (persisted in `_meta/` by [id]), not vault content.
 library;
 
 import '../../shared/models/card.dart';

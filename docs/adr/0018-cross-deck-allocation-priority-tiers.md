@@ -51,8 +51,10 @@ per-deck floor. The numeric `budgetWeight` share dial is retired.**
    so **magnitude is engine-defined, not inferred from an ordering**.
 2. **The engine derives each deck's share from a BUDGET-INDEPENDENT "need"** = `importanceMultiplier ×
    coarse-urgency`, aggregated over the deck's active aims (a coverage-only deck uses its deck tier ×
-   baseline). Coarse-urgency here is **deadline proximity + coverage-remaining** — deliberately NOT the
-   feasibility/forecast urgency used within a deck. **Why (a load-bearing constraint):** the B2
+   baseline). Coarse-urgency here is **deadline proximity** — deliberately NOT the
+   feasibility/forecast urgency used within a deck. *(**Coverage-remaining / fraction-unstudied** was
+   scoped as a second budget-independent term but is **DEFERRED** — see Consequences: it is not
+   implemented in v1.)* **Why (a load-bearing constraint):** the B2
    budget-native forecast reads `deckBudgets`; `deckAimFeasibility` reads the forecast; so if `deckBudgets`
    derived the split from feasibility it would form a cycle (`deckBudgets → feasibility → forecast →
    deckBudgets`). The cross-deck split therefore uses a coarser, budget-independent need; the fine
@@ -80,9 +82,16 @@ per-deck floor. The numeric `budgetWeight` share dial is retired.**
    (ADR-0011 §D4/D5 — Kluger-DeNisi: feedback can reduce performance).
 
 **Calibration (to dogfood, not literature — the research validates the ingredients, not a formula).** Tier
-multipliers `2.0/1.5/1.0/0.5`; floor = `engagementFloor`; coarse-urgency = a bounded function of
-days-to-nearest-deadline + fraction-unstudied. These are starting points recorded here and tuned against
-real multi-deck use (#122), like ADR-0016's ceiling constants.
+multipliers `2.0/1.5/1.0/0.5`; floor = `engagementFloor`; coarse-urgency (v1) = a bounded function of
+days-to-nearest-deadline (`deadlineFactor`, peak `1.5` over a `60`-day window). These are starting points
+recorded here and tuned against real multi-deck use (#122), like ADR-0016's ceiling constants.
+
+**Deferred: coverage-remaining (fraction-unstudied) as a second urgency term.** It is budget-independent
+(so it would *not* reintroduce the cycle), but it depends on per-section studied state, which changes on
+every graded card — folding it into `deckBudgets` would make the split (and the forecast that reads it)
+churn on every review. It's also partly redundant: within-deck pacing + the readiness/forecast already
+reflect how far along each deck is, so a cross-deck split driven by stable user intent (tier) + deadlines
+is more predictable. Revisit with #122 if dogfooding shows an under-studied deck is starved of time.
 
 ## Alternatives considered
 

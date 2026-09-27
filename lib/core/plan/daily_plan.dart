@@ -328,7 +328,7 @@ DailyPlan buildDailyPlan({
     }
   }
 
-  // 3) Assemble — only tracks with work; priority order; mark non-negotiables.
+  // 4) Assemble — only tracks with work; priority order; mark non-negotiables.
   final topPri =
       eligible.map((a) => a.track).reduce((x, y) => pri[x]! >= pri[y]! ? x : y);
   final planned = [
