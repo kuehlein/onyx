@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/deck/budget.dart';
 import '../../core/deck/deck.dart';
+import '../../core/plan/practice_plan.dart' show kSystemDesignMinutes;
+import '../../core/template/template_registry.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/providers/clock.dart';
 import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/decks.dart';
+import '../../shared/providers/template.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../../shared/widgets/priority_tier_picker.dart';
 import '../../shared/widgets/sheet_header.dart';
@@ -15,7 +19,10 @@ import '../../shared/widgets/sheet_header.dart';
 /// bar, its soonest deadline, and its priority tier to adjust. The split is an
 /// OUTPUT the user *reads* (minutes rebalance live as tiers change) — never a
 /// percentage the user *types*. A per-deck engagement floor keeps any deck from
-/// starving. Reached from the lanes hub; shown only with ≥2 active decks.
+/// starving; it **warns on too-little-time** two ways (deck_selection.md): once at
+/// the vault level when the day can't cover every deck even at the floor
+/// (over-subscribed), and per-deck when a slice can't fit that deck's longest
+/// practice session. Reached from the lanes hub; shown only with ≥2 active decks.
 Future<void> showDeckAllocationSheet(BuildContext context) =>
     showOnyxSheet<void>(context, builder: (_) => const _DeckAllocationSheet());
 
@@ -33,6 +40,7 @@ class _DeckAllocationSheet extends ConsumerWidget {
         ref.watch(deckBudgetsProvider).value ?? const <String, double>{};
     final total = ref.watch(dailyBudgetMinutesProvider).value;
     final today = ref.watch(clockProvider).value?.today();
+    final registry = ref.watch(templateRegistryProvider).value;
 
     if (total == null || today == null) {
       return const SafeArea(
@@ -47,6 +55,13 @@ class _DeckAllocationSheet extends ConsumerWidget {
     ];
     // Biggest share first — the split reads top-to-bottom like a ranking.
     active.sort((a, b) => (budgets[b.id] ?? 0).compareTo(budgets[a.id] ?? 0));
+
+    // Over-subscribed: the day can't give every active deck even the engagement
+    // floor, so allocateBudget falls back to a sub-floor equal split
+    // (deck_selection.md). Surface it ONCE here rather than as a `tooLittle` flag on
+    // every row (which would all fire together in exactly this case).
+    final overSubscribed =
+        active.length > 1 && kEngagementFloorMinutes * active.length >= total;
 
     return SafeArea(
       child: Column(
@@ -66,6 +81,15 @@ class _DeckAllocationSheet extends ConsumerWidget {
                   'stalls.',
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
+                if (overSubscribed) ...[
+                  const SizedBox(height: Dim.space3),
+                  _WarnBanner(
+                    message: 'Your ${total.round()}-min day can\'t give '
+                        '${active.length} decks even '
+                        '~${kEngagementFloorMinutes.round()} min each. Pause a deck '
+                        'or raise your daily budget.',
+                  ),
+                ],
                 const SizedBox(height: Dim.space4),
                 for (final g in active) ...[
                   _AllocationRow(
@@ -73,6 +97,7 @@ class _DeckAllocationSheet extends ConsumerWidget {
                     minutes: budgets[g.id] ?? 0,
                     total: total,
                     today: today,
+                    hasLongSessions: _hasLongSessions(registry, g),
                   ),
                   const SizedBox(height: Dim.space4),
                 ],
@@ -91,12 +116,17 @@ class _AllocationRow extends ConsumerWidget {
     required this.minutes,
     required this.total,
     required this.today,
+    required this.hasLongSessions,
   });
 
   final Deck goal;
   final double minutes;
   final double total;
   final DateTime today;
+
+  /// True when the deck declares a long practice-track flow (e.g. a ~40-min mock),
+  /// used to warn when the deck's slice can't fit one (deck_selection.md).
+  final bool hasLongSessions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,6 +137,16 @@ class _AllocationRow extends ConsumerWidget {
 
     final soonest = goal.soonestAimDate(today);
     final due = soonest == null ? null : _countdown(soonest, today);
+
+    // A sub-floor (`tooLittle`) slice is surfaced once at the vault level; here we
+    // flag only the deck-specific "a full practice session can't fit" case (which,
+    // by the warning's if-order, can't co-occur with over-subscription).
+    final longWontFit = deckAllocationWarning(
+          allocatedMinutes: minutes,
+          hasLongSessions: hasLongSessions,
+          longSessionMinutes: kSystemDesignMinutes,
+        ) ==
+        DeckAllocationWarning.longSessionWontFit;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,12 +172,25 @@ class _AllocationRow extends ConsumerWidget {
             value: frac,
             minHeight: Dim.space2,
             backgroundColor: cs.surfaceContainerHighest,
+            // The minutes text carries the number; give the bar a spoken label so a
+            // screen reader conveys the share too (a11y, #80).
+            semanticsLabel: '${goal.name} share of the day',
+            semanticsValue: '${(frac * 100).round()}%',
           ),
         ),
         if (due != null) ...[
           const SizedBox(height: Dim.space1),
           Text('soonest deadline · $due',
               style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+        ],
+        if (longWontFit) ...[
+          const SizedBox(height: Dim.space2),
+          _WarnBanner(
+            message: 'A full practice session '
+                '(~${kSystemDesignMinutes.round()} min) won\'t fit in '
+                '~${minutes.round()} min/day, so that flow can\'t run here. Raise '
+                'this deck\'s priority or your daily budget.',
+          ),
         ],
         const SizedBox(height: Dim.space2),
         PriorityTierPicker(
@@ -147,6 +200,49 @@ class _AllocationRow extends ConsumerWidget {
               .upsert(goal.copyWith(priority: v)),
         ),
       ],
+    );
+  }
+}
+
+/// The engine-derived long-session flow cost isn't user-visible per deck here; the
+/// helper resolves each deck's template (registry fallback to primary) to learn
+/// whether it runs a long practice-track flow at all (deck_selection.md warning).
+bool _hasLongSessions(TemplateRegistry? registry, Deck deck) {
+  final t = registry?.byId(deck.templateId) ?? registry?.primary;
+  if (t == null) return false;
+  return t.flows.any((f) => t.isPracticeTrackType(f.cardType));
+}
+
+/// A compact warn-tinted banner (icon + message) for the allocation view's
+/// too-little-time cases (deck_selection.md) — mirrors the deck-settings banner so
+/// both surfaces read the same. Copy lives here (the subject-neutral UI seam).
+class _WarnBanner extends StatelessWidget {
+  const _WarnBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(Dim.space3),
+      decoration: BoxDecoration(
+        color: StatusColor.warn.withValues(alpha: Dim.fill),
+        borderRadius: Dim.brCard,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline,
+              size: Dim.iconMd, color: StatusColor.warn),
+          const SizedBox(width: Dim.space2),
+          Expanded(
+            child: Text(message,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: StatusColor.warn)),
+          ),
+        ],
+      ),
     );
   }
 }

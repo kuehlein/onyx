@@ -279,8 +279,8 @@ model before we add features, so we build on the right shape.
   from Home ("This deck only") — the deck's **share** of the budget (live minutes/% + a
   **too-little-time warning**: engagement floor or heaviest-flow unit cost, deck_selection.md) + the
   config-driven flow scaffold + a "Vault settings →" link; gym stays vault. **#85** demote is folded
-  (Pace/Algo removed). The vault-level **cross-deck** allocation view (all shares together —
-  deck_selection.md) shipped with **#137** (below). **Settings prune + bug-fix → #115.**
+  (Pace/Algo removed). The vault-level **cross-deck** allocation view (all shares + too-little-time
+  warnings together — deck_selection.md) shipped with **#137** (below). **Settings prune + bug-fix → #115.**
   **Allocation refinements (engine-derived + user-overridable).** ✅ **#136 (2026-09-27,
   [ADR-0017](adr/0017-per-aim-importance-allocation.md)):** per-aim **importance** (high/normal/low) scales
   an aim's allocation share (dream role vs backup; final vs quiz) — plan only, readiness stays honest;
@@ -297,7 +297,10 @@ model before we add features, so we build on the right shape.
   `PriorityTier`, `deadlineFactor`, floor-aware `allocateBudget`, cycle-safe `deckBudgets`; (2) `budget.dart`
   rewrite + provider rewire + tests; (3a) deck-priority picker (deck settings + editor) + `budgetWeight`
   retired with a legacy→tier migration; (3b) the vault **"Balance study time"** allocation view off the
-  lanes hub (per-deck minutes + proportion bar + soonest-deadline caption + tier picker, rebalancing live).
+  lanes hub (per-deck minutes + proportion bar + soonest-deadline caption + tier picker, rebalancing live)
+  — with the **too-little-time warnings** (deck_selection.md): a vault banner when the day can't cover
+  every deck at the engagement floor (over-subscribed), and a per-deck flag when a slice can't fit that
+  deck's longest practice session.
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user
