@@ -4,8 +4,8 @@
 /// A goal is a named, configured, scheduled *view* of a set of related cards: a
 /// [membership] query selects the cards, a [templateId] names the target
 /// vocabulary (a `DeckTemplate`), the [aims] carry the objectives (each with its
-/// own knobs + date), and a [budgetWeight] + [state] control its slice of the
-/// shared daily study time. Readiness is computed per goal over its members (G2).
+/// own knobs + date), and a [priority] tier + [state] control its slice of the
+/// shared daily study time (ADR-0018). Readiness is computed per goal over its members (G2).
 /// Goals are app-managed state (persisted in `_meta/` by [id]), not vault content.
 library;
 
@@ -29,7 +29,6 @@ class Deck {
     required this.name,
     required this.templateId,
     this.membership = CardQuery.everything,
-    this.budgetWeight = 1.0,
     this.priority = PriorityTier.normal,
     this.state = DeckState.active,
     this.aims = const [],
@@ -47,12 +46,6 @@ class Deck {
 
   /// The card selector — what makes this goal a lens over the vault.
   final CardQuery membership;
-
-  /// Relative share of the daily budget among active goals (renormalized across
-  /// the active set; see G4). **Superseded by [priority]** (ADR-0018) — the engine
-  /// derives the cross-deck split from priority tiers; kept for back-compat + the
-  /// migration until the engine slice retires it.
-  final double budgetWeight;
 
   /// The deck's coarse cross-deck **priority** tier — the fallback for a coverage-only
   /// deck (no active aims; the "I care about Korean though there's no exam" case) and
@@ -97,7 +90,6 @@ class Deck {
         'name': name,
         'templateId': templateId,
         'membership': membership.toJson(),
-        'budgetWeight': budgetWeight,
         if (priority != PriorityTier.normal) 'priority': priority.name,
         'state': state.name,
         if (aims.isNotEmpty) 'interviews': [for (final i in aims) i.toJson()],
@@ -145,13 +137,7 @@ class Deck {
           ? stripDynamic(CardQuery.fromJson(
               (m['membership'] as Map).cast<String, dynamic>()))
           : CardQuery.everything,
-      budgetWeight: m['budgetWeight'] is num
-          ? (m['budgetWeight'] as num).toDouble()
-          : 1.0,
-      priority: PriorityTier.values.firstWhere(
-        (t) => t.name == m['priority'],
-        orElse: () => PriorityTier.normal,
-      ),
+      priority: _priorityFrom(m),
       state: DeckState.values.firstWhere(
         (s) => s.name == m['state'],
         orElse: () => DeckState.active,
@@ -164,7 +150,6 @@ class Deck {
     String? name,
     String? templateId,
     CardQuery? membership,
-    double? budgetWeight,
     PriorityTier? priority,
     DeckState? state,
     List<Aim>? aims,
@@ -174,7 +159,6 @@ class Deck {
         name: name ?? this.name,
         templateId: templateId ?? this.templateId,
         membership: membership ?? this.membership,
-        budgetWeight: budgetWeight ?? this.budgetWeight,
         priority: priority ?? this.priority,
         state: state ?? this.state,
         aims: aims ?? this.aims,
@@ -198,6 +182,23 @@ Deck defaultDeckFor(DeckTemplate template) => Deck(
 /// null, so a hand-edited/corrupted `"levelId": ""` (or a number) doesn't leak a
 /// junk slot id into readiness targeting.
 String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
+
+/// The deck's [PriorityTier] from JSON: the `priority` key if present, else a legacy
+/// numeric `budgetWeight` mapped to a tier (the ADR-0018 migration — `budgetWeight`
+/// is retired), else [PriorityTier.normal]. So an old `_meta` file's weight carries
+/// its intent forward without a stored field.
+PriorityTier _priorityFrom(Map<String, dynamic> m) {
+  for (final t in PriorityTier.values) {
+    if (t.name == m['priority']) return t;
+  }
+  final w = m['budgetWeight'];
+  if (w is num) {
+    if (w >= 2.0) return PriorityTier.highest;
+    if (w >= 1.3) return PriorityTier.high;
+    if (w <= 0.7) return PriorityTier.low;
+  }
+  return PriorityTier.normal;
+}
 
 /// Fold a deck's legacy target **slots** (level/context/track/deadline) into its
 /// [aims] — the S5 migration, applied at **parse time** ([Deck.fromJson]) and in

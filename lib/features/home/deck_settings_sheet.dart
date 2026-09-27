@@ -10,6 +10,7 @@ import '../../shared/providers/daily_plan.dart';
 import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/widgets/loading_view.dart';
+import '../../shared/widgets/priority_tier_picker.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// The per-deck config surface — **"This deck only"** (settings.md deck/vault split,
@@ -88,12 +89,25 @@ class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
                   multiDeck
                       ? '~${allocated.round()} min/day · $pct% of your '
                           '${total.round()}-min budget. The engine splits the day '
-                          "across your decks by each aim's priority + deadline; "
-                          "raise an aim's importance to pull more here."
+                          'across your decks by priority + deadlines — set this '
+                          "deck's below (or raise a specific aim's importance)."
                       : '~${allocated.round()} min/day — the whole budget (your '
                           'only active deck). Add more decks to share the day.',
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
+                if (multiDeck) ...[
+                  const SizedBox(height: Dim.space3),
+                  Text('Priority',
+                      style:
+                          theme.textTheme.labelMedium?.copyWith(color: muted)),
+                  const SizedBox(height: Dim.space1),
+                  PriorityTierPicker(
+                    value: deck.priority,
+                    onChanged: (v) => ref
+                        .read(decksProvider.notifier)
+                        .upsert(deck.copyWith(priority: v)),
+                  ),
+                ],
                 if (warning != DeckAllocationWarning.none)
                   _WarningBanner(warning: warning, minutes: allocated.round()),
                 const SizedBox(height: Dim.space5),

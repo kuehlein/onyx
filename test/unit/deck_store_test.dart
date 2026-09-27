@@ -56,7 +56,7 @@ void main() {
         name: 'Saints debate',
         templateId: 'orthodoxy',
         membership: TagIs('intercession'),
-        budgetWeight: 0.4,
+        priority: PriorityTier.high,
         state: DeckState.paused,
         // Post-S5 the target lives on the aim, not deck slots.
         aims: [
@@ -109,14 +109,14 @@ void main() {
             'templateId': 'k',
             'membership': {'kind': 'folder', 'value': 'korean'},
           },
-          // Wrong-typed fields DEGRADE (don't throw): numeric levelId, string
-          // budgetWeight → ignored/default.
+          // Wrong-typed fields DEGRADE (don't throw): numeric levelId, bogus
+          // priority → ignored/default.
           {
             'id': 'okbadfield',
             'name': 'OK',
             'templateId': 't',
             'levelId': 7,
-            'budgetWeight': 'oops',
+            'priority': 'bogus',
           },
           {'name': 'no-usable-id'}, // throws in fromJson → this entry skipped
           'not-even-a-map', // skipped
@@ -124,7 +124,8 @@ void main() {
       });
       final back = await DeckStore(src).load();
       expect(back.map((g) => g.id), ['korean', 'okbadfield']);
-      expect(back.firstWhere((g) => g.id == 'okbadfield').budgetWeight, 1.0);
+      expect(back.firstWhere((g) => g.id == 'okbadfield').priority,
+          PriorityTier.normal);
     });
   });
 

@@ -84,10 +84,10 @@ void main() {
 
     test('copyWith updates fields but keeps id', () {
       final g = defaultDeckFor(_template)
-          .copyWith(state: DeckState.paused, budgetWeight: 0.3);
+          .copyWith(state: DeckState.paused, priority: PriorityTier.high);
       expect(g.id, defaultDeckId);
       expect(g.state, DeckState.paused);
-      expect(g.budgetWeight, 0.3);
+      expect(g.priority, PriorityTier.high);
       expect(g.isActive, isFalse);
     });
 
@@ -105,6 +105,23 @@ void main() {
       expect(
           Deck.fromJson({'id': 'd', 'name': 'D', 'templateId': 't'}).priority,
           PriorityTier.normal);
+      // Legacy migration (ADR-0018): an old numeric budgetWeight maps to a tier.
+      expect(
+          Deck.fromJson({
+            'id': 'd',
+            'name': 'D',
+            'templateId': 't',
+            'budgetWeight': 3.0
+          }).priority,
+          PriorityTier.highest);
+      expect(
+          Deck.fromJson({
+            'id': 'd',
+            'name': 'D',
+            'templateId': 't',
+            'budgetWeight': 0.5
+          }).priority,
+          PriorityTier.low);
     });
 
     test(

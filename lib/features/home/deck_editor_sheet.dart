@@ -11,6 +11,7 @@ import '../../shared/models/card.dart';
 import '../../shared/providers/decks.dart';
 import '../../shared/providers/template.dart';
 import '../../shared/providers/vault.dart';
+import '../../shared/widgets/priority_tier_picker.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Create or edit a [Deck] (task #30d, G6) — name, template, membership
@@ -160,6 +161,7 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       true, // a complex seed opens in Advanced pre-filled — treat as precious
   };
   late String? _templateId = widget.goal?.templateId;
+  late PriorityTier _priority = widget.goal?.priority ?? PriorityTier.normal;
   // The existing decks — watched in [build] so a new deck's id can dodge a
   // collision (see [_uniqueId]); reading it unwatched risks an unresolved future.
   List<Deck> _decks = const [];
@@ -351,12 +353,14 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
         name: name,
         templateId: _templateId ?? '',
         membership: membership,
+        priority: _priority,
       );
     } else {
       deck = existing.copyWith(
         name: name,
         templateId: _templateId ?? '',
         membership: membership,
+        priority: _priority,
       );
     }
     ref.read(decksProvider.notifier).upsert(deck);
@@ -492,6 +496,16 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
               ],
               if (index != null) _lensPreview(context, index),
               const SizedBox(height: Dim.space5),
+              Text('Priority', style: theme.textTheme.labelLarge),
+              Text('How much of the shared day this deck pulls vs your others.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: Dim.space2),
+              PriorityTierPicker(
+                value: _priority,
+                onChanged: (v) => setState(() => _priority = v),
+              ),
+              const SizedBox(height: Dim.space4),
               FilledButton(
                 onPressed: _valid ? _save : null,
                 child: Text(existing == null ? 'Create deck' : 'Save'),
