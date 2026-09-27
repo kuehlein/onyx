@@ -14,7 +14,8 @@ import '../../shared/providers/vault.dart';
 import '../../shared/widgets/sheet_header.dart';
 
 /// Create or edit a [Deck] (task #30d, G6) — name, template, membership
-/// query, and budget weight, plus graduate/delete for an existing goal.
+/// query, plus graduate/delete for an existing goal. (The deck's cross-deck share
+/// is derived from its aims' priority, not set here — ADR-0018.)
 /// This is the in-app path to defining the concurrent goals the lanes hub shows.
 ///
 /// [initialMembership] pre-fills the lens of a NEW deck (Browse's "save as deck",
@@ -159,7 +160,6 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
       true, // a complex seed opens in Advanced pre-filled — treat as precious
   };
   late String? _templateId = widget.goal?.templateId;
-  late double _weight = widget.goal?.budgetWeight ?? 1.0;
   // The existing decks — watched in [build] so a new deck's id can dodge a
   // collision (see [_uniqueId]); reading it unwatched risks an unresolved future.
   List<Deck> _decks = const [];
@@ -351,14 +351,12 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
         name: name,
         templateId: _templateId ?? '',
         membership: membership,
-        budgetWeight: _weight,
       );
     } else {
       deck = existing.copyWith(
         name: name,
         templateId: _templateId ?? '',
         membership: membership,
-        budgetWeight: _weight,
       );
     }
     ref.read(decksProvider.notifier).upsert(deck);
@@ -494,17 +492,6 @@ class _GoalEditorSheetState extends ConsumerState<DeckEditorSheet> {
               ],
               if (index != null) _lensPreview(context, index),
               const SizedBox(height: Dim.space5),
-              Text('Share of daily time  ·  ${_weight.toStringAsFixed(1)}×',
-                  style: theme.textTheme.labelLarge),
-              Slider(
-                value: _weight,
-                min: 0.5,
-                max: 3,
-                divisions: 5,
-                label: '${_weight.toStringAsFixed(1)}×',
-                onChanged: (v) => setState(() => _weight = v),
-              ),
-              const SizedBox(height: Dim.space3),
               FilledButton(
                 onPressed: _valid ? _save : null,
                 child: Text(existing == null ? 'Create deck' : 'Save'),

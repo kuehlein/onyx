@@ -43,14 +43,24 @@ Future<double> dailyBudgetMinutes(Ref ref) async {
   );
 }
 
-/// The shared daily budget split across the active goals by weight, honoring
-/// pause (task #30d, G4): `deckId → minutes`. A single active goal gets the whole
-/// budget, so single-goal behavior is unchanged.
+/// The shared daily budget split across the active goals (task #30d, G4 · #137 /
+/// ADR-0018): `deckId → minutes`, derived from each deck's aims' priority tiers × a
+/// deadline factor, over a per-deck floor. A single active goal gets the whole budget.
+///
+/// Every dependency here is **budget-independent** — `deckBudgets` runs UPSTREAM of
+/// the budget-aware readiness forecast (B2, ADR-0016), so it must NOT read
+/// `deckAimFeasibility`/the forecast, or it would cycle
+/// (`deckBudgets → feasibility → forecast → deckBudgets`). The cross-deck need is a
+/// coarse deadline+priority signal; the fine forecast-urgency stays within a deck.
 @riverpod
 Future<Map<String, double>> deckBudgets(Ref ref) async {
-  final goals = await ref.watch(decksProvider.future);
-  final total = await ref.watch(dailyBudgetMinutesProvider.future);
-  return allocateBudget(goals: goals, totalMinutes: total);
+  final goalsF = ref.watch(decksProvider.future);
+  final totalF = ref.watch(dailyBudgetMinutesProvider.future);
+  final clockF = ref.watch(clockProvider.future);
+  final goals = await goalsF;
+  final total = await totalF;
+  final today = (await clockF).today();
+  return allocateBudget(goals: goals, totalMinutes: total, today: today);
 }
 
 /// The assembled daily plan: raw availability (phase 1) + prerequisite gating +

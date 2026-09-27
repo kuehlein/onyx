@@ -31,10 +31,6 @@ class _DeckSettingsSheet extends ConsumerStatefulWidget {
 }
 
 class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
-  // Local drag value for the share slider; null → track the saved budgetWeight so
-  // the preview follows once persisted.
-  double? _weight;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -52,18 +48,15 @@ class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
       );
     }
 
-    // Live share preview: this deck's minutes = budget · weight / Σ active weights.
-    // Drag updates it before the write lands, so the warning tracks the slider.
+    // The engine-DERIVED share for this deck (ADR-0018): read the real allocation,
+    // not a numeric weight — the split comes from the decks' aims' priority + deadlines.
+    final budgets = ref.watch(deckBudgetsProvider).asData?.value ?? const {};
     final active = [
       for (final g in decks)
-        if (g.isActive && g.budgetWeight > 0) g,
+        if (g.isActive) g,
     ];
-    final otherSum = active
-        .where((g) => g.id != deck.id)
-        .fold(0.0, (a, g) => a + g.budgetWeight);
     final multiDeck = active.length > 1;
-    final weight = _weight ?? deck.budgetWeight;
-    final allocated = multiDeck ? total * weight / (otherSum + weight) : total;
+    final allocated = budgets[deck.id] ?? total;
     final pct = total <= 0 ? 0 : (allocated / total * 100).round();
 
     // A deck runs "long sessions" when its template declares any practice-track
@@ -94,27 +87,13 @@ class _DeckSettingsSheetState extends ConsumerState<_DeckSettingsSheet> {
                 Text(
                   multiDeck
                       ? '~${allocated.round()} min/day · $pct% of your '
-                          '${total.round()}-min budget. Decks share the day; the '
-                          'engine fills each with the right mix.'
+                          '${total.round()}-min budget. The engine splits the day '
+                          "across your decks by each aim's priority + deadline; "
+                          "raise an aim's importance to pull more here."
                       : '~${allocated.round()} min/day — the whole budget (your '
-                          'only active deck). Split it by adding more decks.',
+                          'only active deck). Add more decks to share the day.',
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
-                if (multiDeck)
-                  Slider(
-                    value: weight.clamp(0.5, 3.0),
-                    min: 0.5,
-                    max: 3.0,
-                    divisions: 5,
-                    label: '${weight.toStringAsFixed(1)}×',
-                    onChanged: (v) => setState(() => _weight = v),
-                    onChangeEnd: (v) {
-                      ref
-                          .read(decksProvider.notifier)
-                          .upsert(deck.copyWith(budgetWeight: v));
-                      setState(() => _weight = null); // follow the saved value
-                    },
-                  ),
                 if (warning != DeckAllocationWarning.none)
                   _WarningBanner(warning: warning, minutes: allocated.round()),
                 const SizedBox(height: Dim.space5),

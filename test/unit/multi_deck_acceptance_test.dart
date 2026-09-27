@@ -72,15 +72,15 @@ void main() {
     File(p.join(root.path, 'beta', 'b1.md'))
       ..createSync(recursive: true)
       ..writeAsStringSync(_card('b1', 'biology'));
-    // Two stored goals: folder lenses over the same vault, weighted 3:1.
+    // Two stored goals: folder lenses over the same vault, alpha prioritized.
     File(p.join(root.path, '_meta', 'study-goals.json'))
       ..createSync(recursive: true)
       ..writeAsStringSync('''
 [
   {"id":"alpha","name":"Alpha","templateId":"software-interviews",
-   "membership":{"kind":"folder","value":"alpha"},"budgetWeight":3.0,"state":"active"},
+   "membership":{"kind":"folder","value":"alpha"},"priority":"highest","state":"active"},
   {"id":"beta","name":"Beta","templateId":"software-interviews",
-   "membership":{"kind":"folder","value":"beta"},"budgetWeight":1.0,"state":"active"}
+   "membership":{"kind":"folder","value":"beta"},"priority":"low","state":"active"}
 ]
 ''');
   });
@@ -115,10 +115,12 @@ void main() {
     expect(rAlpha.domains.map((d) => d.domain), ['algebra']);
     expect(rBeta.domains.map((d) => d.domain), ['biology']);
 
-    // Shared budget splits 3:1 by weight; both active goals get a slice.
+    // Shared budget splits by PRIORITY (alpha highest > beta low); both get a slice,
+    // and no active deck drops below the engagement floor (ADR-0018).
     final budgets = await c.read(deckBudgetsProvider.future);
     expect(budgets.keys.toSet(), {'alpha', 'beta'});
-    expect(budgets['alpha']! / budgets['beta']!, closeTo(3.0, 1e-9));
+    expect(budgets['alpha']!, greaterThan(budgets['beta']!));
+    expect(budgets['beta']!, greaterThanOrEqualTo(15.0));
   });
 
   test('per-goal analytics scope to the goal\'s member cards (#30d honesty)',
