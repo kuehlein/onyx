@@ -62,6 +62,7 @@ class _DeckAllocationSheet extends ConsumerWidget {
     // every row (which would all fire together in exactly this case).
     final overSubscribed =
         active.length > 1 && kEngagementFloorMinutes * active.length >= total;
+    final pausedCount = decks.where((g) => g.state == DeckState.paused).length;
 
     return SafeArea(
       child: Column(
@@ -90,6 +91,13 @@ class _DeckAllocationSheet extends ConsumerWidget {
                         'or raise your daily budget.',
                   ),
                 ],
+                if (active.isNotEmpty) ...[
+                  const SizedBox(height: Dim.space4),
+                  // The whole day at a glance — same rank order as the rows below,
+                  // which act as its legend.
+                  _SplitBar(
+                      minutes: [for (final g in active) budgets[g.id] ?? 0]),
+                ],
                 const SizedBox(height: Dim.space4),
                 for (final g in active) ...[
                   _AllocationRow(
@@ -101,6 +109,13 @@ class _DeckAllocationSheet extends ConsumerWidget {
                   ),
                   const SizedBox(height: Dim.space4),
                 ],
+                if (pausedCount > 0)
+                  Text(
+                    '$pausedCount paused '
+                    '${pausedCount == 1 ? 'deck gets' : 'decks get'} no study time '
+                    '— resume one from the deck list to include it.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
               ],
             ),
           ),
@@ -211,6 +226,41 @@ bool _hasLongSessions(TemplateRegistry? registry, Deck deck) {
   final t = registry?.byId(deck.templateId) ?? registry?.primary;
   if (t == null) return false;
   return t.flows.any((f) => t.isPracticeTrackType(f.cardType));
+}
+
+/// A single-row overview of how the day splits across the ranked active decks: one
+/// accent segment per deck, width ∝ its minutes, opacity stepped down by rank (the
+/// biggest share is boldest). Tonal steps of the *one* accent keep the single-accent
+/// rule (design-system §2); the rows below share the rank order and act as its legend.
+class _SplitBar extends StatelessWidget {
+  const _SplitBar({required this.minutes});
+
+  /// Per-deck minutes, ranked biggest-first (same order as the rows).
+  final List<double> minutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return ClipRRect(
+      borderRadius: Dim.brChip,
+      child: SizedBox(
+        height: Dim.space2,
+        child: Row(
+          children: [
+            for (var i = 0; i < minutes.length; i++)
+              Expanded(
+                // ×10 keeps fine proportions; clamp ≥1 so a tiny slice still shows.
+                flex: (minutes[i] * 10).round().clamp(1, 100000),
+                child: ColoredBox(
+                  color: primary.withValues(
+                      alpha: (1.0 - i * 0.18).clamp(0.4, 1.0)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// A compact warn-tinted banner (icon + message) for the allocation view's

@@ -300,7 +300,8 @@ model before we add features, so we build on the right shape.
   lanes hub (per-deck minutes + proportion bar + soonest-deadline caption + tier picker, rebalancing live)
   — with the **too-little-time warnings** (deck_selection.md): a vault banner when the day can't cover
   every deck at the engagement floor (over-subscribed), and a per-deck flag when a slice can't fit that
-  deck's longest practice session.
+  deck's longest practice session. Polish: a stacked at-a-glance overview of the split (tonal single-accent,
+  ranked to match the rows), a paused-decks footnote, proportion-bar a11y semantics, and an entry-point e2e.
   - **Load-control model — [ADR-0011](adr/0011-load-control-auto-mix-propose-size.md) ✅ (2026-09-24):**
     a design flow (research + 3 adversarial critics) reframed the "engine adjusts load + notifies" vision
     to the SoT's **size-vs-mix** line: the engine auto-adjusts the invisible **MIX** (silent); the user

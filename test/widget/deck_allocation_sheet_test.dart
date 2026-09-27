@@ -177,4 +177,23 @@ void main() {
     // The heaviest-flow warning is deck-specific, not the vault over-subscription one.
     expect(find.textContaining('raise your daily budget'), findsNothing);
   });
+
+  testWidgets('notes paused decks that get no study time', (tester) async {
+    final decks = _CapturingDecks([
+      const Deck(id: 'latin', name: 'Latin', templateId: 't'),
+      const Deck(id: 'chem', name: 'Chemistry', templateId: 't'),
+      const Deck(
+          id: 'hist',
+          name: 'History',
+          templateId: 't',
+          state: DeckState.paused),
+    ]);
+
+    await _open(tester, decks: decks, budgets: {'latin': 30, 'chem': 30});
+
+    // The split covers only active decks; a footnote accounts for the paused one.
+    expect(find.textContaining('paused'), findsOneWidget);
+    // Paused decks aren't rows in the split — no tier picker for History.
+    expect(find.text('History'), findsNothing);
+  });
 }

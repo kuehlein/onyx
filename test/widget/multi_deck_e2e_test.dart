@@ -84,4 +84,47 @@ void main() {
     expect(find.text('Alpha Card'), findsOneWidget);
     expect(find.text('Beta Card'), findsNothing);
   });
+
+  testWidgets('lanes hub → Balance study time opens the allocation view',
+      (tester) async {
+    const tpl = softwareInterviewsTemplate;
+    final db = await pumpLiveApp(
+      tester,
+      cards: [
+        testCard('ca', 'Alpha Card',
+            tags: const ['ds-a'], tiers: const {'ds-a': 2}),
+        testCard('cb', 'Beta Card',
+            tags: const ['networking'], tiers: const {'networking': 2}),
+      ],
+      decks: [
+        Deck(
+            id: 'algo',
+            name: 'Algorithms',
+            templateId: tpl.id,
+            membership: TagIs('ds-a')),
+        Deck(
+            id: 'net',
+            name: 'Networking',
+            templateId: tpl.id,
+            membership: TagIs('networking')),
+      ],
+    );
+    if (db == null) {
+      markTestSkipped('no native sqlite'); // visible skip, not a silent pass
+      return;
+    }
+    addTearDown(db.close);
+
+    // The vault-level allocation entry shows on the hub (≥2 active decks).
+    final entry = find.text('Balance study time');
+    expect(entry, findsOneWidget);
+    await tester.ensureVisible(entry);
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+
+    // The allocation sheet opened: its subtitle + a lane per deck to balance.
+    expect(find.text('Across your decks'), findsOneWidget);
+    expect(find.text('Algorithms'), findsWidgets);
+    expect(find.text('Networking'), findsWidgets);
+  });
 }
