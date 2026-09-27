@@ -582,6 +582,12 @@ The MVP-tagged stories, cloud still absent:
   aggregate-only feature-effectiveness telemetry** channel (#122 layer 2 — cross-user retention deltas,
   privacy-preserving, no raw content/PII). **Defer-hard:** the public deck tier (moderation/takedown),
   managed AI for minors (COPPA/FERPA).
+- **Shareable / teacher-pushed aims (#152, explore).** Aims are app-managed `_meta/` state today (not
+  vault content). Explore storing them so they push/pull **with the deck** via the registry (#83): a
+  teacher publishes a quiz's aim + date, a student's app syncs it, and the engine **auto-adjusts** the
+  schedule + cross-deck allocation (ADR-0018). Needs a share/merge model — **opt-in**, conflict rules
+  (whose aim wins), and it must **never clobber a student's own aims or priority tiers**. Gated on the
+  parked sync / source-of-truth decision (same gate as the cloud track).
 - QR class/org quick-setup (→ onboarding, merge-not-overwrite); PDF/camera card authoring
   (→ deck_creation).
 - **Focus / Do-Not-Disturb while studying** (opt-in, Settings toggle) — trigger the OS Focus/DND for

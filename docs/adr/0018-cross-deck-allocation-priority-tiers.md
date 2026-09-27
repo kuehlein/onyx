@@ -39,13 +39,16 @@ per-deck proportion (ADR-0010 §D1). Two problems, and a reframe:
 **The user assigns a coarse PRIORITY TIER; the engine derives the cross-deck time split from it, over a
 per-deck floor. The numeric `budgetWeight` share dial is retired.**
 
-1. **Four ordinal priority tiers** — `highest · high · normal · low` (default `normal`), set at the **deck**
-   level (a default its aims inherit) and overridable **per aim** (ADR-0017's `AimImportance`, widened
-   3→4 and reused as the single cross-deck signal). Four because: proven usable by non-experts (Todoist
-   ships four), above the too-coarse 2–3, below the ~7 point where rating-scale reliability flattens, and
-   enough to differentiate the 2–5 concurrent goals a real learner runs while allowing **ties** (multiple
-   decks at the same tier). Tiers carry engine-defined multipliers (starting point `2.0 / 1.5 / 1.0 / 0.5`;
-   calibration below), so **magnitude is engine-defined, not inferred from an ordering**.
+1. **Four ordinal priority tiers** — `highest · high · normal · low` (default `normal`) — carried **per
+   aim** (ADR-0017's importance, widened 3→4 into a shared `PriorityTier`). The **aim is the allocation
+   unit**, so aims from *different* decks interleave by their own priority — e.g. *Latin exam > chemistry
+   test > Latin vocab quiz*, where a chem-deck aim wedges between two Latin-deck aims (a deck-level tier
+   could not express this). A **deck-level** tier supplies the default for a coverage-only deck (no aims)
+   and a one-tap "set all of this deck's aims" convenience. Four because: proven usable by non-experts
+   (Todoist ships four), above the too-coarse 2–3, below the ~7 point where rating-scale reliability
+   flattens, and enough to differentiate the 2–5 concurrent goals a real learner runs while allowing
+   **ties**. Tiers carry engine-defined multipliers (starting `2.0 / 1.5 / 1.0 / 0.5`; calibration below),
+   so **magnitude is engine-defined, not inferred from an ordering**.
 2. **The engine derives each deck's share from a BUDGET-INDEPENDENT "need"** = `importanceMultiplier ×
    coarse-urgency`, aggregated over the deck's active aims (a coverage-only deck uses its deck tier ×
    baseline). Coarse-urgency here is **deadline proximity + coverage-remaining** — deliberately NOT the
