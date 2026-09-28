@@ -131,18 +131,22 @@ class DeckStore {
 
   Future<void> save(List<Deck> goals) async {
     final keep = {for (final g in goals) g.id};
-    // Write each deck's cluster FIRST (each writeMeta is atomic), so a crash mid-save
-    // never leaves the store emptier than it was. aims.json is always written (`[]`
-    // when empty) so a deck that loses its last aim leaves no stale aims behind.
+    // Write each deck's cluster (each writeMeta is atomic). Skip a file whose content
+    // is byte-identical to disk: editing one deck must not rewrite every *other*
+    // deck's files — that's what shrinks the merge grain to a single deck so a
+    // folder-syncer only conflicts on the deck two devices actually both touched
+    // (ADR-0019 §3), instead of the whole-blob LWW the flat file had. aims.json is
+    // always present (`[]` when empty) so a deck that loses its last aim leaves no
+    // stale aims behind.
     for (final g in goals) {
-      await _source.writeMeta(
-        _deckPath(g.id),
-        jsonEncode(g.copyWith(aims: const []).toJson()),
-      );
-      await _source.writeMeta(
-        _aimsPath(g.id),
-        jsonEncode([for (final a in g.aims) a.toJson()]),
-      );
+      final deckJson = jsonEncode(g.copyWith(aims: const []).toJson());
+      final aimsJson = jsonEncode([for (final a in g.aims) a.toJson()]);
+      if (await _source.readMeta(_deckPath(g.id)) != deckJson) {
+        await _source.writeMeta(_deckPath(g.id), deckJson);
+      }
+      if (await _source.readMeta(_aimsPath(g.id)) != aimsJson) {
+        await _source.writeMeta(_aimsPath(g.id), aimsJson);
+      }
     }
     // Drop clusters for decks that no longer exist — else load() re-reads a removed
     // deck straight back in.

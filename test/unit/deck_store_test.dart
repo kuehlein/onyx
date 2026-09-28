@@ -14,6 +14,11 @@ import 'package:onyx/shared/providers/vault.dart';
 class _FakeSource implements VaultSource {
   _FakeSource([Map<String, String>? meta]) : meta = meta ?? {};
   final Map<String, String> meta;
+
+  /// Records every writeMeta target since the last clear — so a test can assert that
+  /// an unchanged deck's files are NOT rewritten (the per-id merge grain).
+  final List<String> writeLog = [];
+
   @override
   String get rootLabel => 'fake';
   @override
@@ -27,8 +32,11 @@ class _FakeSource implements VaultSource {
   @override
   Future<String?> readMeta(String name) async => meta[name];
   @override
-  Future<void> writeMeta(String name, String content) async =>
-      meta[name] = content;
+  Future<void> writeMeta(String name, String content) async {
+    writeLog.add(name);
+    meta[name] = content;
+  }
+
   @override
   Future<void> writeFile(String path, String content) async {}
   @override
@@ -140,6 +148,24 @@ void main() {
       await store.save([a]); // b removed
       expect((await store.load()).map((g) => g.id), ['a']);
       expect(src.meta.keys.where((k) => k.startsWith('decks/b/')), isEmpty);
+    });
+
+    test('saving one edited deck does not rewrite the others (per-id grain)',
+        () async {
+      final src = _FakeSource();
+      final store = DeckStore(src);
+      final a =
+          Deck(id: 'a', name: 'A', templateId: 't', membership: TagIs('a'));
+      final b =
+          Deck(id: 'b', name: 'B', templateId: 't', membership: TagIs('b'));
+      await store.save([a, b]);
+
+      src.writeLog.clear();
+      // Edit only a; b is byte-identical.
+      await store.save([a.copyWith(name: 'A2'), b]);
+      expect(src.writeLog, contains('decks/a/deck.json'));
+      expect(src.writeLog, isNot(contains('decks/b/deck.json')));
+      expect(src.writeLog, isNot(contains('decks/b/aims.json')));
     });
 
     test('per-deck layout wins over a stale legacy blob; blob is retired',
