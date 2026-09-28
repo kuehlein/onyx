@@ -622,8 +622,12 @@ The MVP-tagged stories, cloud still absent:
       filename-pattern gymnastics).
     - **Wave B — `_onyx/` layout foundation** (0019; unblocks C/D): **✅ #160** VaultSource subpath + `_meta`→`_onyx`
       rename (index-exclusion + `listConfigPaths` + non-destructive read-compat fallback; writes/scaffold land in
-      `_onyx/`; shipped 2026-09-28) · **#161** per-deck config dirs + migrate the `study-goals.json`
-      blob → per-deck + **per-id config merge** (kills the aim-LWW) + retire legacy files/`budgetWeight` ·
+      `_onyx/`; shipped 2026-09-28) · **✅ #161** per-deck config clusters `_onyx/decks/<id>/{deck,aims}.json` +
+      blob→cluster migration (save + proactive read-time write-through) + **per-id merge grain** (save writes only
+      changed files → kills the whole-blob LWW) + `deck.json`/`aims.json` split (learner state apart from authored
+      lens, ADR-0021); shipped 2026-09-28. `budgetWeight` already write-retired (read-only for migration). *Deferred
+      per ADR-0019 §4 (delete "once the fold is proven"):* the legacy readers — `onyx-goals*.json`/`onyx-target.json`
+      + the `study-goals.json` blob fallback — see **#163** ·
       **#159** device-id + per-device `_onyx/state/<id>.json` + glob-merge (closes the multi-device write race).
     - **Wave C — card model** (0020; when multi-subject/authoring needs it): subject-level flow **selector**
       (tag/folder/attribute; flow membership is the lens, the card marker is an optional guardrail, default =
@@ -636,8 +640,9 @@ The MVP-tagged stories, cloud still absent:
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
-    Wave A's independent fix (#157) shipped; Wave B is underway — **#160** (the `_onyx/` layout) shipped; next is
-    **#161** (per-deck config dirs + `study-goals` migration + per-id merge), then **#159** (per-device state).
+    Wave A's independent fix (#157) shipped; Wave B is underway — **#160** (the `_onyx/` layout) + **#161**
+    (per-deck clusters + migration + per-id grain) shipped; next is **#159** (device-id + per-device state),
+    then the ADR-deferred legacy-reader cleanup (**#163**, once the cluster fold is proven).
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;
