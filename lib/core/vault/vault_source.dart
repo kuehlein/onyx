@@ -71,6 +71,23 @@ abstract class VaultSource {
   /// works). [name] is a POSIX path relative to the config dir.
   Future<void> writeMeta(String name, String content);
 
+  /// POSIX paths (relative to [kConfigDir]) of every FILE under
+  /// `[kConfigDir]/[subdir]`, recursively — e.g. `listMeta('decks')` →
+  /// `['decks/korean/aims.json', 'decks/korean/deck.json', …]`. Sorted. Empty when
+  /// the subdir is absent. Reads the CURRENT config dir only: the legacy
+  /// [kLegacyConfigDir] was always flat, so it has no nested subdir to fall back to.
+  ///
+  /// Config-dir enumeration is a per-source capability; a source that doesn't manage
+  /// a config dir should return `const []`, so callers degrade to the single-file
+  /// layout (e.g. [readMeta]'s legacy blob) rather than break.
+  Future<List<String>> listMeta(String subdir);
+
+  /// Deletes `[kConfigDir]/[name]` — a file, or a directory (recursively). A no-op if
+  /// it doesn't exist. [name] is a POSIX path relative to the config dir. Used to drop
+  /// a removed deck's per-deck dir so it can't be re-read into the deck list. Only the
+  /// CURRENT config dir is touched. A source without a config dir should no-op.
+  Future<void> deleteMeta(String name);
+
   /// Atomically writes [content] to the vault file at [relativePath] (POSIX,
   /// relative to the root), creating parent folders as needed. Used for
   /// app-authored notes that live IN the vault as first-class markdown — e.g. the

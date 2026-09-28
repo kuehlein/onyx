@@ -115,6 +115,33 @@ class DesktopVaultSource implements VaultSource {
   }
 
   @override
+  Future<List<String>> listMeta(String subdir) async {
+    final configRoot = p.join(rootPath, kConfigDir);
+    final base =
+        Directory(p.join(configRoot, p.joinAll(p.posix.split(subdir))));
+    if (!base.existsSync()) return const [];
+    final out = <String>[];
+    await for (final e in base.list(recursive: true, followLinks: false)) {
+      if (e is! File) continue;
+      out.add(p.posix.joinAll(p.split(p.relative(e.path, from: configRoot))));
+    }
+    out.sort();
+    return out;
+  }
+
+  @override
+  Future<void> deleteMeta(String name) async {
+    final target = p.join(rootPath, kConfigDir, p.joinAll(p.posix.split(name)));
+    final dir = Directory(target);
+    if (dir.existsSync()) {
+      await dir.delete(recursive: true);
+      return;
+    }
+    final file = File(target);
+    if (file.existsSync()) await file.delete();
+  }
+
+  @override
   Future<void> writeFile(String relativePath, String content) async {
     final target = p.join(rootPath, p.joinAll(p.posix.split(relativePath)));
     final dir = Directory(p.dirname(target));

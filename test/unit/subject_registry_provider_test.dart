@@ -37,6 +37,10 @@ class _FakeSource implements VaultSource {
   Future<void> writeFile(String relativePath, String content) async {}
   @override
   Future<void> deleteFile(String relativePath) async {}
+  @override
+  Future<List<String>> listMeta(String subdir) async => const [];
+  @override
+  Future<void> deleteMeta(String name) async {}
 }
 
 void main() {

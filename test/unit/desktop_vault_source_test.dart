@@ -67,4 +67,38 @@ void main() {
     expect(
         File(p.join(root.path, '_onyx', 'glossary.md')).existsSync(), isTrue);
   });
+
+  test('listMeta enumerates files under a config subdir, sorted (ADR-0019)',
+      () async {
+    await source.writeMeta('decks/korean/deck.json', '{}');
+    await source.writeMeta('decks/korean/aims.json', '[]');
+    await source.writeMeta('decks/swe/deck.json', '{}');
+    expect(await source.listMeta('decks'), [
+      'decks/korean/aims.json',
+      'decks/korean/deck.json',
+      'decks/swe/deck.json',
+    ]);
+    // A subdir that doesn't exist → empty (callers degrade to the flat layout).
+    expect(await source.listMeta('subjects'), isEmpty);
+    // listMeta reads only _onyx/, never the flat legacy _meta/.
+    write('_meta/decks/legacy/deck.json', '{}');
+    expect(await source.listMeta('decks'),
+        isNot(contains('decks/legacy/deck.json')));
+  });
+
+  test('deleteMeta removes a config file or a whole dir; no-op if absent',
+      () async {
+    await source.writeMeta('decks/gone/deck.json', '{}');
+    await source.writeMeta('decks/gone/aims.json', '[]');
+    await source.writeMeta('decks/keep/deck.json', '{}');
+    // Delete the whole per-deck dir (recursively).
+    await source.deleteMeta('decks/gone');
+    expect(Directory(p.join(root.path, '_onyx', 'decks', 'gone')).existsSync(),
+        isFalse);
+    expect(await source.readMeta('decks/keep/deck.json'), '{}');
+    // A single file, and a missing path (no throw).
+    await source.deleteMeta('decks/keep/deck.json');
+    expect(await source.readMeta('decks/keep/deck.json'), isNull);
+    await source.deleteMeta('decks/never-existed');
+  });
 }

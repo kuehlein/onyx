@@ -33,6 +33,14 @@ class _FakeSource implements VaultSource {
   Future<void> writeFile(String path, String content) async {}
   @override
   Future<void> deleteFile(String path) async {}
+  @override
+  Future<List<String>> listMeta(String subdir) async =>
+      meta.keys.where((k) => k.startsWith('$subdir/')).toList()..sort();
+  @override
+  Future<void> deleteMeta(String name) async {
+    meta.remove(name);
+    meta.removeWhere((k, _) => k.startsWith('$name/'));
+  }
 }
 
 void main() {
