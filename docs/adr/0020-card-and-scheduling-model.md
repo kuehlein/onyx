@@ -59,18 +59,33 @@ UUIDs). A deck's lens **surfaces** data; it is never part of the datum key. The 
 ADR-0003 is **retired** — mark ADR-0003 "amended by 0020" on the join-key point only (its `draft`/`active`
 status seam stands).
 
-### 2. Thin cards: kind is intrinsic, quizzability derives from it, no per-card glue
+### 2. Thin cards: flow membership from a subject-level selector; the card marker is an optional guardrail
 
-- A card declares its **kind** via one dedicated intrinsic marker — **frontmatter `kind:`** (not a reused
-  tag, so the flow axis and the surfacing axis stay *structurally* orthogonal, not by author discipline).
-  Resolution precedence: **`kind:` marker → folder rule → default**, defined once per subject; a card
-  always resolves to **exactly one** flow (total function, safe default).
-- **Remove the mandatory `type:` field** and the per-card `quiz:`/`quizzable:` overrides. Quizzability =
-  the flow's `QuizzabilityPolicy` for the card's kind, full stop. Uniformity is encouraged by **authoring
-  templates** (#156), not per-card metadata.
-- The subject's kind→flow map is the **configurable selector** (leaf kinds: `kind`/tag/folder), promoted
-  to *the* routing mechanism. The 8 `no_card_type_branch` engines are **re-expressed against the selector**
-  (byte-identical behavior, characterization-first); the lint is tightened so a raw kind-branch fails CI.
+- **The flow's selector is the source of truth for membership.** Each flow declares a **subject-level**
+  selector — a `CardQuery` over card-intrinsic attributes (tag / folder / an optional reserved marker) —
+  and a card's flow = the selector that matches it. **Subject-level, so flow is GLOBAL** (a card is the same
+  flow in every deck; a deck's membership lens only *surfaces or hides* it, never reassigns it — the
+  invariant that keeps one-datum-one-state true across overlapping decks).
+- **Default flow = the basic flashcard/learn flow**, claimed as the *complement* (any card no explicit-flow
+  selector matches). So a plain card needs **no marker at all** — the thinnest common case — and "no flow
+  metadata" is a valid state, never "broken". The learn selector can therefore never overlap an explicit
+  flow, so **two-flow ambiguity is only possible between two *explicit* flows.**
+- **No mandatory per-card designator.** A **self-authored card works with zero Onyx glue** — it flows by
+  its own attributes (its natural tags/folder, which the subject's selector keys on). We never require a
+  card to carry Onyx metadata to function. **Remove the mandatory `type:` field + the per-card
+  `quiz:`/`quizzable:` overrides**; quizzability = the flow's `QuizzabilityPolicy`, and the flow just quizzes
+  the `##` sections present (so declension-vs-conjugation-style variation is free).
+- **The card marker is an optional, self-describing guardrail, not a gate.** The **authoring flow stamps**
+  the selector attribute when you pick a non-default flow (so Onyx-made cards self-describe); the default
+  flashcard stamps **nothing**. You may delete/change it after — it's a nudge, not a constraint.
+- **Guardrails (dismissable, never blocking) — two tiers** (avoid alarm fatigue):
+  - *Hard/deterministic:* a card matching **two explicit flows** → pick one; a card routed to a flow but
+    **failing that flow's required core** (a template's required sections — see #156) → "may be misfiled".
+  - *Soft/informational* (broken-links style, quiet): "N cards have no explicit flow (treated as
+    flashcards)". A per-card **dismiss** ("don't warn about this one") lives in **app state, not card
+    frontmatter** — so silencing a warning never adds glue to the card.
+- The 8 `no_card_type_branch` engines are **re-expressed against the selector** (byte-identical,
+  characterization-first); the lint is tightened so a raw kind-branch fails CI (invariant #2, made total).
   This is invariant #2 finally made total.
 
 ### 3. One uniform state record + a pluggable per-kind scheduling function (#155)
@@ -130,7 +145,14 @@ suspend semantics), so a narrowed lens never reports dishonest readiness.
 - **Keep `(deckId, cardId, sectionSlug)` (ADR-0003).** Rejected: it forks a datum's schedule across
   overlapping decks, contradicting the guiding principle; deckId-free is correct and, with junk data, free.
 - **Keep `type:` + per-card quizzability as overrides.** Rejected: they're the glue the thin-card model
-  removes; a dedicated `kind:` marker + authoring templates give uniformity without per-card drift.
+  removes; a subject-level tag/attribute selector + authoring templates give uniformity without per-card drift.
+- **Mandate a dedicated `kind:` frontmatter field on every card.** Rejected: it forces Onyx-specific glue onto
+  self-authored cards to make them usable. Instead the selector keys on the card's *own* attributes (tags/folder),
+  the default flow needs no marker at all, and the authoring flow stamps a marker only as an optional guardrail.
+- **Pure structure inference (no metadata — the flow is guessed from a card's section shape).** Rejected: the
+  thinnest-looking option but the least safe — structure is fuzzy (a concept card can contain code) and fragile
+  (a heading rename silently reflows the card). A selector over declared attributes + required-core validation is
+  the robust middle.
 - **A deck as a *collection* of per-flow lenses** (one lens per flow). Rejected: it makes the *lens* decide
   a card's flow, which forks the datum's single global state (a card caught by the "algo" lens but authored
   `kind:concept` would have two flow answers). Flow is card-intrinsic (`kind`), so a deck's multiple flows

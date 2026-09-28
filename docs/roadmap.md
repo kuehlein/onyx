@@ -619,10 +619,13 @@ The MVP-tagged stories, cloud still absent:
     - **Wave B — `_onyx/` layout foundation** (0019; unblocks C/D): **#160** VaultSource subpath + `_meta`→`_onyx`
       rename (index-exclusion + `listConfigPaths`) · **#161** per-deck config dirs + migrate the `study-goals.json`
       blob → per-deck + **per-id config merge** (kills the aim-LWW) + retire legacy files/`budgetWeight`.
-    - **Wave C — card model** (0020; when multi-subject/authoring needs it): card-intrinsic `kind:` selector +
-      remove `type`/`quiz` + re-express the 8 engines (characterization-first) → **one uniform state record +
-      pluggable per-kind scheduler** (**#155**) → retain-but-detach unification → config-driven subject templates
-      (**#153**) + authoring templates (**#156**).
+    - **Wave C — card model** (0020; when multi-subject/authoring needs it): subject-level flow **selector**
+      (tag/folder/attribute; flow membership is the lens, the card marker is an optional guardrail, default =
+      flashcard) + remove `type`/`quiz` + re-express the 8 engines (characterization-first) → **one uniform
+      state record + pluggable per-kind scheduler** (**#155**) → retain-but-detach unification → config-driven
+      subject templates (**#153**) + required-core authoring templates (**#156**). Deferred to its own scoping
+      session (**#162**): the authoring-template *selection UX* + template↔flow wiring + the two-tier vault-health
+      warnings (deterministic two-flow/fails-required-core; soft "no explicit flow"; per-card dismiss in app-state).
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
