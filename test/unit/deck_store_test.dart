@@ -263,6 +263,30 @@ void main() {
       expect(goals.map((g) => g.id), ['korean']);
     });
 
+    test(
+        'reading migrates a legacy blob to per-deck clusters (read-only, #161)',
+        () async {
+      final src = _FakeSource({
+        DeckStore.fileName: jsonEncode([
+          {
+            'id': 'korean',
+            'name': 'Korean',
+            'templateId': 'korean',
+            'membership': {'kind': 'folder', 'value': 'korean'},
+          },
+        ]),
+      });
+      final c = ProviderContainer(
+          overrides: [vaultSourceProvider.overrideWithValue(src)]);
+      addTearDown(c.dispose);
+
+      // A read alone (no mutation) must migrate the blob off, so a read-only user
+      // stops depending on it.
+      expect((await c.read(decksProvider.future)).map((g) => g.id), ['korean']);
+      expect(src.meta.keys, contains('decks/korean/deck.json'));
+      expect(src.meta.keys, isNot(contains(DeckStore.fileName)));
+    });
+
     test('all-graduated stored goals fall back to the default', () async {
       final grad = Deck(
         id: 'korean',

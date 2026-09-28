@@ -27,6 +27,18 @@ class Decks extends _$Decks {
   Future<List<Deck>> build() async {
     final registry = await ref.watch(templateRegistryProvider.future);
     final source = ref.watch(vaultSourceProvider);
+    // Migrate a legacy single-blob store into per-deck clusters on first sight (ADR-0019
+    // §4), so even a read-only user — who never triggers a save — stops depending on the
+    // blob. Idempotent + best-effort (a no-op once clusters exist); a mutating user
+    // migrates via DeckStore.save anyway. Awaited before load() so load reads the
+    // freshly-written clusters; it doesn't invalidateSelf, so no rebuild loop.
+    if (source != null) {
+      try {
+        await DeckStore(source).migrateBlobToClusters();
+      } catch (_) {
+        // Non-fatal: load() still reads the blob via fallback; retry on the next build.
+      }
+    }
     // Decks load already-folded: [Deck.fromJson] migrates any legacy target slots
     // into the aims at parse time (S5), so a loaded deck carries no slots of its
     // own. Old files keep the now-redundant slot keys until their next save; they're

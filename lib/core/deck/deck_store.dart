@@ -115,6 +115,20 @@ class DeckStore {
     return out;
   }
 
+  /// One-time migration: if the store is still the legacy single blob (no per-deck
+  /// clusters yet) but the blob holds decks, rewrite them into per-deck clusters and
+  /// retire the blob (ADR-0019 §4). Idempotent + meant to be best-effort — a no-op
+  /// once clusters exist, or when there's nothing (parseable) to migrate. Returns
+  /// whether it migrated. Lets a read-only user (who never triggers a [save]) still
+  /// stop depending on the blob; a mutating user migrates via [save] anyway.
+  Future<bool> migrateBlobToClusters() async {
+    if ((await _deckIds()).isNotEmpty) return false; // already per-deck
+    final blob = await _loadBlob();
+    if (blob.isEmpty) return false; // nothing to migrate (empty/unparseable)
+    await save(blob);
+    return true;
+  }
+
   Future<void> save(List<Deck> goals) async {
     final keep = {for (final g in goals) g.id};
     // Write each deck's cluster FIRST (each writeMeta is atomic), so a crash mid-save
