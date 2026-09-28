@@ -3,10 +3,11 @@ import 'dart:convert';
 import '../vault/vault_source.dart';
 import 'deck.dart';
 
-/// Persists the user's study goals as app-managed state in the vault's `_meta/`
-/// (task #30d) — the deadline, budget split, target selection, and membership
-/// query per goal. This is *not* hand-edited content (per the vault conventions),
-/// so it lives in `_meta/`, unlike the authored subject templates and cards.
+/// Persists the user's study goals as app-managed state in the vault's config dir
+/// (`_onyx/`, ADR-0019; a legacy `_meta/` file still reads via VaultSource fallback)
+/// — the deadline, budget split, target selection, and membership query per goal.
+/// This is *not* hand-edited content (per the vault conventions), so it lives in the
+/// config dir, unlike the authored subject templates and cards.
 ///
 /// The implicit default (whole-vault) goal is synthesized from the primary
 /// template, so an empty/absent file means "single default goal", identical to

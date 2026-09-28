@@ -11,7 +11,7 @@ part 'decks.g.dart';
 
 /// The study goals live in the vault (task #30d, docs/multi-subject-plan.md).
 ///
-/// The user's study goals, persisted in `_meta/` (G3b). Explicit (non-default)
+/// The user's study goals, persisted in the config dir `_onyx/` (G3b). Explicit (non-default)
 /// goals, when any is live, replace the whole-vault default (it would overlap every
 /// lane). Otherwise a single default goal — the whole vault targeted by the primary
 /// template — which is *synthesized* until the user sets a target/interview on it

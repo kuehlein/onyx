@@ -300,7 +300,7 @@ class DeckTemplate {
   /// One flow per card `type:`. See [flowForType].
   final List<FlowSpec> flows;
 
-  /// The `_meta/` file name of this subject's **coach skill** (read via
+  /// The config-dir file name of this subject's **coach skill** (read via
   /// `VaultSource.readMeta`, e.g. `coach.md`) — the domain framing that augments
   /// the coach's research-backed foundation (task #30, coach de-privileging).
   /// Null / missing → the foundation stands alone (`CoachSkill.none`).

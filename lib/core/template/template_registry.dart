@@ -3,8 +3,8 @@
 ///
 /// Where [DeckTemplate] defines one subject, the registry maps the vault's
 /// per-directory configs to their subtrees so each card resolves to *its own*
-/// subject by path. A vault with a single config (the legacy
-/// `_meta/onyx-subject.yaml`, or none → the SWE default) collapses to a one-entry
+/// subject by path. A vault with a single config (one `onyx-subject.yaml` — in
+/// `_onyx/`, at the vault root, or none → the SWE default) collapses to a one-entry
 /// registry, which is byte-identical to the pre-#30d single-subject behavior.
 library;
 

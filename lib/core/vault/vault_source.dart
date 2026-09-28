@@ -6,9 +6,11 @@ import 'package:path/path.dart' as p;
 /// are POSIX paths *relative to this dir* — e.g. `decks/<id>/deck.json`.
 const String kConfigDir = '_onyx';
 
-/// The pre-ADR-0019 config dir. Read-compat + one-time migration only: a vault with a
-/// `_meta/` but no `_onyx/` is renamed on first access. Kept in the index exclusion so
-/// a stray legacy dir never leaks into the card set.
+/// The pre-ADR-0019 config dir. Read-compat only: [readMeta] falls back to a legacy
+/// `_meta/` file when no `_onyx/` one exists, but never renames on disk (reads must be
+/// safe for read-only committed fixtures) — writes always land in `_onyx/`, and Wave B's
+/// migration sweeps any lingering legacy files. Kept in the index exclusion so a stray
+/// legacy dir never leaks into the card set.
 const String kLegacyConfigDir = '_meta';
 
 /// True when [relativePath]'s filename matches a folder-syncer **conflict-copy**

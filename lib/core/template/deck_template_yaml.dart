@@ -2,7 +2,7 @@ import 'package:yaml/yaml.dart';
 
 import 'deck_template.dart';
 
-/// Parses a subject config from YAML (the `_meta/onyx-subject.yaml` file, or the
+/// Parses a subject config from YAML (the `_onyx/onyx-subject.yaml` file, or the
 /// frontmatter of `_onyx/config.md` in the fuller vault layout) into a
 /// [DeckTemplate] — task #30 Phase 5. Pure; throws [FormatException] on invalid
 /// input so the loader can fall back to the built-in default.

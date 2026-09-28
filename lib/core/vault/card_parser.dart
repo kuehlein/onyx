@@ -27,7 +27,7 @@ List<({String label, String value})> cardParsingRules() {
 /// code blocks do not start new sections — and it distinguishes three outcomes:
 ///
 ///  * returns `null` when the file is not an Onyx card (no recognized `type`),
-///    which is how `_meta/` files and ordinary notes are skipped;
+///    which is how config-dir (`_onyx/`) files and ordinary notes are skipped;
 ///  * throws [MissingCardIdException] when a valid card lacks an `id`;
 ///  * throws [MalformedCardException] when a card is structurally invalid.
 class CardParser {
@@ -112,7 +112,7 @@ class CardParser {
 
     final type = (frontmatter['type'] as String?)?.trim();
     // A file is an Onyx card iff its `type:` matches one of the subject's
-    // configured flows; everything else (config, `_meta/`, ordinary notes) is
+    // configured flows; everything else (config, `_onyx/`, ordinary notes) is
     // skipped. (Was: CardType.fromString != null — a no-op for the SWE subject.)
     if (type == null || !subject.isCardType(type)) return null;
 

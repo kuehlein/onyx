@@ -33,7 +33,7 @@ class VaultRefController extends _$VaultRefController {
   /// one-call path used by onboarding + the Settings folder picker.
   ///
   /// Switching folders is data-safe: the local DB is a derived cache of ONE
-  /// folder at a time (ADR-0001/0002 — each folder's `_meta` snapshot is its
+  /// folder at a time (ADR-0001/0002 — each folder's `_onyx` snapshot is its
   /// durable copy). So on a real switch we (1) export the outgoing folder's
   /// progress to its own snapshot, (2) clear the cache, then (3) restore the
   /// incoming folder's snapshot — the incoming folder resumes its own progress

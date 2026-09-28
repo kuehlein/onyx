@@ -6,7 +6,8 @@
 /// vocabulary (a `DeckTemplate`), the [aims] carry the objectives (each with its
 /// own knobs + date), and a [priority] tier + [state] control its slice of the
 /// shared daily study time (ADR-0018). Readiness is computed per deck over its members (G2).
-/// Decks are app-managed state (persisted in `_meta/` by [id]), not vault content.
+/// Decks are app-managed state (persisted in the config dir `_onyx/` by [id]), not
+/// vault content.
 library;
 
 import '../../shared/models/card.dart';
@@ -34,7 +35,7 @@ class Deck {
     this.aims = const [],
   });
 
-  /// Stable id — the key under which this goal's state persists (`_meta/`).
+  /// Stable id — the key under which this deck's state persists (`_onyx/`).
   final String id;
 
   /// Human label for the lane/hub.
@@ -98,7 +99,7 @@ class Deck {
   static Deck fromJson(Map<String, dynamic> m) {
     // A deck with no usable id is unrecoverable — throw so [DeckStore.load] skips
     // just this entry (not the whole file). Every OTHER read below is type-tolerant
-    // (a hand-edited / sync-corrupted `_meta` file must degrade a bad field, not
+    // (a hand-edited / sync-corrupted `_onyx` file must degrade a bad field, not
     // throw and take the deck — or the list — down with it).
     final id = m['id'];
     if (id is! String || id.isEmpty) {
@@ -185,7 +186,7 @@ String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
 
 /// The deck's [PriorityTier] from JSON: the `priority` key if present, else a legacy
 /// numeric `budgetWeight` mapped to a tier (the ADR-0018 migration — `budgetWeight`
-/// is retired), else [PriorityTier.normal]. So an old `_meta` file's weight carries
+/// is retired), else [PriorityTier.normal]. So an old config file's weight carries
 /// its intent forward without a stored field.
 PriorityTier _priorityFrom(Map<String, dynamic> m) {
   for (final t in PriorityTier.values) {

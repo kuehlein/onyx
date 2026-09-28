@@ -53,7 +53,7 @@ const _foundationLearn =
     'learner reasoning, not passively receiving.';
 
 /// A subject's **domain augmentation** to the coach's foundational voice, authored
-/// in the vault skill `_meta/coach.md` (parsed by [coachSkillFromMarkdown]) and
+/// in the vault skill `_onyx/coach.md` (parsed by [coachSkillFromMarkdown]) and
 /// LAYERED on top of the learning-science foundation — never replacing it. Every
 /// field is optional; [none] (no skill) leaves the foundation to stand alone. The
 /// engine still owns the *mechanics* (hint ladder, reveal rules, grade/assessment
@@ -85,7 +85,7 @@ class CoachSkill {
   static const none = CoachSkill();
 }
 
-/// Parse a vault coach skill (`_meta/coach.md`) into a [CoachSkill]. The file is
+/// Parse a vault coach skill (`_onyx/coach.md`) into a [CoachSkill]. The file is
 /// markdown with any of `## Reviewing`, `## Learning`, `## Topic fit`,
 /// `## First exposure` (each body the prose up to the next H2) — ALL optional,
 /// since a skill only *augments* the foundation. Missing/empty → that field is

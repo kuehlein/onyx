@@ -13,8 +13,8 @@ export '../../core/template/software_interviews.dart'
 /// A card's `type:` is the raw frontmatter string naming its **flow** — e.g.
 /// `flashcard`, `interview-question`, `algorithm`, `system-design`, `behavioral`,
 /// or a subject's own `conversation`. A file whose `type:` matches no configured
-/// flow is not an Onyx card and is skipped by the indexer (how `_meta/` files and
-/// ordinary notes are ignored). All behavior for a type — scheduling,
+/// flow is not an Onyx card and is skipped by the indexer (how config-dir (`_onyx/`)
+/// files and ordinary notes are ignored). All behavior for a type — scheduling,
 /// quizzability, practice-track, display — comes from the active subject's
 /// `FlowSpec` (see lib/core/template/), not a hardcoded enum (task #30c Phase 4).
 

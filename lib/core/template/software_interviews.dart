@@ -20,7 +20,7 @@ const kTypeBehavioral = 'behavioral';
 /// `onyx-goals.json` values resolve unchanged.
 const softwareInterviewsTemplate = DeckTemplate(
   id: 'software-interviews',
-  // The SWE domain augmentation lives in the shipped vault's `_meta/coach.md`
+  // The SWE domain augmentation lives in the shipped vault's `_onyx/coach.md`
   // (read via readMeta, parsed by coachSkillFromMarkdown); absent → the
   // learning-science foundation stands alone.
   coachSkill: 'coach.md',
