@@ -53,11 +53,28 @@ removing escape-hatches, not a rewrite. Verified facts a reviewer needs:
 
 ### 1. Knowledge-keyed datum, deckId-free (supersedes ADR-0003's reserved key)
 
-The atomic unit is the **datum**, keyed `(cardId, dataSlug)` — deck-independent, one global state,
-advance-anywhere-advances-everywhere. `cardId` is a **stable slug** (invariant #5; normalize the residual
-UUIDs). A deck's lens **surfaces** data; it is never part of the datum key. The `(deckId, …)` direction of
-ADR-0003 is **retired** — mark ADR-0003 "amended by 0020" on the join-key point only (its `draft`/`active`
-status seam stands).
+The atomic unit is the **datum**, keyed `(cardId, dataSlug)` where **`dataSlug` encodes the aspect + the
+mode** — i.e. a datum is `(card, aspect, mode)`. *Aspect* = which part of the card (a section like
+`definition`/`conjugation`, or a whole-card mode-target). *Mode* = the cognitive task (recall / produce /
+solve / recognize / …). Each datum has **one global state**, advance-anywhere-advances-everywhere.
+`cardId` is a **stable slug** (invariant #5; normalize the residual UUIDs). A deck's lens **surfaces** data;
+it is never part of the datum key. The `(deckId, …)` direction of ADR-0003 is **retired** — mark ADR-0003
+"amended by 0020" on the join-key point only (its `draft`/`active` status seam stands).
+
+**A card spawns MANY data, across possibly different scheduling models — and that is not a conflict.** The
+scheduling **model belongs to the datum, and is a pure function of its MODE** (recall→FSRS; produce/solve→
+practice), NOT of the card, deck, or flow. So one card legitimately spans several models via several data:
+a Latin `amare` card spawns `amare::definition:recall` (FSRS) **and** `amare::conjugation:execute`
+(practice); an algo card spawns a `solve` datum + a `recognize` datum (this is the shipped two-clock —
+`srs_state` + `recognition_states`, both keyed `(cardId, sectionSlug)` today, generalized here). **Two flows
+over the same card cannot fork its state:** a flow's spawn-rule emits `(aspect, mode)` data; identical keys
+**merge** (same schedule) and distinct keys **coexist** — and since model = f(mode), any flow that spawns a
+given datum agrees on its model. The forked-state hazard is therefore impossible **by construction** (no
+"pick one" fallback needed for the multi-flow-over-one-card case; that fallback is only for a genuine
+*authoring* ambiguity). Example: studying `amare` as a plain flashcard in year 1 drills
+`definition:recall`; a recall/execute flow in year 2 drills `definition:recall` (its year-1 progress
+**carries forward**) **plus** a new `conjugation:execute` datum. *Genuinely replacing* a datum's mode (not
+adding one) is a re-authoring → a new datum, with the old one **retain-but-detached** (§4).
 
 ### 2. Thin cards: flow membership from a subject-level selector; the card marker is an optional guardrail
 
@@ -86,19 +103,31 @@ status seam stands).
     frontmatter** — so silencing a warning never adds glue to the card.
 - The 8 `no_card_type_branch` engines are **re-expressed against the selector** (byte-identical,
   characterization-first); the lint is tightened so a raw kind-branch fails CI (invariant #2, made total).
-  This is invariant #2 finally made total.
 
 ### 3. One uniform state record + a pluggable per-kind scheduling function (#155)
 
 - Collapse `SrsStates` + `RecognitionStates` into **one uniform state table**: a thin common core
   `{ (cardId, dataSlug), kind, dueAt, lastActivityAt, activityCount, status }` + a **kind-tagged payload**
   (recall: `{stability, difficulty, state, step}`; practice: `{intervalDays, streak}`). A content unit
-  **spawns 1..N data** (flashcard → one per quizzable section; algo → `solve` + `recognize`; SD/behavioral
-  → a `mock` practice datum). *Not* one datum with heterogeneous blobs; *not* a wide null-filled union.
-- A **flow is an EXPRESSION** = { spawn-rule (which data a card spawns) · interaction · grade-normalization
-  (map the native grade — FSRS 1-4, {solid,shaky,lost}, applied 0-100 — to one internal outcome) ·
-  intra-unit precedence (e.g. algo "solve wins ties") }. The state table stays interaction-agnostic; the
-  scheduling **function** is pluggable per kind.
+  **spawns 1..N data** keyed `(aspect, mode)` (flashcard → one recall datum per quizzable section; algo →
+  `solve` + `recognize`; SD/behavioral → a `mock` practice datum). `kind` (the scheduling model) = **f(mode)**.
+  *Not* one datum with heterogeneous blobs; *not* a wide null-filled union.
+- A **flow is an EXPRESSION** = { spawn-rule (which `(aspect, mode)` data a card spawns) · interaction ·
+  grade-normalization (map the native grade — FSRS 1-4, {solid,shaky,lost}, applied 0-100 — to one internal
+  outcome) · intra-unit precedence (e.g. algo "solve wins ties") }. The state table stays
+  interaction-agnostic; the scheduling **function** is pluggable per kind. Because identical `(aspect, mode)`
+  keys **merge** and `kind = f(mode)`, two flows spawning over the same card **cannot** disagree on a datum's
+  model — cross-flow model-conflict is impossible by construction (see §1).
+- **The scheduling MODEL is the only globally-fixed thing; a flow's SELECTOR and CONFIG are LOCAL.** The set
+  of models (recall, practice) + `f(mode)` is the small global registry (the state schema). Everything else —
+  which cards a flow claims (selector), the rubric / AI skill / difficulty / presentation (config) — is a
+  **subject default that a deck may override** (base+override, à la ESLint `extends`). So **multiple
+  implementations of "the algo flow" are expected and fine** (Algorithms 101 vs 201 = two configs, or two
+  subjects, both mapping to the *practice* model) — no global algo config, no conflict, because they share the
+  *model*, not the *config*. *Caveat:* scheduling **parameters** (interval/desired-retention) do steer the
+  shared state, so they can't freely differ per deck for a shared datum; today they're **global** (ADR-0014,
+  one retention knob), so it's moot. Per-deck scheduling params would need Anki's **home-deck-owns-scheduling**
+  model — **deferred** (flag, don't build).
 - **Two functions, not one** (the defensible floor): a **recall curve** (FSRS) for flashcard + algo
   recognition; a **practice/expanding-interval** function for algo-solve + SD + behavioral. Never one
   universal forgetting curve over skills.
