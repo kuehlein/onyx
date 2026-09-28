@@ -17,6 +17,7 @@ class IndexResult {
     required this.malformed,
     required this.skipped,
     this.unresolvedLinks = const [],
+    this.conflictCopies = const [],
   });
 
   /// Successfully parsed cards — the in-memory index the app reads from.
@@ -34,6 +35,11 @@ class IndexResult {
 
   /// Dangling `[[wikilinks]]` — targets with no matching `.md` file (task #20).
   final List<UnresolvedLink> unresolvedLinks;
+
+  /// Folder-syncer **conflict-copy** files detected during the walk (relative
+  /// paths). Skipped — never parsed into cards, so they can't mint a duplicate card
+  /// id — and surfaced so the user can review/delete them (ADR-0019/0021).
+  final List<String> conflictCopies;
 
   int get cardCount => cards.length;
 
@@ -110,10 +116,17 @@ class VaultIndexer {
     var idless = 0;
     var malformed = 0;
     var skipped = 0;
+    final conflictCopies = <String>[];
 
     final registry = _registry ?? activeRegistry;
     final paths = await _source.listCardPaths();
     for (final path in paths) {
+      // A folder-syncer conflict copy carries the original's frontmatter verbatim
+      // (same id) — parsing it would duplicate a card id. Skip + report, never parse.
+      if (isConflictCopy(path)) {
+        conflictCopies.add(path);
+        continue;
+      }
       final content = await _source.readCard(path);
       try {
         final card = _parser.parse(
@@ -173,6 +186,7 @@ class VaultIndexer {
       malformed: malformed,
       skipped: skipped,
       unresolvedLinks: unresolvedLinks,
+      conflictCopies: conflictCopies,
     );
   }
 

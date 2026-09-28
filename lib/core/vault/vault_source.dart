@@ -1,3 +1,18 @@
+import 'package:path/path.dart' as p;
+
+/// True when [relativePath]'s filename matches a folder-syncer **conflict-copy**
+/// pattern — the duplicate a sync tool (Syncthing / Dropbox / iCloud desktop) spawns
+/// when two devices edit the same file. A conflict copy carries the original's
+/// frontmatter *verbatim*, so ingesting one as a card mints a **duplicate card id**
+/// and corrupts the index (ADR-0019/0021). The indexer skips + reports these instead.
+///
+/// Matches only **unambiguous machine patterns** — deliberately NOT a numbered suffix
+/// like `notes 2.md`, which is a legitimate user filename.
+bool isConflictCopy(String relativePath) {
+  final name = p.posix.basename(relativePath).toLowerCase();
+  return name.contains('.sync-conflict-') || name.contains('conflicted copy');
+}
+
 /// Abstraction over vault file access.
 ///
 /// The production app reads the vault through an iOS security-scoped bookmark;

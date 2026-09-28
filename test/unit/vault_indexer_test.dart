@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
+import 'package:onyx/core/vault/vault_source.dart';
 import 'package:path/path.dart' as p;
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
@@ -146,8 +147,43 @@ void main() {
       expect((await db.select(db.cardCache).get()).length, 2);
       expect((await db.select(db.cardLinks).get()).length, 1);
     });
+
+    test('skips + reports folder-syncer conflict copies (no duplicate id)',
+        () async {
+      // A conflict copy carries card-a's frontmatter (same id) VERBATIM — parsing
+      // it would duplicate the id and corrupt the index. It must be skipped +
+      // reported, never parsed (ADR-0019/0021).
+      write('card-a.sync-conflict-20260101-ABCDEF.md', _cardA);
+      write('card-a (conflicted copy).md', _cardA);
+      final result = await indexer.reindex();
+      expect(result.cardCount, 2, reason: 'conflict copies are not parsed');
+      expect(result.conflictCopies.length, 2);
+      // The two real cards cache once each — no duplicate id leaked from a copy.
+      expect((await db.select(db.cardCache).get()).length, 2);
+    });
   },
       skip: _sqliteAvailable
           ? false
           : 'libsqlite3 unavailable — run inside the nix dev shell');
+
+  // Pure — no DB, so it runs regardless of libsqlite3 availability.
+  group('isConflictCopy', () {
+    test('detects unambiguous folder-syncer patterns (case-insensitive)', () {
+      expect(
+          isConflictCopy('card.sync-conflict-20260101-ABCDEF-GHI.md'), isTrue);
+      expect(isConflictCopy('deep/nested/note.sync-conflict-x.md'), isTrue);
+      expect(isConflictCopy('array (conflicted copy).md'), isTrue);
+      expect(isConflictCopy("array (John's conflicted copy 2026-01-01).md"),
+          isTrue);
+      expect(isConflictCopy('ARRAY (Conflicted Copy).md'), isTrue);
+    });
+
+    test('never flags legitimate filenames (incl. numbered suffixes)', () {
+      expect(isConflictCopy('array.md'), isFalse);
+      expect(
+          isConflictCopy('chapter 2.md'), isFalse); // numbered ≠ conflict copy
+      expect(isConflictCopy('notes-2.md'), isFalse);
+      expect(isConflictCopy('sync-notes.md'), isFalse); // "sync-" ≠ the pattern
+    });
+  });
 }
