@@ -613,23 +613,29 @@ The MVP-tagged stories, cloud still absent:
   unification), **#156** (authoring templates). **Do-now, ungated slices** (fix live solo-multi-device
   bugs): conflict-copy detection, aim per-id merge + stable UIDs, the `_onyx/` layout + per-deck split.
   - **Build sequence (dependency-ordered; most of this is architecture investment, NOT a v1 gate):**
-    - **Wave A — safe correctness fixes** (do-now, independent, fix live data-loss; each self-contained):
-      **#157** conflict-copy detection at enumeration · **#158** index-diff section rekey + `dropSection`→tombstone
-      (kills the external-heading-rename orphan) · **#159** device-id + per-device `state/<id>.json` + glob-merge.
+    - **Wave A — safe correctness fixes.** **✅ #157** conflict-copy detection at enumeration (shipped
+      2026-09-28). *On implementation the other two re-homed to their natural siblings (each needs sibling
+      infra; neither is biting the single-device case today):* **#158** index-diff section rekey **→ Wave C**
+      (the removal-retain half is already the default — reindex doesn't prune; the rename-rekey half needs
+      Wave C's stable section-key, not a stopgap schema+heuristic); **#159** device-id + per-device state
+      **→ Wave B** (belongs in the `_onyx/state/` dir, where per-device globbing is trivial vs `_meta/`
+      filename-pattern gymnastics).
     - **Wave B — `_onyx/` layout foundation** (0019; unblocks C/D): **#160** VaultSource subpath + `_meta`→`_onyx`
       rename (index-exclusion + `listConfigPaths`) · **#161** per-deck config dirs + migrate the `study-goals.json`
-      blob → per-deck + **per-id config merge** (kills the aim-LWW) + retire legacy files/`budgetWeight`.
+      blob → per-deck + **per-id config merge** (kills the aim-LWW) + retire legacy files/`budgetWeight` ·
+      **#159** device-id + per-device `_onyx/state/<id>.json` + glob-merge (closes the multi-device write race).
     - **Wave C — card model** (0020; when multi-subject/authoring needs it): subject-level flow **selector**
       (tag/folder/attribute; flow membership is the lens, the card marker is an optional guardrail, default =
       flashcard) + remove `type`/`quiz` + re-express the 8 engines (characterization-first) → **one uniform
-      state record + pluggable per-kind scheduler** (**#155**) → retain-but-detach unification → config-driven
+      state record + pluggable per-kind scheduler** (**#155**) → retain-but-detach unification + **#158**
+      index-diff section rekey (external-rename-safe, via the stable section-key) → config-driven
       subject templates (**#153**) + required-core authoring templates (**#156**). Deferred to its own scoping
       session (**#162**): the authoring-template *selection UX* + template↔flow wiring + the two-tier vault-health
       warnings (deterministic two-flow/fails-required-core; soft "no explicit flow"; per-card dismiss in app-state).
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
-    Recommended start: **Wave A** (highest value-to-risk — fixes real bugs, no structural dependency), then **Wave B**.
+    Wave A's independent fix (#157) shipped; next is **Wave B** (the `_onyx/` foundation), which now also carries #159.
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;
