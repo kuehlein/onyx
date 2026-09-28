@@ -620,8 +620,9 @@ The MVP-tagged stories, cloud still absent:
       Wave C's stable section-key, not a stopgap schema+heuristic); **#159** device-id + per-device state
       **→ Wave B** (belongs in the `_onyx/state/` dir, where per-device globbing is trivial vs `_meta/`
       filename-pattern gymnastics).
-    - **Wave B — `_onyx/` layout foundation** (0019; unblocks C/D): **#160** VaultSource subpath + `_meta`→`_onyx`
-      rename (index-exclusion + `listConfigPaths`) · **#161** per-deck config dirs + migrate the `study-goals.json`
+    - **Wave B — `_onyx/` layout foundation** (0019; unblocks C/D): **✅ #160** VaultSource subpath + `_meta`→`_onyx`
+      rename (index-exclusion + `listConfigPaths` + non-destructive read-compat fallback; writes/scaffold land in
+      `_onyx/`; shipped 2026-09-28) · **#161** per-deck config dirs + migrate the `study-goals.json`
       blob → per-deck + **per-id config merge** (kills the aim-LWW) + retire legacy files/`budgetWeight` ·
       **#159** device-id + per-device `_onyx/state/<id>.json` + glob-merge (closes the multi-device write race).
     - **Wave C — card model** (0020; when multi-subject/authoring needs it): subject-level flow **selector**
@@ -635,7 +636,8 @@ The MVP-tagged stories, cloud still absent:
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
-    Wave A's independent fix (#157) shipped; next is **Wave B** (the `_onyx/` foundation), which now also carries #159.
+    Wave A's independent fix (#157) shipped; Wave B is underway — **#160** (the `_onyx/` layout) shipped; next is
+    **#161** (per-deck config dirs + `study-goals` migration + per-id merge), then **#159** (per-device state).
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;
