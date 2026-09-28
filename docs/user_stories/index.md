@@ -93,12 +93,13 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
   /[0020](../adr/0020-card-and-scheduling-model.md)/[0021](../adr/0021-registry-sync-and-teacher-push.md):**
   an **upstream vault with per-account read/write ACL**; **publisher owns pushed content + aim
   definitions, puller owns all state + local edits + their aim overlay**; a read-only puller may edit
-  locally but **pull overwrites pulled content** (same card-id) — state + student-authored cards are
-  never touched; the **lens is the sync filter** (structure-preserving), reconciliation is **id-keyed**
-  with deletion scoped to the last-synced manifest; aims travel as **iTIP** author-owned definitions +
+  locally and those **edits are protected** — a pull that conflicts with a local edit raises a git-style
+  **take-upstream / merge / cancel** (never a silent clobber); state + student-authored cards are never
+  touched; the **lens is the sync filter** (structure-preserving), reconciliation is **id-keyed** with
+  deletion scoped to the last-synced manifest; aims travel as **iTIP** author-owned definitions +
   puller-owned overlays. Config/state separate under **`_onyx/`**; per-device state snapshots resolve the
-  app-data storage cost. The **server + accounts/ACL** (#83) remains the build gate; whether to *protect*
-  a puller's local edits (a 3-way merge vs overwrite) is the one sub-question deliberately deferred.
+  app-data storage cost. The **server + accounts/ACL** (#83) remains the build gate; the only deferred
+  sub-question is the *interim* before the full three-choice merge UI (keep-local-and-flag).
 - **Competing aims** (tension between concurrent aims — e.g. a general *backend* aim + two *frontend*
   interviews). **Rec (shape agreed 2026-09-22; refined 2026-09-22):**
   - **Readiness never averages** — score each aim on its own knobs, show per-aim, deck headline =

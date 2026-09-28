@@ -1,6 +1,6 @@
 # ADR 0020 — Card & scheduling model: knowledge-keyed data, thin cards, one uniform state record + pluggable scheduler
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-28
 - **Deciders:** Kyle Uehlein (+ AI-assisted scaffolding; 3 adversarial research passes)
 - **Related:** Built on **ADR-0019** (the datum/lens guiding principle + `_onyx/` layout). **Supersedes the
@@ -131,6 +131,12 @@ suspend semantics), so a narrowed lens never reports dishonest readiness.
   overlapping decks, contradicting the guiding principle; deckId-free is correct and, with junk data, free.
 - **Keep `type:` + per-card quizzability as overrides.** Rejected: they're the glue the thin-card model
   removes; a dedicated `kind:` marker + authoring templates give uniformity without per-card drift.
+- **A deck as a *collection* of per-flow lenses** (one lens per flow). Rejected: it makes the *lens* decide
+  a card's flow, which forks the datum's single global state (a card caught by the "algo" lens but authored
+  `kind:concept` would have two flow answers). Flow is card-intrinsic (`kind`), so a deck's multiple flows
+  are **emergent** from its members' kinds. `kind` is exposed as a **queryable lens leaf** (`kind:algo`), so
+  a single membership lens expresses both a multi-flow deck (no kind filter) and a single-flow deck
+  (`… && kind:algo`) with zero ambiguity — one lens, not a bundle. (Pinned in ADR-0019 §Decision.1.)
 - **Persistable section-granular membership now.** Deferred: it silently shifts the member-set grain from
   card to `(cardId,sectionSlug)` — a cross-cutting analytics refactor — and inherits slug instability.
   Browse-only first.

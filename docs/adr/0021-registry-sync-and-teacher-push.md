@@ -1,7 +1,8 @@
 # ADR 0021 — Registry sync & teacher-push: account-based upstream, lens-as-filter, overwrite-on-pull, iTIP aims
 
-- **Status:** Proposed *(post-MVP; the machinery is gated — see Consequences. This ADR **resolves the shape**
-  of the parked decision so dependent work stops being blocked on an undecided contract.)*
+- **Status:** Accepted *(the contract is decided; the push/pull **machinery is post-MVP and gated** on the
+  #83 server — see Consequences. This ADR resolves the shape of the parked decision so dependent work stops
+  being blocked on an undecided contract.)*
 - **Date:** 2026-09-28
 - **Deciders:** Kyle Uehlein (+ AI-assisted scaffolding; 3 adversarial research passes)
 - **Related:** **Resolves the "Sync & source-of-truth" open decision** in `docs/user_stories/index.md`.
@@ -47,11 +48,13 @@ Facts a reviewer needs (verified):
   (client-side aggregation).
 - **Publisher owns pushed content + aim definitions** (authoritative). **Puller owns all state + their
   local edits + their aim overlay.**
-- **No client-side content lock.** A read-only puller may freely edit pulled cards locally (elaborate,
-  add sections) — it's *their* vault. **Pull overwrites** pulled content (same card-id) with the upstream
-  version; the student's local edits to pulled cards are **not preserved** in v1. *(Whether to protect
-  local edits — a 3-way merge or a "your copy vs theirs" prompt — is explicitly deferred; overwrite is the
-  v1 policy, and it is safe because it never touches state or student-authored cards — see §3.)*
+- **No client-side content lock; local edits are PROTECTED.** A read-only puller may freely edit pulled
+  cards locally (elaborate, add sections) — it's *their* vault. When a pull brings an upstream change to a
+  card the student has **also edited locally** — detected as a true 3-way conflict via the last-synced
+  content hash (base) vs local (ours) vs incoming (theirs) — Onyx **never silently clobbers**: it surfaces a
+  **git-style conflict resolution** with three choices — **take upstream** (clobber local), **merge both**,
+  or **cancel** (keep local, skip this update). Non-conflicting pulls (the student didn't touch the card)
+  apply cleanly. State + student-authored cards are never touched regardless (§3).
 
 ### 2. Export — the lens IS the transfer filter (selection only)
 
@@ -68,9 +71,10 @@ Facts a reviewer needs (verified):
 The pull-merge the lens does *not* perform:
 
 - **Match on frontmatter `cardId`, not path.** Same id + new path = **move** → update in place, **keep the
-  curve**. Same id + same path = **normal update** → **overwrite** the content (v1 policy, §1). Same path +
-  **different** id = **collision** (a student's own card at a pulled path) → **refuse/quarantine**, never
-  overwrite (git's "would be overwritten, aborting"). This is the one guard overwrite-on-pull keeps.
+  curve**. Same id + same path, student **hasn't** edited it = **clean update** (apply upstream). Same id,
+  student **has** edited it (local hash ≠ last-synced) = **conflict** → the §1 three-way resolution
+  (take-upstream / merge / cancel), **never a silent overwrite**. Same path + **different** id = **collision**
+  (a student's own card at a pulled path) → **refuse/quarantine** (git's "would be overwritten, aborting").
 - **Deletion authority is scoped to the last-synced manifest** (persist it per subscription): a datum is
   removed only if it **was in the previous manifest AND is absent now AND is unmodified pulled content** —
   **never** on lens-absence, **never** a student-authored/-modified file. A removed datum's schedule goes
@@ -105,11 +109,13 @@ Model teacher-pushed aims on iCalendar iTIP (the calendar-invite model):
 
 ## Alternatives considered
 
-- **Read-only lock on pulled content.** Rejected (for v1): it's the learner's vault; forbidding a student
-  from elaborating a card is user-hostile. Overwrite-on-pull is the honest v1 trade (local edits to pulled
-  cards are transient); protecting them is a deferred enhancement, not a v1 blocker.
-- **3-way content merge (preserve student edits).** Deferred: needs a persisted common-ancestor per card
-  and a conflict UI; overwrite is simpler and safe (state + student-authored cards are untouched).
+- **Read-only lock on pulled content.** Rejected: it's the learner's vault; forbidding a student from
+  elaborating a card is user-hostile.
+- **Silent overwrite-on-pull** (clobber local edits). Rejected: it silently destroys a student's
+  elaborations. The last-synced manifest already stores per-file hashes, so a true 3-way base/ours/theirs is
+  cheap to detect; **protecting edits with a git-style choice (take-upstream / merge / cancel) is the decided
+  model.** The full merge UI may land after a simpler interim (Consequences), but the default must **never**
+  silently clobber.
 - **Lens as the deletion authority ("not in the incoming subset → delete").** Rejected — catastrophic: it
   wipes the student's own out-of-lens and student-authored cards. Deletion is scoped to the last-synced
   manifest + unmodified-pulled-content only.
@@ -129,23 +135,25 @@ Model teacher-pushed aims on iCalendar iTIP (the calendar-invite model):
   sync filter (no separate include/exclude language); id-keyed reconcile follows renames without orphaning
   curves; overwrite-on-pull is simple and provably safe for state; conflict-copy detection closes a live
   corruption path now; iTIP aims give teacher-push + multi-source aggregation without clobbering the learner.
-- **Negative / trade-offs:** a student's local edits to *pulled* cards are lost on the next pull (accepted
-  v1 trade; revisit); requires the aim-storage/identity rebuild (per-id merge + stable UIDs) and a persisted
-  per-subscription manifest before any push; the incremental transport + the account/ACL server are net-new
-  (#83) and remain **gated**.
+- **Negative / trade-offs:** protecting local edits needs the persisted per-file-hash manifest + a conflict
+  resolution UI (a real, if bounded, build); requires the aim-storage/identity rebuild (per-id merge + stable
+  UIDs) and the persisted per-subscription manifest before any push; the incremental transport + the
+  account/ACL server are net-new (#83) and remain **gated**.
 - **Known limitations & follow-ups:** the **server + accounts/ACL + incremental wire** (#83) is unbuilt and
-  is the gate for the *push/pull* machinery; a future **3-way content merge** to protect student edits;
-  **managed-AI/billing** and the **public deck tier** (moderation/COPPA) stay Phase-5 defer-hard. **Do-now,
-  ungated slices** (they fix live solo-multi-device bugs and need no server): conflict-copy detection; the
-  aim per-id merge + stable UIDs; the id-keyed reconcile rewrite + persisted manifest (wire it even before a
-  server, against the existing `FakeRegistryClient`).
+  is the gate for the *push/pull* machinery; the **interim** before the full three-choice merge UI ships is
+  to **keep the student's copy and flag it** on a detected conflict (never auto-clobber) — the safe default
+  that honors "protect" without the merge engine; **managed-AI/billing** and the **public deck tier**
+  (moderation/COPPA) stay Phase-5 defer-hard. **Do-now, ungated slices** (they fix live solo-multi-device
+  bugs and need no server): conflict-copy detection; the aim per-id merge + stable UIDs; the id-keyed
+  reconcile rewrite + persisted manifest (wire it even before a server, against the existing `FakeRegistryClient`).
 
 ## Validation
 
 - Reconcile tests (against `FakeRegistryClient`): same-id moved card keeps its curve; same-path/different-id
-  collision is refused/quarantined (not overwritten); same-id update overwrites content but leaves the
-  datum's state + a student-authored sibling untouched; a datum dropped from the manifest goes dormant
-  (ADR-0020), not deleted; deletion never fires on mere lens-absence.
+  collision is refused/quarantined; a clean update (student didn't touch the card) applies; a **conflict**
+  (student edited it) never silently clobbers — it raises the three-way choice, and the interim keeps the
+  local copy + flags it; the datum's state + a student-authored sibling stay untouched; a datum dropped from
+  the manifest goes dormant (ADR-0020), not deleted; deletion never fires on mere lens-absence.
 - Conflict-copy test: `*.sync-conflict-*` / `" 2.md"` files are detected, not ingested as new cards, and
   counted in the summary.
 - Aim iTIP tests: a definition re-push with a higher SEQUENCE on the **date** flips the overlay to

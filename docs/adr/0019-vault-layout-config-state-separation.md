@@ -1,6 +1,6 @@
 # ADR 0019 — Vault layout: config/state separation, the `_onyx/` namespace, per-deck directories
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-28
 - **Deciders:** Kyle Uehlein (+ AI-assisted scaffolding; 3 adversarial research passes, 45 agents)
 - **Related:** Resolves part of the **"Sync & source-of-truth" open decision** in
@@ -49,8 +49,13 @@ and the siblings mechanize.
 - The **atomic unit** is the **quizzable datum** (today: `cardId::sectionSlug`). A datum owns **exactly
   one global scheduling state**; advancing it anywhere advances it everywhere (Anki-style, knowledge-keyed —
   validated against Anki/RemNote/SuperMemo/Logseq).
-- A **deck** is a saved **query lens** (a `CardQuery` over card-intrinsic attributes) + aims + priority +
-  state. A **lens SELECTS/SURFACES** units; it **never owns** a datum's state or its flow. Decks overlap.
+- A **deck** is a saved **query lens** — **exactly one** `CardQuery` over card-intrinsic attributes — plus
+  aims + priority + state. A **lens SELECTS/SURFACES** units; it **never owns** a datum's state or its flow.
+  Decks overlap. A deck spanning several **flows** (SWE = learn + algo + system-design + behavioral) is
+  **emergent**: the one lens matches cards of several *kinds*, and each card routes to its flow by its own
+  kind (ADR-0020), never by a per-flow lens. To scope a deck to one flow, add a kind leaf (`… && kind:algo`).
+  **One lens, not a bundle of per-flow lenses** — a per-flow lens would make the *lens* decide the flow,
+  forking a datum's single global state (the illegal state ADR-0020 forbids).
 - A datum's **flow** (hence which sections are quizzable) is a property of the **datum's kind**, resolved
   by a **subject-level rule**, never by the deck lens.
 
