@@ -1,6 +1,9 @@
 # ADR 0012 — Card model: a shared component layer, quizzability precedence, edit-identity
 
-- **Status:** Accepted
+- **Status:** Accepted — **amended by [ADR-0020](0020-card-and-scheduling-model.md)** (2026-09-28: section
+  rekey becomes **index-diff-driven** so an external heading rename no longer orphans the curve; the
+  edit-identity RESET becomes a mergeable **tombstone**, not a hard delete; per-card `quiz:`/`quizzable:`
+  overrides are removed — quizzability derives purely from card-kind).
 - **Date:** 2026-09-24
 - **Deciders:** Kyle Uehlein
 - **Related:** `docs/user_stories/card.md` (the spine — this ADR records the load-bearing rulings), `browse.md`

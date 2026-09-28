@@ -88,8 +88,17 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
 - **Sync & source-of-truth** (the big one): when a deck is pulled from upstream, who owns truth
   (publisher vs puller)? read-only decks to stay in sync, or free local edits? auto-sync + how to
   handle new/modified upstream content? And — if vaults are backed up to a server — is plain-text
-  storage of *app data* (not content) still worth its cost? → **resolve before the cloud/registry
-  track.**
+  storage of *app data* (not content) still worth its cost?
+  **→ SHAPE RESOLVED (2026-09-28) by [ADR-0019](../adr/0019-vault-layout-config-state-separation.md)
+  /[0020](../adr/0020-card-and-scheduling-model.md)/[0021](../adr/0021-registry-sync-and-teacher-push.md):**
+  an **upstream vault with per-account read/write ACL**; **publisher owns pushed content + aim
+  definitions, puller owns all state + local edits + their aim overlay**; a read-only puller may edit
+  locally but **pull overwrites pulled content** (same card-id) — state + student-authored cards are
+  never touched; the **lens is the sync filter** (structure-preserving), reconciliation is **id-keyed**
+  with deletion scoped to the last-synced manifest; aims travel as **iTIP** author-owned definitions +
+  puller-owned overlays. Config/state separate under **`_onyx/`**; per-device state snapshots resolve the
+  app-data storage cost. The **server + accounts/ACL** (#83) remains the build gate; whether to *protect*
+  a puller's local edits (a 3-way merge vs overwrite) is the one sub-question deliberately deferred.
 - **Competing aims** (tension between concurrent aims — e.g. a general *backend* aim + two *frontend*
   interviews). **Rec (shape agreed 2026-09-22; refined 2026-09-22):**
   - **Readiness never averages** — score each aim on its own knobs, show per-aim, deck headline =

@@ -1,6 +1,9 @@
 # ADR 0003 — Card lifecycle status (`draft`/`active`) + the `deckId` seam
 
-- **Status:** Accepted
+- **Status:** Accepted — the `draft`/`active` status seam stands; the reserved
+  **`(deckId, cardId, sectionSlug)` join-key direction is superseded by
+  [ADR-0020](0020-card-and-scheduling-model.md)** (2026-09-28: the datum key stays deckId-free — a datum is
+  deck-independent, one global state).
 - **Date:** 2026-09-17
 - **Deciders:** Kyle Uehlein (+ AI-assisted scaffolding)
 - **Related:** `docs/content-creation.md` §3 (the Draft/Review gate),

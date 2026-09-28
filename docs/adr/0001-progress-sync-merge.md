@@ -1,6 +1,9 @@
 # ADR 0001 — Progress sync via a convergent snapshot merge
 
-- **Status:** Accepted
+- **Status:** Accepted — **extended by [ADR-0020](0020-card-and-scheduling-model.md)** (2026-09-28:
+  kind-aware merge over one unified state table; a mergeable dormant/tombstone marker so detach/forget
+  can't be resurrected by a peer) and **[ADR-0019](0019-vault-layout-config-state-separation.md)**
+  (per-device `state/<deviceId>.json` files + glob-merge — this ADR's own deferred follow-up).
 - **Date:** 2026-09-17
 - **Deciders:** Kyle Uehlein (+ AI-assisted scaffolding)
 - **Related:** `docs/registry-and-sync.md` §2 (sync), `docs/product-direction.md` §7,

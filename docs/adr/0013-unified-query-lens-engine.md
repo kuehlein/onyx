@@ -1,6 +1,9 @@
 # ADR 0013 — One query/lens engine: Browse filters == deck membership
 
-- **Status:** Accepted
+- **Status:** Accepted — **extended by [ADR-0020](0020-card-and-scheduling-model.md)** (2026-09-28: a
+  **section-granular** predicate (`section:usage`) is added as a **Browse-only** surfacing filter — never
+  persisted into deck membership until a stable section key + a `(cardId,sectionSlug)` denominator exist).
+  The `{kind,value}` discriminated-union serialization is retained.
 - **Date:** 2026-09-25
 - **Deciders:** Kyle Uehlein
 - **Related:** `docs/user_stories/browse.md` (Accepted: "one query API shared by Browse filters and lens creation"; "same

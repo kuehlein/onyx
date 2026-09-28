@@ -592,19 +592,25 @@ The MVP-tagged stories, cloud still absent:
   them again and again today") — FSRS-safe (writes no reviews; see ② cram-vs-durable), reusing the
   gym/practice non-grading session infra, fed by the durability bar + feasibility. Keep the
   non-grading session path reusable in S4/S5 so this drops in cleanly later. (#104)
-- **Vault config + card-model redesign — IN DESIGN (2026-09-27; ADR-0019 forthcoming).** A multi-pass
-  adversarial-research effort (in progress) rethinking how deck/aim config + FSRS state live in the vault.
-  Emerging shape: split human-neutral **config vs app-owned state**; a namespaced, per-deck config layout
-  (`_onyx/decks/<id>/`, visible so it syncs on iOS); **thin cards** — a card's flow + quizzable units derive
-  from its KIND via a subject-level selector (no mandatory `type` field), never the deck lens;
-  **knowledge-keyed SRS** (one global scheduling state per datum; decks/lenses are access paths that SURFACE
-  units, never own their state/flow); multi-device-safe merge (per-device snapshots + per-id `study-goals`
-  merge). Post-MVP + gated on the parked *sync & source-of-truth* decision: the **lens-as-sync-filter**
-  structure-preserving push/pull, and **calendar-invite (iTIP) multi-source aims** (self + teacher + TA;
-  author-owned definition + puller-owned overlay). Spikes: **#155** — unify the flow scheduling models
-  (flashcard / two-clock / system-design / behavioral) into as few kinds as possible (is spaced repetition
-  valid for skills, or do we want one uniform state record + a pluggable scheduler); **#156** — flow-specific
-  authoring templates for card uniformity. Charter + sequenced plan land in **ADR-0019** after the research pass.
+- **Vault config + card-model redesign — DESIGNED (2026-09-28; [ADR-0019](adr/0019-vault-layout-config-state-separation.md)
+  /[0020](adr/0020-card-and-scheduling-model.md)/[0021](adr/0021-registry-sync-and-teacher-push.md), all
+  Proposed).** A multi-pass adversarial-research effort (45 agents over 3 passes) rethought how deck/aim
+  config + FSRS state live in the vault. **0019 (charter):** split **config vs state vs content**; a
+  namespaced, per-deck layout under a **visible `_onyx/`** (`_onyx/decks/<id>/`, iOS-sync-safe);
+  per-device `state/<deviceId>.json` + glob-merge (closes the multi-device write race); the guiding
+  principle — *the datum owns its one global state; decks/lenses are access paths.* **0020 (card/SRS
+  model):** **knowledge-keyed** deckId-free datum (supersedes ADR-0003's reserved key); **thin cards** —
+  flow + quizzable units derive from a card-intrinsic **`kind:`** via a subject selector (no mandatory
+  `type`), never the deck lens; **one uniform state record + a pluggable per-kind scheduler** (#155 verdict:
+  ~2 functions — recall-FSRS + practice — *not* one universal curve; transfer + behavioral coverage stay
+  separate readiness axes); **retain-but-detach** lifecycle (mergeable dormant/tombstone marker;
+  index-diff section rekey). **0021 (sync/push — post-MVP, gated on the #83 server):** account-based
+  upstream ACL; **lens-as-sync-filter** structure-preserving export/pull; **id-keyed reconcile,
+  overwrite-on-pull** content (state + student cards untouched; different-id collisions quarantined);
+  **iTIP** multi-source aims (author definition + puller overlay, one-way publish). Resolves the parked
+  *sync & source-of-truth* decision (user_stories/index.md). Spikes folded in: **#155** (flow-model
+  unification), **#156** (authoring templates). **Do-now, ungated slices** (fix live solo-multi-device
+  bugs): conflict-copy detection, aim per-id merge + stable UIDs, the `_onyx/` layout + per-deck split.
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;

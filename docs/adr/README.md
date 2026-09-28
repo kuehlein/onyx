@@ -45,3 +45,6 @@ belong in code comments + the PR description, not an ADR.
 | [0016](0016-derived-new-material-ceiling.md) | Derived new-material count: the sustainable ceiling (#114 Phase B) | Accepted |
 | [0017](0017-per-aim-importance-allocation.md) | Per-aim importance: a user weight on allocation (not readiness) (#136) | Accepted |
 | [0018](0018-cross-deck-allocation-priority-tiers.md) | Cross-deck allocation: priority tiers, engine-derived split, per-deck floor (#137) | Accepted |
+| [0019](0019-vault-layout-config-state-separation.md) | Vault layout: config/state separation, the `_onyx/` namespace, per-deck directories | Proposed |
+| [0020](0020-card-and-scheduling-model.md) | Card & scheduling model: knowledge-keyed data, thin cards, one uniform state + pluggable scheduler | Proposed |
+| [0021](0021-registry-sync-and-teacher-push.md) | Registry sync & teacher-push: account-based upstream, lens-as-filter, overwrite-on-pull, iTIP aims | Proposed |
