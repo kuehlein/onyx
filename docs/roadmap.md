@@ -628,7 +628,10 @@ The MVP-tagged stories, cloud still absent:
       lens, ADR-0021); shipped 2026-09-28. `budgetWeight` already write-retired (read-only for migration). *Deferred
       per ADR-0019 §4 (delete "once the fold is proven"):* the legacy readers — `onyx-goals*.json`/`onyx-target.json`
       + the `study-goals.json` blob fallback — see **#163** ·
-      **#159** device-id + per-device `_onyx/state/<id>.json` + glob-merge (closes the multi-device write race).
+      **✅ #159** stable Preferences-backed **device id** + per-device `_onyx/state/<deviceId>.json` (each device
+      writes only its own file → no shared-file write race) + **glob-merge** restore across all device files, through
+      the existing convergent `mergeSnapshots`; the pre-#159 single `onyx-state.json` stays read-only back-compat;
+      shipped 2026-09-28.
     - **Wave C — card model** (0020; when multi-subject/authoring needs it): subject-level flow **selector**
       (tag/folder/attribute; flow membership is the lens, the card marker is an optional guardrail, default =
       flashcard) + remove `type`/`quiz` + re-express the 8 engines (characterization-first) → **one uniform
@@ -640,9 +643,11 @@ The MVP-tagged stories, cloud still absent:
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
-    Wave A's independent fix (#157) shipped; Wave B is underway — **#160** (the `_onyx/` layout) + **#161**
-    (per-deck clusters + migration + per-id grain) shipped; next is **#159** (device-id + per-device state),
-    then the ADR-deferred legacy-reader cleanup (**#163**, once the cluster fold is proven).
+    Wave A's independent fix (#157) shipped. **Wave B is complete** — **#160** (the `_onyx/` layout), **#161**
+    (per-deck clusters + migration + per-id grain), and **#159** (device-id + per-device state) all shipped
+    2026-09-28. Remaining in this stream: the ADR-deferred legacy-reader cleanup (**#163**, once the cluster fold is
+    proven in real use). Next architecture stream is **Wave C** (the card & scheduling model, ADR-0020) when
+    multi-subject/authoring needs it — not a v1 gate.
 
 ## Phase 4 — Ship (app store) *(needs macOS/Xcode)*
 - iOS/Android **mobile folder picking** (#82: security-scoped bookmark / SAF); on-device UX pass;
