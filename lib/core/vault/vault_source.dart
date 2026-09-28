@@ -1,5 +1,16 @@
 import 'package:path/path.dart' as p;
 
+/// The vault's app-managed config/state directory (ADR-0019): **visible** (a leading
+/// underscore, not a dot) so it syncs on iOS + iCloud and shows in Obsidian, clearly
+/// app-owned, excluded from the card index. Meta names ([VaultSource.readMeta] etc.)
+/// are POSIX paths *relative to this dir* — e.g. `decks/<id>/deck.json`.
+const String kConfigDir = '_onyx';
+
+/// The pre-ADR-0019 config dir. Read-compat + one-time migration only: a vault with a
+/// `_meta/` but no `_onyx/` is renamed on first access. Kept in the index exclusion so
+/// a stray legacy dir never leaks into the card set.
+const String kLegacyConfigDir = '_meta';
+
 /// True when [relativePath]'s filename matches a folder-syncer **conflict-copy**
 /// pattern — the duplicate a sync tool (Syncthing / Dropbox / iCloud desktop) spawns
 /// when two devices edit the same file. A conflict copy carries the original's
@@ -24,12 +35,13 @@ abstract class VaultSource {
   String get rootLabel;
 
   /// Relative POSIX paths of every markdown file eligible for indexing: all
-  /// `.md` files under the root except those inside a `_meta/` folder or a
-  /// hidden (`.`-prefixed) folder such as `.obsidian/`. Sorted for determinism.
+  /// `.md` files under the root except those inside the config dir ([kConfigDir],
+  /// or the legacy [kLegacyConfigDir]) or a hidden (`.`-prefixed) folder such as
+  /// `.obsidian/`. Sorted for determinism.
   Future<List<String>> listCardPaths();
 
   /// Relative POSIX paths of EVERY file under the root (any extension), with the
-  /// same `_meta/` + hidden-folder exclusions as [listCardPaths]. Used to resolve
+  /// same config-dir + hidden-folder exclusions as [listCardPaths]. Used to resolve
   /// `[[wikilinks]]`: a link is only "dangling" when no file of ANY type shares
   /// its name, so resolution follows file-type support instead of assuming `.md`.
   /// Defaults to [listCardPaths] (the `.md`-only set) for sources that don't yet
@@ -40,17 +52,21 @@ abstract class VaultSource {
   Future<String> readCard(String relativePath);
 
   /// Relative POSIX paths of every subject-config file in the vault — files named
-  /// `onyx-subject.yaml`, anywhere (including inside `_meta/` folders, which
+  /// `onyx-subject.yaml`, anywhere (including inside the visible config dir, which
   /// [listCardPaths] excludes). Each declares a subject rooted at its enclosing
   /// directory (see `templateRootDir`). A vault with one (or zero) is the
   /// single-subject case; multiple make it a multi-subject vault (task #30d).
   Future<List<String>> listConfigPaths();
 
-  /// Reads app-managed metadata at `_meta/[name]` (e.g. the SRS backup
-  /// snapshot), or null if it doesn't exist. `_meta/` is excluded from indexing.
+  /// Reads app-managed config/state under the config dir at `[kConfigDir]/[name]`
+  /// (e.g. the SRS backup snapshot), or null if it doesn't exist. [name] is a POSIX
+  /// path relative to the config dir and MAY be nested (`decks/<id>/deck.json`). The
+  /// config dir is excluded from indexing.
   Future<String?> readMeta(String name);
 
-  /// Atomically writes [content] to `_meta/[name]`, creating `_meta/` if needed.
+  /// Atomically writes [content] to `[kConfigDir]/[name]`, creating the config dir
+  /// and any parent folders of [name] as needed (so a nested `decks/<id>/deck.json`
+  /// works). [name] is a POSIX path relative to the config dir.
   Future<void> writeMeta(String name, String content);
 
   /// Atomically writes [content] to the vault file at [relativePath] (POSIX,

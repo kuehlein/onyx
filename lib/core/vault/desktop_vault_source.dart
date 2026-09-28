@@ -73,8 +73,9 @@ class DesktopVaultSource implements VaultSource {
       if (entity is! File) continue;
       final relative = p.relative(entity.path, from: rootPath);
       final segments = p.split(relative);
-      // Skip hidden folders (e.g. `.obsidian/`); `_meta/` is NOT excluded here —
-      // that's where the legacy single-subject config lives.
+      // Skip hidden (`.`-prefixed) folders; the VISIBLE config dir (`_onyx/`) is NOT
+      // skipped — a subject template can live there. (Underscore ≠ dot, so it's
+      // walked; a dot-config dir would be silently skipped here — see ADR-0019.)
       if (segments.any((s) => s.startsWith('.'))) continue;
       if (segments.last != 'onyx-subject.yaml') continue;
       paths.add(p.posix.joinAll(segments));
@@ -89,16 +90,25 @@ class DesktopVaultSource implements VaultSource {
 
   @override
   Future<String?> readMeta(String name) async {
-    final file = File(p.join(rootPath, '_meta', name));
-    return file.existsSync() ? file.readAsString() : null;
+    final rel = p.joinAll(p.posix.split(name));
+    // Prefer the current config dir; fall back to a legacy `_meta/` file so an
+    // un-migrated vault still reads (ADR-0019). Non-destructive: reads never rename
+    // — safe for read-only committed fixtures; writes land in `_onyx/` (below), and
+    // Wave B's migration sweeps any lingering legacy files.
+    final onyx = File(p.join(rootPath, kConfigDir, rel));
+    if (onyx.existsSync()) return onyx.readAsString();
+    final legacy = File(p.join(rootPath, kLegacyConfigDir, rel));
+    return legacy.existsSync() ? legacy.readAsString() : null;
   }
 
   @override
   Future<void> writeMeta(String name, String content) async {
-    final dir = Directory(p.join(rootPath, '_meta'));
+    // Always write to the current config dir. [name] may be nested (e.g.
+    // decks/<id>/deck.json) — create the target's parent, not just the config root,
+    // so the atomic rename lands (mirrors writeFile).
+    final target = p.join(rootPath, kConfigDir, p.joinAll(p.posix.split(name)));
+    final dir = Directory(p.dirname(target));
     if (!dir.existsSync()) dir.createSync(recursive: true);
-    // Atomic: write to a temp file, then rename over the target.
-    final target = p.join(dir.path, name);
     final tmp = File('$target.${_tmpSeq++}.tmp');
     await tmp.writeAsString(content, flush: true);
     await tmp.rename(target);
@@ -122,8 +132,11 @@ class DesktopVaultSource implements VaultSource {
     if (file.existsSync()) await file.delete();
   }
 
-  /// Skip `_meta/` (vault metadata) and hidden folders like `.obsidian/`.
-  bool _excluded(String relative) => p
-      .split(relative)
-      .any((segment) => segment == '_meta' || segment.startsWith('.'));
+  /// Skip the config dir (`_onyx/`, or a legacy `_meta/` mid-migration) and hidden
+  /// folders like `.obsidian/`. Both config-dir names stay excluded so a stray legacy
+  /// dir never leaks into the card set.
+  bool _excluded(String relative) => p.split(relative).any((segment) =>
+      segment == kConfigDir ||
+      segment == kLegacyConfigDir ||
+      segment.startsWith('.'));
 }

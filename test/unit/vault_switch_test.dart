@@ -74,7 +74,7 @@ void main() {
         (await db.select(db.srsStates).get()).map((s) => s.cardId).toSet();
 
     bool snapshotExists(Directory d) =>
-        File(p.join(d.path, '_meta', SnapshotService.fileName)).existsSync();
+        File(p.join(d.path, '_onyx', SnapshotService.fileName)).existsSync();
 
     test('switching preserves the old folder and never mixes it into the new',
         () async {

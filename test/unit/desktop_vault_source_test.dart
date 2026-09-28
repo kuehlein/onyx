@@ -44,4 +44,27 @@ void main() {
   test('rootLabel is the path', () {
     expect(source.rootLabel, root.path);
   });
+
+  test('writeMeta/readMeta round-trip a NESTED config subpath (ADR-0019)',
+      () async {
+    await source.writeMeta('decks/swe/deck.json', '{"id":"swe"}');
+    expect(await source.readMeta('decks/swe/deck.json'), '{"id":"swe"}');
+    // Lands physically under the visible config dir _onyx/, parents auto-created.
+    expect(
+      File(p.join(root.path, '_onyx', 'decks', 'swe', 'deck.json'))
+          .existsSync(),
+      isTrue,
+    );
+  });
+
+  test('readMeta falls back to a legacy _meta/ file; writeMeta lands in _onyx/',
+      () async {
+    write('_meta/glossary.md', '# Glossary\n'); // an un-migrated legacy file
+    expect(await source.readMeta('glossary.md'), '# Glossary\n'); // read-compat
+    // A write of the same name lands in _onyx/ and then wins over the legacy copy.
+    await source.writeMeta('glossary.md', '# New\n');
+    expect(await source.readMeta('glossary.md'), '# New\n');
+    expect(
+        File(p.join(root.path, '_onyx', 'glossary.md')).existsSync(), isTrue);
+  });
 }

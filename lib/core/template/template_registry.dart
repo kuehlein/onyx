@@ -8,21 +8,25 @@
 /// registry, which is byte-identical to the pre-#30d single-subject behavior.
 library;
 
+import '../vault/vault_source.dart' show kConfigDir, kLegacyConfigDir;
 import 'deck_template.dart';
 
 /// The subject subtree root (POSIX, relative to the vault root) for a discovered
-/// config file [configPath]. A config in a `_meta/` folder — the vault root's or a
-/// subtree's own — roots the subject at the enclosing directory; otherwise the
-/// config's own directory is the root. The vault root maps to `''` (a whole-vault
-/// subject).
+/// config file [configPath]. A config in the config dir (`_onyx/`, or a legacy
+/// `_meta/`) — the vault root's or a subtree's own — roots the subject at the
+/// enclosing directory; otherwise the config's own directory is the root. The vault
+/// root maps to `''` (a whole-vault subject).
 ///
-///  * `_meta/onyx-subject.yaml`        → `''`        (legacy whole-vault subject)
-///  * `onyx-subject.yaml`              → `''`        (config at the vault root)
-///  * `korean/onyx-subject.yaml`       → `korean`    (subtree subject)
-///  * `korean/_meta/onyx-subject.yaml` → `korean`    (subtree subject, meta form)
+///  * `_onyx/onyx-subject.yaml`         → `''`        (whole-vault subject)
+///  * `onyx-subject.yaml`               → `''`        (config at the vault root)
+///  * `korean/onyx-subject.yaml`        → `korean`    (subtree subject)
+///  * `korean/_onyx/onyx-subject.yaml`  → `korean`    (subtree subject, config-dir form)
 String templateRootDir(String configPath) {
   final parts = configPath.split('/')..removeLast(); // drop the filename
-  if (parts.isNotEmpty && parts.last == '_meta') parts.removeLast();
+  if (parts.isNotEmpty &&
+      (parts.last == kConfigDir || parts.last == kLegacyConfigDir)) {
+    parts.removeLast();
+  }
   return parts.join('/');
 }
 

@@ -73,7 +73,7 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync(_card('b1', 'biology'));
     // Two stored goals: folder lenses over the same vault, alpha prioritized.
-    File(p.join(root.path, '_meta', 'study-goals.json'))
+    File(p.join(root.path, '_onyx', 'study-goals.json'))
       ..createSync(recursive: true)
       ..writeAsStringSync('''
 [
@@ -303,7 +303,7 @@ void main() {
 
     // B5 write-through: the migration durably persists the folded default so the
     // legacy files are no longer needed. Wait for the fire-and-forget save.
-    await _awaitFile(File(p.join(legacy.path, '_meta', 'study-goals.json')));
+    await _awaitFile(File(p.join(legacy.path, '_onyx', 'study-goals.json')));
   });
 
   test('editing the default goal\'s interviews persists it (B4a cutover)',
@@ -332,7 +332,7 @@ void main() {
             return db;
           }),
         ]);
-    final storeFile = File(p.join(legacy.path, '_meta', 'study-goals.json'));
+    final storeFile = File(p.join(legacy.path, '_onyx', 'study-goals.json'));
 
     // First load: the migrated default with the one legacy interview (id kept).
     // B5 write-through persists it durably; wait for that fire-and-forget save.
@@ -375,7 +375,8 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync(
           '{"level":"senior","company":"faang","track":"backend"}');
-    final storeFile = File(p.join(legacy.path, '_meta', 'study-goals.json'))
+    final storeFile = File(p.join(legacy.path, '_onyx', 'study-goals.json'))
+      ..createSync(recursive: true) // the _onyx/ config dir may not exist yet
       ..writeAsStringSync('[{"id":"old","name":"Old","templateId":"swe",'
           '"state":"graduated"}]');
 

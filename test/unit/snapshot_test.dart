@@ -54,9 +54,9 @@ void main() {
       await SnapshotService(db1, source).export();
       await db1.close();
 
-      // The snapshot file landed in _meta/.
+      // The snapshot file landed in the config dir (_onyx/, ADR-0019).
       expect(
-        File(p.join(root.path, '_meta', SnapshotService.fileName)).existsSync(),
+        File(p.join(root.path, '_onyx', SnapshotService.fileName)).existsSync(),
         isTrue,
       );
 
