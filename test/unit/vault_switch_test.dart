@@ -73,8 +73,11 @@ void main() {
     Future<Set<String>> cardsInDb() async =>
         (await db.select(db.srsStates).get()).map((s) => s.cardId).toSet();
 
-    bool snapshotExists(Directory d) =>
-        File(p.join(d.path, '_onyx', SnapshotService.fileName)).existsSync();
+    bool snapshotExists(Directory d) {
+      final dir = Directory(p.join(d.path, '_onyx', SnapshotService.stateDir));
+      return dir.existsSync() &&
+          dir.listSync().whereType<File>().any((f) => f.path.endsWith('.json'));
+    }
 
     test('switching preserves the old folder and never mixes it into the new',
         () async {

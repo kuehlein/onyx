@@ -4,17 +4,24 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import '../dev.dart';
+import '../settings/device_id.dart';
+import '../settings/preferences_repository.dart';
 import '../vault/vault_source.dart';
 
-/// Backs up study progress to a single JSON file in the vault's `_meta/` folder,
-/// and restores it. The vault is the durable store (it syncs via Obsidian and
-/// survives app reinstalls), so this is what lets you pick up where you left off
-/// if the local database is lost.
+/// Backs up study progress to the vault's config dir and restores it. The vault is
+/// the durable store (it syncs via the folder-sync tool and survives app reinstalls),
+/// so this is what lets you pick up where you left off if the local database is lost.
 ///
-/// Cross-device reconciliation is a **convergent merge** — last-review-wins on
-/// keyed state, union on the event logs — so two devices that share the folder
-/// never clobber each other's progress. See [mergeSnapshots] and ADR-0001
-/// (`docs/adr/0001-progress-sync-merge.md`).
+/// **Per-device files** (ADR-0019): each device writes only its own
+/// `_onyx/state/<deviceId>.json`, so two devices sharing the folder never write the
+/// *same* file — closing the same-file write race the single `onyx-state.json` had
+/// (ADR-0001's deferred follow-up). Restore **glob-merges every** device's file (plus
+/// the pre-#159 single file, read-only back-compat) into local progress.
+///
+/// Cross-device reconciliation is a **convergent merge** — last-review-wins on keyed
+/// state, union on the event logs — so any set of devices that share the folder reach
+/// the same result with no data loss, in any sync order. See [mergeSnapshots] and
+/// ADR-0001 (`docs/adr/0001-progress-sync-merge.md`).
 ///
 /// Snapshots `srs_state` (your schedule — the essential thing), `reviews` (your
 /// history — for future stats / FSRS tuning), `applied_attempts` (the Phase B
@@ -28,10 +35,27 @@ class SnapshotService {
   final AppDatabase _db;
   final VaultSource _source;
 
-  /// Dev builds read/write a separate file so desktop experimenting never
-  /// overwrites the real, synced snapshot.
-  static String get fileName =>
+  /// The per-device state dir under the config dir: `state/<deviceId>.json`.
+  static const stateDir = 'state';
+
+  /// This device's own state file (config-dir-relative). Dev builds use a `.dev.json`
+  /// suffix so desktop experimenting never mixes with the real, synced snapshot.
+  static String deviceFile(String deviceId) => isDevDataMode
+      ? '$stateDir/$deviceId.dev.json'
+      : '$stateDir/$deviceId.json';
+
+  /// The pre-#159 single shared snapshot file. **Read-only** back-compat: merged in on
+  /// restore, never written anymore (writing a shared file would reopen the write race).
+  static String get legacyFileName =>
       isDevDataMode ? 'onyx-state.dev.json' : 'onyx-state.json';
+
+  /// True if [name] (a config-dir-relative path) is a state file for the CURRENT data
+  /// mode — dev reads only `.dev.json`, prod only plain `.json`.
+  static bool _matchesMode(String name) =>
+      name.endsWith('.json') && (name.endsWith('.dev.json') == isDevDataMode);
+
+  Future<String> _deviceId() => resolveDeviceId(PreferencesRepository(_db));
+
   // Bumped as tables join the snapshot (v2: appliedAttempts, v3: recognition).
   // Older snapshots restore fine — a missing key just restores nothing for it.
   static const _version = 3;
@@ -39,8 +63,11 @@ class SnapshotService {
   Future<bool> isDbEmpty() async =>
       (await (_db.select(_db.srsStates)..limit(1)).get()).isEmpty;
 
-  Future<bool> hasSnapshot() async =>
-      (await _source.readMeta(fileName)) != null;
+  Future<bool> hasSnapshot() async {
+    final stateFiles = await _source.listMeta(stateDir);
+    if (stateFiles.any(_matchesMode)) return true;
+    return (await _source.readMeta(legacyFileName)) != null;
+  }
 
   /// The current DB progress as a snapshot payload — the same shape written to
   /// disk. The "local" side of the merge in both [export] and [restore].
@@ -59,32 +86,56 @@ class SnapshotService {
     };
   }
 
-  /// The on-disk snapshot, decoded, or null if none exists.
-  Future<Map<String, dynamic>?> _readSnapshot() async {
-    final raw = await _source.readMeta(fileName);
+  /// One on-disk snapshot file, decoded, or null if absent/unparseable.
+  Future<Map<String, dynamic>?> _readOne(String name) async {
+    final raw = await _source.readMeta(name);
     if (raw == null) return null;
-    return jsonDecode(raw) as Map<String, dynamic>;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null; // a corrupt/half-synced file is skipped, not fatal
+    }
   }
 
-  /// Write current progress to the vault snapshot, **merged with whatever is
-  /// already on disk** (read-merge-write). Merging on export preserves a snapshot
-  /// that arrived from another device via folder-sync but has not been imported
-  /// locally yet, instead of clobbering it. See [mergeSnapshots] + ADR-0001.
+  /// Every on-disk snapshot merged into one payload: all per-device state files (for
+  /// the current data mode) plus the pre-#159 single file (read-only back-compat).
+  /// Null if none exist. The merge is convergent, so file order doesn't matter.
+  Future<Map<String, dynamic>?> _readAllSnapshots() async {
+    final names = [
+      for (final n in await _source.listMeta(stateDir))
+        if (_matchesMode(n)) n,
+      legacyFileName,
+    ];
+    Map<String, dynamic>? acc;
+    for (final n in names) {
+      final one = await _readOne(n);
+      if (one == null) continue;
+      acc = acc == null ? one : mergeSnapshots(acc, one);
+    }
+    return acc;
+  }
+
+  /// Write current progress to **this device's own** state file, merged with its own
+  /// prior contents so a transiently-empty DB can never shrink it (union-only). Only
+  /// this device ever writes this file, so a folder-syncer never sees two devices
+  /// write the same file — the write race the single shared file had. Other devices'
+  /// files (and the legacy one) are untouched. See [mergeSnapshots] + ADR-0001/0019.
   Future<void> export() async {
+    final name = deviceFile(await _deviceId());
     final local = await _localPayload();
-    final existing = await _readSnapshot();
-    final merged = existing == null ? local : mergeSnapshots(existing, local);
-    await _source.writeMeta(fileName, jsonEncode(merged));
+    final own = await _readOne(name);
+    final merged = own == null ? local : mergeSnapshots(own, local);
+    await _source.writeMeta(name, jsonEncode(merged));
   }
 
-  /// Merge the vault snapshot into local progress. Returns the number of sections
-  /// after the merge, or 0 if there is no snapshot. **Non-destructive:** the DB is
-  /// rewritten to the *union* of local + snapshot, so no review or attempt is lost
-  /// and per-section state resolves to the most recently reviewed side. (The
-  /// `DELETE`+insert is safe here because the merged set is a superset of local —
-  /// the property the old destructive restore lacked.) See [mergeSnapshots] + ADR-0001.
+  /// Merge every device's snapshot into local progress. Returns the number of sections
+  /// after the merge, or 0 if there are none. **Non-destructive:** the DB is rewritten
+  /// to the *union* of local + all snapshots, so no review or attempt is lost and
+  /// per-section state resolves to the most recently reviewed side. (The `DELETE`+insert
+  /// is safe because the merged set is a superset of local — the property the old
+  /// destructive restore lacked.) See [mergeSnapshots] + ADR-0001.
   Future<int> restore() async {
-    final incoming = await _readSnapshot();
+    final incoming = await _readAllSnapshots();
     if (incoming == null) return 0;
     final local = await _localPayload();
     final merged = mergeSnapshots(local, incoming);
@@ -94,7 +145,7 @@ class SnapshotService {
 
   /// Wipe the local progress tables (the derived cache) — used when SWITCHING
   /// content folders, *after* the outgoing folder's snapshot has been exported.
-  /// Each folder's `_meta` snapshot stays the durable copy (ADR-0001/0002), so
+  /// Each folder's `_onyx/state/` snapshot stays the durable copy (ADR-0001/0002), so
   /// switching away and back loses nothing. Table set kept in sync with
   /// [_applyPayload].
   static Future<void> clearProgress(AppDatabase db) async {

@@ -54,9 +54,15 @@ void main() {
       await SnapshotService(db1, source).export();
       await db1.close();
 
-      // The snapshot file landed in the config dir (_onyx/, ADR-0019).
+      // A per-device state file landed under _onyx/state/ (ADR-0019).
+      final stateDir =
+          Directory(p.join(root.path, '_onyx', SnapshotService.stateDir));
       expect(
-        File(p.join(root.path, '_onyx', SnapshotService.fileName)).existsSync(),
+        stateDir.existsSync() &&
+            stateDir
+                .listSync()
+                .whereType<File>()
+                .any((f) => f.path.endsWith('.json')),
         isTrue,
       );
 
@@ -157,10 +163,10 @@ void main() {
       expect((await d2.select(d2.srsStates).get()).map((s) => s.cardId).toSet(),
           {'X', 'Y'});
 
-      // Device 2 exports; the file must still contain X (read-merge-write).
+      // Device 2 exports to ITS OWN file (containing X + Y, since its DB has both).
       await SnapshotService(d2, source).export();
 
-      // Device 1 merges and also converges to X + Y.
+      // Device 1 glob-merges every device's file and also converges to X + Y.
       await SnapshotService(d1, source).restore();
       expect((await d1.select(d1.srsStates).get()).map((s) => s.cardId).toSet(),
           {'X', 'Y'});
@@ -170,6 +176,66 @@ void main() {
 
       await d1.close();
       await d2.close();
+    });
+
+    test('each device writes its OWN file (no shared-file write race)',
+        () async {
+      final source = DesktopVaultSource(root.path);
+      final d1 = AppDatabase.withExecutor(NativeDatabase.memory());
+      final d2 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(d1).recordReview(
+          cardId: 'X',
+          sectionSlug: 's',
+          grade: 3,
+          outcome: _outcome(DateTime.utc(2026, 5, 1, 9), 8));
+      await SrsRepository(d2).recordReview(
+          cardId: 'Y',
+          sectionSlug: 's',
+          grade: 3,
+          outcome: _outcome(DateTime.utc(2026, 5, 2, 9), 8));
+      await SnapshotService(d1, source).export();
+      await SnapshotService(d2, source).export();
+
+      // Two devices → two distinct files under state/; neither wrote the other's
+      // (nor a shared file), so a folder-syncer has nothing to conflict on.
+      final files =
+          Directory(p.join(root.path, '_onyx', SnapshotService.stateDir))
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.json'))
+              .toList();
+      expect(files.length, 2);
+      await d1.close();
+      await d2.close();
+    });
+
+    test('restores a pre-#159 legacy single file (read-only back-compat)',
+        () async {
+      final at = DateTime.utc(2026, 6, 1, 9);
+      final source = DesktopVaultSource(root.path);
+
+      // Build a valid snapshot payload by exporting, then MOVE it to the legacy
+      // single-file path — simulating a vault written before #159.
+      final seed = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(seed).recordReview(
+          cardId: 'L', sectionSlug: 's', grade: 3, outcome: _outcome(at, 8));
+      await SnapshotService(seed, source).export();
+      await seed.close();
+      final stateDir =
+          Directory(p.join(root.path, '_onyx', SnapshotService.stateDir));
+      final deviceFile = stateDir.listSync().whereType<File>().first;
+      final payload = deviceFile.readAsStringSync();
+      stateDir.deleteSync(recursive: true); // no per-device files remain
+      File(p.join(root.path, '_onyx', SnapshotService.legacyFileName))
+        ..createSync(recursive: true)
+        ..writeAsStringSync(payload);
+
+      final db = AppDatabase.withExecutor(NativeDatabase.memory());
+      final svc = SnapshotService(db, source);
+      expect(await svc.hasSnapshot(), isTrue, reason: 'the legacy file counts');
+      expect(await svc.restore(), 1);
+      expect((await db.select(db.srsStates).get()).single.cardId, 'L');
+      await db.close();
     });
   },
       skip: _sqliteAvailable
