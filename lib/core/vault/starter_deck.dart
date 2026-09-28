@@ -3,7 +3,7 @@ import 'vault_source.dart';
 /// A vault **skeleton** — relative POSIX path → file content — that, written into
 /// a fresh study folder, produces a complete, self-documenting Onyx vault (task
 /// #30, G5b). It carries three things: a `CLAUDE.md` so an AI opening the folder
-/// is oriented and can author cards, a `_meta/onyx-subject.yaml` so the folder is
+/// is oriented and can author cards, a `_onyx/onyx-subject.yaml` so the folder is
 /// a defined subject, and a small **subject-neutral** starter deck so first-run
 /// lands on real cards instead of the empty state (never a SWE sample — see
 /// docs/content-creation.md §2.3).
@@ -21,7 +21,7 @@ class VaultTemplate {
   final String id;
   final String label;
 
-  /// Relative POSIX path → file content. `_meta/…` and nested paths are fine;
+  /// Relative POSIX path → file content. `_onyx/…` and nested paths are fine;
   /// [VaultSource.writeFile] creates parent directories.
   final Map<String, String> files;
 }
@@ -45,7 +45,7 @@ final VaultTemplate neutralStarterTemplate = VaultTemplate(
   label: 'General study',
   files: {
     'CLAUDE.md': _neutralClaudeMd,
-    '_meta/onyx-subject.yaml': _neutralSubjectYaml,
+    '_onyx/onyx-subject.yaml': _neutralSubjectYaml,
     for (final c in _starterCards) '${c.slug}.md': c.markdown,
   },
 );
@@ -104,8 +104,8 @@ named Resources, Related, and Variants are reference-only (never quizzed).
 
 ## How this vault is configured
 
-`_meta/onyx-subject.yaml` declares this subject — its card types (flows) and,
-optionally, its parse rules and terminology. Onyx skips everything in `_meta/`.
+`_onyx/onyx-subject.yaml` declares this subject — its card types (flows) and,
+optionally, its parse rules and terminology. Onyx skips everything in `_onyx/`.
 Edit it to shape what this vault studies.
 
 > Want the full authoring method + conventions in this vault? Install them from

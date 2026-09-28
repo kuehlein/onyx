@@ -163,11 +163,11 @@ void main() {
     expect(reloaded, chosen);
 
     // …and the folder now holds the scaffolded skeleton: an orientation
-    // CLAUDE.md, a subject config under _meta/, and real parseable starter cards
+    // CLAUDE.md, a subject config under _onyx/, and real parseable starter cards
     // (so first-run lands on cards, not the empty state).
     expect(File('${dir.path}/CLAUDE.md').existsSync(), isTrue,
         reason: 'scaffold writes a CLAUDE.md orientation');
-    expect(File('${dir.path}/_meta/onyx-subject.yaml').existsSync(), isTrue,
+    expect(File('${dir.path}/_onyx/onyx-subject.yaml').existsSync(), isTrue,
         reason: 'scaffold writes a subject config');
     const parser = CardParser();
     final cards = [
