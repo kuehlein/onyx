@@ -53,9 +53,13 @@ class _FakeSource implements VaultSource {
   @override
   Future<void> deleteFile(String relativePath) async {}
   @override
-  Future<List<String>> listMeta(String subdir) async => const [];
+  Future<List<String>> listMeta(String subdir) async =>
+      meta.keys.where((k) => k.startsWith('$subdir/')).toList()..sort();
   @override
-  Future<void> deleteMeta(String name) async {}
+  Future<void> deleteMeta(String name) async {
+    meta.remove(name);
+    meta.removeWhere((k, _) => k.startsWith('$name/'));
+  }
 }
 
 const _index = IndexResult(

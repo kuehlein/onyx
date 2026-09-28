@@ -83,7 +83,8 @@ void main() {
   });
 
   group('DeckStore', () {
-    test('save then load round-trips; empty/malformed → none', () async {
+    test('save writes per-deck clusters; load round-trips from them (ADR-0019)',
+        () async {
       final src = _FakeSource();
       final store = DeckStore(src);
       expect(await store.load(), isEmpty);
@@ -96,19 +97,90 @@ void main() {
             membership: FolderUnder('korean')),
       ];
       await store.save(goals);
+      // Physically laid out as a per-deck cluster under decks/<id>/.
+      expect(src.meta.keys, contains('decks/korean/deck.json'));
+      expect(src.meta.keys, contains('decks/korean/aims.json'));
+
       final back = await store.load();
       expect(back.single.id, 'korean');
       expect(back.single.membership, isA<FolderUnder>());
+    });
 
+    test('aims live in aims.json; deck.json carries no interviews', () async {
+      final src = _FakeSource();
+      final deck = Deck(
+        id: 'debate',
+        name: 'Debate',
+        templateId: 't',
+        membership: TagIs('intercession'),
+        aims: [
+          Aim(id: 'jury', companyName: 'Jury', levelId: 'deep', rounds: [
+            InterviewRound(
+                id: 'jury-r1', number: 1, date: DateTime(2026, 3, 1)),
+          ]),
+        ],
+      );
+      await DeckStore(src).save([deck]);
+      // The lens/config file must not carry aims — they're split out so a puller's
+      // aim overlay can sit apart from the authored lens (ADR-0021).
+      expect(src.meta['decks/debate/deck.json'], isNot(contains('interviews')));
+      expect(src.meta['decks/debate/aims.json'], contains('jury'));
+      final back = await DeckStore(src).load();
+      expect(back.single.aims.single.id, 'jury');
+    });
+
+    test('removing a deck deletes its cluster (no zombie re-read)', () async {
+      final src = _FakeSource();
+      final store = DeckStore(src);
+      final a =
+          Deck(id: 'a', name: 'A', templateId: 't', membership: TagIs('a'));
+      final b =
+          Deck(id: 'b', name: 'B', templateId: 't', membership: TagIs('b'));
+      await store.save([a, b]);
+      await store.save([a]); // b removed
+      expect((await store.load()).map((g) => g.id), ['a']);
+      expect(src.meta.keys.where((k) => k.startsWith('decks/b/')), isEmpty);
+    });
+
+    test('per-deck layout wins over a stale legacy blob; blob is retired',
+        () async {
+      final src = _FakeSource({
+        // A leftover blob naming a different deck must be ignored once per-deck
+        // dirs exist, and cleaned up on the next save.
+        DeckStore.fileName: jsonEncode([
+          {'id': 'from-blob', 'name': 'x', 'templateId': 't'}
+        ]),
+      });
+      final store = DeckStore(src);
+      await store.save(
+          [Deck(id: 'a', name: 'A', templateId: 't', membership: TagIs('a'))]);
+      expect(src.meta.keys, isNot(contains(DeckStore.fileName))); // retired
+      expect((await store.load()).map((g) => g.id), ['a']);
+    });
+
+    test('blob is read as a fallback + migration source when no per-deck dirs',
+        () async {
+      final src = _FakeSource({
+        DeckStore.fileName: jsonEncode([
+          {
+            'id': 'korean',
+            'name': 'Korean',
+            'templateId': 'k',
+            'membership': {'kind': 'folder', 'value': 'korean'},
+          },
+        ]),
+      });
+      expect((await DeckStore(src).load()).single.id, 'korean');
+      // A wholly unparseable blob → none (fall back to the synthesized default).
       src.meta[DeckStore.fileName] = '{not json';
-      expect(await store.load(), isEmpty);
+      expect(await DeckStore(src).load(), isEmpty);
     });
 
     test('one malformed deck is skipped per-entry, not the whole file',
         () async {
       // Data-safety regression guard: a single bad/hand-edited row in a synced,
-      // user-editable _meta file must NOT drop every deck (which the next save
-      // would then persist as data loss).
+      // user-editable config file must NOT drop every deck (which the next save
+      // would then persist as data loss). Holds for the legacy blob…
       final src = _FakeSource({
         DeckStore.fileName: jsonEncode([
           {
@@ -134,6 +206,20 @@ void main() {
       expect(back.map((g) => g.id), ['korean', 'okbadfield']);
       expect(back.firstWhere((g) => g.id == 'okbadfield').priority,
           PriorityTier.normal);
+    });
+
+    test('…and per-deck: one malformed cluster is skipped, the rest load',
+        () async {
+      final src = _FakeSource({
+        'decks/good/deck.json': jsonEncode({
+          'id': 'good',
+          'name': 'Good',
+          'templateId': 't',
+          'membership': {'kind': 'folder', 'value': 'g'},
+        }),
+        'decks/bad/deck.json': '{ not json',
+      });
+      expect((await DeckStore(src).load()).map((g) => g.id), ['good']);
     });
   });
 

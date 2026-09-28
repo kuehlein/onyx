@@ -302,8 +302,10 @@ void main() {
     expect(iv.rounds.single.date, DateTime(2026, 5, 15));
 
     // B5 write-through: the migration durably persists the folded default so the
-    // legacy files are no longer needed. Wait for the fire-and-forget save.
-    await _awaitFile(File(p.join(legacy.path, '_onyx', 'study-goals.json')));
+    // legacy files are no longer needed. Wait for the fire-and-forget save — now a
+    // per-deck cluster (ADR-0019), not the flat blob.
+    await _awaitFile(File(
+        p.join(legacy.path, '_onyx', 'decks', defaultDeckId, 'deck.json')));
   });
 
   test('editing the default goal\'s interviews persists it (B4a cutover)',
@@ -332,7 +334,9 @@ void main() {
             return db;
           }),
         ]);
-    final storeFile = File(p.join(legacy.path, '_onyx', 'study-goals.json'));
+    // The migrated default persists as a per-deck cluster (ADR-0019), not the blob.
+    final storeFile =
+        File(p.join(legacy.path, '_onyx', 'decks', defaultDeckId, 'deck.json'));
 
     // First load: the migrated default with the one legacy interview (id kept).
     // B5 write-through persists it durably; wait for that fire-and-forget save.
@@ -375,10 +379,16 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync(
           '{"level":"senior","company":"faang","track":"backend"}');
-    final storeFile = File(p.join(legacy.path, '_onyx', 'study-goals.json'))
+    // Pre-seed a legacy blob (a pre-#161 vault): one graduated explicit deck.
+    File(p.join(legacy.path, '_onyx', 'study-goals.json'))
       ..createSync(recursive: true) // the _onyx/ config dir may not exist yet
       ..writeAsStringSync('[{"id":"old","name":"Old","templateId":"swe",'
           '"state":"graduated"}]');
+    // The write-through migrates the blob → per-deck clusters (ADR-0019).
+    final defaultDeckFile =
+        File(p.join(legacy.path, '_onyx', 'decks', defaultDeckId, 'deck.json'));
+    final oldDeckFile =
+        File(p.join(legacy.path, '_onyx', 'decks', 'old', 'deck.json'));
 
     final c = ProviderContainer(overrides: [
       vaultSourceProvider.overrideWithValue(DesktopVaultSource(legacy.path)),
@@ -395,16 +405,10 @@ void main() {
     final goals = await c.read(decksProvider.future);
     expect(goals.single.id, defaultDeckId);
 
-    // The write-through rewrites the pre-existing file, so wait for the default to
-    // appear (not mere existence), then assert the graduated goal wasn't dropped.
-    final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (!storeFile.readAsStringSync().contains('"$defaultDeckId"')) {
-      if (DateTime.now().isAfter(deadline)) {
-        fail('write-through never persisted');
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    expect(storeFile.readAsStringSync().contains('"old"'), isTrue,
+    // Wait for the write-through to persist the default cluster (written after the
+    // graduated one), then assert the graduated deck wasn't dropped.
+    await _awaitFile(defaultDeckFile);
+    expect(oldDeckFile.existsSync(), isTrue,
         reason: 'graduated goal preserved');
   });
 }
