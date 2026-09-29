@@ -646,9 +646,18 @@ The MVP-tagged stories, cloud still absent:
         flow/query config (the import cycle is resolved by layering, not tolerated). **All 8 `no_card_type_branch`
         engines re-expressed** and their ignores dropped — algo→`scheduling==twoClock`, concept→`quizzability==blocklist`,
         behavioral/SD (+ 2 mock screens)→`c.flow?.cardType`; **invariant #2 is now total** (no ignores in `lib/`).
-        Byte-identical (characterization-locked); custom_lint clean. **Remaining in Wave C:** remove mandatory
-        `type:`/`quiz:` (a member-set change) + route the parser through the selector; then **#155** (state-table
-        unification — the DB migration), **#158**, **#153/#156**. *Paused here before #155 per the pace decision.*
+        Byte-identical (characterization-locked); custom_lint clean.
+      - *`quiz:`/`quizzable:` removed **DONE** (2026-09-28):* per-card quizzability overrides gone — quizzability is
+        purely the flow's `QuizzabilityPolicy` (ADR-0020 §2). Byte-identical (zero vault cards used them, verified);
+        the "stop testing this" control moves to an app-state dismiss (#162).
+      - *Mandatory-`type:` removal → **folded into #153** (finding 2026-09-28):* removing the `type:` card-ness gate
+        safely needs a card-ness signal that isn't `type:`. The only vault-safe interim (`has id:`) would treat any
+        general-vault note carrying an incidental `id:` as a flashcard — a **general-vault regression** for **zero**
+        current benefit (all 155 cards have a recognized `type:`; none has `id:` without `type:`). The correct signal
+        is a flow **selector over tags/folder**, which is exactly what **#153** (config-driven templates) authors — so
+        `type:`-optionality lands there, when the parser's card-ness can route through real non-`type:` selectors.
+      - **Remaining in Wave C:** **#155** (state-table unification — the DB migration), **#158**, **#153** (now also
+        carries mandatory-`type:` removal) / **#156**. *Paused before #155 per the pace decision.*
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
