@@ -17,6 +17,7 @@ class IndexResult {
     required this.skipped,
     this.unresolvedLinks = const [],
     this.conflictCopies = const [],
+    this.collisions = const [],
   });
 
   /// Successfully parsed cards — the in-memory index the app reads from.
@@ -35,6 +36,14 @@ class IndexResult {
   /// paths). Skipped — never parsed into cards, so they can't mint a duplicate card
   /// id — and surfaced so the user can review/delete them (ADR-0019/0021).
   final List<String> conflictCopies;
+
+  /// Relative paths of cards that collided on `cardId` — a second (or later) file
+  /// resolving to a `cardId` already claimed by an earlier one (ADR-0022: two files
+  /// with the same explicit `id:`, or the same filename slug across folders). The
+  /// FIRST (by sorted path) wins and indexes; the rest are **skipped, not merged** —
+  /// letting both into `card_cache`/SRS would fuse their schedules under one key.
+  /// Surfaced so the user can disambiguate.
+  final List<String> collisions;
 
   int get cardCount => cards.length;
 
@@ -111,6 +120,8 @@ class VaultIndexer {
     var malformed = 0;
     var skipped = 0;
     final conflictCopies = <String>[];
+    final seenIds = <String>{};
+    final collisions = <String>[];
 
     final registry = _registry ?? activeRegistry;
     final paths = await _source.listCardPaths();
@@ -130,6 +141,11 @@ class VaultIndexer {
         );
         if (card == null) {
           skipped++;
+        } else if (!seenIds.add(card.id)) {
+          // Its cardId is already claimed by an earlier (sorted-first) file —
+          // indexing both would fuse their schedules under one key. Skip + report,
+          // never merge (ADR-0022). `paths` is sorted, so "first wins" is stable.
+          collisions.add(path);
         } else {
           cards.add(card);
         }
@@ -178,6 +194,7 @@ class VaultIndexer {
       skipped: skipped,
       unresolvedLinks: unresolvedLinks,
       conflictCopies: conflictCopies,
+      collisions: collisions,
     );
   }
 

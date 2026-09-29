@@ -163,6 +163,24 @@ void main() {
       // The three real cards cache once each — no duplicate id leaked from a copy.
       expect((await db.select(db.cardCache).get()).length, 3);
     });
+
+    test('cardId collision: first (sorted) wins, the rest skip + report',
+        () async {
+      // Two distinct files declare the same id: — indexing both would fuse their
+      // FSRS schedules under one key. The sorted-first wins; the other is skipped +
+      // reported, never merged (ADR-0022).
+      write('aaa-first.md',
+          '---\nid: dup\ntype: flashcard\n---\n\n# First\n\n## S\n\nx\n');
+      write('zzz-second.md',
+          '---\nid: dup\ntype: flashcard\n---\n\n# Second\n\n## S\n\ny\n');
+      final result = await indexer.reindex();
+      expect(result.collisions,
+          ['zzz-second.md']); // aaa- sorts first, claims 'dup'
+      final dup = result.cards.where((c) => c.id == 'dup');
+      expect(dup.length, 1,
+          reason: 'the two schedules never fuse under one id');
+      expect(dup.single.title, 'First');
+    });
   },
       skip: _sqliteAvailable
           ? false

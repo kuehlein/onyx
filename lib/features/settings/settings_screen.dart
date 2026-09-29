@@ -68,7 +68,8 @@ class SettingsScreen extends ConsumerWidget {
               loading: () => 'Indexing…',
               error: (e, _) => 'Error: $e',
               data: (r) => '${r.cardCount} cards'
-                  '${r.malformed > 0 ? ' · ${r.malformed} malformed' : ''}',
+                  '${r.malformed > 0 ? ' · ${r.malformed} malformed' : ''}'
+                  '${r.collisions.isNotEmpty ? ' · ${r.collisions.length} id collision(s)' : ''}',
             )),
             trailing: IconButton(
               icon: const Icon(Icons.refresh),
