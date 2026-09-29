@@ -62,8 +62,10 @@ in shape.
    mismatch this change is meant to kill. So `cardId` aligns with the filename namespace. The cost —
    **cross-folder filename collision** (two `binary-search.md`) — is real but (a) absent in the shipped
    vault (verified: CS is flat, no collisions), (b) already an Obsidian-level concern (it disambiguates
-   duplicate note names in `[[links]]`), and (c) surfaced as a **two-tier vault-health warning**
-   (ADR-0020 §2), never a silent merge.
+   duplicate note names in `[[links]]`), and (c) **detected at index time and surfaced as a vault-health
+   warning** (ADR-0020 §2) — **never silently merged.** The one real corruption risk is two distinct cards
+   fusing their FSRS state under a shared `cardId`; the collision guard refuses that (warn, and/or
+   path-qualify only the collided pair), so a collision is a rare, visible, fixable condition, not data loss.
 2. **Rename/move resilience via cold-reindex index-diff, not editor events.** Onyx writes the vault at
    runtime and rides folder-sync, so it *cannot* depend on an editor rename event (the zero-glue plugins'
    mechanism, which fails exactly here). Instead, on reindex, diff the last-indexed card set vs current;
@@ -88,9 +90,28 @@ those cards don't trade frontmatter-id resilience for detection-based resilience
 
 ## Alternatives considered
 
+*Framing.* Because the vault is the source of truth and the DB is a derived cache, a card's identity must be
+**recoverable from the vault alone** (a fresh install / lost DB must rebuild it). That leaves only three
+intrinsic, zero-glue candidates — content, filename, filepath — and there is a genuine **impossibility**: no
+purely-intrinsic identifier is simultaneously zero-glue, rename-stable, move-stable, collision-free, *and*
+portable across vaults. So the design is not a magic stable id but a **layered** one: a zero-glue *derived*
+key (filename) for the local case + **reconciliation** (rename detection) + **guarding** (collision warnings)
++ an *embedded* id only at the sharing boundary. The rejected options below each try to win all properties at
+once and can't.
+
 - **Full relative filepath as `cardId`** (the research's headline rec). Collision-free, but breaks
   wikilink-namespace alignment, is unstable under folder moves, and re-creates the id-vs-filename join-bug
   class. Rejected *for Onyx* specifically because the link namespace is bare-filename.
+- **Minimal-unique-suffix of the path** (the "URL-shortener" idea: start at the filename, prepend the next
+  path segment only on collision — exactly Obsidian's *shortest-unique-path* for link display). Rejected: it
+  is *less* stable than a plain path, not more, because of **action at a distance** — adding an unrelated
+  third file that collides (`data/trie.md`) forces a *previously-unique* file (`algo/trie.md`) to grow a
+  path prefix, silently changing the id of a card that never moved or changed. A move or any collision
+  churns unrelated ids; unusable as a durable key.
+- **Deck-scoped filename/id** (qualify the id by its deck to dodge collisions). Rejected: it **forks a
+  datum's single global state** across overlapping decks — the exact invariant ADR-0019/0020 exist to
+  protect (advance-anywhere-advances-everywhere). A card in two decks must have *one* id, so the id cannot
+  carry a deck.
 - **Mandatory auto-generated opaque GUID everywhere** (the Anki/org-roam model). Durable + portable, but
   it *is* the glue we're removing — heavy for a local-first, Obsidian-native vault. Adopted only at the
   **sharing boundary**, where it's actually required.
@@ -113,6 +134,13 @@ those cards don't trade frontmatter-id resilience for detection-based resilience
   *enable* now but the CS cards keep their `id:` until detection ships.
 - **Follow-ups:** card-rename detection (**#158**, now card + section grain); mandatory share-id
   (**ADR-0021**); card-ness via selector (**#153**); the optional strip-redundant-`id:` chore (post-#158).
+- **The zero-frontmatter vault (the realization this unblocks):** with `id:` optional (here) *and* card-ness
+  + flow driven by a **directory/tag selector** (#153 — e.g. a flow whose selector is `folder:algorithms`),
+  a plain Markdown vault with **no frontmatter at all** fully functions: the directory *is* the query lens
+  (it decides both card-ness and flow), and the filename *is* the identity. `id:`/`type:` become
+  opt-in overrides, never requirements. #153 must add the **collision guard** (a folder designated as
+  card-bearing can hold same-named files across sub-folders) and keep non-card notes out of card folders
+  (or scope the selector) — the two edges directory-based card-ness introduces.
 
 ## Open questions (from the research, unresolved by any single source)
 
