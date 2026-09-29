@@ -167,8 +167,12 @@ CardQuery? _opLeaf(String key, String val, String rawVal) {
       return m == null ? null : StateIs(m);
     case 'folder':
     case 'path':
-      // Guard the match-everything footgun: `folder:/` trims to an empty path,
-      // which FolderUnder treats as "whole vault". Degrade to free text instead.
+    case 'directory':
+      // `directory:` is the friendly alias (ADR-0023) — the word a deck-creation
+      // picker emits; `folder:`/`path:` are the terse synonyms. All build a
+      // recursive [FolderUnder] (the subtree, not one level). Guard the
+      // match-everything footgun: `folder:/` trims to an empty path, which
+      // FolderUnder treats as "whole vault". Degrade to free text instead.
       final f = FolderUnder(rawVal);
       return f.path.isEmpty ? null : f;
     default:

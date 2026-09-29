@@ -98,12 +98,16 @@ void main() {
           isTrue);
     });
 
-    test('type: / tier: / folder: / path: / is:', () {
+    test('type: / tier: / folder: / path: / directory: / is:', () {
       expect(_lens('type:flashcard'), ['bfs', 'tcp']);
       expect(_lens('type:interview'), ['two-sum']); // alias
       expect(_lens('tier:1'), ['tcp', 'two-sum']);
       expect(_lens('folder:graphs'), ['bfs']);
       expect(_lens('path:net'), ['tcp']);
+      // `directory:` is the friendly alias for `folder:`/`path:` (ADR-0023) — the
+      // word the deck-creation picker emits; same recursive FolderUnder.
+      expect(_lens('directory:graphs'), ['bfs']);
+      expect(parseLens('directory:graphs'), isA<FolderUnder>());
       expect(parseLens('is:due'), isA<StateIs>()); // dynamic; stripped on save
     });
 
