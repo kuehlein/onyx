@@ -160,10 +160,13 @@ tighten the floor — never by re-introducing a `type:` requirement.
     union — no circularity, lenses are pure queries; a fresh vault always has the default deck, so card-ness
     is never empty by construction). The byte-identical-for-SWE proof must be kept green.
 - **Follow-ups (build order):** (1) `directory:` alias + recursion copy/tests — **shipped**; (2) **card-ness
-  = lens union** in the indexer + re-layer `card_parser` to flow-resolution-only (the core; keep SWE
-  byte-identical); (3) glob/dotfile exclude leaf (pre-parse, tier-pinned, additive); (4) folder-picker UI +
-  labeled combinator + live count (overlaps **#82** picker, **#162** template↔flow wiring, the folder-path
-  onboarding thread).
+  = lens union** in the indexer + re-layer `card_parser` to flow-resolution-only — **shipped** (2a the
+  indexer lens gate + `IndexResult.unlensed`; 2b the permissive parser + `DeckTemplate.defaultFlow`, floor =
+  no-H1-is-malformed-only-when-a-selector-claimed-it; SWE byte-identical, 1277 green). **The zero-frontmatter
+  vault now works end-to-end**: a plain Markdown note in a lens-covered folder is a card (filename id, default
+  flashcard flow), no frontmatter. Remaining: (3) glob/dotfile exclude leaf (pre-parse, tier-pinned,
+  additive); (4) folder-picker UI + labeled combinator + live count (overlaps **#82** picker, **#162**
+  template↔flow wiring, the folder-path onboarding thread) — both UX/polish, the engine is complete.
 - **Forward-guidance (not day-one): incremental re-index.** The indexer currently **deletes + rebuilds**
   `card_cache`/`card_links` wholesale each reindex (`vault_indexer.dart`). Fine at Onyx's file-per-card,
   hundreds-of-cards scale, but the thing to evolve toward as vaults grow (esp. mobile) is Dataview's model:
