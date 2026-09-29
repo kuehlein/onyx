@@ -129,20 +129,12 @@ class CardParser {
       throw MalformedCardException(filePath, 'missing H1 title');
     }
 
-    final quizOverride = _stringList(frontmatter['quiz']);
-    // Per-card quizzability override (ADR-0012 §5). `quizzable: false` is a DENY
-    // that stops testing the WHOLE card — top precedence over the `quiz:`
-    // allowlist and the flow policy (the explicit "stop testing this" action).
-    // `quizzable: true` is a deliberate no-op for MVP: it must NOT re-open
-    // sections the allowlist/policy excluded, which would silently move an
-    // existing deck's study set; the editable open-set defers to #84.
-    final cardQuizzable = frontmatter['quizzable'] is bool
-        ? frontmatter['quizzable'] as bool
-        : null;
+    // Quizzability is purely the flow's policy now — the per-card `quiz:`/`quizzable:`
+    // overrides were removed (ADR-0020 §2: thin cards carry no study-set glue; the
+    // "stop testing this section" control moves to an app-state dismiss, #162).
     final sections = [
       for (final raw in rawSections)
-        _buildSection(raw.heading, raw.content, subject, type, quizOverride,
-            cardQuizzable),
+        _buildSection(raw.heading, raw.content, subject, type),
     ];
 
     return Card(
@@ -158,8 +150,6 @@ class CardParser {
       filePath: filePath,
       created: _parseDate(frontmatter['created']),
       confidence: Confidence.fromString(frontmatter['confidence'] as String?),
-      quizOverride:
-          (quizOverride == null || quizOverride.isEmpty) ? null : quizOverride,
       category: frontmatter['category'] as String?,
       difficulty: frontmatter['difficulty'] as String?,
       frequency: frontmatter['frequency'] as String?,
@@ -190,36 +180,25 @@ class CardParser {
     String content,
     DeckTemplate subject,
     String type,
-    List<String>? quizOverride,
-    bool? cardQuizzable,
   ) {
     final slug = slugify(heading);
-    final bool quizzable;
-    if (cardQuizzable == false) {
-      // Per-card DENY (`quizzable: false`) — top precedence: stop testing every
-      // section, over the allowlist and the flow policy (ADR-0012 §5).
-      quizzable = false;
-    } else if (quizOverride != null && quizOverride.isNotEmpty) {
-      quizzable = quizOverride.contains(slug);
-    } else {
-      // Which sections are quizzable is the flow's policy (task #30 Phase 3),
-      // configured per card type; unknown types fall back to the concept blocklist.
-      final policy = subject.flowForType(type)?.quizzability ??
-          QuizzabilityPolicy.blocklist;
-      quizzable = switch (policy) {
-        // Every section is a problem = its own practice unit (algorithms).
-        QuizzabilityPolicy.allSections => true,
-        // Whole card is one mock unit; no section is scheduled (SD / behavioral).
-        QuizzabilityPolicy.noSections => false,
-        // Interview questions default to quizzing only the Approach section.
-        QuizzabilityPolicy.approachOnly => slug == 'approach',
-        // Concept cards: everything but the shared reference/blocklist headings.
-        // A subject may override the never-quizzed set via its parse profile.
-        QuizzabilityPolicy.blocklist =>
-          !(subject.parseProfile.neverQuizzed ?? _blocklist)
-              .contains(heading.trim().toLowerCase()),
-      };
-    }
+    // Which sections are quizzable is the flow's policy (ADR-0020 §2), configured per
+    // card type; an unknown/absent type falls back to the concept blocklist.
+    final policy =
+        subject.flowForType(type)?.quizzability ?? QuizzabilityPolicy.blocklist;
+    final quizzable = switch (policy) {
+      // Every section is a problem = its own practice unit (algorithms).
+      QuizzabilityPolicy.allSections => true,
+      // Whole card is one mock unit; no section is scheduled (SD / behavioral).
+      QuizzabilityPolicy.noSections => false,
+      // Interview questions default to quizzing only the Approach section.
+      QuizzabilityPolicy.approachOnly => slug == 'approach',
+      // Concept cards: everything but the shared reference/blocklist headings.
+      // A subject may override the never-quizzed set via its parse profile.
+      QuizzabilityPolicy.blocklist =>
+        !(subject.parseProfile.neverQuizzed ?? _blocklist)
+            .contains(heading.trim().toLowerCase()),
+    };
     return CardSection(
       heading: heading,
       slug: slug,

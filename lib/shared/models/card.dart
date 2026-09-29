@@ -145,7 +145,6 @@ class Card {
     required this.filePath,
     this.created,
     this.confidence,
-    this.quizOverride,
     this.category,
     this.difficulty,
     this.frequency,
@@ -227,10 +226,6 @@ class Card {
 
   final DateTime? created;
   final Confidence? confidence;
-
-  /// Explicit `quiz:` frontmatter override — a list of section slugs to quiz.
-  /// Null when absent; when present it fully determines which sections quiz.
-  final List<String>? quizOverride;
 
   // ── interview-question-only metadata (null/empty for concept cards) ────────
   final String? category;
