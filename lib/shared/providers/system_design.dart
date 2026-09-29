@@ -1,7 +1,6 @@
-// This IS the built-in System-design flow's engine; a new subject runs on the
-// generic vault-flow path (flow_runner), so the type filter doesn't reintroduce
-// the invariant-#2 drift the guard prevents elsewhere.
-// ignore_for_file: no_card_type_branch
+// The built-in System-design flow's engine. It selects its cards via each card's
+// resolved flow (`c.flow` — the subject's selector), not a hardcoded type branch, so
+// invariant #2 holds with no ignore; a non-SWE subject (no SD flow) matches nothing here.
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/claude_service.dart';
@@ -12,6 +11,7 @@ import '../../core/practice/mock_schedule.dart';
 import '../../core/practice/mock_session.dart';
 import '../../core/readiness/target.dart';
 import '../../core/srs/recognition.dart';
+import '../../core/template/card_flow.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';
@@ -51,7 +51,7 @@ Future<List<Card>> systemDesignProblems(Ref ref) async {
   // goal selects everything (unchanged).
   final problems = [
     for (final c in goal.select(index.studyCards))
-      if (c.type == kTypeSystemDesign) c,
+      if (c.flow?.cardType == kTypeSystemDesign) c,
   ];
   // Spaced-recurrence order (shared with every mock flow, task #30 G2a).
   return orderByMockDue(

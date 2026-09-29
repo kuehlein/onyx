@@ -640,14 +640,15 @@ The MVP-tagged stories, cloud still absent:
       subject templates (**#153**) + required-core authoring templates (**#156**). Deferred to its own scoping
       session (**#162**): the authoring-template *selection UX* + template↔flow wiring + the two-tier vault-health
       warnings (deterministic two-flow/fails-required-core; soft "no explicit flow"; per-card dismiss in app-state).
-      - *Engine re-expression underway (2026-09-28):* **✅** the **algo** engines (algo_queue/algo/pattern-mastery)
-        dispatch on `scheduling == twoClock`, and **concept_comfort** on `quizzability == blocklist` — both genuine
-        config dimensions, byte-identical, ignores dropped, via a new `Card.flow`/`Card.schedulingModel`. **Remaining:**
-        the **behavioral + system-design** engines + their 2 mock screens (4 sites) share the `mock` model and are
-        distinguished only by *identity* today — an honest re-expression needs the **flow selector** (each flow's
-        membership `CardQuery`), the foundational piece above. Design note: putting a `CardQuery` on `FlowSpec`
-        introduces a `flow_spec → card_query → card` import cycle (Dart tolerates it, but resolve deliberately — e.g.
-        a `matches(cardFields)` seam or a flow-role field) when building the selector.
+      - *Selector foundation + engine re-expression **DONE** (2026-09-28):* **✅** `FlowSpec.selector` (a membership
+        `CardQuery`, default `TypeIs(cardType)` → byte-identical) + a `CardFlow` extension (`card.flow`/`schedulingModel`)
+        that resolves a card's flow via selectors — kept OFF the `Card` model so it doesn't depend "up" on the
+        flow/query config (the import cycle is resolved by layering, not tolerated). **All 8 `no_card_type_branch`
+        engines re-expressed** and their ignores dropped — algo→`scheduling==twoClock`, concept→`quizzability==blocklist`,
+        behavioral/SD (+ 2 mock screens)→`c.flow?.cardType`; **invariant #2 is now total** (no ignores in `lib/`).
+        Byte-identical (characterization-locked); custom_lint clean. **Remaining in Wave C:** remove mandatory
+        `type:`/`quiz:` (a member-set change) + route the parser through the selector; then **#155** (state-table
+        unification — the DB migration), **#158**, **#153/#156**. *Paused here before #155 per the pace decision.*
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.

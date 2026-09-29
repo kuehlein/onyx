@@ -1,7 +1,5 @@
-// This IS the built-in System-design flow's screen; a new subject runs on the
-// generic vault-flow path (flow_runner), so the type guard doesn't reintroduce
-// the invariant-#2 drift the guard prevents elsewhere.
-// ignore_for_file: no_card_type_branch
+// The built-in System-design flow's screen — finds its problem via the resolved flow
+// (`c.flow`), not a hardcoded type branch, so invariant #2 holds with no ignore.
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +8,7 @@ import '../../core/ai/coach.dart' show CoachRole;
 import '../../core/ai/system_design_interviewer.dart' show SdSupportMode;
 import '../../core/interview/assessment.dart';
 import '../../core/readiness/target.dart';
+import '../../core/template/card_flow.dart';
 import '../../shared/design/onyx_design.dart';
 import '../../shared/models/card.dart';
 import '../../shared/providers/readiness.dart';
@@ -81,7 +80,8 @@ class _SdMockScreenState extends ConsumerState<SdMockScreen> {
   Widget build(BuildContext context) {
     final index = ref.watch(vaultIndexProvider).asData?.value;
     final card = index?.cards
-        .where((c) => c.id == widget.problemId && c.type == kTypeSystemDesign)
+        .where((c) =>
+            c.id == widget.problemId && c.flow?.cardType == kTypeSystemDesign)
         .firstOrNull;
     if (card == null) {
       return const Scaffold(body: Center(child: Text('Problem not found.')));

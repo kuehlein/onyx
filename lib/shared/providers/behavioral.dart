@@ -1,7 +1,6 @@
-// This IS the built-in Behavioral flow's engine; a new subject runs on the
-// generic vault-flow path (flow_runner), so the type filter doesn't reintroduce
-// the invariant-#2 drift the guard prevents elsewhere.
-// ignore_for_file: no_card_type_branch
+// The built-in Behavioral flow's engine. It selects its cards via each card's resolved
+// flow (`c.flow` — the subject's selector), not a hardcoded type branch, so invariant
+// #2 holds with no ignore; a non-SWE subject (no behavioral flow) matches nothing here.
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/behavioral_interviewer.dart';
@@ -11,6 +10,7 @@ import '../../core/interview/behavioral_grader.dart';
 import '../../core/practice/mock_session.dart';
 import '../../core/readiness/target.dart';
 import '../../core/srs/recognition.dart';
+import '../../core/template/card_flow.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';
@@ -47,7 +47,7 @@ Future<List<Card>> behavioralCompetencies(Ref ref) async {
   // the practice list — the ADR-0003 invariant the sibling tracks already honor.
   final cards = [
     for (final c in index.studyCards)
-      if (c.type == kTypeBehavioral) c,
+      if (c.flow?.cardType == kTypeBehavioral) c,
   ];
   DateTime? dueOf(Card c) => states['${c.id}::$_recognitionSlug']?.dueAt;
   // 0 = overdue, 1 = never mocked, 2 = upcoming.
