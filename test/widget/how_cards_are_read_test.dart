@@ -9,7 +9,9 @@ void main() {
     final byLabel = {for (final r in cardParsingRules()) r.label: r.value};
     expect(byLabel['Sections split on'], 'Headings (H2)');
     expect(byLabel['Reads files'], '.md');
-    expect(byLabel.containsKey('A note is a card when it has'), isTrue);
+    // SWE flows all select by `type:` (the default TypeIs selector), so the derived
+    // card-ness rule reads "type:" — a folder/tag-selector subject shows its own.
+    expect(byLabel['A note is a card when it matches'], 'type:');
   });
 
   testWidgets('the explainer shows live facts + inert future rows',

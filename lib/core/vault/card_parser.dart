@@ -9,15 +9,33 @@ import '../template/deck_template.dart';
 /// from the profile (never restated), so it always reflects the real rules — a
 /// subject that customizes its section level or file types shows its own facts.
 List<({String label, String value})> cardParsingRules() {
-  final p = activeTemplate.parseProfile;
+  final template = activeTemplate;
+  final p = template.parseProfile;
   return [
     (label: 'Sections split on', value: 'Headings (H${p.sectionHeadingLevel})'),
     (
       label: 'Reads files',
       value: p.fileExtensions.map((e) => '.$e').join(', '),
     ),
-    (label: 'A note is a card when it has', value: 'type:'),
+    (label: 'A note is a card when it matches', value: _cardnessRule(template)),
   ];
+}
+
+/// A human summary of what makes a file a card for [template]: the distinct flow
+/// selector kinds (ADR-0020 §2 / #153). The all-`type:` case (the SWE subject) reads
+/// simply "type:"; a folder/tag-selector subject shows its own rule, so a
+/// zero-frontmatter vault isn't told it needs `type:` it doesn't actually require.
+String _cardnessRule(DeckTemplate template) {
+  const phrase = {
+    'type': 'type:',
+    'folder': 'a card folder',
+    'tag': 'a card tag'
+  };
+  final kinds = {
+    for (final f in template.flows) f.selector.toJson()['kind'] as String,
+  };
+  final parts = [for (final k in kinds) phrase[k] ?? k]..sort();
+  return parts.isEmpty ? 'type:' : parts.join(' or ');
 }
 
 /// Parses a single Obsidian markdown file into a [Card].
@@ -26,11 +44,15 @@ List<({String label, String value})> cardParsingRules() {
 /// plus a path for diagnostics. It is fence-aware — `##` lines inside fenced
 /// code blocks do not start new sections — and it distinguishes two outcomes:
 ///
-///  * returns `null` when the file is not an Onyx card (no recognized `type`),
-///    which is how config-dir (`_onyx/`) files and ordinary notes are skipped;
+///  * returns `null` when the file is not an Onyx card — no flow's selector claims
+///    it (ADR-0020 §2 / #153) — which is how config-dir (`_onyx/`) files and
+///    ordinary notes are skipped;
 ///  * throws [MalformedCardException] when a card is structurally invalid.
 ///
-/// A card's `id:` is optional (ADR-0022): absent, its id is the filename slug.
+/// Card-ness needs no frontmatter: a folder/tag selector can claim a plain note
+/// (the zero-frontmatter vault). A card's `id:` is likewise optional (ADR-0022):
+/// absent, its id is the filename slug; its `type:` absent, it takes the claiming
+/// flow's type.
 class CardParser {
   const CardParser();
 
@@ -94,15 +116,27 @@ class CardParser {
     // heading regex and the whole card is rejected (MalformedCardException).
     final normalized = content.replaceAll('\r\n', '\n');
     final match = _frontmatter.firstMatch(normalized);
-    if (match == null) return null; // no frontmatter → not a card
 
+    // No frontmatter is NO LONGER an automatic skip (ADR-0022 / #153): card-ness is
+    // decided by the subject's flow selectors below, so a folder/tag selector can
+    // claim a plain, frontmatter-less note (the zero-frontmatter vault). A file WITH
+    // frontmatter still parses it — a non-YamlMap or unparseable block still skips,
+    // as before. With the default TypeIs selectors a note with no `type:` matches
+    // nothing → skipped, so this stays byte-identical for the shipped SWE vault.
     final Map<String, dynamic> frontmatter;
-    try {
-      final loaded = loadYaml(match.group(1)!);
-      if (loaded is! YamlMap) return null;
-      frontmatter = _yamlToMap(loaded);
-    } on YamlException {
-      return null; // unparseable frontmatter → skip rather than crash indexing
+    final String body;
+    if (match == null) {
+      frontmatter = const {};
+      body = normalized;
+    } else {
+      try {
+        final loaded = loadYaml(match.group(1)!);
+        if (loaded is! YamlMap) return null;
+        frontmatter = _yamlToMap(loaded);
+      } on YamlException {
+        return null; // unparseable frontmatter → skip rather than crash indexing
+      }
+      body = match.group(2) ?? '';
     }
 
     // Behavior (card-ness, quizzability, flow) resolves against the card's own
@@ -111,11 +145,40 @@ class CardParser {
     // direct callers/tests on the active subject.
     final subject = templateFor(templateId ?? activeTemplate.id);
 
-    final type = (frontmatter['type'] as String?)?.trim();
-    // A file is an Onyx card iff its `type:` matches one of the subject's
-    // configured flows; everything else (config, `_onyx/`, ordinary notes) is
-    // skipped. (Was: CardType.fromString != null — a no-op for the SWE subject.)
-    if (type == null || !subject.isCardType(type)) return null;
+    // Card-ness AND flow are decided by the subject's flow SELECTORS (ADR-0020 §2,
+    // #153): a file is a card iff some flow's selector matches its structural
+    // attributes (type / tags / folder). A lightweight `probe` carries just those
+    // attributes, so the match runs before the expensive title/section parse. With
+    // the default TypeIs(cardType) selectors this is exactly the old
+    // `isCardType(type)` gate — byte-identical for SWE — while a folder/tag selector
+    // lets a card belong with NO frontmatter at all.
+    final rawType = (frontmatter['type'] as String?)?.trim();
+    final tags = _stringList(frontmatter['tags']) ?? const <String>[];
+    final tiers = _intMap(frontmatter['tiers']);
+    final probe = Card(
+      id: '',
+      type: rawType ?? '',
+      templateId: templateId ?? activeTemplate.id,
+      title: '',
+      overview: '',
+      tags: tags,
+      tiers: tiers,
+      sections: const [],
+      wikilinks: const [],
+      filePath: filePath,
+    );
+    FlowSpec? flow;
+    for (final f in subject.flows) {
+      if (f.selector.matches(probe)) {
+        flow = f;
+        break;
+      }
+    }
+    if (flow == null) return null; // no flow's selector claims it → not a card
+    // A frontmatter-less (or type-less) card takes its type from the flow that
+    // claimed it, so `Card.type` and every type-derived accessor stay consistent
+    // with the resolved flow (a folder/tag selector may pick a flow over TypeIs).
+    final type = rawType ?? flow.cardType;
 
     // Card identity (ADR-0022): the explicit `id:` when present — a durable / shareable
     // override — else the bare filename slug, so a card needs no `id:` glue. The
@@ -128,7 +191,6 @@ class CardParser {
             filePath.split('/').last.replaceFirst(RegExp(r'\.[^.]+$'), ''));
 
     final profile = subject.parseProfile;
-    final body = match.group(2) ?? '';
     final (title, overview, rawSections) =
         _splitBody(body, _sectionRegex(profile.sectionHeadingLevel));
     if (title == null) {
@@ -140,7 +202,7 @@ class CardParser {
     // "stop testing this section" control moves to an app-state dismiss, #162).
     final sections = [
       for (final raw in rawSections)
-        _buildSection(raw.heading, raw.content, subject, type),
+        _buildSection(raw.heading, raw.content, subject, flow),
     ];
 
     return Card(
@@ -149,8 +211,8 @@ class CardParser {
       templateId: templateId ?? activeTemplate.id,
       title: title,
       overview: overview,
-      tags: _stringList(frontmatter['tags']) ?? const [],
-      tiers: _intMap(frontmatter['tiers']),
+      tags: tags,
+      tiers: tiers,
       sections: sections,
       wikilinks: profile.wikilinks ? _extractWikilinks(body) : const [],
       filePath: filePath,
@@ -185,13 +247,13 @@ class CardParser {
     String heading,
     String content,
     DeckTemplate subject,
-    String type,
+    FlowSpec flow,
   ) {
     final slug = slugify(heading);
-    // Which sections are quizzable is the flow's policy (ADR-0020 §2), configured per
-    // card type; an unknown/absent type falls back to the concept blocklist.
-    final policy =
-        subject.flowForType(type)?.quizzability ?? QuizzabilityPolicy.blocklist;
+    // Which sections are quizzable is the RESOLVED flow's policy (ADR-0020 §2) — the
+    // flow that actually claimed this card, not a re-lookup by `type:` (which a
+    // folder/tag selector may not match).
+    final policy = flow.quizzability;
     final quizzable = switch (policy) {
       // Every section is a problem = its own practice unit (algorithms).
       QuizzabilityPolicy.allSections => true,
