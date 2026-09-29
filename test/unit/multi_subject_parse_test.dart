@@ -86,11 +86,18 @@ void main() {
     expect(a.quizzableSections, isEmpty);
   });
 
-  test('a type unknown to its subject is not a card', () {
-    // `drill` is not a flow in beta → not an Onyx card, even though alpha has it.
+  test('a type unknown to its subject falls to its default flow (ADR-0023)',
+      () {
+    // `drill` is a flow in alpha but not beta. The parser is permissive now — the
+    // note is a candidate in beta too, resolved to beta's default flashcard flow
+    // (card-ness is the deck lens, not the type). Its explicit type is preserved.
     final b =
         _card.parse(_md('drill'), filePath: 'beta/x.md', templateId: 'beta');
-    expect(b, isNull);
+    expect(b, isNotNull);
+    expect(b!.type, 'drill');
+    expect(b.templateId, 'beta');
+    expect(
+        b.isPracticeTrack, isFalse); // beta's default flow is recall flashcard
   });
 
   test('recall cards stay concept cards in their subject', () {

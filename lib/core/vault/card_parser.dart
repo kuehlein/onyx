@@ -44,15 +44,17 @@ String _cardnessRule(DeckTemplate template) {
 /// plus a path for diagnostics. It is fence-aware — `##` lines inside fenced
 /// code blocks do not start new sections — and it distinguishes two outcomes:
 ///
-///  * returns `null` when the file is not an Onyx card — no flow's selector claims
-///    it (ADR-0020 §2 / #153) — which is how config-dir (`_onyx/`) files and
-///    ordinary notes are skipped;
-///  * throws [MalformedCardException] when a card is structurally invalid.
+///  * returns `null` only when the file can't become a card at all — unparseable /
+///    non-map frontmatter, or a subject that declares no flows;
+///  * throws [MalformedCardException] when a would-be card is structurally invalid
+///    (no H1 title).
 ///
-/// Card-ness needs no frontmatter: a folder/tag selector can claim a plain note
-/// (the zero-frontmatter vault). A card's `id:` is likewise optional (ADR-0022):
-/// absent, its id is the filename slug; its `type:` absent, it takes the claiming
-/// flow's type.
+/// Card-ness is the deck LENS now, not the parser (ADR-0023): the parser is
+/// permissive and returns a *candidate* for any well-formed note — no frontmatter
+/// needed — resolving its flow (the matched flow, else the default flashcard flow).
+/// The indexer keeps only the candidates a deck's lens claims. `id:`/`type:` are
+/// optional overrides (ADR-0022): absent, the id is the filename slug and the type
+/// is the resolved flow's.
 class CardParser {
   const CardParser();
 
@@ -167,14 +169,27 @@ class CardParser {
       wikilinks: const [],
       filePath: filePath,
     );
-    FlowSpec? flow;
+    // A flow SELECTOR match = explicit card intent (a recognized `type:`, or a card
+    // folder/tag). Kept distinct from the resolved `flow` so a would-be card with no
+    // H1 can be told apart from a plain non-card note (see the title check below).
+    FlowSpec? matched;
     for (final f in subject.flows) {
       if (f.selector.matches(probe)) {
-        flow = f;
+        matched = f;
         break;
       }
     }
-    if (flow == null) return null; // no flow's selector claims it → not a card
+    // Card-ness is no longer decided here (ADR-0023) — it moves to the indexer's
+    // deck-lens gate. The parser only resolves the FLOW: the matched flow, else the
+    // subject's default flashcard flow (ADR-0020 §2). So any well-formed note is a
+    // *candidate* the deck lens can then claim (the zero-frontmatter vault); only a
+    // subject that declares NO flows at all yields null. For SWE this is unchanged —
+    // a recognized `type:` matches its selector, and the dev vault has no type-less
+    // notes, so nothing new is admitted (the deck lenses union to Everything).
+    final flow = matched ?? subject.defaultFlow;
+    if (flow == null) {
+      return null; // subject declares no flows → can't be a card
+    }
     // A frontmatter-less (or type-less) card takes its type from the flow that
     // claimed it, so `Card.type` and every type-derived accessor stay consistent
     // with the resolved flow (a folder/tag selector may pick a flow over TypeIs).
@@ -194,7 +209,15 @@ class CardParser {
     final (title, overview, rawSections) =
         _splitBody(body, _sectionRegex(profile.sectionHeadingLevel));
     if (title == null) {
-      throw MalformedCardException(filePath, 'missing H1 title');
+      // No H1 title. A file a flow SELECTOR claimed (an explicit `type:` or a card
+      // folder/tag) was MEANT to be a card → malformed, surfaced so the user fixes
+      // it. A file only the default flow caught is an unclaimed candidate — a skill /
+      // README / index note, not a card — so skip it silently (ADR-0023: card-ness is
+      // the lens; a non-card note without an H1 must not pollute the malformed count).
+      if (matched != null) {
+        throw MalformedCardException(filePath, 'missing H1 title');
+      }
+      return null;
     }
 
     // Quizzability is purely the flow's policy now — the per-card `quiz:`/`quizzable:`

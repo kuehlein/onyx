@@ -53,10 +53,12 @@ void main() {
       expect(_card(kTypeBehavioral).schedulingModel, SchedulingModel.mock);
     });
 
-    test('an unconfigured type resolves to no flow (null), never a wrong one',
-        () {
-      expect(_card('made-up-type').flow, isNull);
-      expect(_card('made-up-type').schedulingModel, isNull);
+    test('an unconfigured type falls to the default flow (ADR-0023)', () {
+      // No selector matches → the subject's default flashcard flow, so an engine
+      // dispatching on the model treats an unclassified card as plain recall —
+      // never a wrong practice track. (Was null before card-ness moved to the lens.)
+      expect(_card('made-up-type').flow?.cardType, 'flashcard');
+      expect(_card('made-up-type').schedulingModel, SchedulingModel.recall);
     });
 
     test('the default selector is a TypeIs over the flow cardType', () {

@@ -83,7 +83,8 @@ void main() {
       write('_meta/tags.md', '# Tags\n'); // excluded before parsing
       write('no-id.md',
           '---\ntype: flashcard\n---\n\n# No Id\n\n## When to Use\n\nx\n');
-      write('note.md', '# Just a note\n\nNo frontmatter.\n'); // non-card
+      write('note.md',
+          '# Just a note\n\nNo frontmatter.\n'); // zero-frontmatter card now
       db = AppDatabase.withExecutor(NativeDatabase.memory());
       indexer = VaultIndexer(DesktopVaultSource(root.path), db);
     });
@@ -93,14 +94,19 @@ void main() {
       root.deleteSync(recursive: true);
     });
 
-    test('parses cards (id-less file → filename-slug card) and skips non-cards',
+    test('parses cards incl. a zero-frontmatter note; nothing left to skip',
         () async {
       final result = await indexer.reindex();
-      // no-id.md has no id: → cardId is its filename slug (ADR-0022), so it's a
-      // real card now (3 total: card-a, card-b, no-id), not an id-less reject.
-      expect(result.cardCount, 3);
-      expect(result.skipped, 1); // note.md (has no frontmatter)
+      // Every well-formed note is a card now (ADR-0023 card-ness = the deck lens;
+      // this direct indexer applies no lens gate → keep all): card-a, card-b, no-id
+      // (ADR-0022 filename slug), and note.md — a plain `# Just a note` with NO
+      // frontmatter (the zero-frontmatter vault). _meta/ is excluded before parsing.
+      expect(result.cardCount, 4);
+      expect(result.skipped, 0);
       expect(result.malformed, 0);
+      final note = result.cards.firstWhere((c) => c.id == 'note');
+      expect(note.type, 'flashcard'); // the subject's default flow
+      expect(note.title, 'Just a note');
     });
 
     test('counts a malformed card (type, but no H1 title)', () async {
@@ -115,10 +121,11 @@ void main() {
       );
       final result = await indexer.reindex();
       expect(result.malformed, 1);
-      expect(result.cardCount, 3, reason: 'card-a, card-b, no-id still index');
-      expect(result.skipped, 1);
+      expect(result.cardCount, 4,
+          reason: 'card-a, card-b, no-id, note still index');
+      expect(result.skipped, 0);
       // The malformed file is not cached.
-      expect((await db.select(db.cardCache).get()).length, 3);
+      expect((await db.select(db.cardCache).get()).length, 4);
     });
 
     test('populates card_cache with parsed metadata', () async {
@@ -128,6 +135,7 @@ void main() {
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         'no-id', // no id: → cardId is the filename slug (ADR-0022)
+        'note', // plain `# Just a note`, no frontmatter → filename-slug card
       });
       final cardA = rows.firstWhere((r) => r.title == 'Card A');
       expect(cardA.cardType, 'flashcard');
@@ -147,7 +155,7 @@ void main() {
     test('reindex is idempotent (caches rebuilt, not duplicated)', () async {
       await indexer.reindex();
       await indexer.reindex();
-      expect((await db.select(db.cardCache).get()).length, 3); // +no-id
+      expect((await db.select(db.cardCache).get()).length, 4); // +no-id +note
       expect((await db.select(db.cardLinks).get()).length, 1);
     });
 
@@ -159,10 +167,10 @@ void main() {
       write('card-a.sync-conflict-20260101-ABCDEF.md', _cardA);
       write('card-a (conflicted copy).md', _cardA);
       final result = await indexer.reindex();
-      expect(result.cardCount, 3, reason: 'conflict copies are not parsed');
+      expect(result.cardCount, 4, reason: 'conflict copies are not parsed');
       expect(result.conflictCopies.length, 2);
-      // The three real cards cache once each — no duplicate id leaked from a copy.
-      expect((await db.select(db.cardCache).get()).length, 3);
+      // The four real cards cache once each — no duplicate id leaked from a copy.
+      expect((await db.select(db.cardCache).get()).length, 4);
     });
 
     test('cardId collision: first (sorted) wins, the rest skip + report',

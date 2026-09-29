@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/query/card_query.dart';
 import 'package:onyx/core/template/active_template.dart';
+import 'package:onyx/core/template/card_flow.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/template/deck_template.dart';
 import 'package:onyx/core/template/template_registry.dart';
@@ -264,19 +265,37 @@ void main() {
     });
   });
 
-  group('non-cards return null', () {
-    test('no frontmatter', () {
-      expect(_parser.parse('# Just a note\n\nbody', filePath: 'n.md'), isNull);
+  group('the parser is permissive — card-ness is the deck lens (ADR-0023)', () {
+    // A well-formed note is a *candidate* now; the indexer's deck-lens gate decides
+    // card-ness. These three used to return null at the parser.
+    test('no frontmatter → a candidate (default flow, filename-slug id)', () {
+      final c = _parser.parse('# Just a note\n\nbody', filePath: 'n.md');
+      expect(c, isNotNull);
+      expect(c!.id, 'n'); // filename slug (ADR-0022)
+      expect(c.type, 'flashcard'); // the subject's default flow (ADR-0020 §2)
     });
 
-    test('frontmatter without a type', () {
+    test('frontmatter without a type → a candidate', () {
       const md = '---\ntitle: Meta\n---\n\n# Tags Index\n';
-      expect(_parser.parse(md, filePath: '_meta/tags.md'), isNull);
+      final c = _parser.parse(md, filePath: 'tags.md');
+      expect(c, isNotNull);
+      expect(c!.type, 'flashcard');
     });
 
-    test('unrecognized type', () {
+    test('an unrecognized type → a candidate (raw type kept, default flow)',
+        () {
       const md = '---\ntype: kanban\n---\n\n# Board\n';
-      expect(_parser.parse(md, filePath: 'board.md'), isNull);
+      final c = _parser.parse(md, filePath: 'board.md');
+      expect(c, isNotNull);
+      expect(c!.type, 'kanban'); // explicit type preserved
+      expect(
+          c.flow?.cardType, 'flashcard'); // but practiced via the default flow
+    });
+
+    // Genuinely NOT a card — still null: frontmatter that isn't a YAML map.
+    test('non-map frontmatter → still null', () {
+      const md = '---\n- a\n- b\n---\n\n# A list, not a card\n';
+      expect(_parser.parse(md, filePath: 'list.md'), isNull);
     });
   });
 
@@ -509,11 +528,11 @@ Reference-only.
     });
   });
 
-  group('card-ness via flow selector (#153 — the zero-frontmatter vault)', () {
-    // A subject whose only flow selects by FOLDER, not `type:`. This is the
-    // zero-frontmatter vault: a plain note in `drills/` is a card with NO
-    // frontmatter at all (its directory is the lens, its filename the id); a note
-    // anywhere else is not. `type:`/`id:` become opt-in overrides, never required.
+  group('folder selector resolves FLOW; card-ness is the lens (ADR-0023)', () {
+    // A subject whose `drill` flow selects by FOLDER, plus a plain flashcard flow as
+    // the default. Under ADR-0023 the parser is permissive — every well-formed note
+    // is a candidate — and the folder selector picks the FLOW; the deck lens (at the
+    // indexer) decides card-ness. `type:`/`id:` stay opt-in overrides.
     final folderSubject = DeckTemplate(
       id: 'folder-selected',
       target: softwareInterviewsTemplate.target,
@@ -523,6 +542,11 @@ Reference-only.
           scheduling: SchedulingModel.recall,
           quizzability: QuizzabilityPolicy.blocklist,
           selector: FolderUnder('drills'),
+        ),
+        const FlowSpec(
+          cardType: 'flashcard', // the default flow (ADR-0020 §2)
+          scheduling: SchedulingModel.recall,
+          quizzability: QuizzabilityPolicy.blocklist,
         ),
       ],
     );
@@ -536,36 +560,26 @@ Reference-only.
       activeTemplate = softwareInterviewsTemplate;
     });
 
-    test('a zero-frontmatter note in the card folder IS a card', () {
+    test("a zero-frontmatter note in the folder gets that folder's flow", () {
       const note =
           '# Two Pointers\n\nOverview.\n\n## When to Use\n\nSorted arrays.\n';
       final c =
           const CardParser().parse(note, filePath: 'drills/two-pointers.md');
       expect(c, isNotNull);
       expect(c!.id, 'two-pointers'); // filename slug (no id:)
-      expect(c.type, 'drill'); // synthesized from the claiming flow (no type:)
+      expect(c.type, 'drill'); // the folder-selected flow (no type: needed)
       expect(c.title, 'Two Pointers');
-      expect(c.sections.map((s) => s.heading), ['When to Use']);
       expect(
           c.sections.single.quizzable, isTrue); // the flow's blocklist policy
     });
 
-    test('a note OUTSIDE the card folder is not a card', () {
+    test('a note elsewhere falls to the default flow (still a candidate)', () {
+      // Card-ness is the deck lens now, not the folder — so this parses into a
+      // candidate; the lens (indexer) decides whether it's actually a card.
       const note = '# Random Note\n\nJust notes.\n';
-      expect(
-        const CardParser().parse(note, filePath: 'inbox/random.md'),
-        isNull,
-      );
-    });
-
-    test('a stray type: in the wrong folder does not make a card', () {
-      // The folder is the only gate now — an errant `type: flashcard` doesn't
-      // conjure a card where no flow selects it (no flow matches `flashcard`).
-      const card = '---\ntype: flashcard\n---\n\n# Nope\n\n## S\n\nx\n';
-      expect(
-        const CardParser().parse(card, filePath: 'inbox/nope.md'),
-        isNull,
-      );
+      final c = const CardParser().parse(note, filePath: 'inbox/random.md');
+      expect(c, isNotNull);
+      expect(c!.type, 'flashcard'); // the default flow
     });
   });
 }

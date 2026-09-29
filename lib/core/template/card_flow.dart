@@ -12,18 +12,21 @@ export 'flow_spec.dart' show FlowSpec, SchedulingModel, QuizzabilityPolicy;
 extension CardFlow on Card {
   /// The [FlowSpec] this card belongs to — the first flow whose [FlowSpec.selector]
   /// matches it, resolved against this card's OWN subject config (task #30d;
-  /// single-subject vaults resolve to the one active subject) — or null when no flow's
-  /// selector matches. With the default `type:`-matching selectors this is exactly the
-  /// pre-selector `flowForType(type)` lookup.
+  /// single-subject vaults resolve to the one active subject), else the subject's
+  /// [DeckTemplate.defaultFlow] (ADR-0023) so this resolves the SAME flow the parser
+  /// did. Null only when the subject declares no flows. With the default
+  /// `type:`-matching selectors a recognized card matches its own flow — exactly the
+  /// pre-selector `flowForType(type)` lookup — so SWE is unchanged.
   FlowSpec? get flow {
-    for (final f in templateFor(templateId).flows) {
+    final template = templateFor(templateId);
+    for (final f in template.flows) {
       if (f.selector.matches(this)) return f;
     }
-    return null;
+    return template.defaultFlow;
   }
 
-  /// This card's [SchedulingModel] (recall / twoClock / mock), or null when no flow
-  /// matches. Lets an engine dispatch on the *model* (e.g. the algorithms two-clock)
-  /// rather than a card-type branch.
+  /// This card's [SchedulingModel] (recall / twoClock / mock), or null only when the
+  /// subject declares no flows. Lets an engine dispatch on the *model* (e.g. the
+  /// algorithms two-clock) rather than a card-type branch.
   SchedulingModel? get schedulingModel => flow?.scheduling;
 }

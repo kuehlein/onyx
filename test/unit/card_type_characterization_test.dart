@@ -36,22 +36,27 @@ const _validTypes = [
 ];
 
 void main() {
-  group('card-ness', () {
+  group('card-ness moved to the deck lens (ADR-0023)', () {
     test('every configured type parses to a card', () {
       for (final t in _validTypes) {
         expect(_parse(t), isNotNull, reason: t);
       }
     });
 
-    test('an unrecognized type is NOT a card (skipped)', () {
-      expect(_parse('journal'), isNull);
+    test('an unrecognized type is a candidate now (lens decides card-ness)',
+        () {
+      // Was null under the `type:` gate; the parser is permissive now — a well-formed
+      // note is a candidate and the deck lens decides card-ness. Explicit type kept.
+      final c = _parse('journal');
+      expect(c, isNotNull);
+      expect(c!.type, 'journal');
     });
 
-    test('a note with no type: is not a card', () {
-      expect(
-          const CardParser()
-              .parse('# Just a note\n\nno frontmatter type', filePath: 'n.md'),
-          isNull);
+    test('a note with no type: is a candidate (default flow)', () {
+      final c = const CardParser()
+          .parse('# Just a note\n\nno frontmatter type', filePath: 'n.md');
+      expect(c, isNotNull);
+      expect(c!.type, 'flashcard'); // the subject's default flow (ADR-0020 §2)
     });
   });
 

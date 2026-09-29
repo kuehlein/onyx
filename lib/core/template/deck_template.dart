@@ -331,7 +331,16 @@ class DeckTemplate {
   bool isApproachType(String cardType) =>
       flowForType(cardType)?.quizzability == QuizzabilityPolicy.approachOnly;
 
-  /// Whether [cardType] is a recognized flow for this subject (used to decide a
-  /// markdown file is an Onyx card).
+  /// Whether [cardType] is a recognized flow for this subject. (No longer the
+  /// card-ness gate — that's the deck lens, ADR-0023 — but still used to recognise
+  /// an explicit `type:` value.)
   bool isCardType(String cardType) => flowForType(cardType) != null;
+
+  /// The flow a card falls into when NO flow selector matches it (ADR-0020 §2 /
+  /// ADR-0023): the flashcard flow (the universal recall default — both shipped
+  /// templates declare one), else the first declared flow, else null (a subject
+  /// with no flows can't practice a card, so such a file isn't a card). Card-ness
+  /// itself is the deck lens; this only resolves HOW an unclassified card is studied.
+  FlowSpec? get defaultFlow =>
+      flowForType('flashcard') ?? (flows.isEmpty ? null : flows.first);
 }
