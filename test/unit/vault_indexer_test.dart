@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/query/card_query.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:onyx/core/vault/vault_indexer.dart';
 import 'package:onyx/core/vault/vault_source.dart';
@@ -180,6 +181,30 @@ void main() {
       expect(dup.length, 1,
           reason: 'the two schedules never fuse under one id');
       expect(dup.single.title, 'First');
+    });
+
+    test('card-ness gate: only cards a deck lens claims are indexed (ADR-0023)',
+        () async {
+      // Two well-formed cards in different folders. A single deck lens over `algo/`
+      // makes card-ness = "in that folder"; the rest parse fine but aren't cards.
+      write('algo/two-sum.md',
+          '---\nid: two-sum\ntype: flashcard\n---\n\n# Two Sum\n\n## S\n\nx\n');
+      write('lang/verbs.md',
+          '---\nid: verbs\ntype: flashcard\n---\n\n# Verbs\n\n## S\n\ny\n');
+
+      final scoped = VaultIndexer(DesktopVaultSource(root.path), db,
+          lenses: [FolderUnder('algo')]);
+      final result = await scoped.reindex();
+      expect(result.cards.map((c) => c.id).toSet(), {'two-sum'});
+      expect(result.unlensed, greaterThan(0),
+          reason: 'card-a/card-b/no-id/verbs are outside the lens');
+
+      // No lenses (the fresh-vault / direct-parse default) = no gate → keep all.
+      final all =
+          await VaultIndexer(DesktopVaultSource(root.path), db).reindex();
+      expect(all.unlensed, 0);
+      expect(all.cards.map((c) => c.id),
+          containsAll(<String>['two-sum', 'verbs', 'no-id']));
     });
   },
       skip: _sqliteAvailable

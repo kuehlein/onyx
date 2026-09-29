@@ -10,6 +10,7 @@ import '../../core/vault/vault_ref.dart';
 import '../../core/vault/vault_ref_store.dart';
 import '../../core/vault/vault_source.dart';
 import 'database.dart';
+import 'decks.dart';
 import 'settings.dart';
 import 'template.dart';
 
@@ -129,11 +130,25 @@ Future<IndexResult> vaultIndex(Ref ref) async {
   final db = ref.watch(appDatabaseProvider);
   // Ensure the subject registry is loaded (activeTemplate set) BEFORE parsing — the
   // parser reads the flow definitions from each card's subject (#30 Phase 5 / #30d).
-  final registry = await ref.watch(templateRegistryProvider.future);
+  // Card-ness = matched by some deck's membership lens (ADR-0023): the union of the
+  // decks' lenses is the single grouping knob. Set up BOTH watches synchronously —
+  // before any await — so a mid-gap invalidation never touches a disposed ref (the
+  // note above). Loading decks here is acyclic — decks are pure config (deck.json),
+  // independent of the card index. All decks count (paused/archived too); a card
+  // belongs if any lens claims it. Editing a lens now re-indexes (card-ness follows).
+  final registryFuture = ref.watch(templateRegistryProvider.future);
+  final decksFuture = ref.watch(decksProvider.future);
+  final registry = await registryFuture;
   if (source == null) {
     return const IndexResult(cards: [], malformed: 0, skipped: 0);
   }
-  return VaultIndexer(source, db, registry: registry).reindex();
+  final decks = await decksFuture;
+  return VaultIndexer(
+    source,
+    db,
+    registry: registry,
+    lenses: [for (final d in decks) d.membership],
+  ).reindex();
 }
 
 /// Dangling `[[wikilinks]]` grouped by their missing target (task #20), most-

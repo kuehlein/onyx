@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../../shared/models/card.dart';
 import '../database/database.dart';
+import '../query/card_query.dart';
 import '../template/active_template.dart';
 import '../template/template_registry.dart';
 import 'card_parser.dart';
@@ -18,6 +19,7 @@ class IndexResult {
     this.unresolvedLinks = const [],
     this.conflictCopies = const [],
     this.collisions = const [],
+    this.unlensed = 0,
   });
 
   /// Successfully parsed cards — the in-memory index the app reads from.
@@ -44,6 +46,13 @@ class IndexResult {
   /// letting both into `card_cache`/SRS would fuse their schedules under one key.
   /// Surfaced so the user can disambiguate.
   final List<String> collisions;
+
+  /// Parsed cards that no deck's membership lens claims — not cards (ADR-0023:
+  /// card-ness = deck-lens membership), dropped from the index. Surfaced as a count
+  /// so a vault of notes with no matching deck reads as "0 cards, N notes present"
+  /// rather than silently empty. Zero when no lens gate is applied (direct-parse
+  /// tests / a fresh vault with no decks → keep-all).
+  final int unlensed;
 
   int get cardCount => cards.length;
 
@@ -103,12 +112,19 @@ class VaultIndexer {
     this._db, {
     CardParser parser = const CardParser(),
     TemplateRegistry? registry,
+    List<CardQuery> lenses = const [],
   })  : _parser = parser,
-        _registry = registry;
+        _registry = registry,
+        _lenses = lenses;
 
   final VaultSource _source;
   final AppDatabase _db;
   final CardParser _parser;
+
+  /// The membership lenses of every deck in the vault (ADR-0023). Card-ness = a
+  /// parsed card matched by at least one — the union is the single grouping knob.
+  /// Empty (direct-parse tests / a fresh vault with no decks) = no gate → keep all.
+  final List<CardQuery> _lenses;
 
   /// The subjects live in this vault; each card is stamped with the subject that
   /// owns its path (task #30d). Falls back to the process-wide [activeRegistry]
@@ -119,9 +135,17 @@ class VaultIndexer {
     final cards = <Card>[];
     var malformed = 0;
     var skipped = 0;
+    var unlensed = 0;
     final conflictCopies = <String>[];
     final seenIds = <String>{};
     final collisions = <String>[];
+
+    // Card-ness = matched by some deck's membership lens (ADR-0023). Strip any
+    // dynamic (study-state) leaf first: card-ness is parse-time/structural, never
+    // runtime-computed, so a card never blinks in/out of existence as it's studied.
+    // No lenses (direct-parse tests / a fresh vault) = no gate → keep all.
+    final gates = [for (final l in _lenses) stripDynamic(l)];
+    bool inSomeLens(Card c) => gates.isEmpty || gates.any((g) => g.matches(c));
 
     final registry = _registry ?? activeRegistry;
     final paths = await _source.listCardPaths();
@@ -141,6 +165,12 @@ class VaultIndexer {
         );
         if (card == null) {
           skipped++;
+        } else if (!inSomeLens(card)) {
+          // Parsed fine, but no deck's lens claims it → not a card (ADR-0023).
+          // Dropped (not skipped/malformed); counted for diagnostics. Gate runs
+          // before the collision check so an out-of-lens file can't shadow an
+          // in-lens one that shares its id.
+          unlensed++;
         } else if (!seenIds.add(card.id)) {
           // Its cardId is already claimed by an earlier (sorted-first) file —
           // indexing both would fuse their schedules under one key. Skip + report,
@@ -195,6 +225,7 @@ class VaultIndexer {
       unresolvedLinks: unresolvedLinks,
       conflictCopies: conflictCopies,
       collisions: collisions,
+      unlensed: unlensed,
     );
   }
 
