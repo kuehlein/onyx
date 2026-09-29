@@ -133,14 +133,20 @@ once and can't.
   a filename-keyed (id-less) card that is renamed orphans its schedule — so id-less authoring is safe to
   *enable* now but the CS cards keep their `id:` until detection ships.
 - **Follow-ups:** card-rename detection (**#158**, now card + section grain); mandatory share-id
-  (**ADR-0021**); card-ness via selector (**#153**); the optional strip-redundant-`id:` chore (post-#158).
-- **The zero-frontmatter vault (the realization this unblocks):** with `id:` optional (here) *and* card-ness
-  + flow driven by a **directory/tag selector** (#153 — e.g. a flow whose selector is `folder:algorithms`),
-  a plain Markdown vault with **no frontmatter at all** fully functions: the directory *is* the query lens
-  (it decides both card-ness and flow), and the filename *is* the identity. `id:`/`type:` become
-  opt-in overrides, never requirements. #153 must add the **collision guard** (a folder designated as
-  card-bearing can hold same-named files across sub-folders) and keep non-card notes out of card folders
-  (or scope the selector) — the two edges directory-based card-ness introduces.
+  (**ADR-0021**); the optional strip-redundant-`id:` chore (post-#158). Card-ness via selector (**#153**,
+  engine piece) **landed 2026-09-29** — see below.
+- **The zero-frontmatter vault (the realization this unblocks) — engine piece DONE (2026-09-29):** with `id:`
+  optional (here) *and* card-ness + flow now driven by the subject's flow **selectors** (`card_parser.dart`:
+  a file is a card iff some flow's selector matches its structural attributes; `type:` is taken from the
+  claiming flow when absent; no-frontmatter is no longer an auto-skip), a plain Markdown vault with **no
+  frontmatter at all** fully functions: the directory *is* the query lens (it decides both card-ness and
+  flow), and the filename *is* the identity. `id:`/`type:` are now opt-in overrides, never requirements. The
+  **collision guard** shipped (indexer detects two files resolving to one `cardId` — first-wins, skip +
+  report, never merge). **Byte-identical for SWE** (its flows use the default `TypeIs` selector). *Remaining
+  (product/config, deferred to a design call):* no shipping subject yet *authors* a folder/tag selector, so a
+  template needs a way to **designate card-bearing folder(s)/tag(s)** (overlaps #162 + folder-path
+  onboarding), and non-card notes (README/MOC) must be kept out of a card folder (skip files lacking the
+  expected structure, or an ignore convention) — the two edges directory-based card-ness introduces.
 
 ## Open questions (from the research, unresolved by any single source)
 

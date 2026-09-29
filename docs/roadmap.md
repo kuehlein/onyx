@@ -660,10 +660,23 @@ The MVP-tagged stories, cloud still absent:
         detection** (cold-reindex, folds into **#158**, now card+section grain — a filename-keyed card that's renamed
         re-attaches state), **mandatory embedded opaque id at share/publish** (**ADR-0021**), and the optional
         strip-redundant-`id:` chore (post-#158).
-      - *The zero-frontmatter vault (the realization, **next**):* with `id:` optional + the collision guard done, the
-        remaining piece is **card-ness + flow from a directory/tag selector** (a flow whose selector is
-        `folder:algorithms` → every file there is a card in that flow, no `type:`) — **#153**, plus keeping non-card
-        notes out of card folders. Then a plain Markdown vault with **zero frontmatter** fully functions.
+      - *The zero-frontmatter vault (the realization) — **engine capability DONE** (2026-09-29):* card-ness + flow now
+        route through the subject's flow **selectors** (`card_parser.dart`): a file is a card iff some flow's selector
+        matches its structural attributes (type / tags / folder), resolved via a lightweight probe before the
+        title/section parse; quizzability reads the *resolved* flow's policy (not a re-lookup by `type:`). No frontmatter
+        is no longer an auto-skip — a `FolderUnder`/`TagIs` selector can claim a plain note, so with `id:` optional
+        (ADR-0022) and `type:` taken from the claiming flow, **a plain Markdown vault with zero frontmatter fully
+        functions** (directory = the lens, filename = the id). **Byte-identical for SWE** (its flows all use the default
+        `TypeIs` selector → a note with no `type:` matches nothing → skipped as before; non-cards-return-null net + full
+        suite confirm). Tested: a zero-frontmatter note claimed by a `FolderUnder` selector + the two edges (note outside
+        the card folder; stray `type:` in the wrong folder). Settings' card-ness rule derives from the flows' selectors.
+      - *The zero-frontmatter vault — **remaining (product/config, needs a call)**:* the engine can *evaluate* folder/tag
+        selectors, but **no shipping subject authors one** (SWE + neutral both use `TypeIs`). To make it usable
+        end-to-end a template must **designate which folder(s)/tag(s) are card-bearing** — a genuine authoring-UX
+        decision (a `cardFolders:` config field? a convention? the deck lens?) that overlaps **#162** (template↔flow
+        wiring) and the folder-path onboarding thread. Plus the edge the ADR flagged: **keep non-card notes (README/MOC)
+        out of a card folder** (skip files lacking the expected structure, or an ignore convention). Deferred to that
+        design call rather than picking a mechanism unilaterally.
       - *Mandatory-`type:` removal → **folded into #153** (finding 2026-09-28):* removing the `type:` card-ness gate
         safely needs a card-ness signal that isn't `type:`. The only vault-safe interim (`has id:`) would treat any
         general-vault note carrying an incidental `id:` as a flashcard — a **general-vault regression** for **zero**
