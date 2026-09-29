@@ -654,9 +654,16 @@ The MVP-tagged stories, cloud still absent:
         bare filename slug — a card needs no `id:` glue, and cardId aligns with the wikilink/`depends-on`/`## Related`
         namespace (kills the id-vs-filename join-bug class). Byte-identical (all 155 cards keep their `id:`; only an
         id-less file now indexes as a filename-slug card). Removed the dead missing-id machinery (`MissingCardIdException`,
-        `IndexResult.idless`, the Settings diagnostic). Follow-ups: **card-rename detection** (cold-reindex, folds into
-        **#158**, now card+section grain — a filename-keyed card that's renamed re-attaches state), **mandatory embedded
-        opaque id at share/publish** (**ADR-0021**), and the optional strip-redundant-`id:` chore (post-#158).
+        `IndexResult.idless`, the Settings diagnostic). **✅ collision guard** (2026-09-29): the indexer detects two files
+        resolving to the same `cardId` (duplicate `id:` or same filename slug), keeps the sorted-first, and skips + reports
+        the rest (`IndexResult.collisions` + Settings) — never fuses two schedules under one key. Follow-ups: **card-rename
+        detection** (cold-reindex, folds into **#158**, now card+section grain — a filename-keyed card that's renamed
+        re-attaches state), **mandatory embedded opaque id at share/publish** (**ADR-0021**), and the optional
+        strip-redundant-`id:` chore (post-#158).
+      - *The zero-frontmatter vault (the realization, **next**):* with `id:` optional + the collision guard done, the
+        remaining piece is **card-ness + flow from a directory/tag selector** (a flow whose selector is
+        `folder:algorithms` → every file there is a card in that flow, no `type:`) — **#153**, plus keeping non-card
+        notes out of card folders. Then a plain Markdown vault with **zero frontmatter** fully functions.
       - *Mandatory-`type:` removal → **folded into #153** (finding 2026-09-28):* removing the `type:` card-ness gate
         safely needs a card-ness signal that isn't `type:`. The only vault-safe interim (`has id:`) would treat any
         general-vault note carrying an incidental `id:` as a flashcard — a **general-vault regression** for **zero**
