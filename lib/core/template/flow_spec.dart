@@ -7,6 +7,8 @@
 /// `software_interviews.dart`.
 library;
 
+import '../query/card_query.dart';
+
 /// How a flow's cards are scheduled/practiced.
 enum SchedulingModel {
   /// FSRS spaced recall (the Learn/Review concept deck).
@@ -58,10 +60,23 @@ class FlowSpec {
     this.skill,
     this.weightDomain,
     this.attemptSource,
-  });
+    CardQuery? selector,
+  }) : _selector = selector;
 
   /// The card `type:` frontmatter value this flow applies to.
   final String cardType;
+
+  /// The subject-level **membership query** for this flow (ADR-0020 §2): a card
+  /// belongs to this flow iff its [selector] matches. Defaults to matching the card's
+  /// `type:` ([TypeIs] over [cardType]) — byte-identical to the pre-selector
+  /// `flowForType` lookup — so a flow needs no explicit selector until it keys on a
+  /// tag/folder/marker instead of `type:`. Held privately so the default can depend on
+  /// [cardType] (a const default can't).
+  final CardQuery? _selector;
+
+  /// This flow's membership query (see [_selector]); the `type:`-matching default when
+  /// none was configured.
+  CardQuery get selector => _selector ?? TypeIs(cardType);
   final SchedulingModel scheduling;
   final QuizzabilityPolicy quizzability;
 

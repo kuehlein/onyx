@@ -4,7 +4,7 @@ import '../../core/analytics/insights.dart';
 import '../../core/analytics/retention.dart';
 import '../../core/interview/assessment.dart' show AppliedAssessment;
 import '../../core/readiness/readiness.dart' show durability;
-import '../models/card.dart';
+import '../../core/template/card_flow.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';

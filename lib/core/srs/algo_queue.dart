@@ -2,6 +2,7 @@
 // SCHEDULING MODEL (two-clock is the unique twoClock flow), not a hardcoded
 // `type == kTypeAlgorithm` branch — so invariant #2 holds with no ignore.
 import '../../shared/models/card.dart';
+import '../template/card_flow.dart';
 import 'review_queue.dart' show ReviewItem;
 
 /// Which mode the day's queue nudges you toward for a given problem. Solving is

@@ -9,9 +9,9 @@ import '../../core/database/database.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/srs/algo_queue.dart';
 import '../../core/srs/recognition.dart';
+import '../../core/template/card_flow.dart';
 import '../../core/template/study_policy.dart'
     show retentionDefault, retentionForPriority;
-import '../models/card.dart';
 import 'clock.dart';
 import 'interview.dart';
 import 'readiness.dart';

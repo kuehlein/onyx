@@ -1,3 +1,4 @@
+import '../../core/template/card_flow.dart';
 import '../models/card.dart';
 
 /// Per-concept comfort for prerequisite gating — shared by the daily plan and the
