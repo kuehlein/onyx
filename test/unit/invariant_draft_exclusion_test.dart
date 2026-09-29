@@ -29,7 +29,7 @@ Card _card(String id, {required bool draft, List<String> tags = const ['x']}) =>
     );
 
 IndexResult _index(List<Card> cards) =>
-    IndexResult(cards: cards, idless: 0, malformed: 0, skipped: 0);
+    IndexResult(cards: cards, malformed: 0, skipped: 0);
 
 class _FixedDecks extends Decks {
   _FixedDecks(this._decks);

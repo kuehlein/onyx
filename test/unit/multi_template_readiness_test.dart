@@ -74,7 +74,6 @@ void main() {
         filePath: 'a.md',
       ),
     ],
-    idless: 0,
     malformed: 0,
     skipped: 0,
   );

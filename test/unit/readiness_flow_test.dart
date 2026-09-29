@@ -60,7 +60,6 @@ void main() {
   // should visibly move the overall roll-up.
   final index = IndexResult(
     cards: [_card('A', 'ds-a'), _card('B', 'system-design')],
-    idless: 0,
     malformed: 0,
     skipped: 0,
   );
@@ -260,7 +259,6 @@ void main() {
         _card('A', 'system-design', tier: 1),
         _card('B', 'system-design', tier: 4),
       ],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );
@@ -314,7 +312,6 @@ void main() {
     // both keyed on role only and shared the active deck's card sliver.
     final twoDeckIndex = IndexResult(
       cards: [_card('A', 'ds-a'), _card('B', 'system-design')],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );

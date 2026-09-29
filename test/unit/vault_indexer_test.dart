@@ -92,19 +92,21 @@ void main() {
       root.deleteSync(recursive: true);
     });
 
-    test('parses cards and counts non-cards / id-less files', () async {
+    test('parses cards (id-less file → filename-slug card) and skips non-cards',
+        () async {
       final result = await indexer.reindex();
-      expect(result.cardCount, 2);
-      expect(result.idless, 1); // no-id.md
+      // no-id.md has no id: → cardId is its filename slug (ADR-0022), so it's a
+      // real card now (3 total: card-a, card-b, no-id), not an id-less reject.
+      expect(result.cardCount, 3);
       expect(result.skipped, 1); // note.md (has no frontmatter)
       expect(result.malformed, 0);
     });
 
-    test('counts a malformed card (id + type, but no H1 title)', () async {
+    test('counts a malformed card (type, but no H1 title)', () async {
       // A recognized card that fails structural parse lands in the `malformed`
       // bucket (which drives the Settings "fix your vault" surface) — distinct
-      // from idless (missing id) and skipped (not a card at all). Indexing must
-      // bucket it, not crash the whole reindex.
+      // from skipped (not a card at all). Indexing must bucket it, not crash the
+      // whole reindex.
       write(
         'malformed.md',
         '---\nid: cccccccc-cccc-4ccc-8ccc-cccccccccccc\ntype: flashcard\n'
@@ -112,11 +114,10 @@ void main() {
       );
       final result = await indexer.reindex();
       expect(result.malformed, 1);
-      expect(result.cardCount, 2, reason: 'the two valid cards still index');
-      expect(result.idless, 1);
+      expect(result.cardCount, 3, reason: 'card-a, card-b, no-id still index');
       expect(result.skipped, 1);
       // The malformed file is not cached.
-      expect((await db.select(db.cardCache).get()).length, 2);
+      expect((await db.select(db.cardCache).get()).length, 3);
     });
 
     test('populates card_cache with parsed metadata', () async {
@@ -125,6 +126,7 @@ void main() {
       expect(rows.map((r) => r.cardId).toSet(), {
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        'no-id', // no id: → cardId is the filename slug (ADR-0022)
       });
       final cardA = rows.firstWhere((r) => r.title == 'Card A');
       expect(cardA.cardType, 'flashcard');
@@ -144,7 +146,7 @@ void main() {
     test('reindex is idempotent (caches rebuilt, not duplicated)', () async {
       await indexer.reindex();
       await indexer.reindex();
-      expect((await db.select(db.cardCache).get()).length, 2);
+      expect((await db.select(db.cardCache).get()).length, 3); // +no-id
       expect((await db.select(db.cardLinks).get()).length, 1);
     });
 
@@ -156,10 +158,10 @@ void main() {
       write('card-a.sync-conflict-20260101-ABCDEF.md', _cardA);
       write('card-a (conflicted copy).md', _cardA);
       final result = await indexer.reindex();
-      expect(result.cardCount, 2, reason: 'conflict copies are not parsed');
+      expect(result.cardCount, 3, reason: 'conflict copies are not parsed');
       expect(result.conflictCopies.length, 2);
-      // The two real cards cache once each — no duplicate id leaked from a copy.
-      expect((await db.select(db.cardCache).get()).length, 2);
+      // The three real cards cache once each — no duplicate id leaked from a copy.
+      expect((await db.select(db.cardCache).get()).length, 3);
     });
   },
       skip: _sqliteAvailable

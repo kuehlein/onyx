@@ -24,12 +24,13 @@ List<({String label, String value})> cardParsingRules() {
 ///
 /// The parser is pure (no I/O): callers read the file and hand over its text
 /// plus a path for diagnostics. It is fence-aware — `##` lines inside fenced
-/// code blocks do not start new sections — and it distinguishes three outcomes:
+/// code blocks do not start new sections — and it distinguishes two outcomes:
 ///
 ///  * returns `null` when the file is not an Onyx card (no recognized `type`),
 ///    which is how config-dir (`_onyx/`) files and ordinary notes are skipped;
-///  * throws [MissingCardIdException] when a valid card lacks an `id`;
 ///  * throws [MalformedCardException] when a card is structurally invalid.
+///
+/// A card's `id:` is optional (ADR-0022): absent, its id is the filename slug.
 class CardParser {
   const CardParser();
 
@@ -116,10 +117,15 @@ class CardParser {
     // skipped. (Was: CardType.fromString != null — a no-op for the SWE subject.)
     if (type == null || !subject.isCardType(type)) return null;
 
-    final id = (frontmatter['id'] as String?)?.trim();
-    if (id == null || id.isEmpty) {
-      throw MissingCardIdException(filePath);
-    }
+    // Card identity (ADR-0022): the explicit `id:` when present — a durable / shareable
+    // override — else the bare filename slug, so a card needs no `id:` glue. The
+    // filename default aligns cardId with the wikilink / `depends-on` / `## Related`
+    // namespace (all key on the filename), killing the id-vs-filename join-bug class.
+    final rawId = (frontmatter['id'] as String?)?.trim();
+    final id = (rawId != null && rawId.isNotEmpty)
+        ? rawId
+        : slugify(
+            filePath.split('/').last.replaceFirst(RegExp(r'\.[^.]+$'), ''));
 
     final profile = subject.parseProfile;
     final body = match.group(2) ?? '';

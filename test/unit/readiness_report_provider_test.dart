@@ -75,7 +75,6 @@ final _index = IndexResult(
     _card('a', 'system-design', 'Load balancing'),
     _card('b', 'ds-a', 'Binary search'),
   ],
-  idless: 0,
   malformed: 0,
   skipped: 0,
 );

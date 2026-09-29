@@ -57,7 +57,6 @@ void main() {
       _card('Design a URL shortener',
           tags: ['system-design'], type: 'interview-question'),
     ],
-    idless: 0,
     malformed: 0,
     skipped: 0,
   );

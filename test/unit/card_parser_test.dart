@@ -279,16 +279,23 @@ void main() {
     });
   });
 
-  group('invalid cards throw', () {
-    test('valid type but missing id → MissingCardIdException', () {
+  group('card identity (ADR-0022)', () {
+    test('no id: → cardId is the filename slug', () {
       const md =
           '---\ntype: flashcard\ntags: [ds-a]\n---\n\n# X\n\n## When to Use\n\ny\n';
-      expect(
-        () => _parser.parse(md, filePath: 'noid.md'),
-        throwsA(isA<MissingCardIdException>()),
-      );
+      // Basename, extension stripped, slugified (lowercase, spaces → hyphens).
+      expect(_parser.parse(md, filePath: 'algo/Binary Search.md')!.id,
+          'binary-search');
     });
 
+    test('explicit id: overrides the filename', () {
+      const md =
+          '---\nid: custom-id\ntype: flashcard\n---\n\n# X\n\n## S\n\ny\n';
+      expect(_parser.parse(md, filePath: 'whatever.md')!.id, 'custom-id');
+    });
+  });
+
+  group('invalid cards throw', () {
     test('card without an H1 → MalformedCardException', () {
       const md = '---\nid: 44444444-4444-4444-8444-444444444444\n'
           'type: flashcard\n---\n\nBody with no heading.\n\n## When to Use\n\ny\n';

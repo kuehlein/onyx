@@ -74,7 +74,7 @@ Card testCard(
 
 /// An [IndexResult] wrapping [cards] with zero error buckets.
 IndexResult testIndex(List<Card> cards) =>
-    IndexResult(cards: cards, idless: 0, malformed: 0, skipped: 0);
+    IndexResult(cards: cards, malformed: 0, skipped: 0);
 
 /// Pumps the full [OnyxApp] off a real DB/vault and past the /welcome gate, then
 /// settles. Every async provider has a calm default; pass the few a test varies.

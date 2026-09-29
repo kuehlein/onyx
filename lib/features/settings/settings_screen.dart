@@ -68,7 +68,6 @@ class SettingsScreen extends ConsumerWidget {
               loading: () => 'Indexing…',
               error: (e, _) => 'Error: $e',
               data: (r) => '${r.cardCount} cards'
-                  '${r.idless > 0 ? ' · ${r.idless} missing id' : ''}'
                   '${r.malformed > 0 ? ' · ${r.malformed} malformed' : ''}',
             )),
             trailing: IconButton(

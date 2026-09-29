@@ -131,7 +131,7 @@ Future<IndexResult> vaultIndex(Ref ref) async {
   // parser reads the flow definitions from each card's subject (#30 Phase 5 / #30d).
   final registry = await ref.watch(templateRegistryProvider.future);
   if (source == null) {
-    return const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0);
+    return const IndexResult(cards: [], malformed: 0, skipped: 0);
   }
   return VaultIndexer(source, db, registry: registry).reindex();
 }

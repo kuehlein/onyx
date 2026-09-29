@@ -85,8 +85,8 @@ class _OneReview extends StudySession {
   }
 }
 
-final _index = IndexResult(
-    cards: [_card('L1'), _card('R1')], idless: 0, malformed: 0, skipped: 0);
+final _index =
+    IndexResult(cards: [_card('L1'), _card('R1')], malformed: 0, skipped: 0);
 
 // Two typed factories with inline override lists — riverpod's bare `Override`
 // supertype isn't in the public export, so it can't be named in a signature.

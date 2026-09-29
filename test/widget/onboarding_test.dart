@@ -73,8 +73,8 @@ final _homeOverrides = [
       (byDomain: <String, TransferEstimate>{}, interview: false)),
   appliedSummaryProvider
       .overrideWith((ref) async => <String, ({int attempts, int contested})>{}),
-  vaultIndexProvider.overrideWith((ref) async =>
-      const IndexResult(cards: [], idless: 0, malformed: 0, skipped: 0)),
+  vaultIndexProvider.overrideWith(
+      (ref) async => const IndexResult(cards: [], malformed: 0, skipped: 0)),
 ];
 
 /// Resolve the source from the in-memory ref, bypassing `ONYX_VAULT_PATH` (the

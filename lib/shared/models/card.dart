@@ -261,18 +261,7 @@ class Card {
       sections.where((section) => section.quizzable);
 }
 
-/// Thrown when a file has a valid card `type` but is missing its `id`. The
-/// indexer counts these (surfaced in Settings) and skips them — they are cards
-/// that just need a UUID added.
-class MissingCardIdException implements Exception {
-  const MissingCardIdException(this.filePath);
-  final String filePath;
-
-  @override
-  String toString() => 'MissingCardIdException: no `id` field in $filePath';
-}
-
-/// Thrown when a file is a card (valid type + id) but is structurally invalid,
+/// Thrown when a file is a card (valid type) but is structurally invalid,
 /// e.g. it has no H1 title.
 class MalformedCardException implements Exception {
   const MalformedCardException(this.filePath, this.reason);

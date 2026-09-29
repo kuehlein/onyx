@@ -64,7 +64,6 @@ void main() {
       )!;
       final index = IndexResult(
         cards: [active, draft],
-        idless: 0,
         malformed: 0,
         skipped: 0,
       );

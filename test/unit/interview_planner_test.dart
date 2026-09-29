@@ -77,7 +77,6 @@ const _index = IndexResult(
       concepts: ['consistent-hashing'],
     ),
   ],
-  idless: 0,
   malformed: 0,
   skipped: 0,
 );

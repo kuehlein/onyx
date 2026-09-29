@@ -13,7 +13,6 @@ import 'vault_source.dart';
 class IndexResult {
   const IndexResult({
     required this.cards,
-    required this.idless,
     required this.malformed,
     required this.skipped,
     this.unresolvedLinks = const [],
@@ -23,11 +22,7 @@ class IndexResult {
   /// Successfully parsed cards — the in-memory index the app reads from.
   final List<Card> cards;
 
-  /// Files with a valid card `type` but no `id`. Surfaced in Settings so the
-  /// user can add UUIDs; skipped for now.
-  final int idless;
-
-  /// Files that are cards (valid type + id) but structurally invalid.
+  /// Files that are cards (valid type) but structurally invalid.
   final int malformed;
 
   /// Non-card files skipped (no recognized `type`).
@@ -113,7 +108,6 @@ class VaultIndexer {
 
   Future<IndexResult> reindex() async {
     final cards = <Card>[];
-    var idless = 0;
     var malformed = 0;
     var skipped = 0;
     final conflictCopies = <String>[];
@@ -139,8 +133,6 @@ class VaultIndexer {
         } else {
           cards.add(card);
         }
-      } on MissingCardIdException {
-        idless++;
       } on MalformedCardException {
         malformed++;
       }
@@ -182,7 +174,6 @@ class VaultIndexer {
 
     return IndexResult(
       cards: cards,
-      idless: idless,
       malformed: malformed,
       skipped: skipped,
       unresolvedLinks: unresolvedLinks,

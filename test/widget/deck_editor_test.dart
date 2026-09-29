@@ -247,7 +247,6 @@ void main() {
         _card('c', folder: 'spanish', tags: ['vocab']),
         _card('d', folder: 'korean', tags: ['vocab'], draft: true),
       ],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );
@@ -275,7 +274,6 @@ void main() {
       cards: [
         _card('a', folder: 'x', tags: ['t'])
       ],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );
@@ -379,7 +377,6 @@ void main() {
       cards: [
         _card('a', folder: 'x', tags: ['t'])
       ],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );

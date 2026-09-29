@@ -85,7 +85,6 @@ void main() {
         filePath: 'y.md',
       ),
     ],
-    idless: 0,
     malformed: 0,
     skipped: 0,
   );

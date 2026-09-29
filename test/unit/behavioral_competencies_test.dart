@@ -45,7 +45,6 @@ void main() {
         _behavioral('leadership'),
         _behavioral('conflict', status: CardStatus.draft),
       ],
-      idless: 0,
       malformed: 0,
       skipped: 0,
     );

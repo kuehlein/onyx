@@ -52,7 +52,6 @@ void main() {
       _card('a2', path: 'alpha/a2.md'),
       _card('b1', path: 'beta/b1.md'),
     ],
-    idless: 0,
     malformed: 0,
     skipped: 0,
   );
