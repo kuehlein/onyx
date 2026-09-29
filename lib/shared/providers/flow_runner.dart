@@ -7,7 +7,6 @@ import '../../core/practice/mock_session.dart';
 import '../../core/template/active_template.dart';
 import '../../core/template/dependency_gating.dart';
 import '../../core/template/flow_prompt.dart';
-import '../../core/template/flow_spec.dart';
 import '../models/card.dart';
 import 'ai.dart';
 import 'clock.dart';

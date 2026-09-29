@@ -1,7 +1,8 @@
 import '../../core/template/active_template.dart';
 import '../../core/template/flow_spec.dart';
 
-export '../../core/template/flow_spec.dart' show SchedulingModel;
+export '../../core/template/flow_spec.dart'
+    show FlowSpec, SchedulingModel, QuizzabilityPolicy;
 
 // The SWE card-type value constants, re-exported so type comparisons across the
 // app use one hyphenated source of truth (no camelCase-vs-hyphen mistypes).
@@ -191,12 +192,17 @@ class Card {
   /// vaults resolve to the one active subject.
   bool get isApproachCard => templateFor(templateId).isApproachType(type);
 
+  /// The [FlowSpec] this card resolves to via its **own** subject config (task #30d;
+  /// single-subject vaults resolve to the one active subject), or null when the
+  /// `type:` matches no configured flow. The config-driven handle engines dispatch
+  /// through (`flow?.scheduling`, `flow?.quizzability`) instead of a hardcoded
+  /// `type == kType…` branch (invariant #2).
+  FlowSpec? get flow => templateFor(templateId).flowForType(type);
+
   /// This card's [SchedulingModel] — its flow's scheduling (recall / twoClock /
-  /// mock), resolved via this card's own subject config (invariant #2), or null when
-  /// the `type:` matches no configured flow. Lets an engine dispatch on the *model*
-  /// (e.g. the algorithms two-clock) instead of a hardcoded `type == kType…` branch.
-  SchedulingModel? get schedulingModel =>
-      templateFor(templateId).flowForType(type)?.scheduling;
+  /// mock), or null when the `type:` matches no configured flow. Lets an engine
+  /// dispatch on the *model* (e.g. the algorithms two-clock) not a card-type branch.
+  SchedulingModel? get schedulingModel => flow?.scheduling;
 
   /// This card's lifecycle status. [CardStatus.draft] cards are excluded from all
   /// scheduling and every readiness denominator until promoted through the review

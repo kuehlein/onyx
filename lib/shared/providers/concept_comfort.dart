@@ -7,11 +7,10 @@ import '../models/card.dart';
 /// `depends-on` field name a concept by its FILE, not its id (and the vault mixes
 /// id conventions), so a filename→id hop is needed for gating to see the prereq.
 ///
-/// TODO(#87 / #32): the "concept card" predicate is still `type == flashcard` — a
-/// type-branch that should become config-driven (a *foundational-recall* flow),
-/// which needs the concept-vs-applied-recall model call. Centralised here so that
-/// fix lands in one place. `stateKeys` is the set of `cardId::sectionSlug` keys
-/// that have SRS state.
+/// The "concept card" predicate is config-driven (invariant #2): a card whose flow
+/// uses the **blocklist** quizzability policy — the foundational concept-recall flow —
+/// resolved via [Card.flow], not a `type == flashcard` branch. `stateKeys` is the set
+/// of `cardId::sectionSlug` keys that have SRS state.
 class ConceptComfort {
   const ConceptComfort(this.comfort, this.idByFile, this.label);
 
@@ -36,10 +35,9 @@ ConceptComfort buildConceptComfort(List<Card> cards, Set<String> stateKeys) {
   final idByFile = <String, String>{};
   final label = <String, String>{};
   for (final c in cards) {
-    // The concept-card predicate is the deferred config fix (see the class doc:
-    // TODO #87/#32 — needs the concept-vs-applied-recall model call).
-    // ignore: no_card_type_branch
-    if (c.type != kTypeFlashcard) continue;
+    // Concept cards only: the flow whose quizzability is the blocklist policy (the
+    // foundational concept-recall flow), dispatched via config — not a type branch.
+    if (c.flow?.quizzability != QuizzabilityPolicy.blocklist) continue;
     final slug = c.filePath.split('/').last.replaceFirst(RegExp(r'\.md$'), '');
     idByFile[slug] = c.id;
     label[c.id] = c.title;
