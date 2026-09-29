@@ -640,6 +640,14 @@ The MVP-tagged stories, cloud still absent:
       subject templates (**#153**) + required-core authoring templates (**#156**). Deferred to its own scoping
       session (**#162**): the authoring-template *selection UX* + template↔flow wiring + the two-tier vault-health
       warnings (deterministic two-flow/fails-required-core; soft "no explicit flow"; per-card dismiss in app-state).
+      - *Engine re-expression underway (2026-09-28):* **✅** the **algo** engines (algo_queue/algo/pattern-mastery)
+        dispatch on `scheduling == twoClock`, and **concept_comfort** on `quizzability == blocklist` — both genuine
+        config dimensions, byte-identical, ignores dropped, via a new `Card.flow`/`Card.schedulingModel`. **Remaining:**
+        the **behavioral + system-design** engines + their 2 mock screens (4 sites) share the `mock` model and are
+        distinguished only by *identity* today — an honest re-expression needs the **flow selector** (each flow's
+        membership `CardQuery`), the foundational piece above. Design note: putting a `CardQuery` on `FlowSpec`
+        introduces a `flow_spec → card_query → card` import cycle (Dart tolerates it, but resolve deliberately — e.g.
+        a `matches(cardFields)` seam or a flow-role field) when building the selector.
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.
