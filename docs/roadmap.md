@@ -650,6 +650,13 @@ The MVP-tagged stories, cloud still absent:
       - *`quiz:`/`quizzable:` removed **DONE** (2026-09-28):* per-card quizzability overrides gone — quizzability is
         purely the flow's `QuizzabilityPolicy` (ADR-0020 §2). Byte-identical (zero vault cards used them, verified);
         the "stop testing this" control moves to an app-state dismiss (#162).
+      - *`id:` made optional **DONE** (2026-09-29, ADR-0022 after a research pass):* `cardId` = explicit `id:` else the
+        bare filename slug — a card needs no `id:` glue, and cardId aligns with the wikilink/`depends-on`/`## Related`
+        namespace (kills the id-vs-filename join-bug class). Byte-identical (all 155 cards keep their `id:`; only an
+        id-less file now indexes as a filename-slug card). Removed the dead missing-id machinery (`MissingCardIdException`,
+        `IndexResult.idless`, the Settings diagnostic). Follow-ups: **card-rename detection** (cold-reindex, folds into
+        **#158**, now card+section grain — a filename-keyed card that's renamed re-attaches state), **mandatory embedded
+        opaque id at share/publish** (**ADR-0021**), and the optional strip-redundant-`id:` chore (post-#158).
       - *Mandatory-`type:` removal → **folded into #153** (finding 2026-09-28):* removing the `type:` card-ness gate
         safely needs a card-ness signal that isn't `type:`. The only vault-safe interim (`has id:`) would treat any
         general-vault note carrying an incidental `id:` as a flashcard — a **general-vault regression** for **zero**
