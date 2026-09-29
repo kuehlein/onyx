@@ -1,7 +1,7 @@
-// This IS the built-in Algorithms flow's engine; a new subject runs on the
-// generic vault-flow path (flow_runner), so these type filters don't reintroduce
-// the invariant-#2 drift the guard prevents elsewhere.
-// ignore_for_file: no_card_type_branch
+// The built-in Algorithms flow's engine. It selects its cards by the flow's
+// SCHEDULING MODEL (the two-clock is the unique twoClock flow), not a hardcoded
+// `type == kTypeAlgorithm` branch — so invariant #2 holds with no ignore, and a
+// non-SWE subject (no twoClock flow) cleanly matches nothing here.
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';
@@ -43,7 +43,7 @@ Future<List<AlgoTask>> algoQueue(Ref ref) async {
     // doesn't surface algos; the whole-vault default goal is unchanged.
     cards: [
       for (final c in goal.select(index.studyCards))
-        if (c.type == kTypeAlgorithm) c,
+        if (c.schedulingModel == SchedulingModel.twoClock) c,
     ],
     dueByKey: {for (final e in states.byKey.entries) e.key: e.value.dueAt},
     explainDueByKey: {for (final e in recog.entries) e.key: e.value.dueAt},
@@ -237,7 +237,7 @@ Future<({int due, int maintained})> algoRecognition(Ref ref) async {
   var due = 0;
   var maintained = 0;
   for (final c in index.studyCards) {
-    if (c.type != kTypeAlgorithm) continue;
+    if (c.schedulingModel != SchedulingModel.twoClock) continue;
     for (final s in c.quizzableSections) {
       final key = '${c.id}::${s.slug}';
       final r = rec[key];
@@ -271,7 +271,7 @@ Future<int> algoDueCount(Ref ref) async {
   final now = clock.now();
   var due = 0;
   for (final c in index.studyCards) {
-    if (c.type != kTypeAlgorithm) continue;
+    if (c.schedulingModel != SchedulingModel.twoClock) continue;
     for (final s in c.quizzableSections) {
       final d = states['${c.id}::${s.slug}']?.dueAt;
       if (d != null && !d.isAfter(now)) due++;

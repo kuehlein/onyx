@@ -1,7 +1,6 @@
-// This IS the built-in Algorithms flow's queue engine; a new subject runs on the
-// generic vault-flow path (flow_runner), so the type filter doesn't reintroduce
-// the invariant-#2 drift the guard prevents elsewhere.
-// ignore_for_file: no_card_type_branch
+// The built-in Algorithms flow's queue engine. It selects its cards by the flow's
+// SCHEDULING MODEL (two-clock is the unique twoClock flow), not a hardcoded
+// `type == kTypeAlgorithm` branch — so invariant #2 holds with no ignore.
 import '../../shared/models/card.dart';
 import 'review_queue.dart' show ReviewItem;
 
@@ -67,7 +66,7 @@ List<AlgoTask> buildAlgoQueue({
   final upcoming = <({ReviewItem item, DateTime dueAt})>[];
 
   for (final card in cards) {
-    if (card.type != kTypeAlgorithm) continue;
+    if (card.schedulingModel != SchedulingModel.twoClock) continue;
     for (final section in card.quizzableSections) {
       final key = '${card.id}::${section.slug}';
       final item = ReviewItem(card: card, section: section);
