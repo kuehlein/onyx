@@ -64,17 +64,21 @@ knob; card-ness and deck membership are the same act.
    This **re-layers** this session's change: the flow selectors stay, but only to resolve *how* a card is
    practiced — no longer *whether* it is one. `card_parser` becomes permissive (any well-formed note is a
    *candidate*); the **indexer** applies the lens-union card-ness gate.
-3. **A structural sanity floor** keeps "directory = cards" from slurping non-card notes. A candidate must
-   **parse into a valid card** (H1 title + structure; the existing `MalformedCardException` path buckets the
-   rest). The floor is **H1-based, not quizzable-based** — mock cards (system-design, behavioral) have zero
-   quizzable sections but *are* cards. It must also stay **parse-time / structural, never runtime-computed**:
-   card-ness keyed on a dynamic attribute (due state, review count — a `StateIs`-style leaf) would make cards
-   appear/vanish mid-session, the documented smart-playlist "live updating" frustration. Plus the existing
-   default excludes: the config dir (`_onyx/`, `kConfigDir`), folder-syncer conflict copies (`isConflictCopy`),
-   and non-configured file extensions (the parse profile's `fileExtensions`, already `{md}`). This floor is an
-   **inline-marker-as-gate** pattern with direct precedent — OSR's card-syntax markers (`::`/`?`/cloze),
-   RemNote's `==`/`>>` separators, org-drill's `:drill:` tag — a floor *beneath* an explicit folder/tag scope.
-   *Candidate default exclude (open):* a **folder note** (file name == parent-folder name — the index/MOC
+3. **No mandatory structure — the H1 requirement is gone (finalized 2026-09-29).** A candidate parses into a
+   card with **no imposed shape**: the title falls back to the **filename** when there's no H1 (Obsidian's
+   convention — the filename *is* the note name), sections split per the parse profile, and a body-only note is
+   a valid (0-section) card. *The user shapes what a card is via the parse profile + lens; the engine imposes
+   nothing.* The only **not-a-card** outcomes are: **broken frontmatter** — a `---` block that's unparseable or
+   not a key/value map → `MalformedCardException`, surfaced as a fix-this vault-health signal (this is what
+   `malformed` means now — **repurposed** from the interim "missing H1", which silently vanished otherwise); a
+   subject that declares **no flows** (null); or the default excludes below. Card-ness stays **parse-time /
+   structural, never runtime-computed** — no `StateIs`-style leaf in a card-ness lens (that would make cards
+   blink in/out mid-session, the documented smart-playlist frustration). Default excludes: the config dir
+   (`_onyx/`, `kConfigDir`, + legacy `_meta/`), folder-syncer conflict copies (`isConflictCopy`), and
+   non-configured file extensions (`ParseProfile.fileExtensions`, `{md}`).
+   *(Interim note: 2b briefly used an H1-as-floor with "malformed only if a selector claimed it"; dropping the
+   H1 entirely — the actual goal — replaced it. The over-inclusion it guarded against is now the excludes'
+   job.) Candidate default exclude (open):* a **folder note** (file name == parent-folder name — the index/MOC
    pattern) is a known folder-selection over-index vector (Yanki excludes exactly these); see open questions.
 4. **Recursion, made clear.** Recursive is the default (universal across ripgrep/Hugo/gitignore/Smart
    Folders) and the copy says so — "**SWE/** and everything inside it" — never bare jargon. This copy is
@@ -115,12 +119,25 @@ knob; card-ness and deck membership are the same act.
      file if a parent directory is excluded"); and *not* `dir/**` (the recursive form that itself breaks
      several implementations). **Validate the chosen glob library against this parent-prune/negation edge**
      before shipping — it is broadly mis-implemented.
+7. **Config AND AI skills live in the config dir, never the content area (shipped 2026-09-29).** Everything
+   Onyx-managed — deck lens/aims JSON, parse profile, and **AI-skill files** (a flow's interlocutor/grader
+   prompt; the coach augmentation) — lives under `_onyx/` (per-deck `_onyx/decks/<id>/`, flat for now), read
+   via `readMeta`, and **excluded from the card index** (extends ADR-0019's config/content split). *A skill is
+   config, not a card* — you never study it — so it must not sit in the content area, where the permissive
+   parser would turn it into a card (exactly the bug the H1-drop exposed: `loadFlowSkill` moved from `readCard`
+   → `readMeta`, and the korean fixture's skill moved into `_onyx/`). This makes a **flat content folder just
+   work** (`cs/*.md` = cards; `cs/_onyx/…` = config+skills), keeps skills **editable + shareable** (they travel
+   with the deck on push, ADR-0021), and unifies with `coach.md`. **Arbitrary source locations are import
+   sources only:** a chosen skill (our library, file-picker, AI-authored, upstream bundle) is **copied/written
+   into the deck's config dir** (canonical) — mirroring ADR-0022's local-vs-share identity philosophy (embed at
+   share). A bring-your-own skill left inline is a fallback (the flow config *names* its path → declared-skill
+   exclusion), but the app steers everything into `_onyx/`.
 
 **Byte-identical for the shipped SWE vault** is the invariant to hold: the default deck's lens is
-`Everything`; over the SWE vault, with the structural floor + existing excludes, that must reproduce exactly
-today's card set (every shipped card has an H1 + sections; non-cards are the config dir / excluded). Proven
-by the suite; if any stray note over-indexes, narrow the default lens (to the type-union or a directory) or
-tighten the floor — never by re-introducing a `type:` requirement.
+`Everything`; over the SWE vault (flat content + config in `_onyx/`/`_meta/`), that reproduces exactly today's
+card set (every shipped card has a `type:` and an H1; config/skills are in the config dir). Proven by the
+suite (1277 green); if any stray note over-indexes, narrow the default lens (to a directory / the type-union)
+or add an exclude — never by re-introducing a `type:` or H1 requirement.
 
 ## Alternatives considered
 
@@ -159,14 +176,16 @@ tighten the floor — never by re-introducing a `type:` requirement.
   - The **indexer must load deck lenses** to gate card-ness (bootstrap: parse candidates → filter by the lens
     union — no circularity, lenses are pure queries; a fresh vault always has the default deck, so card-ness
     is never empty by construction). The byte-identical-for-SWE proof must be kept green.
-- **Follow-ups (build order):** (1) `directory:` alias + recursion copy/tests — **shipped**; (2) **card-ness
-  = lens union** in the indexer + re-layer `card_parser` to flow-resolution-only — **shipped** (2a the
-  indexer lens gate + `IndexResult.unlensed`; 2b the permissive parser + `DeckTemplate.defaultFlow`, floor =
-  no-H1-is-malformed-only-when-a-selector-claimed-it; SWE byte-identical, 1277 green). **The zero-frontmatter
-  vault now works end-to-end**: a plain Markdown note in a lens-covered folder is a card (filename id, default
-  flashcard flow), no frontmatter. Remaining: (3) glob/dotfile exclude leaf (pre-parse, tier-pinned,
-  additive); (4) folder-picker UI + labeled combinator + live count (overlaps **#82** picker, **#162**
-  template↔flow wiring, the folder-path onboarding thread) — both UX/polish, the engine is complete.
+- **Follow-ups (build order):** (1) `directory:` alias — **shipped**; (2) **card-ness = lens union** +
+  permissive parser — **shipped** (2a indexer lens gate + `IndexResult.unlensed`; 2b `card_parser` resolves
+  only the flow via `DeckTemplate.defaultFlow`); (2c) **H1 optional + skills-as-config** — **shipped**
+  (title → filename fallback; `malformed` = broken frontmatter; `loadFlowSkill` via `readMeta` from `_onyx/`;
+  decision 7). **The zero-frontmatter vault works end-to-end**: a plain Markdown note in a lens-covered folder
+  is a card — no `type:`, no H1, no frontmatter. SWE byte-identical, 1277 green. Remaining: (3) glob/dotfile
+  exclude leaf (pre-parse, tier-pinned, additive); (4) the **authoring/deck-creation UX** — baseline lens +
+  optional per-deck flow enrichment + skill sourcing (**#162**; folded into `deck_creation.md`), which subsumes
+  the folder-picker + labeled combinator + live count (overlaps **#82**, onboarding). The engine is complete;
+  what's left is UX.
 - **Forward-guidance (not day-one): incremental re-index.** The indexer currently **deletes + rebuilds**
   `card_cache`/`card_links` wholesale each reindex (`vault_indexer.dart`). Fine at Onyx's file-per-card,
   hundreds-of-cards scale, but the thing to evolve toward as vaults grow (esp. mobile) is Dataview's model:
@@ -198,14 +217,14 @@ tighten the floor — never by re-introducing a `type:` requirement.
 
 ## Validation
 
-- Indexer test: a zero-frontmatter note under a deck whose lens is `directory:X` indexes as a card; the same
-  note with no deck matching it does **not**; a README/MOC (no H1 or no sections) is skipped as malformed,
-  not indexed.
-- Byte-identical test: over the SWE fixture vault, the card set + counts are unchanged vs the `type:`-gated
-  baseline (the existing parser/indexer suites stay green with no fixture edits beyond intent).
-- Exclude test (with the glob leaf): a `.`-prefixed / excluded-glob stray file under a card folder is dropped
-  **and the card count is unchanged** — a *negative* fixture asserting the default dotfile skip, not only the
-  positive baseline.
+- Indexer/parser tests (**shipped**): a zero-frontmatter note under a deck whose lens is `directory:X` indexes
+  as a card; the same note with no deck matching it does **not** (`unlensed`); a no-H1 note gets a **filename
+  title** (not skipped, not malformed); **broken frontmatter** (unparseable / non-map YAML) → `malformed`; a
+  flow-skill file in `_onyx/` never enters the card set.
+- Byte-identical test (**shipped, 1277 green**): over the SWE fixture vault, the card set + counts are unchanged
+  vs the `type:`-gated baseline.
+- Exclude test (deferred with the glob leaf, slice 3): a `.`-prefixed / excluded-glob stray file under a card
+  folder is dropped **and the card count is unchanged** — a *negative* fixture, not only the positive baseline.
 
 ## References (primary sources from the research pass)
 

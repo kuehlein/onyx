@@ -671,8 +671,14 @@ The MVP-tagged stories, cloud still absent:
         id, default flashcard flow), no `type:`/`id:`. **Byte-identical for SWE** (dev-vault lenses union to Everything,
         every note is a recognized-type card with an H1; 1277 green). ADR folded in the research (glob tier pinned,
         pre-parse/additive excludes, non-exclusive multi-deck membership, over-inclusion caution, incremental-reindex
-        forward-guidance). *Remaining (UX/polish, engine complete):* the **glob/dotfile exclude leaf** (slice 3) and the
-        **folder-picker UI + labeled combinator + live count** (slice 4; overlaps **#82** picker, **#162**, onboarding).
+        forward-guidance). **✅ slice 2c** (2026-09-29): **H1 optional** (title → filename fallback; `malformed`
+        repurposed to "broken frontmatter"), and **skills are config** — a flow's AI prompt loads via `readMeta`
+        from `_onyx/` (like `coach.md`), never the content area, so it can't leak as a card. Net: **no `type:`, no
+        H1, no frontmatter** needed; config + skills live in `_onyx/decks/<id>/` (ADR-0023 decision 7). *Remaining
+        (UX, engine complete):* the **glob/dotfile exclude leaf** (slice 3, for stray non-card notes) and the
+        **authoring/deck-creation UX** — baseline lens + optional per-deck flow enrichment + skill sourcing —
+        which is exactly **#162** (now spec'd in [`deck_creation.md`](user_stories/deck_creation.md) §setup model;
+        subsumes the folder-picker + labeled combinator + live count; overlaps **#82**, onboarding).
       - *Mandatory-`type:` removal → **folded into #153** (finding 2026-09-28):* removing the `type:` card-ness gate
         safely needs a card-ness signal that isn't `type:`. The only vault-safe interim (`has id:`) would treat any
         general-vault note carrying an incidental `id:` as a flashcard — a **general-vault regression** for **zero**

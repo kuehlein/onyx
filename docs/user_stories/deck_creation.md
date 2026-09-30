@@ -30,6 +30,34 @@ created as part of the flow.
 **Pull from upstream** — import a shared deck (a file tree) into the vault. [depends on the
 registry / cloud track]
 
+## The setup model — baseline + enrichment (2026-09-29, ADR-0023)
+Deck creation is **one required step plus optional enrichment**, never a multi-step wizard. The floor stays
+"point at a lens and it's set up"; power is progressively disclosed, so nobody hits a hoop they didn't ask for.
+
+- **Create (required, ~one step):** choose the membership **lens** — a folder pick, a query, or the whole
+  vault. You immediately have a working **flashcard** deck (card-ness *is* the lens; the default flow is
+  flashcard; `type:` / `id:` / an H1 title are all optional overrides). Study now.
+- **Enrich (optional, per-deck, anytime):** "Add a practice flow" → a small sheet: a **flow type**
+  (recall / two-clock / mock), a **skill** (below), a **scope** (which cards — a sub-lens or the whole deck),
+  and **auto-derived** prerequisite gating you can override (frontier = the problem's `## Related` / `depends-on`,
+  else the deck's cards). Never required to start.
+
+**Where config + skills live.** All deck config *and* the AI-skill files live in the deck's config dir
+(`_onyx/decks/<id>/`, flat for now) — excluded from the card index and bundled with the deck on push
+(ADR-0019 / 0021 / 0023). The content area stays pure cards; a "flat" vault is just `cards/*.md` + `cards/_onyx/…`.
+
+**Skill sourcing** (lowest friction first): (1) **pick from a curated library**, ranked by tag/content
+similarity to the selected cards (+ search); (2) **AI-assisted authoring** from a research-grounded scaffold;
+(3) **bring your own** (file-picker / their vault). Whatever the source, the file is **copied into the deck's
+config dir** (canonical) — arbitrary locations are import sources only (mirrors ADR-0022: local convenience,
+embed at share).
+
+**Two entry paths, one stored shape.** The **authoring flow** *asks + suggests* (library skills, AI-assist,
+auto-gating); a **preexisting vault / upstream pull** *detects + imports* (suggest lenses from folders/tags;
+import any existing config/skills; else default to flashcards + offer enrichment later). Both converge on
+"a lens + optional flows in `_onyx/decks/<id>/`". This is the substance of **#162** (authoring-template
+selection UX + template↔flow wiring).
+
 ## Open questions → recommendations
 - **Which authoring approaches; are the hard ones low value (camera)?**
   **Rec.** MVP = **known-lens + AI-conversation + upload-tree + pull**. Defer PDF and camera
