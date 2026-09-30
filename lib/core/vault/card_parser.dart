@@ -121,12 +121,13 @@ class CardParser {
     final normalized = content.replaceAll('\r\n', '\n');
     final match = _frontmatter.firstMatch(normalized);
 
-    // No frontmatter is NO LONGER an automatic skip (ADR-0022 / #153): card-ness is
-    // decided by the subject's flow selectors below, so a folder/tag selector can
-    // claim a plain, frontmatter-less note (the zero-frontmatter vault). A file WITH
-    // frontmatter still parses it — a non-YamlMap or unparseable block still skips,
-    // as before. With the default TypeIs selectors a note with no `type:` matches
-    // nothing → skipped, so this stays byte-identical for the shipped SWE vault.
+    // No frontmatter is not a skip (ADR-0022/0023): card-ness is the deck lens, and
+    // title/type/id all fall back sensibly, so a plain note is a card. A file WITH a
+    // `---` block: an EMPTY or comment-only block (`loadYaml` → null — Obsidian writes
+    // `---\n\n---` for a note whose property panel is empty) is treated as no metadata
+    // (still a card); only genuinely BROKEN frontmatter — unparseable YAML, or a
+    // list/scalar instead of a key/value map — is `malformed` (surfaced to fix, never
+    // silently dropped; ADR-0023 repurposed `malformed` from "missing H1" to this).
     final Map<String, dynamic> frontmatter;
     final String body;
     if (match == null) {
@@ -137,16 +138,17 @@ class CardParser {
       try {
         parsed = loadYaml(match.group(1)!);
       } on YamlException {
-        // Broken YAML inside a `---` block: the author meant frontmatter and botched
-        // it. Surface it (malformed) so they fix it, rather than silently dropping the
-        // card (ADR-0023 repurposes `malformed` from "missing H1" to "broken YAML").
         throw MalformedCardException(filePath, 'unparseable frontmatter');
       }
-      if (parsed is! YamlMap) {
+      if (parsed == null) {
+        frontmatter =
+            const {}; // empty / comment-only block → no metadata, still a card
+      } else if (parsed is! YamlMap) {
         throw MalformedCardException(
             filePath, 'frontmatter is not a key/value block');
+      } else {
+        frontmatter = _yamlToMap(parsed);
       }
-      frontmatter = _yamlToMap(parsed);
       body = match.group(2) ?? '';
     }
 

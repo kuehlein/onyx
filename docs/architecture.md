@@ -18,20 +18,23 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 - `lib/shared/design/` — design tokens (`Dim`, `StatusColor`, `showOnyxSheet`, …).
 
 ## Data model
-- **Vault** — the file tree, the source of truth. Content in user-land; app config under `_meta/`.
-- **DB** — a *derived cache of one vault at a time*. Each vault's `_meta` snapshot is its durable
+- **Vault** — the file tree, the source of truth. Content in user-land; app config under `_onyx/`
+  (legacy `_meta/` still read for back-compat — ADR-0019).
+- **DB** — a *derived cache of one vault at a time*. Each vault's `_onyx/` snapshot is its durable
   copy of progress; switching vaults exports → clears → restores. **Nothing authoritative lives
   only in the DB.**
-- **Card** — a markdown file: frontmatter (`id`, `type`, `tags`, `tiers`, `status`, …) + an H1
-  title + sections split by the deck's parse rules. A study unit is a section (or the whole file);
-  `neverQuizzed` sections + per-card `quizzable: false` are excluded.
+- **Card / datum** — a markdown file. Frontmatter (`id`/`type`/`tags`/`tiers`/`status`/…) is **all
+  optional** (ADR-0022/0023): absent `id` → filename slug, absent `type` → the claiming flow, absent
+  H1 → filename title. **Card-ness = matched by a deck's lens** (ADR-0023). A study unit is a section
+  (or the whole file); `neverQuizzed` sections (the flow's `QuizzabilityPolicy`) are excluded.
 - **Deck** — a query lens over the vault; the unit the user works in. Membership is a `CardQuery` —
   a boolean lens/filter tree (tag · folder · domain · type · tier, composed with `And`/`Or`/`Not`)
   shared with Browse (ADR-0013). (Code: `Deck` + `CardQuery`.)
 - **Aim** — a target on a deck (difficulty / emphasis / durability / date); a deck holds a *set*, and
   readiness takes the **weakest link** across them. Each aim OWNS its four knobs (ADR-0006). (Code:
   `Aim` on `Deck.aims`; `ReadinessTarget` is derived from an aim for scoring.)
-- **Schedule** — FSRS state / reviews / recognition / applied attempts, keyed `cardId::sectionSlug`.
+- **Schedule** — FSRS state / reviews / recognition / applied attempts, keyed `cardId::sectionSlug`
+  (ADR-0024 unifies these into one record keyed `(cardId, dataSlug=aspect+mode)` — pending Stream A).
 - **card_links** — the card→card graph (backlinks, wikilinks).
 
 ## Invariants (load-bearing — don't break)
@@ -48,8 +51,8 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
    `status: draft`. Nothing about *your* schedule crosses a deck boundary.
 4. **Draft exclusion.** `status: draft` cards are excluded from FSRS **and every**
    readiness / coverage / analytics denominator.
-5. **Card identity = slug.** Ids are slug-normalized; joins key on `cardId::sectionSlug`, never a
-   filename.
+5. **Card identity = slug.** Ids are slug-normalized (filename slug when no `id:` — ADR-0022); joins
+   key on `cardId::sectionSlug` (→ `(cardId, dataSlug)` per ADR-0024), never a filename.
 6. **Weakest-link readiness.** Readiness rolls up weakest-link (p20 floor) across domains + aims —
    never an average that lets a strong area mask a weak one.
 7. **Capability-gated cloud.** Sync / accounts / managed-AI / sharing render only when a backend

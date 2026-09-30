@@ -59,14 +59,14 @@
   gate). Never silently reset.
   **Status.** Accepted.
 - **How to handle sections that should not be tested?** - I think we hardcode some card sections to not be studied (e.g., references), but this should be up to the user as they may structure cards differently. Can the query lens for deck building be granular enough to include or exclude parts of a card? Likely non-MVP unless easy. This can be ignored if too challenging in favor of removing specific cards or sections from the deck at a per-deck settings level.
-  **Rec.** Two layered mechanisms, both already partly in the engine: a **per-deck `neverQuizzed`
-  set** (e.g. `References`, `Sources`) in the deck's parse rules — the default blocklist,
-  user-editable — and a **per-card frontmatter** override (mark a section `quizzable: false`).
-  That handles "everyone structures cards differently" without new machinery. Making the **query
-  lens** exclude *parts of a card* is more than a lens does (a lens selects cards, not sub-card
-  slices) → **skip**; the neverQuizzed + frontmatter path is the clean MVP, with per-deck section
-  exclusion as the fallback you noted.
-  **Status.** Accepted (query-lens sub-card granularity dropped).
+  **Rec.** Quizzability is the **flow's `QuizzabilityPolicy`** plus a **per-deck `neverQuizzed`
+  set** (e.g. `References`, `Sources`) in the deck's config — the default blocklist, user-editable.
+  That handles "everyone structures cards differently" without new machinery. (The per-card
+  `quiz:`/`quizzable:` frontmatter override was **removed** — ADR-0012 amend / ADR-0020 §2 — since
+  thin cards carry no study-set glue; a "stop testing this section" control moves to an app-state
+  dismiss, #162.) Making the **query lens** exclude *parts of a card* is more than a lens does (a
+  lens selects cards, not sub-card slices) → **skip**.
+  **Status.** Accepted (query-lens sub-card granularity dropped; per-card override removed by ADR-0020).
 - **How should first exposure (Learn) build real understanding — not just recognition — before a
   card enters spaced repetition? (#26)**
   **Rec.** A **learner-invited AI tutor** at the Learn step. After the learner reveals a section, an
@@ -76,7 +76,7 @@
   *learner-authored* summary. It is **not a gate** and **not a flow**: it's the Learn step's internal
   pedagogy. The grade bar stays live (FSRS integrity, ADR-0008), it emits **no grade**, and with no AI
   key Learn is unchanged. Grounding is the section text today (`card.source` deferred); it's
-  subject-general (questions derive from the content). The skill is authored in `_meta/coach.md`
+  subject-general (questions derive from the content). The skill is authored in `_onyx/coach.md`
   (a `## First exposure` tone block + per-card confusable-siblings), not a new file.
   **Status.** Accepted — design in [ADR-0015](../adr/0015-ai-tutor-first-exposure.md); build sliced.
   Confirmed 2026-09-25: **no kill-switch** (key + tap is consent); ship **opt-in**, with any wider

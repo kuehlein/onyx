@@ -299,6 +299,20 @@ void main() {
       expect(() => _parser.parse(md, filePath: 'list.md'),
           throwsA(isA<MalformedCardException>()));
     });
+
+    // But an EMPTY or comment-only `---` block (loadYaml → null) is NOT broken —
+    // Obsidian writes `---\n\n---` for a note with an empty property panel. It's a
+    // valid card with no metadata, never malformed (regression guard).
+    test('empty / comment-only frontmatter → a card, not malformed', () {
+      for (final md in const [
+        '---\n\n---\n\n# Empty FM\n\n## S\n\nx\n',
+        '---\n# just a comment\n---\n\n# Comment FM\n\n## S\n\ny\n',
+      ]) {
+        final c = _parser.parse(md, filePath: 'note.md');
+        expect(c, isNotNull, reason: md);
+        expect(c!.type, 'flashcard'); // default flow; no metadata read
+      }
+    });
   });
 
   group('card identity (ADR-0022)', () {

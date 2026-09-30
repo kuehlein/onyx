@@ -128,7 +128,7 @@ single-source pass, not the multi-doc reconciliations that used to eat whole ses
 The stories drive the target; this maps the model onto the code so navigation stays easy. The
 2026-09 re-shape (the R1–R4 renames, S1–S5 aim unification, and the unified query lens) is **done**,
 so this is now a straight description, not a to-reshape list.
-- **Deck (query lens)** = `Deck` — a name + template + a `CardQuery` membership (the boolean
+- **Deck (query lens)** = `Deck` — a name + a `CardQuery` membership + its owned config (ADR-0025) (the boolean
   lens/filter tree shared with Browse; ADR-0013).
 - **Aim** = `Aim`, a *list* on the deck (`Deck.aims`); each aim OWNS its four knobs
   (difficulty / emphasis / durability / date) — unified (ADR-0006). (`ReadinessTarget` is derived

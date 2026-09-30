@@ -44,7 +44,7 @@ fallback), **nothing requires >1 template per vault**, and `templateIdForPath` h
    which also makes teacher-push (ADR-0021) fully self-contained (no separate template to ship or reconcile).
 3. **Flow resolution moves from per-card (path→template) to per-(deck, card).** A card's flow(s) = the flows
    of the deck(s) that claim it, resolved via the flow selectors inside that deck's config, else the deck's
-   default flashcard flow. **Safe because ADR-0024 keys state by `(cardId, mode)`, config-free:** a card in
+   default flashcard flow. **Safe because ADR-0024 keys state by `(cardId, dataSlug=aspect+mode)`, config-free:** a card in
    two decks practiced the same way SHARES its schedule; a card practiced different ways = different modes =
    independent schedules (correct). The deck decides *which modes a card is practiced in*; it never owns a copy
    of the schedule.
@@ -80,10 +80,11 @@ fallback), **nothing requires >1 template per vault**, and `templateIdForPath` h
   simplified — no separate template to reconcile); "subject" retires; multi-subject strengthened.
 - **Negative / must-hold:** **byte-identical for the SWE vault** (invariant #8) — the default deck's config must
   reproduce the in-code SWE template exactly (same flow selectors, same slugs) so no card re-slugs its state or
-  changes flow; **readers-first, writer-flip-last** migration is mandatory given the ~30 `activeTemplate` reads
-  in pure-core; the **four readiness knobs stay on the AIM** (ADR-0006 unchanged, weakest-link roll-up intact);
+  changes flow; **readers-first, writer-flip-last** migration is mandatory given the ~40 `activeTemplate` refs
+  (≈17 in pure-core — the readiness math the bulk; the rest UI/providers); the **four readiness knobs stay on
+  the AIM** (ADR-0006 unchanged, weakest-link roll-up intact);
   config stays app-managed with a power-user escape hatch (not an authoring studio — `index.md`).
-- **Blast radius:** ~25 files / ~55 sites; the pure-core readiness math (`readiness/target.dart`, `ladder.dart`,
+- **Blast radius:** ~40 files (`activeTemplate` 40 refs / 26 files; `DeckTemplate` 46 refs); the pure-core readiness math (`readiness/target.dart`, `ladder.dart`,
   `readiness.dart`) reading the `activeTemplate` global is the bulk; `card_cache` is trivial (it has no
   readers); the **reseat** — pass `List<Deck>` (not `List<CardQuery>`) to the indexer and resolve config via
   `deck.templateId` instead of `path` — is the small, byte-identical unlock.
@@ -111,3 +112,15 @@ param-taking pure-core seams (`ReadinessTarget.forAim`, ladder, domain labels) �
 (drop the `?? activeTemplate` fallbacks; Browse/card_filter resolve per-card via its owning deck) → (4) reseat
 parsing to deck→config (keep one shared parse profile) → (5) flip writers + drop the registry/globals →
 (6) the naming cleanup + delete dead code.
+
+**Must-fix during this stream (a latent divergence found in review):** flow resolution has TWO paths today —
+`Card.flow` (the `card_flow.dart` extension: first matching selector, else `defaultFlow`) and the type-derived
+accessors `Card.isPracticeTrack`/`isApproachCard` (in `card.dart`, via `flowForType(card.type)`), plus the
+mock plan's `c.type == flow.cardType` match (`practice_plan.dart`) and the flow-runner's skill load
+(`flow_runner.dart`, `flowForType(card.type)`). These **agree only when `type ≡ selector`** — true for the
+all-`TypeIs` shipped templates (so it's harmless today / suite green), but a **folder/tag selector whose
+`cardType` differs from a card's explicit `type:` makes them resolve *different* flows**, orphaning the card
+(recall pipelines count it via `isPracticeTrack=false` but it has no quizzable sections; the mock plan skips
+it; the skill load misses). Route **all** flow resolution through the single `card.flow` (deck-config) path —
+likely by moving `isPracticeTrack`/`isApproachCard` into the `card_flow` extension — so parse-time and
+query-time can never disagree.

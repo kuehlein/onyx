@@ -68,6 +68,7 @@ class SettingsScreen extends ConsumerWidget {
               loading: () => 'Indexing…',
               error: (e, _) => 'Error: $e',
               data: (r) => '${r.cardCount} cards'
+                  '${r.unlensed > 0 ? ' · ${r.unlensed} note(s) in no deck' : ''}'
                   '${r.malformed > 0 ? ' · ${r.malformed} malformed' : ''}'
                   '${r.collisions.isNotEmpty ? ' · ${r.collisions.length} id collision(s)' : ''}',
             )),

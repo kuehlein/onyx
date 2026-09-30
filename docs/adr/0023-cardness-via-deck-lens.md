@@ -1,6 +1,8 @@
 # ADR 0023 — Card-ness = deck-lens membership (the lens is the one grouping knob)
 
-- **Status:** Accepted
+- **Status:** Accepted — §Decision 1 (a card's template is path-derived via `templateIdForPath`) and the
+  "Template tie-break" open question are **superseded by ADR-0025** (a deck owns its config; the path-derived
+  template layer dissolves). The rest stands.
 - **Date:** 2026-09-29
 - **Deciders:** Kyle Uehlein (+ AI-assisted; a deep-research pass over Anki, Mochi, RemNote, Logseq,
   org-drill, the Obsidian SR-plugin ecosystem, SSGs (Jekyll/Hugo), ignore-file tooling (git/ripgrep/npm),

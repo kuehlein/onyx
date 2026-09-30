@@ -7,8 +7,8 @@
 - **Related:** Implements **#155** (the state-table unification spiked in **ADR-0020 §3**). The
   config-free-key invariant here is the **foundation for ADR-0025** (deck-owned config). Honors ADR-0008
   (FSRS-safe deadlines), 0014, 0016. Confirms/sharpens ADR-0020 §1 (the key carries no config discriminator).
-  Code: `lib/core/database/{tables,database}.dart`, `lib/core/srs/*`, `lib/core/recognition/*`,
-  `lib/core/backup/snapshot.dart`, the schedulers + queues.
+  Code: `lib/core/database/{tables,database}.dart`, `lib/core/srs/*` (incl. `recognition.dart` +
+  `recognition_repository.dart`), `lib/core/backup/snapshot.dart`, the schedulers + queues.
 
 ## Context
 
@@ -42,8 +42,12 @@ Collapse the two tables into one `StudyStates` record and pin the key.
    (the science forbids one universal curve — ADR-0020 §3): **`recall`** (FSRS payload `{stability,
    difficulty, state, step}`) and **`practice`** (expanding-interval `{intervalDays, streak}`). Nullable
    columns are an acceptable *storage* form for the kind-tagged payload; the *model* is core + one payload.
-   The algorithm **two-clock card is not a third kind** — it spawns two data (a solve datum and a recognize
-   datum) mapped onto the two existing functions, preserving today's behaviour exactly.
+   The algorithm **two-clock card is not a third kind** — it spawns two data mapped onto the two existing
+   functions, preserving today's behaviour exactly. *As-built (pinned so the migration is unambiguous): the
+   `solve` clock lives in `SrsStates` → `kind='recall'` (FSRS); the `explain`/recognize clock lives in
+   `RecognitionStates` → `kind='practice'` (expanding). ADR-0020 §3 matches this; §1's generic "produce/solve
+   → practice" is an intended mode→model rule the current algo impl predates — reconciling it is out of scope
+   for #155's byte-exact collapse.*
 3. **Pluggable per-kind scheduler.** A `kind → schedule()` registry (`recall`→FSRS wrapper,
    `practice`→expanding-interval). The scheduler is **config-agnostic** — it schedules `(cardId, dataSlug)`
    units and reads only the datum's `kind`, never the deck/config. `kind = f(mode)` is globally fixed, so two
