@@ -686,7 +686,35 @@ The MVP-tagged stories, cloud still absent:
         is a flow **selector over tags/folder**, which is exactly what **#153** (config-driven templates) authors — so
         `type:`-optionality lands there, when the parser's card-ness can route through real non-`type:` selectors.
       - **Remaining in Wave C:** **#155** (state-table unification — the DB migration), **#158**, **#153** (now also
-        carries mandatory-`type:` removal) / **#156**. *Paused before #155 per the pace decision.*
+        carries mandatory-`type:` removal) / **#156**.
+      - *The datum / deck-owns-config re-architecture — **DESIGNED & RECORDED** (2026-09-30, **ADR-0024 + ADR-0025**,
+        after a 6-agent scope pass over the ADRs / SoT / learning-science / code):* the `#162` scoping conversation
+        escalated (correctly) into the foundational model. **The datum is a raw file** (bytes + `cardId`); **a deck
+        owns its whole config** (flows, target, vocabulary, coach skill, aims) in `_onyx/decks/<id>/`; the
+        path-derived **subject/`DeckTemplate` layer dissolves** (a "template" becomes a creation-time **preset**;
+        `TemplateRegistry`/`templateIdForPath`/`activeTemplate` retire). **State keys on `(cardId, dataSlug=aspect+mode)`,
+        config-free** — the fork is the practice *mode*, never the deck — so a card reused across decks (Latin vocab in
+        Year-1 + Year-2) keeps **one shared schedule** (advance-anywhere), and only genuinely-different practice gets
+        independent schedules (the learning-science pass showed config-keying would cause interference / spacing
+        incoherence / review-debt inflation). Supersedes ADR-0023 §Decision 1; amends 0020 §1–2, 0019 §2–3, 0006 §1.
+        **Now implemented as two incremental, readers-first, byte-identical streams:**
+        - **Stream A — #155 uniform state record** (ADR-0024): characterize → `dataSlug`/`kind` key vocab → unified
+          `StudyStates` table + repo (readers first) → flip writers → collapse snapshot (v4, legacy-readable) →
+          pluggable per-kind scheduler → drop the old tables.
+        - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
+          repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
+          deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**
+          (`DeckTemplate`→`DeckConfig`, `builtInTemplates`→`deckPresets`, `SubjectColor`→`TrackColor`, retire
+          `onyx-subject.yaml`; the one pass that untangles the ~250 stray "subject" mentions) + delete dead code.
+      - *Future (tracked, deferred — from the ADR-0025 open question):* **per-deck PARSE profiles + the overlap case.**
+        Parse profile stays vault-level for now. When a card is claimed by two decks with **different parsing rules**
+        (e.g. two imported teacher decks with different card conventions over the same file), we must design how to
+        resolve the body split + the `(cardId, dataSlug)` key without collision (deck-aware key for the overlap only? /
+        most-specific-deck-wins? / vault-level defaults with per-deck overrides that don't change section identity?).
+        Deferred until a real multi-convention vault exists; the model already treats parse profile as deck config so
+        this is a later addition, not a rewrite.
+      - **Superseded framing:** *#155 was "paused before" — now un-paused and sequenced as Stream A above (it's the
+        foundation the deck-owns-config model leans on).*
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the
       `FakeRegistryClient`): id-keyed reconcile + persisted manifest → lens-as-sync-filter export → **iTIP** aims
       (**#152**) → the protect-edit three-way merge UI.

@@ -133,9 +133,13 @@ so this is now a straight description, not a to-reshape list.
 - **Aim** = `Aim`, a *list* on the deck (`Deck.aims`); each aim OWNS its four knobs
   (difficulty / emphasis / durability / date) — unified (ADR-0006). (`ReadinessTarget` is derived
   from an aim for scoring.)
-- **Deck template** = `DeckTemplate` — the per-deck/vault template (flows, parse rules,
-  vocabulary) in `_meta` (formerly `SubjectConfig`).
-- **Flow** = `FlowSpec` (scheduling: `recall` / `twoClock` / `mock`).
+- **Deck config** = the config a deck **owns** (flows, target dimensions, vocabulary, coach skill), in
+  `_onyx/decks/<id>/` (ADR-0025). A built-in "template" is a creation-time **preset** copied in, not a
+  live shared layer; the path-derived `TemplateRegistry`/subject layer dissolves. Parse profile stays
+  vault-level for now (the per-deck-parse *overlap* case is a tracked future item). Formerly `SubjectConfig`.
+- **Flow** = `FlowSpec`, selected by a `CardQuery`; scheduling model = `f(mode)`: `recall` / `twoClock` /
+  `mock`. State keys on `(cardId, dataSlug=aspect+mode)`, config-free, so a card reused across decks keeps
+  one shared schedule (ADR-0020/0024).
 - Resolved (were the "gaps to re-shape", now shipped): many aims per deck; readiness weakest-link
   *across aims* (#6); daily-plan allocation *across aims* (ADR-0007).
 

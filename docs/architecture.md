@@ -36,8 +36,9 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 
 ## Invariants (load-bearing — don't break)
 1. **Vault = SSoT; the DB is derived.** Never store authoritative data only in the DB.
-2. **Config, not code.** The engine reads the deck/subject config; **no `if/else` on card type** —
-   dispatch through the flow/scheduling config. A new subject is config, never an app-code branch.
+2. **Config, not code.** The engine reads the **deck's config** (ADR-0025 — a deck owns its config; the
+   path-derived subject/template layer dissolves); **no `if/else` on card type** — dispatch through the
+   flow/scheduling config. A new deck/domain is config, never an app-code branch.
    Enforced by the `no_card_type_branch` custom-lint (`tools/onyx_lints`); comparing to a config
    value (`c.type == flow.cardType`) is the right pattern and passes. The only exemptions are a
    built-in flow's *own* engine (the algorithm / system-design / behavioral providers + screens),
@@ -80,6 +81,13 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 - **ADR-0016** — derived new-material count: the sustainable ceiling (#114 Phase B).
 - **ADR-0017** — per-aim importance: a user weight on allocation, not readiness (#136).
 - **ADR-0018** — cross-deck allocation: priority tiers, engine-derived split, per-deck floor (#137).
+- **ADR-0019** — vault layout: config/state separation, the `_onyx/` namespace, per-deck directories.
+- **ADR-0020** — card & scheduling model: knowledge-keyed data, thin cards, one uniform state + pluggable scheduler.
+- **ADR-0021** — registry sync & teacher-push: account upstream, lens-as-filter, protected-edit pull, iTIP aims (machinery post-MVP).
+- **ADR-0022** — card identity: filename-slug default, optional embedded `id:`.
+- **ADR-0023** — card-ness = deck-lens membership (the lens is the one grouping knob; `type:`/H1 optional; skills are config).
+- **ADR-0024** — uniform study-state record keyed `(cardId, dataSlug=aspect+mode)`, mode-keyed + config-free (#155).
+- **ADR-0025** — a deck owns its config; the path-derived subject/`DeckTemplate` layer dissolves (a "template" = a preset).
 - Add new ADRs here as decisions are made; keep this the index.
 
 ## Where the rest lives

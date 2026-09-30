@@ -48,3 +48,7 @@ belong in code comments + the PR description, not an ADR.
 | [0019](0019-vault-layout-config-state-separation.md) | Vault layout: config/state separation, the `_onyx/` namespace, per-deck directories | Accepted |
 | [0020](0020-card-and-scheduling-model.md) | Card & scheduling model: knowledge-keyed data, thin cards, one uniform state + pluggable scheduler | Accepted |
 | [0021](0021-registry-sync-and-teacher-push.md) | Registry sync & teacher-push: account-based upstream, lens-as-filter, protected-edit pull, iTIP aims | Accepted (machinery post-MVP) |
+| [0022](0022-card-identity.md) | Card identity: filename-slug default, optional embedded id | Accepted |
+| [0023](0023-cardness-via-deck-lens.md) | Card-ness = deck-lens membership (the lens is the one grouping knob) | Accepted |
+| [0024](0024-uniform-study-state-record.md) | Uniform study-state record, keyed by (cardId, dataSlug); mode-keyed, config-free (#155) | Accepted |
+| [0025](0025-deck-owns-config.md) | A deck owns its config; the path-derived subject/template layer dissolves | Accepted |

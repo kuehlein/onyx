@@ -12,9 +12,9 @@ apart from the code again. The **model** itself lives in
 | **Vault** | The plain folder of markdown you own; the single source of truth. Content in user-land, config in an untouchable `_meta/`. | `VaultSource`, `vaultIndex` | "study folder" / "folder" |
 | **Deck** | **A query lens over the vault** — a saved folder path or tag expression selecting a card subset. The primary unit you work in. Decks may overlap. | `Deck` (+ `CardQuery`), `core/deck/` | **"deck"** |
 | **Aim** | One of a **set** of things a deck points at — a dated assessment or open-ended mastery. Carries 4 knobs: difficulty, domain emphasis, durability bar, date-or-open. Readiness = weakest-link across active aims. | `Aim` (list on `Deck.aims`) | the deck's `Vocabulary.assessmentNoun` — **"interview"** (SWE), **"exam"/"test"/"target"** (others) |
-| **DeckTemplate** | The per-directory **template** a deck is configured by (flows, parse rules, vocabulary, target dimensions). Lives in `_meta`; shared by many decks. Formerly "Subject". | `DeckTemplate`, `TemplateRegistry`, `core/template/` | (rarely surfaced) "template" |
-| **Flow** | A study/practice mode, described as data and keyed to a card `type:`. Scheduling = recall / two-clock / mock. | `FlowSpec` | "Flashcard" / "Algorithm" / "System design" / … |
-| **Card** | One parsed `.md` file. `type:` names its flow; behavior comes from the flow config, never an `if/else` on type. | `Card`, `CardSection` | "card" |
+| **DeckConfig** (preset) | The config a deck **owns** — flows, target dimensions, vocabulary, coach skill (+ aims), in `_onyx/decks/<id>/` (ADR-0025). A built-in "template" is now just a creation-time **preset** copied into the deck, not a live shared layer. Parse profile stays vault-level for now. Formerly the shared "Subject / DeckTemplate". | `DeckConfig` / `deckPresets`, `core/deck/` | (rarely surfaced) "template" |
+| **Flow** | A study/practice **mode** the deck's config declares — described as data, selected by a `CardQuery` (folder/tag/type), not an `if/else`. Scheduling model = `f(mode)`: recall / two-clock / mock (ADR-0020/0024). | `FlowSpec` | "Flashcard" / "Algorithm" / "System design" / … |
+| **Card / datum** | One parsed `.md` file (bytes + identity: `cardId` = filename slug or `id:`). Card-ness = matched by a deck's lens (ADR-0023); how it's practiced comes from that deck's flow config, never an `if/else` on `type:`. | `Card`, `CardSection` | "card" |
 
 ## Don't confuse these
 
@@ -24,8 +24,10 @@ apart from the code again. The **model** itself lives in
   work disambiguates. They never join in current logic.
 - **Aim vs Deck.** A deck is the lens (the cards); an aim is a thing you point it at. A deck holds
   a *set* of aims (e.g. a music deck: a composition test + an improv jury + open-ended fluency).
-- **DeckTemplate vs Deck.** The template is shared config (per vault subtree); the deck is your
-  per-objective query + aims. N decks → 1 template.
+- **DeckConfig vs Deck.** A deck **owns** its config (flows/target/vocab/skills/aims) in its own
+  `_onyx/decks/<id>/` dir (ADR-0025); a "template" is only a **preset** copied in at creation, never a live
+  shared dependency. *(Was: shared per-subtree config, "N decks → 1 template" — retired; the path-derived
+  `TemplateRegistry`/`templateIdForPath` dissolves.)*
 - **"target" — being retired from user-facing copy (overloaded).** Three unrelated uses: (1) the
   **readiness target** = an aim's knobs; (2) the **daily-minutes target** (a study-time budget);
   (3) a **wiki-link target**. **Decision (2026-09-22):** user-facing copy drops bare "target" →
