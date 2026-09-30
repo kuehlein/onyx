@@ -208,8 +208,10 @@ Future<FlowRunnerContext> flowRunnerContext(Ref ref, String cardId) async {
   }
 
   final flow = activeTemplate.flowForType(card.type);
+  // A flow's skill is Onyx config, not a card — it lives in the config dir (`_onyx/`)
+  // and loads via readMeta (ADR-0023), so it never leaks into the card index.
   final skill =
-      source == null ? null : await loadFlowSkill(source.readCard, flow?.skill);
+      source == null ? null : await loadFlowSkill(source.readMeta, flow?.skill);
 
   // Per-concept comfort — shared with the daily plan. See buildConceptComfort.
   final cc = buildConceptComfort(index.cards, states.byKey.keys.toSet());

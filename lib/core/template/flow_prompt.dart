@@ -45,9 +45,11 @@ String coveredConceptsInstruction(Set<String> covered) {
       'has not studied yet: $list.';
 }
 
-/// Load a flow's skill text via an injected [read] (the vault reader in
-/// production; a fake in tests). Returns null when the flow has no skill or the
-/// file is missing/unreadable — callers fall back to their in-code builder.
+/// Load a flow's skill text via an injected [read] — the config-dir reader
+/// (`VaultSource.readMeta`) in production, a fake in tests. A skill is Onyx config,
+/// not a card: it lives under `_onyx/` (ADR-0023), so it's excluded from the card
+/// index and travels with its deck on push. Returns null when the flow has no skill
+/// or the file is missing/unreadable — callers fall back to their in-code builder.
 Future<String?> loadFlowSkill(
   Future<String?> Function(String path) read,
   String? path,

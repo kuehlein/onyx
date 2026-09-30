@@ -109,15 +109,14 @@ void main() {
       expect(note.title, 'Just a note');
     });
 
-    test('counts a malformed card (type, but no H1 title)', () async {
-      // A recognized card that fails structural parse lands in the `malformed`
-      // bucket (which drives the Settings "fix your vault" surface) — distinct
-      // from skipped (not a card at all). Indexing must bucket it, not crash the
-      // whole reindex.
+    test('counts a malformed card (broken frontmatter YAML)', () async {
+      // A `---` block with broken YAML lands in the `malformed` bucket (which drives
+      // the Settings "fix your vault" surface). Indexing must bucket it, not crash the
+      // whole reindex. (A missing H1 is NOT malformed now — the title falls back to
+      // the filename, ADR-0023.)
       write(
         'malformed.md',
-        '---\nid: cccccccc-cccc-4ccc-8ccc-cccccccccccc\ntype: flashcard\n'
-            '---\n\nNo H1 title here.\n\n## When to Use\n\nx\n',
+        '---\nid: bad\ntype: flashcard\ntags: [x, y\n---\n\n# T\n\n## S\n\nx\n',
       );
       final result = await indexer.reindex();
       expect(result.malformed, 1);

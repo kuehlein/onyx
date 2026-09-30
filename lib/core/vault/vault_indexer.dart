@@ -25,10 +25,12 @@ class IndexResult {
   /// Successfully parsed cards — the in-memory index the app reads from.
   final List<Card> cards;
 
-  /// Files that are cards (valid type) but structurally invalid.
+  /// Files whose `---` frontmatter block is present but broken (unparseable / not a
+  /// key/value map) — surfaced so the user fixes them, never silently dropped (ADR-0023).
   final int malformed;
 
-  /// Non-card files skipped (no recognized `type`).
+  /// Files that parsed cleanly but aren't cards — a `null` parse (a subject with no
+  /// flows). Distinct from [unlensed] (a well-formed card no deck lens claims).
   final int skipped;
 
   /// Dangling `[[wikilinks]]` — targets with no matching `.md` file (task #20).

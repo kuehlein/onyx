@@ -292,10 +292,12 @@ void main() {
           c.flow?.cardType, 'flashcard'); // but practiced via the default flow
     });
 
-    // Genuinely NOT a card — still null: frontmatter that isn't a YAML map.
-    test('non-map frontmatter → still null', () {
+    // Broken frontmatter (present but not a key/value map) → malformed, surfaced so
+    // the author fixes it (ADR-0023), never silently dropped.
+    test('non-map frontmatter → MalformedCardException', () {
       const md = '---\n- a\n- b\n---\n\n# A list, not a card\n';
-      expect(_parser.parse(md, filePath: 'list.md'), isNull);
+      expect(() => _parser.parse(md, filePath: 'list.md'),
+          throwsA(isA<MalformedCardException>()));
     });
   });
 
@@ -315,14 +317,14 @@ void main() {
     });
   });
 
-  group('invalid cards throw', () {
-    test('card without an H1 → MalformedCardException', () {
+  group('an H1 is optional — title falls back to the filename (ADR-0023)', () {
+    test('a card with no H1 → title is the filename', () {
       const md = '---\nid: 44444444-4444-4444-8444-444444444444\n'
           'type: flashcard\n---\n\nBody with no heading.\n\n## When to Use\n\ny\n';
-      expect(
-        () => _parser.parse(md, filePath: 'notitle.md'),
-        throwsA(isA<MalformedCardException>()),
-      );
+      final c = _parser.parse(md, filePath: 'notitle.md');
+      expect(c, isNotNull);
+      expect(c!.title, 'notitle'); // filename stem — no H1 needed
+      expect(c.sections.map((s) => s.heading), ['When to Use']);
     });
   });
 
@@ -340,21 +342,27 @@ void main() {
       expect(card.sections.map((s) => s.heading), ['When to Use']);
     });
 
-    test('malformed frontmatter YAML is skipped (null), not a crash', () {
-      // An unterminated flow sequence → loadYaml throws → the parser returns
-      // null (skip this file) rather than aborting the whole index.
+    test('broken frontmatter YAML → MalformedCardException, not a crash', () {
+      // An unterminated flow sequence → loadYaml throws → surfaced as malformed
+      // (ADR-0023: broken YAML is a fix-this signal, no longer silently skipped),
+      // never a raw crash that aborts the whole index.
       const md = '---\nid: bad\ntype: flashcard\ntags: [x, y\n'
           '---\n\n# T\n\n## S\n\ny\n';
-      expect(_parser.parse(md, filePath: 'bad.md'), isNull);
-    });
-
-    test('an H2 before the H1 is malformed (missing title) → typed throw', () {
-      const md = '---\nid: h2first\ntype: flashcard\n---\n\n'
-          '## Section First\n\nbody\n\n# Title\n';
       expect(
-        () => _parser.parse(md, filePath: 'h2first.md'),
+        () => _parser.parse(md, filePath: 'bad.md'),
         throwsA(isA<MalformedCardException>()),
       );
+    });
+
+    test('an H2 before the H1 → filename title (the H1 becomes content)', () {
+      // No H1 is recognised before the first section starts, so the title falls back
+      // to the filename (ADR-0023); the stray `# Title` line is section content.
+      const md = '---\nid: h2first\ntype: flashcard\n---\n\n'
+          '## Section First\n\nbody\n\n# Title\n';
+      final c = _parser.parse(md, filePath: 'h2first.md');
+      expect(c, isNotNull);
+      expect(c!.title, 'h2first');
+      expect(c.sections.first.heading, 'Section First');
     });
 
     test('an unterminated code fence after the H1 does not crash', () {

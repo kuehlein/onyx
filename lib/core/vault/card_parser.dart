@@ -44,17 +44,18 @@ String _cardnessRule(DeckTemplate template) {
 /// plus a path for diagnostics. It is fence-aware — `##` lines inside fenced
 /// code blocks do not start new sections — and it distinguishes two outcomes:
 ///
-///  * returns `null` only when the file can't become a card at all — unparseable /
-///    non-map frontmatter, or a subject that declares no flows;
-///  * throws [MalformedCardException] when a would-be card is structurally invalid
-///    (no H1 title).
+///  * returns `null` only when the file can't become a card at all — a subject that
+///    declares no flows (nothing could practice it);
+///  * throws [MalformedCardException] when a `---` frontmatter block is present but
+///    broken (unparseable YAML, or not a key/value map) — surfaced so the author
+///    fixes it rather than silently losing the card.
 ///
 /// Card-ness is the deck LENS now, not the parser (ADR-0023): the parser is
-/// permissive and returns a *candidate* for any well-formed note — no frontmatter
-/// needed — resolving its flow (the matched flow, else the default flashcard flow).
-/// The indexer keeps only the candidates a deck's lens claims. `id:`/`type:` are
-/// optional overrides (ADR-0022): absent, the id is the filename slug and the type
-/// is the resolved flow's.
+/// permissive and returns a *candidate* for ANY note — no frontmatter, no H1, no
+/// `type:` needed — resolving only its flow (the matched flow, else the default
+/// flashcard flow); the indexer keeps the candidates a deck's lens claims. Every
+/// authoring field is an optional override: `id:` else the filename slug (ADR-0022),
+/// `type:` else the resolved flow's, the H1 title else the filename.
 class CardParser {
   const CardParser();
 
@@ -114,8 +115,9 @@ class CardParser {
   Card? parse(String content, {required String filePath, String? templateId}) {
     // Normalize Windows CRLF up front so neither the frontmatter values nor the
     // line-based H1/H2/fence scan carry a trailing \r. Dart's `.` and `$` don't
-    // span/precede a \r, so a CRLF-terminated `# Title` otherwise fails the
-    // heading regex and the whole card is rejected (MalformedCardException).
+    // span/precede a \r, so a CRLF-terminated `# Title` otherwise fails the heading
+    // regex — the card would silently lose its H1 title (falling back to the filename)
+    // and mis-split its sections.
     final normalized = content.replaceAll('\r\n', '\n');
     final match = _frontmatter.firstMatch(normalized);
 
@@ -131,13 +133,20 @@ class CardParser {
       frontmatter = const {};
       body = normalized;
     } else {
+      final Object? parsed;
       try {
-        final loaded = loadYaml(match.group(1)!);
-        if (loaded is! YamlMap) return null;
-        frontmatter = _yamlToMap(loaded);
+        parsed = loadYaml(match.group(1)!);
       } on YamlException {
-        return null; // unparseable frontmatter → skip rather than crash indexing
+        // Broken YAML inside a `---` block: the author meant frontmatter and botched
+        // it. Surface it (malformed) so they fix it, rather than silently dropping the
+        // card (ADR-0023 repurposes `malformed` from "missing H1" to "broken YAML").
+        throw MalformedCardException(filePath, 'unparseable frontmatter');
       }
+      if (parsed is! YamlMap) {
+        throw MalformedCardException(
+            filePath, 'frontmatter is not a key/value block');
+      }
+      frontmatter = _yamlToMap(parsed);
       body = match.group(2) ?? '';
     }
 
@@ -169,24 +178,20 @@ class CardParser {
       wikilinks: const [],
       filePath: filePath,
     );
-    // A flow SELECTOR match = explicit card intent (a recognized `type:`, or a card
-    // folder/tag). Kept distinct from the resolved `flow` so a would-be card with no
-    // H1 can be told apart from a plain non-card note (see the title check below).
-    FlowSpec? matched;
+    // Card-ness is decided by the indexer's deck-lens gate now (ADR-0023), not here.
+    // The parser only resolves the FLOW: the first flow whose selector matches, else
+    // the subject's default flashcard flow (ADR-0020 §2). So any well-formed note is a
+    // candidate the deck lens can claim (the zero-frontmatter vault); only a subject
+    // that declares NO flows yields null. Byte-identical for SWE — a recognized `type:`
+    // matches its selector, and the dev-vault lenses union to Everything.
+    FlowSpec? flow;
     for (final f in subject.flows) {
       if (f.selector.matches(probe)) {
-        matched = f;
+        flow = f;
         break;
       }
     }
-    // Card-ness is no longer decided here (ADR-0023) — it moves to the indexer's
-    // deck-lens gate. The parser only resolves the FLOW: the matched flow, else the
-    // subject's default flashcard flow (ADR-0020 §2). So any well-formed note is a
-    // *candidate* the deck lens can then claim (the zero-frontmatter vault); only a
-    // subject that declares NO flows at all yields null. For SWE this is unchanged —
-    // a recognized `type:` matches its selector, and the dev vault has no type-less
-    // notes, so nothing new is admitted (the deck lenses union to Everything).
-    final flow = matched ?? subject.defaultFlow;
+    flow ??= subject.defaultFlow;
     if (flow == null) {
       return null; // subject declares no flows → can't be a card
     }
@@ -206,19 +211,14 @@ class CardParser {
             filePath.split('/').last.replaceFirst(RegExp(r'\.[^.]+$'), ''));
 
     final profile = subject.parseProfile;
-    final (title, overview, rawSections) =
+    final (h1Title, overview, rawSections) =
         _splitBody(body, _sectionRegex(profile.sectionHeadingLevel));
-    if (title == null) {
-      // No H1 title. A file a flow SELECTOR claimed (an explicit `type:` or a card
-      // folder/tag) was MEANT to be a card → malformed, surfaced so the user fixes
-      // it. A file only the default flow caught is an unclaimed candidate — a skill /
-      // README / index note, not a card — so skip it silently (ADR-0023: card-ness is
-      // the lens; a non-card note without an H1 must not pollute the malformed count).
-      if (matched != null) {
-        throw MalformedCardException(filePath, 'missing H1 title');
-      }
-      return null;
-    }
+    // An H1 is no longer required (ADR-0023): a card's title falls back to its
+    // FILENAME (Obsidian's convention — the filename IS the note name), so a plain
+    // body-only note is a valid card. The user shapes structure via the parse
+    // profile; the engine imposes none.
+    final title = h1Title ??
+        filePath.split('/').last.replaceFirst(RegExp(r'\.[^.]+$'), '');
 
     // Quizzability is purely the flow's policy now — the per-card `quiz:`/`quizzable:`
     // overrides were removed (ADR-0020 §2: thin cards carry no study-set glue; the

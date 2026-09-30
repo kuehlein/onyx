@@ -93,8 +93,10 @@ void main() {
         concepts: convo.dependsOn, competenceOf: early, competenceBar: bar);
     expect(frontier, {'word-hello', 'word-water'});
 
+    // The skill lives in the config dir (`_meta/skills/…`), loaded via readMeta
+    // (ADR-0023) — never in the card index.
     final skill = await loadFlowSkill(
-        source.readCard, activeTemplate.flowForType('conversation')!.skill);
+        source.readMeta, activeTemplate.flowForType('conversation')!.skill);
     expect(skill, contains('Korean café server'));
 
     final prompt = assembleFlowPrompt(

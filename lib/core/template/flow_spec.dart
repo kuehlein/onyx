@@ -84,9 +84,11 @@ class FlowSpec {
   /// gating (config, so the plan doesn't branch on card type — invariant #2).
   final PrereqSource prereqSource;
 
-  /// Vault path to this flow's AI skill file (the interviewer/interlocutor/grader
-  /// prompt authored in the vault), or null for an in-code flow (the SWE flows).
-  /// Loaded at runtime and assembled by `assembleFlowPrompt` (flow_prompt.dart).
+  /// Config-dir path to this flow's AI skill file (the interviewer/interlocutor/grader
+  /// prompt) — a POSIX path under `_onyx/` read via `VaultSource.readMeta` (ADR-0023),
+  /// e.g. `skills/order-water.md`. A skill is Onyx config, not a card, so it's
+  /// excluded from the card index and travels with its deck on push. Null for an
+  /// in-code flow (the SWE flows). Loaded + assembled by `assembleFlowPrompt`.
   final String? skill;
 
   /// Human label for the type (Browse tiles, filter chips). Falls back to a

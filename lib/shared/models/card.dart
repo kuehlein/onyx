@@ -261,8 +261,10 @@ class Card {
       sections.where((section) => section.quizzable);
 }
 
-/// Thrown when a file is a card (valid type) but is structurally invalid,
-/// e.g. it has no H1 title.
+/// Thrown when a file's `---` frontmatter block is present but broken — unparseable
+/// YAML, or not a key/value map — so its metadata can't be read (ADR-0023). Surfaced
+/// as a vault-health signal ("fix this file") rather than silently dropping the card.
+/// (No H1 is NOT malformed: the title falls back to the filename.)
 class MalformedCardException implements Exception {
   const MalformedCardException(this.filePath, this.reason);
   final String filePath;
