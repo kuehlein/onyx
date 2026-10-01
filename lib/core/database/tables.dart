@@ -182,6 +182,56 @@ class RecognitionStates extends Table {
   Set<Column<Object>> get primaryKey => {cardId, sectionSlug};
 }
 
+/// Unified study-state record (ADR-0024 — #155): collapses [SrsStates] (the FSRS
+/// recall clock) and [RecognitionStates] (the expanding-interval practice clock)
+/// into ONE table keyed `(cardId, dataSlug)`, **deck/config-free**, so a card
+/// reused across decks keeps one shared schedule (advance-anywhere) while
+/// genuinely-different practice (recall vs explain) keeps independent schedules.
+///
+/// `kind` is the scheduling-model discriminator ('recall' | 'practice'; see
+/// [StudyKind]). The payload columns are nullable **per kind** — an acceptable
+/// *storage* form for the kind-tagged payload; the *model* is a common core
+/// (cardId, dataSlug, kind, dueAt, lastActivityAt, activityCount) + one payload
+/// (recall: stability/difficulty/fsrsState/step; practice: intervalDays, with the
+/// streak kept in `activityCount`).
+///
+/// Populated by the v2→v3 migration (see `database.dart`); the legacy tables stay
+/// readable until the writer/reader flip completes (ADR-0024 slices 4-7). A
+/// `status` column (retain-but-detach, #158) is deferred to its consumer.
+class StudyStates extends Table {
+  TextColumn get cardId => text()();
+
+  /// `aspect + mode` (ADR-0024 §1): the section slug for recall; a namespaced slug
+  /// for practice (see `studyDataSlug`). NEVER carries the deck/config — that is
+  /// the advance-anywhere invariant.
+  TextColumn get dataSlug => text()();
+
+  /// Scheduling-model discriminator: 'recall' (FSRS) | 'practice' (expanding).
+  TextColumn get kind => text()();
+
+  // --- common core ---
+  DateTimeColumn get dueAt => dateTime()();
+  DateTimeColumn get lastActivityAt => dateTime().nullable()();
+  IntColumn get activityCount => integer().withDefault(const Constant(0))();
+
+  // --- recall (FSRS) payload; null for practice rows ---
+  RealColumn get stability => real().nullable()();
+  RealColumn get difficulty => real().nullable()();
+
+  /// FSRS learning state: 1=learning, 2=review, 3=relearning (see fsrs State).
+  /// Named `fsrsState` to avoid confusion with the core record's lifecycle.
+  IntColumn get fsrsState => integer().nullable()();
+
+  /// FSRS learning/relearning step index; null once the card reaches review.
+  IntColumn get step => integer().nullable()();
+
+  // --- practice (expanding-interval) payload; null for recall rows ---
+  IntColumn get intervalDays => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {cardId, dataSlug};
+}
+
 /// Key/value app preferences (vault bookmark, settings).
 class Preferences extends Table {
   TextColumn get key => text()();

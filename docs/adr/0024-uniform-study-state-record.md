@@ -38,7 +38,9 @@ Collapse the two tables into one `StudyStates` record and pin the key.
    The **deck/config never enters the key** — this is the invariant that keeps card-reuse-across-decks a
    single shared memory, and that the learning-science pass showed is *required* (see Alternatives).
 2. **One record: a common core + a kind-tagged payload.** Core: `{cardId, dataSlug, kind, dueAt,
-   lastActivityAt, activityCount, status}`. `kind` is the scheduling-model discriminator with **two** values
+   lastActivityAt, activityCount}` (+ a `status` lifecycle marker **deferred to its consumer, #158
+   retain-but-detach** — build-when-consumed; today a dropped datum is row-absence as before). `kind` is the
+   scheduling-model discriminator with **two** values
    (the science forbids one universal curve — ADR-0020 §3): **`recall`** (FSRS payload `{stability,
    difficulty, state, step}`) and **`practice`** (expanding-interval `{intervalDays, streak}`). Nullable
    columns are an acceptable *storage* form for the kind-tagged payload; the *model* is core + one payload.
@@ -53,10 +55,18 @@ Collapse the two tables into one `StudyStates` record and pin the key.
    units and reads only the datum's `kind`, never the deck/config. `kind = f(mode)` is globally fixed, so two
    flows over one datum can never disagree on its scheduling model.
 4. **Migration (drift `schemaVersion` 2→3, byte-exact FSRS).** Create `StudyStates`; copy each `SrsStates`
-   row → `kind='recall'`, `dataSlug=sectionSlug`, `lastReview→lastActivityAt`, `reviewCount→activityCount`,
-   **FSRS payload verbatim** (never re-fit a fitted curve — ADR-0008); copy each `RecognitionStates` row →
-   `kind='practice'`, `dataSlug=sectionSlug` (already `'mock'` for mocks), `lastExplainedAt→lastActivityAt`,
-   `streak→activityCount`; drop the old tables. `Reviews`/`AppliedAttempts` keep `sectionSlug` (= dataSlug).
+   row → `kind='recall'`, `dataSlug=sectionSlug` (the **bare** aspect), `lastReview→lastActivityAt`,
+   `reviewCount→activityCount`, **FSRS payload verbatim** (never re-fit a fitted curve — ADR-0008); copy each
+   `RecognitionStates` row → `kind='practice'`, `dataSlug=studyDataSlug(sectionSlug, practice)` (the aspect
+   **namespaced** — `'recognize:' + sectionSlug`, so `'mock'`→`'recognize:mock'`), `lastExplainedAt→lastActivityAt`,
+   `streak→activityCount`. `Reviews`/`AppliedAttempts` keep `sectionSlug` (= the recall `dataSlug`). The legacy
+   tables are **kept, not dropped**, until the writer+reader flip completes (slices 4–7).
+   *Correction (found in slice 3): the recall and practice rows **cannot both** key on the bare `sectionSlug` —
+   an algorithm card writes the **same** `(cardId, sectionSlug)` to BOTH clocks (a solve → `SrsStates`, the
+   same-section explain → `RecognitionStates`; see `algo.dart`), so a bare-slug practice row would collide with
+   its own solve row on the `(cardId, dataSlug)` PK. Namespacing practice (recall stays bare) is exactly the
+   `aspect + mode` of §1, and keeps the precious FSRS keys + their `Reviews`/`AppliedAttempts` join byte-exact.
+   Section slugs are `[a-z0-9-]`, so the `':'` namespace is collision-proof.*
 5. **Snapshot (`_version` 3→4, legacy-readable).** Export a single `studyStates[]` array; the merge collapses
    to **one** keyed-state merge over `(cardId, dataSlug)` with a single recency field (`lastActivityAt`) +
    `activityCount` tie-break (must stay provably convergent + idempotent). Restore keeps reading v≤3 files
@@ -105,7 +115,10 @@ Collapse the two tables into one `StudyStates` record and pin the key.
 
 ## Slices (readers-first)
 
-(1) golden characterization tests → (2) `dataSlug`/`kind` key vocabulary (replace the scattered
-`"$cardId::$slug"` + the `'mock'` literal) → (3) unified `StudyStates` table + `StudyStateRepository`, old
-repos become thin adapters (readers first) → (4) flip writers → (5) collapse the snapshot (+ keep the legacy
-reader) → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
+(1) golden characterization tests ✅ (`snapshot_v3_golden_test`) → (2) `dataSlug`/`kind` key vocabulary ✅
+(folded into slice 3 — build-when-consumed; `study_state.dart`) → (3) unified `StudyStates` table +
+`StudyStateRepository` (readers-first; `schemaVersion` 2→3 + byte-exact `backfillStudyStates`) ✅ — the new
+table + read repo exist and are proven byte-identical to the two legacy clocks, which stay the source of truth
+untouched (making the old repos *thin adapters* moves with the writer flip) → (4) flip writers (old repos
+delegate; advance-anywhere live) → (5) collapse the snapshot to v4 (+ keep the legacy reader — the golden
+guards it) → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
