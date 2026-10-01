@@ -16,9 +16,27 @@ class RecognitionRepository {
       '$cardId::$sectionSlug';
 
   /// All recognition states, keyed `"cardId::sectionSlug"`.
+  ///
+  /// Reads the unified `study_states` record (ADR-0024 slice 5) and reconstructs
+  /// the legacy [RecognitionState] shape. The practice `dataSlug` is namespaced
+  /// (`recognize:<aspect>`), so [studyAspect] strips it back to the section slug —
+  /// keeping the keys byte-identical to the old ones. `recognition_states` is still
+  /// dual-written (until slice 5c) but no longer read here.
   Future<Map<String, RecognitionState>> loadStates() async {
-    final rows = await _db.select(_db.recognitionStates).get();
-    return {for (final r in rows) keyFor(r.cardId, r.sectionSlug): r};
+    final rows = await (_db.select(_db.studyStates)
+          ..where((t) => t.kind.equals(StudyKind.practice.wire)))
+        .get();
+    return {
+      for (final r in rows)
+        keyFor(r.cardId, studyAspect(r.dataSlug)): RecognitionState(
+          cardId: r.cardId,
+          sectionSlug: studyAspect(r.dataSlug),
+          lastExplainedAt: r.lastActivityAt ?? r.dueAt,
+          dueAt: r.dueAt,
+          intervalDays: r.intervalDays ?? 0,
+          streak: r.activityCount,
+        ),
+    };
   }
 
   /// Record how an explanation went: run the pure scheduler over the prior

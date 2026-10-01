@@ -38,10 +38,31 @@ class SrsRepository {
         step: Value(step),
       );
 
-  /// All scheduling state, keyed by `"$cardId::$sectionSlug"`.
+  /// All recall scheduling state, keyed by `"$cardId::$sectionSlug"`.
+  ///
+  /// Reads the unified `study_states` record (ADR-0024 slice 5) and reconstructs
+  /// the legacy [SrsState] shape, so every consumer is unchanged while the source
+  /// of truth is now the unified table. `srs_states` is still dual-written (until
+  /// slice 5c drops it) but no longer read here; for recall `dataSlug ==
+  /// sectionSlug`, so the keys are byte-identical to the old ones.
   Future<Map<String, SrsState>> loadStates() async {
-    final rows = await _db.select(_db.srsStates).get();
-    return {for (final r in rows) '${r.cardId}::${r.sectionSlug}': r};
+    final rows = await (_db.select(_db.studyStates)
+          ..where((t) => t.kind.equals(StudyKind.recall.wire)))
+        .get();
+    return {
+      for (final r in rows)
+        studyKey(r.cardId, r.dataSlug): SrsState(
+          cardId: r.cardId,
+          sectionSlug: studyAspect(r.dataSlug),
+          stability: r.stability ?? 0,
+          difficulty: r.difficulty ?? 5,
+          state: r.fsrsState ?? 1,
+          step: r.step,
+          dueAt: r.dueAt,
+          lastReview: r.lastActivityAt,
+          reviewCount: r.activityCount,
+        ),
+    };
   }
 
   /// Graduate a section out of Learn mode: seed its initial FSRS state so it
