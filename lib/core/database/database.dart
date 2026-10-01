@@ -81,8 +81,12 @@ class AppDatabase extends _$AppDatabase {
   /// (recall) and explain clock (practice) on the *same* section don't collide on
   /// the `(cardId, dataSlug)` primary key.
   ///
-  /// Idempotent (insert-or-replace on the PK), so it is safe to re-run. Exercised
-  /// directly by the migration tests (there is no drift schema-replay tooling).
+  /// This is a **copy, not a merge**: it insert-or-replaces each legacy row's
+  /// unified image keyed by `(cardId, dataSlug)`. Safe to run when `study_states`
+  /// is empty or stale — the v2→v3 migration runs it once on a freshly-created
+  /// table, and [SnapshotService] re-runs it on restore *after* clearing the
+  /// table. Do NOT run it incrementally over live-advanced unified rows: it would
+  /// clobber newer state with the stale legacy value.
   Future<void> backfillStudyStates() async {
     final recall = await select(srsStates).get();
     final practice = await select(recognitionStates).get();

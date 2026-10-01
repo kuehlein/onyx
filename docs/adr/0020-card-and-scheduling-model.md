@@ -112,7 +112,7 @@ adding one) is a re-authoring → a new datum, with the old one **retain-but-det
   **spawns 1..N data** keyed `(aspect, mode)` (flashcard → one recall datum per quizzable section; algo →
   `solve` + `recognize`; SD/behavioral → a `mock` practice datum). `kind` (the scheduling model) = **f(mode)**.
   *Not* one datum with heterogeneous blobs; *not* a wide null-filled union.
-  - **Realized by [ADR-0024](0024-uniform-study-state-record.md)** (#155; slices 1–3 shipped). Two refinements
+  - **Realized by [ADR-0024](0024-uniform-study-state-record.md)** (#155; slices 1–4 shipped). Two refinements
     landed there: `status` is **deferred to its consumer (#158 retain-but-detach)** — today a dropped datum is
     row-absence, as before; and because an algo card writes the same `(cardId, section)` to *both* clocks, the
     practice `dataSlug` is **namespaced** (`recognize:<aspect>`) while recall stays the bare aspect — so the

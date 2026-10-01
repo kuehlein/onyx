@@ -125,7 +125,14 @@ state writer (`recordReview`/`seedState`/`recordExplain`/`renameSection`/`dropSe
 **dual-writes** the unified row in the same transaction (expand; the legacy path stays byte-identical so
 reads + snapshot can't regress, and advance-anywhere is live + tested). *The snapshot reads the legacy tables
 directly, so a hard writer-move would break it mid-stream — dual-write is the safe expand step; the hard move
-(stop writing the legacy tables) lands in slice 5 with the reader flip.* → (5) flip readers + snapshot: the
-old repos become thin adapters over the unified table, collapse the snapshot to v4 (+ keep the v≤3 legacy
-reader — the golden guards it), then drop the now-redundant legacy writes → (6) pluggable per-kind scheduler
-→ (7) drop the old tables + dead code.
+(stop writing the legacy tables) lands in slice 5 with the reader flip.* Restore (`_applyPayload`) +
+`clearProgress` also rebuild/clear the mirror in the same transaction, so it stays consistent on **every**
+write path — bulk cross-device restore included — not just live writes (verified by a real v2→v3 `onUpgrade`
+test + restore/clear tests). → (5) flip readers + snapshot: the old repos become thin adapters over the
+unified table, collapse the snapshot to v4 (+ keep the v≤3 legacy reader — the golden guards it), then drop
+the now-redundant legacy writes → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
+  - *Slice-5 must-dos surfaced in the slice-4 audit:* (a) make `StudyKind.fromWire` **tolerant** of an unknown
+    `kind` (degrade, don't throw) before readers depend on it; (b) move `recordReview`'s review-count source
+    from the legacy `SrsStates` row to the unified row once the legacy writes stop; (c) `renameSection` /
+    `dropSection` today rekey/drop only the recall datum (byte-identical to the legacy clocks, which never
+    touched the explain row) — revisit whether the practice datum should follow when #158 lands.

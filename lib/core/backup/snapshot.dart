@@ -154,6 +154,10 @@ class SnapshotService {
       await db.delete(db.reviews).go();
       await db.delete(db.appliedAttempts).go();
       await db.delete(db.recognitionStates).go();
+      // The unified mirror (ADR-0024) is derived from the two legacy clocks, so
+      // it is wiped alongside them — else a vault switch would bleed the outgoing
+      // vault's unified rows into the next (invisible until slice 5 reads them).
+      await db.delete(db.studyStates).go();
     });
   }
 
@@ -172,6 +176,7 @@ class SnapshotService {
       await _db.delete(_db.reviews).go();
       await _db.delete(_db.appliedAttempts).go();
       await _db.delete(_db.recognitionStates).go();
+      await _db.delete(_db.studyStates).go();
       await _db.batch((b) {
         b.insertAll(_db.srsStates, [for (final s in states) _srsFromJson(s)]);
         b.insertAll(_db.reviews, [for (final r in reviews) _reviewFromJson(r)]);
@@ -180,6 +185,11 @@ class SnapshotService {
         b.insertAll(_db.recognitionStates,
             [for (final r in recognition) _recognitionFromJson(r)]);
       });
+      // Rebuild the unified mirror (ADR-0024) from the just-restored legacy rows,
+      // in this same transaction — restore is a bulk writer of the two legacy
+      // clocks, so it must keep `study_states` byte-identical to them too (until
+      // slice 5 collapses the snapshot onto the unified shape directly).
+      await _db.backfillStudyStates();
     });
   }
 

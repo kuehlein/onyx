@@ -8,6 +8,8 @@ import 'package:onyx/core/interview/applied_repository.dart';
 import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/srs/srs_repository.dart';
 import 'package:onyx/core/srs/srs_scheduler.dart';
+import 'package:onyx/core/srs/study_state.dart';
+import 'package:onyx/core/srs/study_state_repository.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:path/path.dart' as p;
 // ignore: depend_on_referenced_packages
@@ -121,6 +123,43 @@ void main() {
       expect(a.verifierScore, 60);
       expect(a.verified, isTrue);
       await db2.close();
+    });
+
+    test('restore rebuilds the unified study_states mirror (ADR-0024 S4)',
+        () async {
+      final at = DateTime.utc(2026, 1, 1, 9);
+      final source = DesktopVaultSource(root.path);
+
+      final db1 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(db1).recordReview(
+          cardId: 'a', sectionSlug: 's1', grade: 3, outcome: _outcome(at, 8));
+      await SnapshotService(db1, source).export();
+      await db1.close();
+
+      // A fresh DB restores: the legacy clocks AND the unified mirror must land,
+      // so a reader turned on later (slice 5) sees the restored schedule.
+      final db2 = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SnapshotService(db2, source).restore();
+      final unified = await StudyStateRepository(db2).loadStates();
+      expect(unified['a::s1'], isNotNull,
+          reason: 'restore rebuilt the unified recall datum');
+      expect(unified['a::s1']!.kind, StudyKind.recall.wire);
+      expect(unified['a::s1']!.stability, 8);
+      await db2.close();
+    });
+
+    test('clearProgress wipes the unified study_states mirror (ADR-0024 S4)',
+        () async {
+      final at = DateTime.utc(2026, 1, 1, 9);
+      final db = AppDatabase.withExecutor(NativeDatabase.memory());
+      await SrsRepository(db).recordReview(
+          cardId: 'a', sectionSlug: 's1', grade: 3, outcome: _outcome(at, 8));
+      expect((await StudyStateRepository(db).loadStates()), isNotEmpty);
+      await SnapshotService.clearProgress(db);
+      expect((await StudyStateRepository(db).loadStates()), isEmpty,
+          reason:
+              'vault switch must not bleed unified rows into the next vault');
+      await db.close();
     });
 
     test('restore is a no-op when no snapshot exists', () async {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:onyx/core/srs/srs_repository.dart';
 import 'package:onyx/core/srs/srs_scheduler.dart';
 import 'package:onyx/core/srs/study_state.dart';
 import 'package:onyx/core/srs/study_state_repository.dart';
+import 'package:path/path.dart' as p;
 // ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
 
@@ -268,6 +271,68 @@ void main() {
       expect(rows['c1::s']!.stability, 9);
       expect(rows['c1::s']!.activityCount, 2);
       expect(rows.containsKey('c2::s'), isTrue);
+    });
+  },
+      skip: _sqliteAvailable
+          ? false
+          : 'libsqlite3 unavailable — run inside the nix dev shell');
+
+  // Exercises the ACTUAL v2→v3 onUpgrade invocation (not just backfillStudyStates
+  // called directly): createTable(study_states) + the backfill, on a file-backed
+  // DB rolled back to user_version 2. There is no drift schema-replay tooling, so
+  // we simulate a v2 DB by dropping the table + resetting the version.
+  group('v2→v3 upgrade path (onUpgrade)', () {
+    test('onUpgrade creates + backfills study_states from the legacy clocks',
+        () async {
+      final dir = Directory.systemTemp.createTempSync('onyx_mig_');
+      final file = File(p.join(dir.path, 'test.sqlite'));
+      try {
+        // Open at the current schema (v3) so onCreate builds every table, then
+        // seed the two legacy clocks (incl. the algo two-clock on one section).
+        var db = AppDatabase.withExecutor(NativeDatabase(file));
+        await db.into(db.srsStates).insert(SrsStatesCompanion.insert(
+              cardId: 'algo',
+              sectionSlug: 'approach',
+              stability: const Value(10),
+              difficulty: const Value(6),
+              state: const Value(2),
+              step: const Value(null),
+              dueAt: DateTime.utc(2026, 5, 1, 9),
+              lastReview: Value(DateTime.utc(2026, 4, 20, 9)),
+              reviewCount: const Value(3),
+            ));
+        await db.into(db.recognitionStates).insert(
+              RecognitionStatesCompanion.insert(
+                cardId: 'algo',
+                sectionSlug: 'approach',
+                lastExplainedAt: DateTime.utc(2026, 4, 18, 9),
+                dueAt: DateTime.utc(2026, 4, 25, 9),
+                intervalDays: 7,
+                streak: const Value(2),
+              ),
+            );
+        // Simulate a real v2 DB: study_states did not exist, user_version == 2.
+        await db.customStatement('DROP TABLE study_states');
+        await db.customStatement('PRAGMA user_version = 2');
+        await db.close();
+
+        // Reopen → drift sees user_version 2 < schemaVersion 3 → runs onUpgrade,
+        // which must createTable(study_states) + backfillStudyStates().
+        db = AppDatabase.withExecutor(NativeDatabase(file));
+        final states = await StudyStateRepository(db).loadStates();
+        expect(states.keys.toSet(),
+            {'algo::approach', 'algo::recognize:approach'});
+        expect(states['algo::approach']!.kind, StudyKind.recall.wire);
+        expect(states['algo::approach']!.stability, 10);
+        expect(states['algo::approach']!.activityCount, 3);
+        final practice = states['algo::recognize:approach']!;
+        expect(practice.kind, StudyKind.practice.wire);
+        expect(practice.intervalDays, 7);
+        expect(practice.activityCount, 2);
+        await db.close();
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
     });
   },
       skip: _sqliteAvailable
