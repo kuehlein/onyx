@@ -34,7 +34,9 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
   readiness takes the **weakest link** across them. Each aim OWNS its four knobs (ADR-0006). (Code:
   `Aim` on `Deck.aims`; `ReadinessTarget` is derived from an aim for scoring.)
 - **Schedule** — FSRS state / reviews / recognition / applied attempts, keyed `cardId::sectionSlug`
-  (ADR-0024 unifies these into one record keyed `(cardId, dataSlug=aspect+mode)` — pending Stream A).
+  (ADR-0024 unifies these into one `StudyStates` record keyed `(cardId, dataSlug=aspect+mode)` — Stream A in
+  progress: the unified table + byte-exact backfill ship (slice 3); the legacy clocks stay the live source of
+  truth until the write paths flip).
 - **card_links** — the card→card graph (backlinks, wikilinks).
 
 ## Invariants (load-bearing — don't break)

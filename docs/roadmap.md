@@ -698,9 +698,10 @@ The MVP-tagged stories, cloud still absent:
         independent schedules (the learning-science pass showed config-keying would cause interference / spacing
         incoherence / review-debt inflation). Supersedes ADR-0023 §Decision 1; amends 0020 §1–2, 0019 §2–3, 0006 §1.
         **Now implemented as two incremental, readers-first, byte-identical streams:**
-        - **Stream A — #155 uniform state record** (ADR-0024): characterize → `dataSlug`/`kind` key vocab → unified
-          `StudyStates` table + repo (readers first) → flip writers → collapse snapshot (v4, legacy-readable) →
-          pluggable per-kind scheduler → drop the old tables.
+        - **Stream A — #155 uniform state record** (ADR-0024): characterize ✅ → `dataSlug`/`kind` key vocab ✅ →
+          unified `StudyStates` table + repo (readers first) ✅ → flip writers → collapse snapshot (v4,
+          legacy-readable) → pluggable per-kind scheduler → drop the old tables. *(slices 1–3 shipped; next: flip
+          writers — old repos become thin adapters, advance-anywhere live.)*
         - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
           repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
           deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**

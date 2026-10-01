@@ -42,8 +42,9 @@ Collapse the two tables into one `StudyStates` record and pin the key.
    retain-but-detach** — build-when-consumed; today a dropped datum is row-absence as before). `kind` is the
    scheduling-model discriminator with **two** values
    (the science forbids one universal curve — ADR-0020 §3): **`recall`** (FSRS payload `{stability,
-   difficulty, state, step}`) and **`practice`** (expanding-interval `{intervalDays, streak}`). Nullable
-   columns are an acceptable *storage* form for the kind-tagged payload; the *model* is core + one payload.
+   difficulty, state, step}`) and **`practice`** (expanding-interval `{intervalDays}`; the practice *streak*
+   is carried in the core `activityCount`, not a separate column). Nullable columns are an acceptable
+   *storage* form for the kind-tagged payload; the *model* is core + one payload.
    The algorithm **two-clock card is not a third kind** — it spawns two data mapped onto the two existing
    functions, preserving today's behaviour exactly. *As-built (pinned so the migration is unambiguous): the
    `solve` clock lives in `SrsStates` → `kind='recall'` (FSRS); the `explain`/recognize clock lives in
