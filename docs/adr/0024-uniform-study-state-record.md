@@ -120,6 +120,12 @@ Collapse the two tables into one `StudyStates` record and pin the key.
 (folded into slice 3 — build-when-consumed; `study_state.dart`) → (3) unified `StudyStates` table +
 `StudyStateRepository` (readers-first; `schemaVersion` 2→3 + byte-exact `backfillStudyStates`) ✅ — the new
 table + read repo exist and are proven byte-identical to the two legacy clocks, which stay the source of truth
-untouched (making the old repos *thin adapters* moves with the writer flip) → (4) flip writers (old repos
-delegate; advance-anywhere live) → (5) collapse the snapshot to v4 (+ keep the legacy reader — the golden
-guards it) → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
+untouched (making the old repos *thin adapters* moves with the reader flip) → (4) flip writers ✅ — every
+state writer (`recordReview`/`seedState`/`recordExplain`/`renameSection`/`dropSection` + the dev seeds)
+**dual-writes** the unified row in the same transaction (expand; the legacy path stays byte-identical so
+reads + snapshot can't regress, and advance-anywhere is live + tested). *The snapshot reads the legacy tables
+directly, so a hard writer-move would break it mid-stream — dual-write is the safe expand step; the hard move
+(stop writing the legacy tables) lands in slice 5 with the reader flip.* → (5) flip readers + snapshot: the
+old repos become thin adapters over the unified table, collapse the snapshot to v4 (+ keep the v≤3 legacy
+reader — the golden guards it), then drop the now-redundant legacy writes → (6) pluggable per-kind scheduler
+→ (7) drop the old tables + dead code.

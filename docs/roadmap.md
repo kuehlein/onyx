@@ -699,9 +699,10 @@ The MVP-tagged stories, cloud still absent:
         incoherence / review-debt inflation). Supersedes ADR-0023 §Decision 1; amends 0020 §1–2, 0019 §2–3, 0006 §1.
         **Now implemented as two incremental, readers-first, byte-identical streams:**
         - **Stream A — #155 uniform state record** (ADR-0024): characterize ✅ → `dataSlug`/`kind` key vocab ✅ →
-          unified `StudyStates` table + repo (readers first) ✅ → flip writers → collapse snapshot (v4,
-          legacy-readable) → pluggable per-kind scheduler → drop the old tables. *(slices 1–3 shipped; next: flip
-          writers — old repos become thin adapters, advance-anywhere live.)*
+          unified `StudyStates` table + repo (readers first) ✅ → flip writers (dual-write, advance-anywhere live) ✅
+          → flip readers + snapshot (v4, legacy-readable; old repos become thin adapters) → pluggable per-kind
+          scheduler → drop the old tables. *(slices 1–4 shipped; next: flip readers + snapshot to the unified table,
+          then drop the legacy writes.)*
         - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
           repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
           deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**

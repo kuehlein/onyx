@@ -2,6 +2,10 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/srs/recognition.dart';
+import 'package:onyx/core/srs/recognition_repository.dart';
+import 'package:onyx/core/srs/srs_repository.dart';
+import 'package:onyx/core/srs/srs_scheduler.dart';
 import 'package:onyx/core/srs/study_state.dart';
 import 'package:onyx/core/srs/study_state_repository.dart';
 // ignore: depend_on_referenced_packages
@@ -16,6 +20,16 @@ final bool _sqliteAvailable = () {
     return false;
   }
 }();
+
+ReviewOutcome _outcome(DateTime at, {double stability = 3}) => ReviewOutcome(
+      stability: stability,
+      difficulty: 5,
+      state: 2,
+      step: null,
+      due: at.add(const Duration(days: 1)),
+      lastReview: at,
+      elapsedDays: 0,
+    );
 
 void main() {
   group('study-state key vocabulary (ADR-0024)', () {
@@ -160,6 +174,100 @@ void main() {
           {'algo-x::approach', 'concept-y::when-to-use'});
       expect((await repo.loadByKind(StudyKind.practice)).keys.toSet(),
           {'algo-x::recognize:approach', 'sd-z::recognize:mock'});
+    });
+  },
+      skip: _sqliteAvailable
+          ? false
+          : 'libsqlite3 unavailable — run inside the nix dev shell');
+
+  group('dual-write keeps the unified record live (slice 4)', () {
+    late AppDatabase db;
+    setUp(() => db = AppDatabase.withExecutor(NativeDatabase.memory()));
+    tearDown(() => db.close());
+
+    test('recordReview mirrors the recall datum into study_states', () async {
+      final at = DateTime.utc(2026, 3, 1, 9);
+      await SrsRepository(db).recordReview(
+          cardId: 'c',
+          sectionSlug: 's',
+          grade: 3,
+          outcome: _outcome(at, stability: 8));
+      final unified = (await StudyStateRepository(db).loadStates())['c::s']!;
+      expect(unified.kind, StudyKind.recall.wire);
+      expect(unified.stability, 8);
+      expect(unified.difficulty, 5);
+      expect(unified.fsrsState, 2);
+      expect(unified.activityCount, 1, reason: 'reviewCount mirrored');
+      expect(unified.dueAt.toUtc(), at.add(const Duration(days: 1)));
+    });
+
+    test('advance-anywhere: two lenses grading one card share ONE row',
+        () async {
+      // Two decks surfacing the same card both grade it through the same datum.
+      final repo = SrsRepository(db);
+      final at = DateTime.utc(2026, 3, 1, 9);
+      await repo.recordReview(
+          cardId: 'shared',
+          sectionSlug: 's',
+          grade: 3,
+          outcome: _outcome(at, stability: 3));
+      await repo.recordReview(
+          cardId: 'shared',
+          sectionSlug: 's',
+          grade: 4,
+          outcome: _outcome(at.add(const Duration(days: 1)), stability: 12));
+      final rows = await StudyStateRepository(db).loadByKind(StudyKind.recall);
+      expect(rows.length, 1, reason: 'one shared trace, not one per lens');
+      expect(rows['shared::s']!.activityCount, 2);
+      expect(rows['shared::s']!.stability, 12);
+    });
+
+    test('the algo two-clock stays two independent LIVE rows', () async {
+      final at = DateTime.utc(2026, 3, 2, 9);
+      await SrsRepository(db).recordReview(
+          cardId: 'algo',
+          sectionSlug: 'approach',
+          grade: 3,
+          outcome: _outcome(at, stability: 10));
+      await RecognitionRepository(db).recordExplain(
+          cardId: 'algo',
+          sectionSlug: 'approach',
+          outcome: ExplainOutcome.solid,
+          now: at);
+      final all = await StudyStateRepository(db).loadStates();
+      expect(all.keys.toSet(), {'algo::approach', 'algo::recognize:approach'});
+      expect(all['algo::approach']!.kind, StudyKind.recall.wire);
+      expect(all['algo::approach']!.stability, 10);
+      final practice = all['algo::recognize:approach']!;
+      expect(practice.kind, StudyKind.practice.wire);
+      expect(practice.intervalDays, 3, reason: 'first solid explanation → 3d');
+      expect(practice.activityCount, 1, reason: 'streak 1 → activityCount');
+    });
+
+    test('rename + drop keep the unified recall row in sync', () async {
+      final repo = SrsRepository(db);
+      final at = DateTime.utc(2026, 3, 3, 9);
+      await repo.recordReview(
+          cardId: 'c', sectionSlug: 'old', grade: 3, outcome: _outcome(at));
+      await repo.renameSection(cardId: 'c', oldSlug: 'old', newSlug: 'new');
+      var rows = await StudyStateRepository(db).loadStates();
+      expect(rows.containsKey('c::new'), isTrue);
+      expect(rows.containsKey('c::old'), isFalse);
+      await repo.dropSection(cardId: 'c', slug: 'new');
+      rows = await StudyStateRepository(db).loadStates();
+      expect(rows.containsKey('c::new'), isFalse);
+    });
+
+    test('dev seeds (seedStudied / seedAllDueNow) mirror to unified', () async {
+      final repo = SrsRepository(db);
+      final at = DateTime.utc(2026, 4, 1, 9);
+      await repo.seedStudied([(cardId: 'c1', sectionSlug: 's', stability: 9.0)],
+          at: at);
+      await repo.seedAllDueNow([(cardId: 'c2', sectionSlug: 's')]);
+      final rows = await StudyStateRepository(db).loadByKind(StudyKind.recall);
+      expect(rows['c1::s']!.stability, 9);
+      expect(rows['c1::s']!.activityCount, 2);
+      expect(rows.containsKey('c2::s'), isTrue);
     });
   },
       skip: _sqliteAvailable

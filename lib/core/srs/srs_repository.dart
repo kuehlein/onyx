@@ -2,12 +2,41 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import 'srs_scheduler.dart';
+import 'study_state.dart';
 
 /// Reads and writes per-section FSRS state and the append-only review log.
 class SrsRepository {
   SrsRepository(this._db);
 
   final AppDatabase _db;
+
+  /// Build the unified `study_states` recall row mirroring an `SrsStates` write
+  /// (ADR-0024 slice 4 dual-write — the unified table is kept byte-identical to
+  /// the legacy clock until readers + snapshot flip to it in slice 5). For recall
+  /// `dataSlug == sectionSlug`, so the key is unchanged.
+  StudyStatesCompanion _recallRow({
+    required String cardId,
+    required String sectionSlug,
+    required double stability,
+    required double difficulty,
+    required int state,
+    required int? step,
+    required DateTime due,
+    required DateTime? lastReview,
+    required int activityCount,
+  }) =>
+      StudyStatesCompanion.insert(
+        cardId: cardId,
+        dataSlug: studyDataSlug(sectionSlug, StudyKind.recall),
+        kind: StudyKind.recall.wire,
+        dueAt: due,
+        lastActivityAt: Value(lastReview),
+        activityCount: Value(activityCount),
+        stability: Value(stability),
+        difficulty: Value(difficulty),
+        fsrsState: Value(state),
+        step: Value(step),
+      );
 
   /// All scheduling state, keyed by `"$cardId::$sectionSlug"`.
   Future<Map<String, SrsState>> loadStates() async {
@@ -37,6 +66,20 @@ class SrsRepository {
               dueAt: outcome.due,
               lastReview: Value(outcome.lastReview),
               reviewCount: const Value(0),
+            ),
+          );
+      // Dual-write the unified recall datum (ADR-0024 slice 4).
+      await _db.into(_db.studyStates).insertOnConflictUpdate(
+            _recallRow(
+              cardId: cardId,
+              sectionSlug: sectionSlug,
+              stability: outcome.stability,
+              difficulty: outcome.difficulty,
+              state: outcome.state,
+              step: outcome.step,
+              due: outcome.due,
+              lastReview: outcome.lastReview,
+              activityCount: 0,
             ),
           );
       await _db.into(_db.activityLog).insert(
@@ -180,6 +223,22 @@ class SrsRepository {
           ),
           onConflict: DoUpdate((_) => SrsStatesCompanion(dueAt: Value(now))),
         );
+        // Mirror into the unified recall datum (ADR-0024 slice 4), same semantics.
+        b.insert(
+          _db.studyStates,
+          _recallRow(
+            cardId: k.cardId,
+            sectionSlug: k.sectionSlug,
+            stability: 1,
+            difficulty: 5,
+            state: 2,
+            step: null,
+            due: now,
+            lastReview: now,
+            activityCount: 0,
+          ),
+          onConflict: DoUpdate((_) => StudyStatesCompanion(dueAt: Value(now))),
+        );
       }
     });
   }
@@ -216,6 +275,26 @@ class SrsRepository {
           onConflict: DoUpdate((_) => SrsStatesCompanion(
                 stability: Value(it.stability),
                 lastReview: Value(at),
+                dueAt: Value(due),
+              )),
+        );
+        // Mirror into the unified recall datum (ADR-0024 slice 4), same semantics.
+        b.insert(
+          _db.studyStates,
+          _recallRow(
+            cardId: it.cardId,
+            sectionSlug: it.sectionSlug,
+            stability: it.stability,
+            difficulty: 5,
+            state: 2,
+            step: null,
+            due: due,
+            lastReview: at,
+            activityCount: 2,
+          ),
+          onConflict: DoUpdate((_) => StudyStatesCompanion(
+                stability: Value(it.stability),
+                lastActivityAt: Value(at),
                 dueAt: Value(due),
               )),
         );
@@ -312,6 +391,21 @@ class SrsRepository {
               elapsedDays: outcome.elapsedDays,
             ),
           );
+
+      // Dual-write the unified recall datum (ADR-0024 slice 4), in this txn.
+      await _db.into(_db.studyStates).insertOnConflictUpdate(
+            _recallRow(
+              cardId: cardId,
+              sectionSlug: sectionSlug,
+              stability: outcome.stability,
+              difficulty: outcome.difficulty,
+              state: outcome.state,
+              step: outcome.step,
+              due: outcome.due,
+              lastReview: outcome.lastReview,
+              activityCount: (existing?.reviewCount ?? 0) + 1,
+            ),
+          );
     });
   }
 
@@ -335,6 +429,16 @@ class SrsRepository {
             ..where(
                 (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(oldSlug)))
           .write(ReviewsCompanion(sectionSlug: Value(newSlug)));
+      // Rekey the unified recall datum too (ADR-0024 slice 4). recall dataSlug
+      // == sectionSlug, so this mirrors the rename exactly. (The practice clock
+      // is not rekeyed by renameSection today — preserved byte-identical.)
+      await (_db.update(_db.studyStates)
+            ..where((t) =>
+                t.cardId.equals(cardId) &
+                t.dataSlug.equals(studyDataSlug(oldSlug, StudyKind.recall)) &
+                t.kind.equals(StudyKind.recall.wire)))
+          .write(StudyStatesCompanion(
+              dataSlug: Value(studyDataSlug(newSlug, StudyKind.recall))));
     });
   }
 
@@ -344,8 +448,18 @@ class SrsRepository {
   /// is left intact (past reviews are historical fact).
   Future<void> dropSection(
       {required String cardId, required String slug}) async {
-    await (_db.delete(_db.srsStates)
-          ..where((t) => t.cardId.equals(cardId) & t.sectionSlug.equals(slug)))
-        .go();
+    await _db.transaction(() async {
+      await (_db.delete(_db.srsStates)
+            ..where(
+                (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(slug)))
+          .go();
+      // Drop the unified recall datum too (ADR-0024 slice 4).
+      await (_db.delete(_db.studyStates)
+            ..where((t) =>
+                t.cardId.equals(cardId) &
+                t.dataSlug.equals(studyDataSlug(slug, StudyKind.recall)) &
+                t.kind.equals(StudyKind.recall.wire)))
+          .go();
+    });
   }
 }

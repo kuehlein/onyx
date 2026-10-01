@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import 'recognition.dart';
+import 'study_state.dart';
 
 /// Reads and writes the recognition ("explain") clock — the algorithm track's
 /// second clock. Kept entirely separate from [SrsRepository]: explaining never
@@ -35,16 +36,32 @@ class RecognitionRepository {
       now: now,
       priorStreak: existing?.streak ?? 0,
     );
-    await _db.into(_db.recognitionStates).insertOnConflictUpdate(
-          RecognitionStatesCompanion.insert(
-            cardId: cardId,
-            sectionSlug: sectionSlug,
-            lastExplainedAt: now,
-            dueAt: result.dueAt,
-            intervalDays: result.intervalDays,
-            streak: Value(result.streak),
-          ),
-        );
+    await _db.transaction(() async {
+      await _db.into(_db.recognitionStates).insertOnConflictUpdate(
+            RecognitionStatesCompanion.insert(
+              cardId: cardId,
+              sectionSlug: sectionSlug,
+              lastExplainedAt: now,
+              dueAt: result.dueAt,
+              intervalDays: result.intervalDays,
+              streak: Value(result.streak),
+            ),
+          );
+      // Dual-write the unified practice datum (ADR-0024 slice 4). The practice
+      // dataSlug is namespaced ('recognize:<aspect>') so it never collides with
+      // the same section's recall (solve) datum; the streak is the activityCount.
+      await _db.into(_db.studyStates).insertOnConflictUpdate(
+            StudyStatesCompanion.insert(
+              cardId: cardId,
+              dataSlug: studyDataSlug(sectionSlug, StudyKind.practice),
+              kind: StudyKind.practice.wire,
+              dueAt: result.dueAt,
+              lastActivityAt: Value(now),
+              activityCount: Value(result.streak),
+              intervalDays: Value(result.intervalDays),
+            ),
+          );
+    });
     return result;
   }
 }
