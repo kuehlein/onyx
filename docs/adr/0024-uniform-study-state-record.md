@@ -139,7 +139,13 @@ unified record (every legacy `srsStates`/`recognitionStates` write dropped) + to
 v2→v3 backfill). → (6) ✅ pluggable per-kind scheduler — `study_scheduler.dart` registers the two models
 (`RecallScheduler` = FSRS, a drop-in subtype of `SrsScheduler`; `PracticeScheduler` = the expanding clock)
 behind `studySchedulerFor(kind)`, the single config-agnostic kind→model seam; `recordExplain` + the recall
-provider dispatch through it. → (7) drop the old tables + dead code.
+provider dispatch through it. → (7) drop the old tables + dead code. *Scope note (from the slice-6 pass): this
+is a real refactor, not pure cleanup — `SrsState`/`RecognitionState` are drift-generated FROM those tables but
+are the **domain types** the consumer layer uses (`loadStates` return, `SectionStates`, mastery, projection,
+daily-plan, ~15 tests). Dropping the tables first needs those decoupled into plain data classes (feasible:
+consumers use only fields + the constructor, no drift methods). Then the v2→v3 backfill (which read the typed
+tables) either becomes `DROP TABLE IF EXISTS` + relies on `startupRestore`'s v≤3 snapshot-fold (the durable
+safety net) or is rewritten as raw SQL; the legacy tables are harmless until then.*
   - *Slice-5 must-dos surfaced in the slice-4 audit:* (a) make `StudyKind.fromWire` **tolerant** of an unknown
     `kind` (degrade, don't throw) before readers depend on it; (b) move `recordReview`'s review-count source
     from the legacy `SrsStates` row to the unified row once the legacy writes stop; (c) `renameSection` /

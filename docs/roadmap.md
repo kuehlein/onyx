@@ -702,7 +702,11 @@ The MVP-tagged stories, cloud still absent:
           unified `StudyStates` table + repo (readers first) ✅ → flip writers (dual-write, advance-anywhere live) ✅
           → flip readers ✅ + snapshot→v4 (legacy-readable) ✅ → drop the legacy writes + tolerant decode ✅ (5c) →
           pluggable per-kind scheduler ✅ (6: `studySchedulerFor` registry) → drop the old tables. *(slices 1–6
-          shipped; legacy state tables fully vestigial. Next: slice 7 — drop the old tables + dead code.)*
+          shipped — Stream A is functionally complete + releasable; the legacy state tables are harmless
+          vestigial. Slice 7 (drop them) is a real refactor, not cleanup: `SrsState`/`RecognitionState` are
+          drift-generated FROM those tables but are the consumer-layer domain types (~35 files), so it means
+          decoupling them into plain classes + reworking the v2→v3 backfill + an irreversible schema drop —
+          best done as its own careful pass. See ADR-0024 slice-7 scope note.)*
         - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
           repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
           deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**
