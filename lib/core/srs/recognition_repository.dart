@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import 'recognition.dart';
+import 'study_scheduler.dart';
 import 'study_state.dart';
 
 /// Reads and writes the recognition ("explain") clock — the algorithm track's
@@ -49,7 +50,8 @@ class RecognitionRepository {
   }) async {
     final key = keyFor(cardId, sectionSlug);
     final existing = (await loadStates())[key];
-    final result = scheduleRecognition(
+    // Dispatch through the per-kind registry (ADR-0024 §3): practice → expanding.
+    final result = const PracticeScheduler().schedule(
       outcome: outcome,
       now: now,
       priorStreak: existing?.streak ?? 0,

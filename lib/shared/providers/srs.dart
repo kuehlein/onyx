@@ -9,6 +9,7 @@ import '../../core/srs/recognition_repository.dart';
 import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
+import '../../core/srs/study_scheduler.dart';
 import '../../core/template/study_policy.dart'
     show retentionDefault, retentionForPriority;
 import 'clock.dart';
@@ -21,9 +22,11 @@ import 'vault.dart';
 
 part 'srs.g.dart';
 
-/// The FSRS scheduler — stateless config, shared for the process.
+/// The recall (FSRS) scheduler — the registry's `recall` model (ADR-0024 §3),
+/// stateless config, shared for the process. Typed as [SrsScheduler] so every
+/// existing `review` call site is unchanged; [RecallScheduler] is a drop-in subtype.
 @Riverpod(keepAlive: true)
-SrsScheduler srsScheduler(Ref ref) => SrsScheduler();
+SrsScheduler srsScheduler(Ref ref) => RecallScheduler();
 
 /// Reads/writes scheduling state and the review log.
 @Riverpod(keepAlive: true)
