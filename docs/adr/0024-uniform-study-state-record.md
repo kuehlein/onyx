@@ -128,9 +128,14 @@ directly, so a hard writer-move would break it mid-stream — dual-write is the 
 (stop writing the legacy tables) lands in slice 5 with the reader flip.* Restore (`_applyPayload`) +
 `clearProgress` also rebuild/clear the mirror in the same transaction, so it stays consistent on **every**
 write path — bulk cross-device restore included — not just live writes (verified by a real v2→v3 `onUpgrade`
-test + restore/clear tests). → (5) flip readers + snapshot: the old repos become thin adapters over the
-unified table, collapse the snapshot to v4 (+ keep the v≤3 legacy reader — the golden guards it), then drop
-the now-redundant legacy writes → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
+test + restore/clear tests). → (5a) flip readers ✅ — the old repos' `loadStates` read the unified table and
+reconstruct the legacy `SrsState`/`RecognitionState` shapes, so consumers are unchanged but the unified record
+is the live read source. → (5b) snapshot → v4 ✅ — export one `studyStates[]`; `mergeSnapshots` folds any v≤3
+file to the unified shape first (one keyed merge over `(cardId, dataSlug)`, `lastActivityAt` recency +
+`activityCount` tie-break; the golden guards legacy-readability); restore writes `study_states` directly;
+`recordReview`'s count source moved to the unified row [must-do (b) done]. → (5c) drop the now-redundant legacy
+*writes* (writers write only the unified record) + tolerant `StudyKind.fromWire` [must-do (a)]. → (6) pluggable
+per-kind scheduler → (7) drop the old tables + dead code.
   - *Slice-5 must-dos surfaced in the slice-4 audit:* (a) make `StudyKind.fromWire` **tolerant** of an unknown
     `kind` (degrade, don't throw) before readers depend on it; (b) move `recordReview`'s review-count source
     from the legacy `SrsStates` row to the unified row once the legacy writes stop; (c) `renameSection` /

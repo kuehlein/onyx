@@ -6,6 +6,7 @@ import '../database/database.dart';
 import '../dev.dart';
 import '../settings/device_id.dart';
 import '../settings/preferences_repository.dart';
+import '../srs/study_state.dart';
 import '../vault/vault_source.dart';
 
 /// Backs up study progress to the vault's config dir and restores it. The vault is
@@ -23,12 +24,16 @@ import '../vault/vault_source.dart';
 /// the same result with no data loss, in any sync order. See [mergeSnapshots] and
 /// ADR-0001 (`docs/adr/0001-progress-sync-merge.md`).
 ///
-/// Snapshots `srs_state` (your schedule — the essential thing), `reviews` (your
-/// history — for future stats / FSRS tuning), `applied_attempts` (the Phase B
-/// mock-interview evidence behind interview readiness), and `recognition_state`
-/// (the algorithm track's explain clock), so all of it follows you across
-/// devices. `activity_log` is excluded; it is debug/analytics only and not
-/// needed to resume.
+/// Snapshots `study_states` (your schedule — the unified recall + practice record,
+/// ADR-0024), `reviews` (your history — for future stats / FSRS tuning), and
+/// `applied_attempts` (the Phase B mock-interview evidence behind interview
+/// readiness), so all of it follows you across devices. `activity_log` is excluded;
+/// it is debug/analytics only and not needed to resume.
+///
+/// **Format v4** (ADR-0024 slice 5) exports one `studyStates[]` array. Older v≤3
+/// files (separate `srsStates`/`recognitionStates`) are still read **indefinitely**
+/// — [mergeSnapshots] folds them into the unified shape — so an un-upgraded device
+/// in a shared folder never loses progress.
 class SnapshotService {
   SnapshotService(this._db, this._source);
 
@@ -56,12 +61,13 @@ class SnapshotService {
 
   Future<String> _deviceId() => resolveDeviceId(PreferencesRepository(_db));
 
-  // Bumped as tables join the snapshot (v2: appliedAttempts, v3: recognition).
-  // Older snapshots restore fine — a missing key just restores nothing for it.
-  static const _version = 3;
+  // Bumped as the shape changes (v2: appliedAttempts, v3: recognition, v4: the
+  // unified studyStates record — ADR-0024). Older files restore fine: mergeSnapshots
+  // folds v≤3 into the unified shape.
+  static const _version = 4;
 
   Future<bool> isDbEmpty() async =>
-      (await (_db.select(_db.srsStates)..limit(1)).get()).isEmpty;
+      (await (_db.select(_db.studyStates)..limit(1)).get()).isEmpty;
 
   Future<bool> hasSnapshot() async {
     final stateFiles = await _source.listMeta(stateDir);
@@ -72,17 +78,15 @@ class SnapshotService {
   /// The current DB progress as a snapshot payload — the same shape written to
   /// disk. The "local" side of the merge in both [export] and [restore].
   Future<Map<String, dynamic>> _localPayload() async {
-    final states = await _db.select(_db.srsStates).get();
+    final study = await _db.select(_db.studyStates).get();
     final reviews = await _db.select(_db.reviews).get();
     final applied = await _db.select(_db.appliedAttempts).get();
-    final recognition = await _db.select(_db.recognitionStates).get();
     return {
       'version': _version,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'srsStates': [for (final s in states) _srsToJson(s)],
+      'studyStates': [for (final s in study) _studyToJson(s)],
       'reviews': [for (final r in reviews) _reviewToJson(r)],
       'appliedAttempts': [for (final a in applied) _appliedToJson(a)],
-      'recognitionStates': [for (final r in recognition) _recognitionToJson(r)],
     };
   }
 
@@ -140,7 +144,7 @@ class SnapshotService {
     final local = await _localPayload();
     final merged = mergeSnapshots(local, incoming);
     await _applyPayload(merged);
-    return (merged['srsStates'] as List).length;
+    return (merged['studyStates'] as List).length;
   }
 
   /// Wipe the local progress tables (the derived cache) — used when SWITCHING
@@ -161,63 +165,63 @@ class SnapshotService {
     });
   }
 
-  /// Replace the DB tables with [data] (the merged union). Private: callers must
-  /// pass a payload that already folds in the local rows (see [restore]).
+  /// Replace the DB tables with [data] (the merged union, already v4-shaped by
+  /// [mergeSnapshots]). Private: callers pass a payload that already folds in the
+  /// local rows (see [restore]). Writes the unified `study_states` directly; the
+  /// legacy state tables are cleared but not written — they're no longer read
+  /// (ADR-0024 slice 5a) and are dropped in slice 7.
   Future<void> _applyPayload(Map<String, dynamic> data) async {
     List<Map<String, dynamic>> rows(String key) =>
         (data[key] as List? ?? const []).cast<Map<String, dynamic>>();
-    final states = rows('srsStates');
+    final study = rows('studyStates');
     final reviews = rows('reviews');
     final applied = rows('appliedAttempts');
-    final recognition = rows('recognitionStates');
 
     await _db.transaction(() async {
       await _db.delete(_db.srsStates).go();
-      await _db.delete(_db.reviews).go();
-      await _db.delete(_db.appliedAttempts).go();
       await _db.delete(_db.recognitionStates).go();
       await _db.delete(_db.studyStates).go();
+      await _db.delete(_db.reviews).go();
+      await _db.delete(_db.appliedAttempts).go();
       await _db.batch((b) {
-        b.insertAll(_db.srsStates, [for (final s in states) _srsFromJson(s)]);
+        b.insertAll(
+            _db.studyStates, [for (final s in study) _studyFromJson(s)]);
         b.insertAll(_db.reviews, [for (final r in reviews) _reviewFromJson(r)]);
         b.insertAll(_db.appliedAttempts,
             [for (final a in applied) _appliedFromJson(a)]);
-        b.insertAll(_db.recognitionStates,
-            [for (final r in recognition) _recognitionFromJson(r)]);
       });
-      // Rebuild the unified mirror (ADR-0024) from the just-restored legacy rows,
-      // in this same transaction — restore is a bulk writer of the two legacy
-      // clocks, so it must keep `study_states` byte-identical to them too (until
-      // slice 5 collapses the snapshot onto the unified shape directly).
-      await _db.backfillStudyStates();
     });
   }
 
-  Map<String, dynamic> _srsToJson(SrsState s) => {
+  Map<String, dynamic> _studyToJson(StudyState s) => {
         'cardId': s.cardId,
-        'sectionSlug': s.sectionSlug,
+        'dataSlug': s.dataSlug,
+        'kind': s.kind,
+        'dueAt': s.dueAt.toUtc().toIso8601String(),
+        'lastActivityAt': s.lastActivityAt?.toUtc().toIso8601String(),
+        'activityCount': s.activityCount,
         'stability': s.stability,
         'difficulty': s.difficulty,
-        'state': s.state,
+        'fsrsState': s.fsrsState,
         'step': s.step,
-        'dueAt': s.dueAt.toUtc().toIso8601String(),
-        'lastReview': s.lastReview?.toUtc().toIso8601String(),
-        'reviewCount': s.reviewCount,
+        'intervalDays': s.intervalDays,
       };
 
-  SrsStatesCompanion _srsFromJson(Map<String, dynamic> m) =>
-      SrsStatesCompanion.insert(
+  StudyStatesCompanion _studyFromJson(Map<String, dynamic> m) =>
+      StudyStatesCompanion.insert(
         cardId: m['cardId'] as String,
-        sectionSlug: m['sectionSlug'] as String,
-        stability: Value((m['stability'] as num).toDouble()),
-        difficulty: Value((m['difficulty'] as num).toDouble()),
-        state: Value(m['state'] as int),
-        step: Value(m['step'] as int?),
+        dataSlug: m['dataSlug'] as String,
+        kind: m['kind'] as String,
         dueAt: DateTime.parse(m['dueAt'] as String),
-        lastReview: Value(m['lastReview'] == null
+        lastActivityAt: Value(m['lastActivityAt'] == null
             ? null
-            : DateTime.parse(m['lastReview'] as String)),
-        reviewCount: Value(m['reviewCount'] as int),
+            : DateTime.parse(m['lastActivityAt'] as String)),
+        activityCount: Value(m['activityCount'] as int? ?? 0),
+        stability: Value((m['stability'] as num?)?.toDouble()),
+        difficulty: Value((m['difficulty'] as num?)?.toDouble()),
+        fsrsState: Value(m['fsrsState'] as int?),
+        step: Value(m['step'] as int?),
+        intervalDays: Value(m['intervalDays'] as int?),
       );
 
   Map<String, dynamic> _reviewToJson(Review r) => {
@@ -229,25 +233,6 @@ class SnapshotService {
         'difficulty': r.difficulty,
         'elapsedDays': r.elapsedDays,
       };
-
-  Map<String, dynamic> _recognitionToJson(RecognitionState r) => {
-        'cardId': r.cardId,
-        'sectionSlug': r.sectionSlug,
-        'lastExplainedAt': r.lastExplainedAt.toUtc().toIso8601String(),
-        'dueAt': r.dueAt.toUtc().toIso8601String(),
-        'intervalDays': r.intervalDays,
-        'streak': r.streak,
-      };
-
-  RecognitionStatesCompanion _recognitionFromJson(Map<String, dynamic> m) =>
-      RecognitionStatesCompanion.insert(
-        cardId: m['cardId'] as String,
-        sectionSlug: m['sectionSlug'] as String,
-        lastExplainedAt: DateTime.parse(m['lastExplainedAt'] as String),
-        dueAt: DateTime.parse(m['dueAt'] as String),
-        intervalDays: m['intervalDays'] as int,
-        streak: Value(m['streak'] as int? ?? 0),
-      );
 
   ReviewsCompanion _reviewFromJson(Map<String, dynamic> m) =>
       ReviewsCompanion.insert(
@@ -301,68 +286,112 @@ class SnapshotService {
 /// exchange snapshots (in any order, any number of times) reach the same result
 /// with no data loss:
 ///
-///  * **Keyed state** (`srsStates`, `recognitionStates`) resolves per section
-///    `(cardId, sectionSlug)` to the most recently reviewed side (last-review-wins
-///    on `lastReview` / `lastExplainedAt`, tie-broken by the higher `reviewCount`).
+///  * **Keyed state** (`studyStates`) resolves per datum `(cardId, dataSlug)` to the
+///    most recent side (last-activity-wins on `lastActivityAt`, tie-broken by the
+///    higher `activityCount`).
 ///  * **Event logs** (`reviews`, `appliedAttempts`) are unioned by a natural event
 ///    key, so history is never dropped and re-merging is a no-op.
 ///
-/// Output row lists are sorted by key so the serialized file is deterministic
-/// (stable across re-exports → less folder-sync churn). Replaces the old
-/// last-write-wins-on-the-whole-blob behaviour that let the last device to export
-/// clobber the other's progress.
+/// Either input may be an older v≤3 file (separate `srsStates`/`recognitionStates`);
+/// [_foldLegacyToStudy] normalizes both sides to the unified v4 shape first, so an
+/// un-upgraded device's file still merges without loss. Output row lists are sorted
+/// by key so the serialized file is deterministic (less folder-sync churn).
 Map<String, dynamic> mergeSnapshots(
     Map<String, dynamic> a, Map<String, dynamic> b) {
-  int version(Map<String, dynamic> m) => (m['version'] as int?) ?? 0;
+  final fa = _foldLegacyToStudy(a);
+  final fb = _foldLegacyToStudy(b);
   String exportedAt(Map<String, dynamic> m) =>
       (m['exportedAt'] as String?) ?? '';
-  final at = exportedAt(a).compareTo(exportedAt(b)) >= 0
-      ? exportedAt(a)
-      : exportedAt(b);
+  final at = exportedAt(fa).compareTo(exportedAt(fb)) >= 0
+      ? exportedAt(fa)
+      : exportedAt(fb);
   return {
-    'version': version(a) >= version(b) ? version(a) : version(b),
+    'version': 4,
     if (at.isNotEmpty) 'exportedAt': at,
-    'srsStates': _mergeKeyedState(
-        _rows(a, 'srsStates'), _rows(b, 'srsStates'), 'lastReview'),
-    'recognitionStates': _mergeKeyedState(_rows(a, 'recognitionStates'),
-        _rows(b, 'recognitionStates'), 'lastExplainedAt'),
+    'studyStates':
+        _mergeStudyStates(_rows(fa, 'studyStates'), _rows(fb, 'studyStates')),
     'reviews':
-        _mergeEvents(_rows(a, 'reviews'), _rows(b, 'reviews'), _reviewKey),
-    'appliedAttempts': _mergeEvents(
-        _rows(a, 'appliedAttempts'), _rows(b, 'appliedAttempts'), _appliedKey),
+        _mergeEvents(_rows(fa, 'reviews'), _rows(fb, 'reviews'), _reviewKey),
+    'appliedAttempts': _mergeEvents(_rows(fa, 'appliedAttempts'),
+        _rows(fb, 'appliedAttempts'), _appliedKey),
+  };
+}
+
+/// Normalize a payload to the unified v4 shape: a v≤3 file's separate
+/// `srsStates` / `recognitionStates` arrays fold into one `studyStates` array
+/// (recall ← srs, practice ← recognition), using the same key mapping as the DB
+/// migration ([studyDataSlug]). A v4 payload is returned unchanged. This is the
+/// single place legacy-readability lives, so merge / restore / export downstream
+/// only ever see the unified shape.
+Map<String, dynamic> _foldLegacyToStudy(Map<String, dynamic> m) {
+  if (((m['version'] as int?) ?? 0) >= 4) return m;
+  final study = <Map<String, dynamic>>[
+    for (final s in _rows(m, 'srsStates'))
+      {
+        'cardId': s['cardId'],
+        'dataSlug': studyDataSlug(s['sectionSlug'] as String, StudyKind.recall),
+        'kind': StudyKind.recall.wire,
+        'dueAt': s['dueAt'],
+        'lastActivityAt': s['lastReview'],
+        'activityCount': s['reviewCount'],
+        'stability': s['stability'],
+        'difficulty': s['difficulty'],
+        'fsrsState': s['state'],
+        'step': s['step'],
+        'intervalDays': null,
+      },
+    for (final r in _rows(m, 'recognitionStates'))
+      {
+        'cardId': r['cardId'],
+        'dataSlug':
+            studyDataSlug(r['sectionSlug'] as String, StudyKind.practice),
+        'kind': StudyKind.practice.wire,
+        'dueAt': r['dueAt'],
+        'lastActivityAt': r['lastExplainedAt'],
+        'activityCount': r['streak'],
+        'stability': null,
+        'difficulty': null,
+        'fsrsState': null,
+        'step': null,
+        'intervalDays': r['intervalDays'],
+      },
+  ];
+  return {
+    'version': 4,
+    if (m['exportedAt'] != null) 'exportedAt': m['exportedAt'],
+    'studyStates': study,
+    'reviews': m['reviews'] ?? const [],
+    'appliedAttempts': m['appliedAttempts'] ?? const [],
   };
 }
 
 List<Map<String, dynamic>> _rows(Map<String, dynamic> m, String key) =>
     (m[key] as List? ?? const []).cast<Map<String, dynamic>>();
 
-String _sectionKey(Map<String, dynamic> r) =>
-    '${r['cardId']} ${r['sectionSlug']}';
+String _dataKey(Map<String, dynamic> r) => '${r['cardId']} ${r['dataSlug']}';
 
-/// Last-review-wins per `(cardId, sectionSlug)`, tie-broken by `reviewCount`.
-/// [recencyField] is the ISO-8601 recency stamp for the table (`lastReview` /
-/// `lastExplainedAt`); ISO-8601 UTC strings compare lexicographically as they
-/// order chronologically, and a null/absent stamp (`''`) loses to any real one.
-List<Map<String, dynamic>> _mergeKeyedState(List<Map<String, dynamic>> a,
-    List<Map<String, dynamic>> b, String recencyField) {
+/// Last-activity-wins per `(cardId, dataSlug)`, tie-broken by `activityCount`.
+/// ISO-8601 UTC strings compare lexicographically as they order chronologically,
+/// and a null/absent `lastActivityAt` (`''`) loses to any real one.
+List<Map<String, dynamic>> _mergeStudyStates(
+    List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
   final byKey = <String, Map<String, dynamic>>{};
   for (final r in [...a, ...b]) {
-    final k = _sectionKey(r);
+    final k = _dataKey(r);
     final cur = byKey[k];
-    if (cur == null || _stateNewer(r, cur, recencyField)) byKey[k] = r;
+    if (cur == null || _studyNewer(r, cur)) byKey[k] = r;
   }
   return byKey.values.toList()
-    ..sort((x, y) => _sectionKey(x).compareTo(_sectionKey(y)));
+    ..sort((x, y) => _dataKey(x).compareTo(_dataKey(y)));
 }
 
-bool _stateNewer(
-    Map<String, dynamic> cand, Map<String, dynamic> cur, String recencyField) {
-  final cr = (cand[recencyField] as String?) ?? '';
-  final ur = (cur[recencyField] as String?) ?? '';
+bool _studyNewer(Map<String, dynamic> cand, Map<String, dynamic> cur) {
+  final cr = (cand['lastActivityAt'] as String?) ?? '';
+  final ur = (cur['lastActivityAt'] as String?) ?? '';
   final cmp = cr.compareTo(ur);
   if (cmp != 0) return cmp > 0;
-  return ((cand['reviewCount'] as int?) ?? 0) >
-      ((cur['reviewCount'] as int?) ?? 0);
+  return ((cand['activityCount'] as int?) ?? 0) >
+      ((cur['activityCount'] as int?) ?? 0);
 }
 
 /// Union of event rows, deduped by [keyOf], sorted by key for determinism.

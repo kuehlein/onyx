@@ -73,9 +73,9 @@ void main() {
       final restored = await SnapshotService(db2, source).restore();
       expect(restored, 2);
 
-      final states = await db2.select(db2.srsStates).get();
-      expect(states.map((s) => s.cardId).toSet(), {'a', 'b'});
-      final a = states.firstWhere((s) => s.cardId == 'a');
+      final states = await SrsRepository(db2).loadStates();
+      expect(states.values.map((s) => s.cardId).toSet(), {'a', 'b'});
+      final a = states['a::s1']!;
       expect(a.sectionSlug, 's1');
       expect(a.stability, 8);
       expect(a.reviewCount, 1);
@@ -199,7 +199,11 @@ void main() {
       await SnapshotService(d2, source).restore(); // merge, non-destructive
 
       // Device 2 now has BOTH X and Y (old blob-LWW would have dropped one).
-      expect((await d2.select(d2.srsStates).get()).map((s) => s.cardId).toSet(),
+      expect(
+          (await SrsRepository(d2).loadStates())
+              .values
+              .map((s) => s.cardId)
+              .toSet(),
           {'X', 'Y'});
 
       // Device 2 exports to ITS OWN file (containing X + Y, since its DB has both).
@@ -207,7 +211,11 @@ void main() {
 
       // Device 1 glob-merges every device's file and also converges to X + Y.
       await SnapshotService(d1, source).restore();
-      expect((await d1.select(d1.srsStates).get()).map((s) => s.cardId).toSet(),
+      expect(
+          (await SrsRepository(d1).loadStates())
+              .values
+              .map((s) => s.cardId)
+              .toSet(),
           {'X', 'Y'});
       // Both review events survived on both devices.
       expect((await d1.select(d1.reviews).get()).length, 2);
@@ -273,7 +281,7 @@ void main() {
       final svc = SnapshotService(db, source);
       expect(await svc.hasSnapshot(), isTrue, reason: 'the legacy file counts');
       expect(await svc.restore(), 1);
-      expect((await db.select(db.srsStates).get()).single.cardId, 'L');
+      expect((await SrsRepository(db).loadStates()).values.single.cardId, 'L');
       await db.close();
     });
   },

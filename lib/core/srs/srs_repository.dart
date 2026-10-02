@@ -382,10 +382,17 @@ class SrsRepository {
     required ReviewOutcome outcome,
   }) async {
     await _db.transaction(() async {
-      final existing = await (_db.select(_db.srsStates)
+      // Source the review count from the UNIFIED row (ADR-0024 slice 5): the
+      // snapshot is v4 now, so a restored DB has study_states but an empty
+      // srs_states — reading the count from the legacy table would reset it.
+      final existing = await (_db.select(_db.studyStates)
             ..where((t) =>
-                t.cardId.equals(cardId) & t.sectionSlug.equals(sectionSlug)))
+                t.cardId.equals(cardId) &
+                t.dataSlug
+                    .equals(studyDataSlug(sectionSlug, StudyKind.recall)) &
+                t.kind.equals(StudyKind.recall.wire)))
           .getSingleOrNull();
+      final count = (existing?.activityCount ?? 0) + 1;
 
       await _db.into(_db.srsStates).insertOnConflictUpdate(
             SrsStatesCompanion.insert(
@@ -397,7 +404,7 @@ class SrsRepository {
               step: Value(outcome.step),
               dueAt: outcome.due,
               lastReview: Value(outcome.lastReview),
-              reviewCount: Value((existing?.reviewCount ?? 0) + 1),
+              reviewCount: Value(count),
             ),
           );
 
@@ -424,7 +431,7 @@ class SrsRepository {
               step: outcome.step,
               due: outcome.due,
               lastReview: outcome.lastReview,
-              activityCount: (existing?.reviewCount ?? 0) + 1,
+              activityCount: count,
             ),
           );
     });

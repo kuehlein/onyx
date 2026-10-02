@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/backup/snapshot.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/interview/assessment.dart';
+import 'package:onyx/core/srs/recognition_repository.dart';
+import 'package:onyx/core/srs/srs_repository.dart';
 import 'package:onyx/core/vault/desktop_vault_source.dart';
 import 'package:path/path.dart' as p;
 // ignore: depend_on_referenced_packages
@@ -51,12 +53,14 @@ const _v3Snapshot = r'''
 ''';
 
 void main() {
-  // GOLDEN: freezes the v3 on-disk snapshot contract. Unlike snapshot_test.dart
-  // (which round-trips through the live serializer, so its fixtures move WITH any
-  // format change), this feeds a literal v3 file through `restore()` and asserts
-  // every field lands byte-exact. When Stream A changes the snapshot format
-  // (ADR-0024, v3 → v4), THIS test must still pass unchanged — that is the proof
-  // the new code stays legacy-readable and never orphans a real user's schedule.
+  // GOLDEN: freezes the v3 on-disk snapshot contract (the literal `_v3Snapshot`
+  // fixture never changes). It feeds that literal v3 file through `restore()` and
+  // asserts every field lands byte-exact. Since v4 (ADR-0024) folds the legacy
+  // `srsStates`/`recognitionStates` into the unified `study_states` on read, the
+  // assertions go through the live read path (`SrsRepository`/`RecognitionRepository`
+  // .loadStates, which read the unified record) — the proof the new code stays
+  // legacy-readable and never orphans a real user's schedule. `reviews` /
+  // `applied_attempts` are unchanged event logs, still asserted on their tables.
   group('v3 snapshot golden (legacy-readable contract)', () {
     late Directory root;
     setUp(() => root = Directory.systemTemp.createTempSync('onyx_v3golden_'));
@@ -74,11 +78,14 @@ void main() {
       final db = AppDatabase.withExecutor(NativeDatabase.memory());
       final svc = SnapshotService(db, source);
       expect(await svc.hasSnapshot(), isTrue);
-      expect(await svc.restore(), 2, reason: 'two srs sections restored');
+      expect(await svc.restore(), 3,
+          reason: '2 recall + 1 practice datum folded from v3');
 
-      // --- srs_state: both rows, every column, incl. the null edge cases. ---
+      // --- recall state: both rows, every column, incl. the null edge cases.
+      // Read via the repo (reconstructs the SrsState shape from study_states). ---
       final srs = {
-        for (final s in await db.select(db.srsStates).get()) s.cardId: s,
+        for (final s in (await SrsRepository(db).loadStates()).values)
+          s.cardId: s,
       };
       expect(srs.keys.toSet(), {'algo-two-sum', 'concept-btree'});
 
@@ -129,8 +136,9 @@ void main() {
       expect(AppliedAssessment.decodeRubric(applied.rubric),
           {'correctness': 4, 'communication': 3});
 
-      // --- recognition_state: the explain clock, every column. ---
-      final rec = (await db.select(db.recognitionStates).get()).single;
+      // --- practice (explain) clock: via the repo, which strips the 'recognize:'
+      // namespace back to the section slug. ---
+      final rec = (await RecognitionRepository(db).loadStates()).values.single;
       expect(rec.cardId, 'algo-two-sum');
       expect(rec.sectionSlug, 'approach');
       expect(rec.intervalDays, 7);

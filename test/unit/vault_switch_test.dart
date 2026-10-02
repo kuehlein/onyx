@@ -70,8 +70,14 @@ void main() {
           outcome: _outcome(DateTime.utc(2026, 1, 1, 9)),
         );
 
+    // Reads the authoritative unified record (ADR-0024 slice 5): after a switch,
+    // restore repopulates study_states, and clearProgress wipes it — so this is
+    // where the "no cross-folder mixing" property is observable.
     Future<Set<String>> cardsInDb() async =>
-        (await db.select(db.srsStates).get()).map((s) => s.cardId).toSet();
+        (await SrsRepository(db).loadStates())
+            .values
+            .map((s) => s.cardId)
+            .toSet();
 
     bool snapshotExists(Directory d) {
       final dir = Directory(p.join(d.path, '_onyx', SnapshotService.stateDir));
