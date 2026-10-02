@@ -10,10 +10,9 @@ class SrsRepository {
 
   final AppDatabase _db;
 
-  /// Build the unified `study_states` recall row mirroring an `SrsStates` write
-  /// (ADR-0024 slice 4 dual-write — the unified table is kept byte-identical to
-  /// the legacy clock until readers + snapshot flip to it in slice 5). For recall
-  /// `dataSlug == sectionSlug`, so the key is unchanged.
+  /// Build a unified `study_states` recall row (ADR-0024). Since slice 5c this is
+  /// the sole state write — the legacy `srs_states` table is no longer written
+  /// (it's dropped in slice 7). For recall `dataSlug == sectionSlug`.
   StudyStatesCompanion _recallRow({
     required String cardId,
     required String sectionSlug,
@@ -40,11 +39,11 @@ class SrsRepository {
 
   /// All recall scheduling state, keyed by `"$cardId::$sectionSlug"`.
   ///
-  /// Reads the unified `study_states` record (ADR-0024 slice 5) and reconstructs
-  /// the legacy [SrsState] shape, so every consumer is unchanged while the source
-  /// of truth is now the unified table. `srs_states` is still dual-written (until
-  /// slice 5c drops it) but no longer read here; for recall `dataSlug ==
-  /// sectionSlug`, so the keys are byte-identical to the old ones.
+  /// Reads the unified `study_states` record (ADR-0024) and reconstructs the legacy
+  /// [SrsState] shape, so every consumer is unchanged while the source of truth is
+  /// the unified table. The legacy `srs_states` table is no longer read or written
+  /// (dropped in slice 7); for recall `dataSlug == sectionSlug`, so the keys are
+  /// byte-identical to the old ones.
   Future<Map<String, SrsState>> loadStates() async {
     final rows = await (_db.select(_db.studyStates)
           ..where((t) => t.kind.equals(StudyKind.recall.wire)))
@@ -76,20 +75,7 @@ class SrsRepository {
     required ReviewOutcome outcome,
   }) async {
     await _db.transaction(() async {
-      await _db.into(_db.srsStates).insertOnConflictUpdate(
-            SrsStatesCompanion.insert(
-              cardId: cardId,
-              sectionSlug: sectionSlug,
-              stability: Value(outcome.stability),
-              difficulty: Value(outcome.difficulty),
-              state: Value(outcome.state),
-              step: Value(outcome.step),
-              dueAt: outcome.due,
-              lastReview: Value(outcome.lastReview),
-              reviewCount: const Value(0),
-            ),
-          );
-      // Dual-write the unified recall datum (ADR-0024 slice 4).
+      // Seed the unified recall datum (ADR-0024 slice 5c — the sole state write).
       await _db.into(_db.studyStates).insertOnConflictUpdate(
             _recallRow(
               cardId: cardId,
@@ -230,22 +216,6 @@ class SrsRepository {
     await _db.batch((b) {
       for (final k in keys) {
         b.insert(
-          _db.srsStates,
-          SrsStatesCompanion.insert(
-            cardId: k.cardId,
-            sectionSlug: k.sectionSlug,
-            stability: const Value(1),
-            difficulty: const Value(5),
-            state: const Value(2), // review
-            step: const Value(null),
-            dueAt: now,
-            lastReview: Value(now),
-            reviewCount: const Value(0),
-          ),
-          onConflict: DoUpdate((_) => SrsStatesCompanion(dueAt: Value(now))),
-        );
-        // Mirror into the unified recall datum (ADR-0024 slice 4), same semantics.
-        b.insert(
           _db.studyStates,
           _recallRow(
             cardId: k.cardId,
@@ -280,26 +250,6 @@ class SrsRepository {
     await _db.batch((b) {
       for (final it in items) {
         final due = at.add(Duration(days: it.stability.round()));
-        b.insert(
-          _db.srsStates,
-          SrsStatesCompanion.insert(
-            cardId: it.cardId,
-            sectionSlug: it.sectionSlug,
-            stability: Value(it.stability),
-            difficulty: const Value(5),
-            state: const Value(2), // review
-            step: const Value(null),
-            dueAt: due,
-            lastReview: Value(at),
-            reviewCount: const Value(2),
-          ),
-          onConflict: DoUpdate((_) => SrsStatesCompanion(
-                stability: Value(it.stability),
-                lastReview: Value(at),
-                dueAt: Value(due),
-              )),
-        );
-        // Mirror into the unified recall datum (ADR-0024 slice 4), same semantics.
         b.insert(
           _db.studyStates,
           _recallRow(
@@ -394,20 +344,6 @@ class SrsRepository {
           .getSingleOrNull();
       final count = (existing?.activityCount ?? 0) + 1;
 
-      await _db.into(_db.srsStates).insertOnConflictUpdate(
-            SrsStatesCompanion.insert(
-              cardId: cardId,
-              sectionSlug: sectionSlug,
-              stability: Value(outcome.stability),
-              difficulty: Value(outcome.difficulty),
-              state: Value(outcome.state),
-              step: Value(outcome.step),
-              dueAt: outcome.due,
-              lastReview: Value(outcome.lastReview),
-              reviewCount: Value(count),
-            ),
-          );
-
       await _db.into(_db.reviews).insert(
             ReviewsCompanion.insert(
               cardId: cardId,
@@ -420,7 +356,8 @@ class SrsRepository {
             ),
           );
 
-      // Dual-write the unified recall datum (ADR-0024 slice 4), in this txn.
+      // Persist the unified recall datum (ADR-0024 slice 5c — the sole state
+      // write; the legacy srs_states table is no longer written), in this txn.
       await _db.into(_db.studyStates).insertOnConflictUpdate(
             _recallRow(
               cardId: cardId,
@@ -438,8 +375,8 @@ class SrsRepository {
   }
 
   /// Move a section's scheduling identity when a heading is renamed but the
-  /// section is the same (ADR-0012 edit-identity KEEP): rekeys the `srs_state`
-  /// row (and its review-log rows) from `cardId::oldSlug` to `cardId::newSlug`, so
+  /// section is the same (ADR-0012 edit-identity KEEP): rekeys the unified recall
+  /// datum (and its review-log rows) from `cardId::oldSlug` to `cardId::newSlug`, so
   /// the forgetting curve survives the rename instead of orphaning. A no-op if no
   /// row exists for the old key.
   Future<void> renameSection({
@@ -449,17 +386,13 @@ class SrsRepository {
   }) async {
     if (oldSlug == newSlug) return;
     await _db.transaction(() async {
-      await (_db.update(_db.srsStates)
-            ..where(
-                (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(oldSlug)))
-          .write(SrsStatesCompanion(sectionSlug: Value(newSlug)));
       await (_db.update(_db.reviews)
             ..where(
                 (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(oldSlug)))
           .write(ReviewsCompanion(sectionSlug: Value(newSlug)));
-      // Rekey the unified recall datum too (ADR-0024 slice 4). recall dataSlug
-      // == sectionSlug, so this mirrors the rename exactly. (The practice clock
-      // is not rekeyed by renameSection today — preserved byte-identical.)
+      // Rekey the unified recall datum (ADR-0024 slice 5c). recall dataSlug ==
+      // sectionSlug, so the datum and the reviews log (rekeyed above) stay
+      // aligned. (The practice clock is not rekeyed by renameSection today.)
       await (_db.update(_db.studyStates)
             ..where((t) =>
                 t.cardId.equals(cardId) &
@@ -471,23 +404,17 @@ class SrsRepository {
   }
 
   /// Drop a section's scheduling state (ADR-0012 edit-identity RESET, or pruning a
-  /// removed section's orphaned row): deletes the `srs_state` row for
+  /// removed section's orphaned row): deletes the unified recall datum for
   /// `cardId::slug` so the section re-enters Learn fresh. The immutable review log
   /// is left intact (past reviews are historical fact).
   Future<void> dropSection(
       {required String cardId, required String slug}) async {
-    await _db.transaction(() async {
-      await (_db.delete(_db.srsStates)
-            ..where(
-                (t) => t.cardId.equals(cardId) & t.sectionSlug.equals(slug)))
-          .go();
-      // Drop the unified recall datum too (ADR-0024 slice 4).
-      await (_db.delete(_db.studyStates)
-            ..where((t) =>
-                t.cardId.equals(cardId) &
-                t.dataSlug.equals(studyDataSlug(slug, StudyKind.recall)) &
-                t.kind.equals(StudyKind.recall.wire)))
-          .go();
-    });
+    // Drop the unified recall datum (ADR-0024 slice 5c — the sole state write).
+    await (_db.delete(_db.studyStates)
+          ..where((t) =>
+              t.cardId.equals(cardId) &
+              t.dataSlug.equals(studyDataSlug(slug, StudyKind.recall)) &
+              t.kind.equals(StudyKind.recall.wire)))
+        .go();
   }
 }

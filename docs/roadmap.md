@@ -700,9 +700,9 @@ The MVP-tagged stories, cloud still absent:
         **Now implemented as two incremental, readers-first, byte-identical streams:**
         - **Stream A — #155 uniform state record** (ADR-0024): characterize ✅ → `dataSlug`/`kind` key vocab ✅ →
           unified `StudyStates` table + repo (readers first) ✅ → flip writers (dual-write, advance-anywhere live) ✅
-          → flip readers ✅ + snapshot→v4 (legacy-readable) ✅ → drop the legacy writes + tolerant decode (5c) →
-          pluggable per-kind scheduler → drop the old tables. *(slices 1–5b shipped; next: 5c — writers write only
-          the unified record, then the scheduler.)*
+          → flip readers ✅ + snapshot→v4 (legacy-readable) ✅ → drop the legacy writes + tolerant decode ✅ (5c) →
+          pluggable per-kind scheduler → drop the old tables. *(slices 1–5 shipped; legacy state tables now fully
+          vestigial. Next: slice 6 — pluggable per-kind scheduler.)*
         - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
           repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
           deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**

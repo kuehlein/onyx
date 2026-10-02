@@ -133,9 +133,10 @@ reconstruct the legacy `SrsState`/`RecognitionState` shapes, so consumers are un
 is the live read source. → (5b) snapshot → v4 ✅ — export one `studyStates[]`; `mergeSnapshots` folds any v≤3
 file to the unified shape first (one keyed merge over `(cardId, dataSlug)`, `lastActivityAt` recency +
 `activityCount` tie-break; the golden guards legacy-readability); restore writes `study_states` directly;
-`recordReview`'s count source moved to the unified row [must-do (b) done]. → (5c) drop the now-redundant legacy
-*writes* (writers write only the unified record) + tolerant `StudyKind.fromWire` [must-do (a)]. → (6) pluggable
-per-kind scheduler → (7) drop the old tables + dead code.
+`recordReview`'s count source moved to the unified row [must-do (b) done]. → (5c) ✅ writers write **only** the
+unified record (every legacy `srsStates`/`recognitionStates` write dropped) + tolerant `StudyKind.fromWire`
+[must-do (a) done] — the legacy tables are now fully vestigial (written by nothing, read only by the one-shot
+v2→v3 backfill). → (6) pluggable per-kind scheduler → (7) drop the old tables + dead code.
   - *Slice-5 must-dos surfaced in the slice-4 audit:* (a) make `StudyKind.fromWire` **tolerant** of an unknown
     `kind` (degrade, don't throw) before readers depend on it; (b) move `recordReview`'s review-count source
     from the legacy `SrsStates` row to the unified row once the legacy writes stop; (c) `renameSection` /

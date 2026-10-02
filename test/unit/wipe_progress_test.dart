@@ -51,14 +51,14 @@ void main() {
     );
     await prefs.set('readiness_target', '{"level":"senior"}');
 
-    expect((await db.select(db.srsStates).get()), isNotEmpty);
+    expect((await db.select(db.studyStates).get()), isNotEmpty);
     expect((await db.select(db.reviews).get()), isNotEmpty);
     expect((await db.select(db.activityLog).get()), isNotEmpty);
     expect((await db.select(db.appliedAttempts).get()), isNotEmpty);
 
     await db.wipeStudyData();
 
-    expect((await db.select(db.srsStates).get()), isEmpty);
+    expect((await db.select(db.studyStates).get()), isEmpty);
     expect((await db.select(db.reviews).get()), isEmpty);
     expect((await db.select(db.activityLog).get()), isEmpty);
     expect((await db.select(db.appliedAttempts).get()), isEmpty);

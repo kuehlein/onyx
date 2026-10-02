@@ -26,7 +26,17 @@ enum StudyKind {
   /// The stored/serialized value (stable — persisted in the DB + snapshots).
   String get wire => name;
 
-  static StudyKind fromWire(String value) => StudyKind.values.byName(value);
+  /// Decode a stored `kind` wire value. **Tolerant** (ADR-0024 slice 5c): an
+  /// unknown value — a corrupt or forward-incompatible row — returns null rather
+  /// than throwing, so a bad row degrades (is skipped) instead of crashing the
+  /// read path. (The repositories also filter by the exact wire string, so an
+  /// unknown kind is simply never surfaced.)
+  static StudyKind? fromWire(String value) {
+    for (final k in StudyKind.values) {
+      if (k.name == value) return k;
+    }
+    return null;
+  }
 }
 
 /// The namespace that keeps a practice datum from colliding with the recall datum

@@ -56,10 +56,12 @@ void main() {
       expect(recall, isNot(practice));
     });
 
-    test('kind round-trips through its wire value', () {
+    test('kind round-trips through wire; an unknown value degrades to null',
+        () {
       for (final k in StudyKind.values) {
         expect(StudyKind.fromWire(k.wire), k);
       }
+      expect(StudyKind.fromWire('bogus-forward-incompatible'), isNull);
     });
   });
 
@@ -183,7 +185,7 @@ void main() {
           ? false
           : 'libsqlite3 unavailable — run inside the nix dev shell');
 
-  group('dual-write keeps the unified record live (slice 4)', () {
+  group('writers persist the unified record (slice 4/5c)', () {
     late AppDatabase db;
     setUp(() => db = AppDatabase.withExecutor(NativeDatabase.memory()));
     tearDown(() => db.close());
@@ -271,6 +273,25 @@ void main() {
       expect(rows['c1::s']!.stability, 9);
       expect(rows['c1::s']!.activityCount, 2);
       expect(rows.containsKey('c2::s'), isTrue);
+    });
+
+    test('writers no longer touch the legacy tables (slice 5c)', () async {
+      final at = DateTime.utc(2026, 5, 1, 9);
+      await SrsRepository(db).recordReview(
+          cardId: 'c',
+          sectionSlug: 's',
+          grade: 3,
+          outcome: _outcome(at, stability: 8));
+      await RecognitionRepository(db).recordExplain(
+          cardId: 'c',
+          sectionSlug: 's',
+          outcome: ExplainOutcome.solid,
+          now: at);
+      // Both clocks land in the unified record...
+      expect((await StudyStateRepository(db).loadStates()).length, 2);
+      // ...and the legacy state tables are written by nothing now.
+      expect(await db.select(db.srsStates).get(), isEmpty);
+      expect(await db.select(db.recognitionStates).get(), isEmpty);
     });
   },
       skip: _sqliteAvailable
