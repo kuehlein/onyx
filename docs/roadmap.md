@@ -698,15 +698,16 @@ The MVP-tagged stories, cloud still absent:
         independent schedules (the learning-science pass showed config-keying would cause interference / spacing
         incoherence / review-debt inflation). Supersedes ADR-0023 §Decision 1; amends 0020 §1–2, 0019 §2–3, 0006 §1.
         **Now implemented as two incremental, readers-first, byte-identical streams:**
-        - **Stream A — #155 uniform state record** (ADR-0024): characterize ✅ → `dataSlug`/`kind` key vocab ✅ →
-          unified `StudyStates` table + repo (readers first) ✅ → flip writers (dual-write, advance-anywhere live) ✅
-          → flip readers ✅ + snapshot→v4 (legacy-readable) ✅ → drop the legacy writes + tolerant decode ✅ (5c) →
-          pluggable per-kind scheduler ✅ (6: `studySchedulerFor` registry) → drop the old tables. *(slices 1–6
-          shipped — Stream A is functionally complete + releasable; the legacy state tables are harmless
-          vestigial. Slice 7 (drop them) is a real refactor, not cleanup: `SrsState`/`RecognitionState` are
-          drift-generated FROM those tables but are the consumer-layer domain types (~35 files), so it means
-          decoupling them into plain classes + reworking the v2→v3 backfill + an irreversible schema drop —
-          best done as its own careful pass. See ADR-0024 slice-7 scope note.)*
+        - **Stream A — #155 uniform state record** (ADR-0024) ✅ **COMPLETE**: characterize ✅ → `dataSlug`/`kind`
+          key vocab ✅ → unified `StudyStates` table + repo (readers first) ✅ → flip writers (dual-write,
+          advance-anywhere live) ✅ → flip readers ✅ + snapshot→v4 (legacy-readable) ✅ → drop the legacy writes +
+          tolerant decode ✅ (5c) → pluggable per-kind scheduler ✅ (6: `studySchedulerFor` registry) → drop the old
+          tables ✅ (7). *Slice 7 took **Option C** (ADR-0024 §2): two concrete `core+payload` domain types
+          (`RecallState`/`PracticeState`) deserialized once from the flat `StudyStateRow`, retiring the legacy
+          shapes **and** the reconstruction adapter (a `sealed` base deferred — no mixed-kind consumer). 7a migrated
+          the ~20 consumer + test files; 7b dropped the tables + `backfillStudyStates`, `schemaVersion` 3→4 with
+          `DROP TABLE IF EXISTS`. No prod data → the backfill was dropped, not rewritten; `startupRestore`'s v≤3
+          snapshot-fold is the durable net.*
         - **Stream B — deck-owns-config** (ADR-0025): `DeckConfig` on `Deck` with a preset fallback (byte-identical) →
           repoint the pure-core seams (`forAim`/ladder/domain labels) → repoint providers + UI → reseat parsing to
           deck→config (keep one shared parse profile) → flip writers + drop the registry/globals → **naming cleanup**
@@ -719,6 +720,12 @@ The MVP-tagged stories, cloud still absent:
         most-specific-deck-wins? / vault-level defaults with per-deck overrides that don't change section identity?).
         Deferred until a real multi-convention vault exists; the model already treats parse profile as deck config so
         this is a later addition, not a rewrite.
+      - *Cleanup (tracked, deferred — no production data): **version-compat machinery audit** (#165).* The
+        `schemaVersion` migration ladder, the snapshot `_version` + `_foldLegacyToStudy` v≤3 fold, and the
+        legacy-format tests all exist to carry old on-disk shapes forward. With no production data most of it is
+        removable — inventory what's genuinely load-bearing (the snapshot **sync** feature stays; cross-device /
+        reinstall is real — ADR-0001/0019/0021) vs pure legacy-carry, and delete the latter. Pairs with the
+        ADR-0024 slice-7 drop, which already removed the v2→v3 backfill under the same rationale.
       - **Superseded framing:** *#155 was "paused before" — now un-paused and sequenced as Stream A above (it's the
         foundation the deck-owns-config model leans on).*
     - **Wave D — registry sync/push** (0021; gated on the **#83** server; reconcile logic buildable vs the

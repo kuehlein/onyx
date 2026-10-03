@@ -10,7 +10,7 @@
   rekey becomes index-diff-driven; edit-identity RESET → tombstone), **[ADR-0013](0013-unified-query-lens-engine.md)**
   (a section-granular lens leaf, Browse-only). Enforces invariant #2 (no card-type branch). Tasks:
   **#155** (unify scheduling models), **#156** (authoring templates), **#153** (config-driven templates).
-  Code: `lib/core/database/tables.dart` (`SrsStates`:10, `RecognitionStates`:169), `lib/core/srs/recognition.dart`,
+  Code: `lib/core/database/tables.dart` (`StudyStates` — the unified record, ADR-0024), `lib/core/srs/recognition.dart`,
   `lib/core/srs/srs_repository.dart` (`dropSection`:345, `renameSection`:323), `lib/core/template/flow_spec.dart`
   (`QuizzabilityPolicy`:23), `lib/core/vault/card_parser.dart`, `lib/core/query/card_query.dart`,
   `lib/core/backup/snapshot.dart` (`mergeSnapshots`), the 8 `// ignore: no_card_type_branch` engines.

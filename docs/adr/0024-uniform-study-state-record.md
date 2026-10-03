@@ -139,13 +139,18 @@ unified record (every legacy `srsStates`/`recognitionStates` write dropped) + to
 v2→v3 backfill). → (6) ✅ pluggable per-kind scheduler — `study_scheduler.dart` registers the two models
 (`RecallScheduler` = FSRS, a drop-in subtype of `SrsScheduler`; `PracticeScheduler` = the expanding clock)
 behind `studySchedulerFor(kind)`, the single config-agnostic kind→model seam; `recordExplain` + the recall
-provider dispatch through it. → (7) drop the old tables + dead code. *Scope note (from the slice-6 pass): this
-is a real refactor, not pure cleanup — `SrsState`/`RecognitionState` are drift-generated FROM those tables but
-are the **domain types** the consumer layer uses (`loadStates` return, `SectionStates`, mastery, projection,
-daily-plan, ~15 tests). Dropping the tables first needs those decoupled into plain data classes (feasible:
-consumers use only fields + the constructor, no drift methods). Then the v2→v3 backfill (which read the typed
-tables) either becomes `DROP TABLE IF EXISTS` + relies on `startupRestore`'s v≤3 snapshot-fold (the durable
-safety net) or is rewritten as raw SQL; the legacy tables are harmless until then.*
+provider dispatch through it. → (7) ✅ drop the old tables + dead code. **Option C (as-built):** the consumer layer now reads two concrete
+`core + payload` domain types — `RecallState` | `PracticeState`, one per `kind` (the §2 "core + one payload"
+model; the flat nullable row is the §2 *storage* form). `loadStates` deserializes the row into the matching
+type **once** via `*.fromRow` factories (defaults centralized, byte-identical to the retired adapters); the
+`SrsState`/`RecognitionState` shapes **and** the reconstruction adapter are gone, not carried. A `sealed` base
+was weighed and **deferred** (build-when-consumed) — no consumer holds a mixed-kind collection, and the
+cross-kind uniform handle already exists as the raw row (`StudyStateRow`, renamed from `StudyState` to clear the
+domain/storage collision). 7a introduced the types + migrated every consumer (readers-first, suite-guarded,
+tables still present); 7b dropped `SrsStates`/`RecognitionStates` + `backfillStudyStates`, bumping
+`schemaVersion` 3→4 with a `from<4` `DROP TABLE IF EXISTS` (a drop-guard test pins `deleteTable`'s first use).
+The v2→v3 backfill was **dropped, not rewritten** — no production data to carry, and `startupRestore`'s v≤3
+snapshot-fold is the durable net.*
   - *Slice-5 must-dos surfaced in the slice-4 audit:* (a) make `StudyKind.fromWire` **tolerant** of an unknown
     `kind` (degrade, don't throw) before readers depend on it; (b) move `recordReview`'s review-count source
     from the legacy `SrsStates` row to the unified row once the legacy writes stop; (c) `renameSection` /

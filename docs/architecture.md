@@ -33,11 +33,12 @@ BYO-key (seamed transport; managed tier deferred). Build + test via `nix develop
 - **Aim** — a target on a deck (difficulty / emphasis / durability / date); a deck holds a *set*, and
   readiness takes the **weakest link** across them. Each aim OWNS its four knobs (ADR-0006). (Code:
   `Aim` on `Deck.aims`; `ReadinessTarget` is derived from an aim for scoring.)
-- **Schedule** — FSRS state / reviews / recognition / applied attempts, keyed `cardId::sectionSlug`
-  (ADR-0024 unifies these into one `StudyStates` record keyed `(cardId, dataSlug=aspect+mode)` — Stream A
-  slices 1–4 shipped: the unified table + byte-exact backfill, and every writer — incl. restore — dual-writes
-  it. The legacy clocks stay the live **read** source of truth + the snapshot source until the reader/snapshot
-  flip to v4 (slice 5)).
+- **Schedule** — FSRS state / reviews / recognition / applied attempts. ADR-0024 unifies the two scheduling
+  clocks into one `StudyStates` record keyed `(cardId, dataSlug=aspect+mode)` (Stream A, #155, shipped: DB
+  `schemaVersion` 4, snapshot `_version` 4). The flat nullable row is the **storage** form; the **domain** is
+  two concrete `core+payload` types — `RecallState` | `PracticeState` (one per `kind`). The legacy
+  `SrsStates`/`RecognitionStates` tables + their shapes were retired in slice 7. `Reviews` / `AppliedAttempts`
+  stay append-only event logs carrying the bare `sectionSlug` (= a recall `dataSlug`).
 - **card_links** — the card→card graph (backlinks, wikilinks).
 
 ## Invariants (load-bearing — don't break)
