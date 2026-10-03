@@ -193,7 +193,7 @@ class SnapshotService {
     });
   }
 
-  Map<String, dynamic> _studyToJson(StudyState s) => {
+  Map<String, dynamic> _studyToJson(StudyStateRow s) => {
         'cardId': s.cardId,
         'dataSlug': s.dataSlug,
         'kind': s.kind,

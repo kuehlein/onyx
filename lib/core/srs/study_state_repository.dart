@@ -16,14 +16,14 @@ class StudyStateRepository {
   /// Every unified row, keyed `"$cardId::$dataSlug"` ([studyKey]). For recall rows
   /// `dataSlug == sectionSlug`, so these keys match the legacy `SrsRepository`
   /// keys exactly; practice rows carry the namespaced slug.
-  Future<Map<String, StudyState>> loadStates() async {
+  Future<Map<String, StudyStateRow>> loadStates() async {
     final rows = await _db.select(_db.studyStates).get();
     return {for (final r in rows) studyKey(r.cardId, r.dataSlug): r};
   }
 
   /// The unified rows for one scheduling [kind], keyed as in [loadStates] — the
   /// seam the two legacy repositories will read through once they become adapters.
-  Future<Map<String, StudyState>> loadByKind(StudyKind kind) async {
+  Future<Map<String, StudyStateRow>> loadByKind(StudyKind kind) async {
     final rows = await (_db.select(_db.studyStates)
           ..where((t) => t.kind.equals(kind.wire)))
         .get();

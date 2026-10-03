@@ -198,6 +198,12 @@ class RecognitionStates extends Table {
 /// Populated by the v2→v3 migration (see `database.dart`); the legacy tables stay
 /// readable until the writer/reader flip completes (ADR-0024 slices 4-7). A
 /// `status` column (retain-but-detach, #158) is deferred to its consumer.
+///
+/// The generated row class is named `StudyStateRow` (not the default `StudyState`)
+/// so it never collides with the per-kind DOMAIN types `RecallState`/`PracticeState`
+/// that `loadStates` decodes it into (ADR-0024 §2 — the flat nullable row is the
+/// *storage* form; the model is core + one payload). Mirrors `CoachMessageRow`.
+@DataClassName('StudyStateRow')
 class StudyStates extends Table {
   TextColumn get cardId => text()();
 
