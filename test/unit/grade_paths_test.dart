@@ -175,8 +175,8 @@ void main() {
           reason: 'recordReview appends a review-log row');
       final grades = await repo.reviewGradesSince(_past);
       expect(grades.single.grade, 3);
-      expect((await repo.loadStates())['R1::def']!.reviewCount, 3,
-          reason: 'upsert increments the prior reviewCount (2 → 3)');
+      expect((await repo.loadStates())['R1::def']!.activityCount, 3,
+          reason: 'upsert increments the prior activityCount (2 → 3)');
     });
   });
 }

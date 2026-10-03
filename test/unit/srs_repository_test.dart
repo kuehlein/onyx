@@ -51,7 +51,7 @@ void main() {
       expect(states.keys, contains('card-a::when-to-use'));
       final s = states['card-a::when-to-use']!;
       expect(s.stability, 3);
-      expect(s.reviewCount, 1);
+      expect(s.activityCount, 1);
       expect(s.dueAt.isAfter(at), isTrue);
 
       final logs = await db.select(db.reviews).get();
@@ -77,7 +77,7 @@ void main() {
       final states = await repo.loadStates();
       expect(states.length, 1); // still one row (upsert, not insert)
       expect(states['card-a::when-to-use']!.stability, 12);
-      expect(states['card-a::when-to-use']!.reviewCount, 2);
+      expect(states['card-a::when-to-use']!.activityCount, 2);
 
       expect((await db.select(db.reviews).get()).length, 2); // log keeps both
     });
@@ -109,9 +109,9 @@ void main() {
       );
 
       final s = (await repo.loadStates())['card-a::s']!;
-      expect(s.state, 3, reason: 'relearning state persisted');
+      expect(s.fsrsState, 3, reason: 'relearning state persisted');
       expect(s.stability, 2);
-      expect(s.reviewCount, 2, reason: 'upsert incremented; still one row');
+      expect(s.activityCount, 2, reason: 'upsert incremented; still one row');
 
       final row =
           (await repo.lapsesByCard()).firstWhere((r) => r.cardId == 'card-a');

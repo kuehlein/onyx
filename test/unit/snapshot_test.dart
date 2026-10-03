@@ -78,7 +78,7 @@ void main() {
       final a = states['a::s1']!;
       expect(a.sectionSlug, 's1');
       expect(a.stability, 8);
-      expect(a.reviewCount, 1);
+      expect(a.activityCount, 1);
 
       final reviews = await db2.select(db2.reviews).get();
       expect(reviews.length, 2);

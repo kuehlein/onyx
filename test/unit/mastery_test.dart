@@ -1,27 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/srs/mastery.dart';
+import 'package:onyx/core/srs/study_state_model.dart';
 
 /// The display-only "mastered" predicate (ADR-0012 #6, task 1f.1): a section is
 /// mastered only when it has graduated to review, is not due, has grown to a
 /// spaced interval (stability ≥ 21d), and is still retained (R ≥ 0.9). R comes
 /// from the fsrs curve via core/srs — these tests pin the gates + the rationale.
 
-SrsState _state({
+RecallState _state({
   required int state,
   required double stability,
   DateTime? lastReview,
   required DateTime dueAt,
 }) =>
-    SrsState(
+    RecallState(
       cardId: 'c',
       sectionSlug: 's',
       stability: stability,
       difficulty: 5,
-      state: state,
+      fsrsState: state,
       dueAt: dueAt,
-      lastReview: lastReview,
-      reviewCount: 3,
+      lastActivityAt: lastReview,
+      activityCount: 3,
     );
 
 void main() {

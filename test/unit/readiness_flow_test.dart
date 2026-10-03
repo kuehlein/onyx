@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/deck/deck.dart';
+import 'package:onyx/core/srs/study_state_model.dart';
 import 'package:onyx/core/interview/assessment.dart';
 import 'package:onyx/core/readiness/projection.dart';
 import 'package:onyx/core/readiness/readiness.dart';
@@ -63,14 +64,14 @@ void main() {
     malformed: 0,
     skipped: 0,
   );
-  SrsState srs(String card, double stability) => SrsState(
+  RecallState srs(String card, double stability) => RecallState(
         cardId: card,
         sectionSlug: 's1',
         stability: stability,
         difficulty: 5,
-        state: 2,
+        fsrsState: 2,
         dueAt: DateTime(2026),
-        reviewCount: 1,
+        activityCount: 1,
       );
   final states = SectionStates({
     'A::s1': srs('A', 200), // strong DS&A

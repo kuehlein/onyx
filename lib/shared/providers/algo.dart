@@ -5,10 +5,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/clock.dart';
-import '../../core/database/database.dart';
 import '../../core/interview/assessment.dart';
 import '../../core/srs/algo_queue.dart';
 import '../../core/srs/recognition.dart';
+import '../../core/srs/study_state_model.dart';
 import '../../core/template/card_flow.dart';
 import '../../core/template/study_policy.dart'
     show retentionDefault, retentionForPriority;
@@ -78,7 +78,7 @@ class AlgoSessionState {
   });
 
   final List<AlgoTask> queue;
-  final Map<String, SrsState> statesByKey;
+  final Map<String, RecallState> statesByKey;
   final int index;
 
   /// How many problems were worked this session (for the completion screen).
@@ -154,10 +154,10 @@ class AlgoSession extends _$AlgoSession {
       desiredRetention: retentionForPriority(item.card.priority, base: base),
       stability: current?.stability,
       difficulty: current?.difficulty,
-      state: current?.state,
+      state: current?.fsrsState,
       step: current?.step,
       due: current?.dueAt,
-      lastReview: current?.lastReview,
+      lastReview: current?.lastActivityAt,
     );
     await repo.recordReview(
       cardId: item.card.id,

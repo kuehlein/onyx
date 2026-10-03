@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../core/database/database.dart' show SrsState;
+import '../../core/srs/study_state_model.dart' show RecallState;
 import '../../core/plan/practice_plan.dart';
 import '../../core/practice/mock_schedule.dart';
 import '../../core/srs/algo_queue.dart' show AlgoMode, AlgoTask;
@@ -132,10 +132,10 @@ Future<List<TrackAvailability>> practiceAvailability(Ref ref) async {
 
 /// Est-minutes for a section, scaled by its FSRS maturity (task #133); the plain
 /// first-time cost [t0] when the section has no state yet.
-double _est(double t0, SrsState? st, double floor) => st == null
+double _est(double t0, RecallState? st, double floor) => st == null
     ? t0
     : scaleEstMinutes(t0,
-        stability: st.stability, fsrsState: st.state, floor: floor);
+        stability: st.stability, fsrsState: st.fsrsState, floor: floor);
 
 /// Est-minutes for one algo task: the full SOLVE cost (difficulty-based) or the
 /// shorter EXPLAIN cost (recognition), each scaled by the problem's FSRS

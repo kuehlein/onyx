@@ -1,6 +1,6 @@
 import 'package:fsrs/fsrs.dart' as fsrs;
 
-import '../database/database.dart';
+import 'study_state_model.dart';
 
 /// The bar for the card view's display-only **"mastered"** auto-collapse
 /// (ADR-0012 #6, task 1f.1): a quizzable review section folds up with a *Mastered*
@@ -33,17 +33,17 @@ final fsrs.Scheduler _curve = fsrs.Scheduler();
 /// The section's current retrievability (probability of recall) at [now] from its
 /// stored FSRS stability + last review, via the fsrs package's own curve. Returns
 /// 0 when the section has never been reviewed. Display-only; never scheduling.
-double sectionRetrievability(SrsState state, DateTime now) {
-  if (state.lastReview == null || state.stability <= 0) return 0;
+double sectionRetrievability(RecallState state, DateTime now) {
+  if (state.lastActivityAt == null || state.stability <= 0) return 0;
   return _curve.getCardRetrievability(
     fsrs.Card(
       cardId: 0,
-      state: fsrs.State.fromValue(state.state),
+      state: fsrs.State.fromValue(state.fsrsState),
       step: state.step,
       stability: state.stability,
       difficulty: state.difficulty,
       due: state.dueAt.toUtc(),
-      lastReview: state.lastReview!.toUtc(),
+      lastReview: state.lastActivityAt!.toUtc(),
     ),
     currentDateTime: now.toUtc(),
   );
@@ -54,10 +54,10 @@ double sectionRetrievability(SrsState state, DateTime now) {
 /// retrieval is never folded away), has grown to a **spaced** interval
 /// ([kMasteredStabilityDays]), and is **still retained** ([kMasteredRetention]).
 /// A never-studied / learning / relearning / due section is never mastered.
-bool isSectionMastered(SrsState? state, DateTime now) {
+bool isSectionMastered(RecallState? state, DateTime now) {
   if (state == null) return false;
-  if (state.state != fsrs.State.review.value) return false;
-  if (state.lastReview == null) return false;
+  if (state.fsrsState != fsrs.State.review.value) return false;
+  if (state.lastActivityAt == null) return false;
   if (!state.dueAt.isAfter(now)) return false; // due / overdue → not mastered
   if (state.stability < kMasteredStabilityDays) return false;
   return sectionRetrievability(state, now) >= kMasteredRetention;

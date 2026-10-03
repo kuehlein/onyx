@@ -2,7 +2,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/ai/coach.dart' show CoachKind;
 import '../../core/clock.dart';
-import '../../core/database/database.dart';
 import '../../core/readiness/readiness.dart';
 import '../../core/readiness/target.dart';
 import '../../core/srs/recognition_repository.dart';
@@ -10,6 +9,7 @@ import '../../core/srs/review_queue.dart';
 import '../../core/srs/srs_repository.dart';
 import '../../core/srs/srs_scheduler.dart';
 import '../../core/srs/study_scheduler.dart';
+import '../../core/srs/study_state_model.dart';
 import '../../core/template/study_policy.dart'
     show retentionDefault, retentionForPriority;
 import 'clock.dart';
@@ -40,16 +40,14 @@ RecognitionRepository recognitionRepository(Ref ref) =>
 
 /// All per-section scheduling state, keyed by `"$cardId::$sectionSlug"`.
 ///
-/// Wrapped in a class rather than returned as a bare `Map<String, SrsState>`:
-/// riverpod codegen would have to emit the drift `SrsState` type in the provider
-/// signature, which fails during the build (it isn't generated yet at that
-/// phase). Holding it in a field sidesteps that.
+/// Wrapped in a class rather than a bare `Map<String, RecallState>` so callers
+/// get the `operator []` convenience and a stable, named provider return type.
 class SectionStates {
   const SectionStates(this.byKey);
 
-  final Map<String, SrsState> byKey;
+  final Map<String, RecallState> byKey;
 
-  SrsState? operator [](String key) => byKey[key];
+  RecallState? operator [](String key) => byKey[key];
 }
 
 /// Loads all scheduling state; used by the browse detail view to decide which
@@ -66,7 +64,7 @@ class ReviewQueueData {
   const ReviewQueueData({required this.queue, required this.statesByKey});
 
   final List<ReviewItem> queue;
-  final Map<String, SrsState> statesByKey;
+  final Map<String, RecallState> statesByKey;
 }
 
 /// Assembles the current review queue from the indexed cards + scheduling state.
@@ -104,7 +102,7 @@ class SessionState {
   });
 
   final List<ReviewItem> queue;
-  final Map<String, SrsState> statesByKey;
+  final Map<String, RecallState> statesByKey;
   final int index;
 
   /// Readiness snapshot captured at session start, so the completion screen can
@@ -221,10 +219,10 @@ class StudySession extends _$StudySession {
       desiredRetention: retention,
       stability: current?.stability,
       difficulty: current?.difficulty,
-      state: current?.state,
+      state: current?.fsrsState,
       step: current?.step,
       due: current?.dueAt,
-      lastReview: current?.lastReview,
+      lastReview: current?.lastActivityAt,
     );
 
     await repo.recordReview(

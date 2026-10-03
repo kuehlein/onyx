@@ -1,8 +1,8 @@
 // Material's `Card` widget collides with our domain `Card` model.
 import 'package:flutter/material.dart' hide Card;
 
-import '../../core/database/database.dart';
 import '../../core/srs/mastery.dart';
+import '../../core/srs/study_state_model.dart';
 import '../design/onyx_design.dart';
 import '../models/card.dart';
 import 'card_markdown.dart';
@@ -17,7 +17,7 @@ import 'status_pill.dart';
 /// spacing signal from core/srs ([isSectionMastered]); the global off-switch
 /// restores the legacy due-date proxy (collapse once scheduled ahead). Neither
 /// path affects scheduling (ADR-0012 #6, task 1f.1).
-bool sectionExpandDefault(CardSection section, SrsState? state, DateTime now,
+bool sectionExpandDefault(CardSection section, RecallState? state, DateTime now,
     {bool masteredCollapse = true}) {
   if (section.quizzable) {
     if (state == null) return true; // never studied → expand

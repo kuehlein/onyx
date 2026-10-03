@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/app/theme.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/srs/study_state_model.dart';
 import 'package:onyx/features/browse/card_detail_screen.dart';
 import 'package:onyx/shared/models/card.dart';
 import 'package:onyx/shared/providers/database.dart';
@@ -45,16 +46,17 @@ Card _masteryCard() => testCard('M1', 'Mastery', sections: const [
 
 SectionStates _masteryStates() {
   final now = DateTime.now();
-  SrsState st(String slug, {required Duration due, required Duration since}) =>
-      SrsState(
+  RecallState st(String slug,
+          {required Duration due, required Duration since}) =>
+      RecallState(
         cardId: 'M1',
         sectionSlug: slug,
         stability: 40, // ≥ 21d spacing floor
         difficulty: 5,
-        state: 2, // review
+        fsrsState: 2, // review
         dueAt: now.add(due),
-        lastReview: now.subtract(since),
-        reviewCount: 3,
+        lastActivityAt: now.subtract(since),
+        activityCount: 3,
       );
   return SectionStates({
     // Spaced, retained, not due → mastered.

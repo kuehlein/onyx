@@ -26,12 +26,12 @@ class RecallState {
     required this.cardId,
     required this.sectionSlug,
     required this.dueAt,
-    required this.lastActivityAt,
     required this.activityCount,
     required this.stability,
     required this.difficulty,
     required this.fsrsState,
-    required this.step,
+    this.lastActivityAt,
+    this.step,
   });
 
   /// Decode a recall [StudyStateRow]. Byte-identical to the retired `SrsRepository`
@@ -74,9 +74,9 @@ class PracticeState {
     required this.cardId,
     required this.sectionSlug,
     required this.dueAt,
-    required this.lastActivityAt,
     required this.activityCount,
     required this.intervalDays,
+    this.lastActivityAt,
   });
 
   /// Decode a practice [StudyStateRow]. Byte-identical to the retired

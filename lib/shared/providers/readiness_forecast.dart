@@ -168,10 +168,10 @@ Future<ReadinessForecast?> readinessForecastFor(
       e.key: SectionSrsState(
         stability: e.value.stability,
         difficulty: e.value.difficulty,
-        state: e.value.state,
+        state: e.value.fsrsState,
         step: e.value.step,
         due: e.value.dueAt,
-        lastReview: e.value.lastReview,
+        lastReview: e.value.lastActivityAt,
       ),
   };
 

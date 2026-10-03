@@ -82,7 +82,7 @@ void main() {
           reason: '2 recall + 1 practice datum folded from v3');
 
       // --- recall state: both rows, every column, incl. the null edge cases.
-      // Read via the repo (reconstructs the SrsState shape from study_states). ---
+      // Read via the repo (decodes to the RecallState domain type). ---
       final srs = {
         for (final s in (await SrsRepository(db).loadStates()).values)
           s.cardId: s,
@@ -93,22 +93,22 @@ void main() {
       expect(a.sectionSlug, 'approach');
       expect(a.stability, 12.5);
       expect(a.difficulty, 6.25);
-      expect(a.state, 2);
+      expect(a.fsrsState, 2);
       expect(a.step, isNull);
-      expect(a.reviewCount, 4);
+      expect(a.activityCount, 4);
       expect(a.dueAt.toUtc(), DateTime.utc(2026, 2, 15, 9));
-      expect(a.lastReview?.toUtc(), DateTime.utc(2026, 2, 3, 9));
+      expect(a.lastActivityAt?.toUtc(), DateTime.utc(2026, 2, 3, 9));
 
       final b = srs['concept-btree']!;
       expect(b.sectionSlug, 'when-to-use');
       expect(b.stability, 2.0);
       expect(b.difficulty, 7.1);
-      expect(b.state, 3, reason: 'relearning state preserved');
+      expect(b.fsrsState, 3, reason: 'relearning state preserved');
       expect(b.step, 1);
-      expect(b.reviewCount, 2);
+      expect(b.activityCount, 2);
       expect(b.dueAt.toUtc(), DateTime.utc(2026, 2, 4, 9, 10));
-      expect(b.lastReview, isNull,
-          reason: 'null lastReview survives round-trip');
+      expect(b.lastActivityAt, isNull,
+          reason: 'null lastActivityAt survives round-trip');
 
       // --- reviews: the append-only log row, exact doubles. ---
       final review = (await db.select(db.reviews).get()).single;

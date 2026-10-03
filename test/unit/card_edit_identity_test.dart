@@ -76,8 +76,8 @@ void main() {
           reason: 'the old slug no longer schedules');
       expect(states.containsKey('C::new'), isTrue,
           reason: 'history followed the rename (not orphaned + re-newed)');
-      expect(
-          states['C::new']!.reviewCount, 2); // seedStudied plants reviewCount 2
+      expect(states['C::new']!.activityCount,
+          2); // seedStudied plants activityCount 2
     });
 
     test('dropSection clears the schedule — RESET / prune of a removed section',

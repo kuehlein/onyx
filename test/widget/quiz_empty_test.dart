@@ -3,8 +3,8 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:onyx/core/database/database.dart';
 import 'package:onyx/core/readiness/readiness.dart';
+import 'package:onyx/core/srs/study_state_model.dart';
 import 'package:onyx/core/srs/learn_queue.dart';
 import 'package:onyx/features/quiz/quiz_screen.dart';
 import 'package:onyx/shared/models/card.dart';
@@ -72,14 +72,14 @@ class _DisabledGym extends GymMode {
 }
 
 // A minimal SrsState — the empty state only checks statesByKey.isNotEmpty.
-SrsState _state() => SrsState(
+RecallState _state() => RecallState(
       cardId: 'x',
       sectionSlug: 's1',
       stability: 1,
       difficulty: 5,
-      state: 2,
+      fsrsState: 2,
       dueAt: DateTime(2026),
-      reviewCount: 0,
+      activityCount: 0,
     );
 
 void main() {

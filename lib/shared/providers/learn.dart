@@ -52,7 +52,7 @@ Future<int> dailyNewAllowance(Ref ref) async {
   for (final it in reviewData.queue) {
     final st = srs[it.key];
     dueReviewMinutes += reviewEst(it.card.estMinutes ?? kReviewMinutes,
-        stability: st?.stability, fsrsState: st?.state);
+        stability: st?.stability, fsrsState: st?.fsrsState);
   }
 
   return sustainableNewCount(

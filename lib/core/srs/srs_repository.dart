@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import 'srs_scheduler.dart';
 import 'study_state.dart';
+import 'study_state_model.dart';
 
 /// Reads and writes per-section FSRS state and the append-only review log.
 class SrsRepository {
@@ -39,28 +40,17 @@ class SrsRepository {
 
   /// All recall scheduling state, keyed by `"$cardId::$sectionSlug"`.
   ///
-  /// Reads the unified `study_states` record (ADR-0024) and reconstructs the legacy
-  /// [SrsState] shape, so every consumer is unchanged while the source of truth is
-  /// the unified table. The legacy `srs_states` table is no longer read or written
-  /// (dropped in slice 7); for recall `dataSlug == sectionSlug`, so the keys are
-  /// byte-identical to the old ones.
-  Future<Map<String, SrsState>> loadStates() async {
+  /// Reads the unified `study_states` record (ADR-0024) and decodes each recall row
+  /// into a [RecallState] domain type (see `study_state_model.dart`). For recall
+  /// `dataSlug == sectionSlug`, so the keys are byte-identical to the pre-migration
+  /// ones.
+  Future<Map<String, RecallState>> loadStates() async {
     final rows = await (_db.select(_db.studyStates)
           ..where((t) => t.kind.equals(StudyKind.recall.wire)))
         .get();
     return {
       for (final r in rows)
-        studyKey(r.cardId, r.dataSlug): SrsState(
-          cardId: r.cardId,
-          sectionSlug: studyAspect(r.dataSlug),
-          stability: r.stability ?? 0,
-          difficulty: r.difficulty ?? 5,
-          state: r.fsrsState ?? 1,
-          step: r.step,
-          dueAt: r.dueAt,
-          lastReview: r.lastActivityAt,
-          reviewCount: r.activityCount,
-        ),
+        studyKey(r.cardId, r.dataSlug): RecallState.fromRow(r),
     };
   }
 

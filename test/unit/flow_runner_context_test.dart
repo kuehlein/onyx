@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
+import 'package:onyx/core/srs/study_state_model.dart';
 import 'package:onyx/core/template/active_template.dart';
 import 'package:onyx/core/template/software_interviews.dart';
 import 'package:onyx/core/vault/card_parser.dart';
@@ -48,26 +49,26 @@ void main() {
     // Seed comfort for a whole concept card: SRS state on every quizzable
     // section → comfort 1.0 (> the 0.7 flow bar). Keyed `<id>::<slug>` exactly
     // as flowRunnerContext computes it.
-    Map<String, SrsState> studiedFully(Iterable<String> conceptIds) {
+    Map<String, RecallState> studiedFully(Iterable<String> conceptIds) {
       final byId = {for (final c in cards) c.id: c};
-      final out = <String, SrsState>{};
+      final out = <String, RecallState>{};
       for (final id in conceptIds) {
         for (final s in byId[id]!.quizzableSections) {
-          out['$id::${s.slug}'] = SrsState(
+          out['$id::${s.slug}'] = RecallState(
             cardId: id,
             sectionSlug: s.slug,
             stability: 100,
             difficulty: 5,
-            state: 2,
+            fsrsState: 2,
             dueAt: DateTime(2026),
-            reviewCount: 1,
+            activityCount: 1,
           );
         }
       }
       return out;
     }
 
-    ProviderContainer container(Map<String, SrsState> states) =>
+    ProviderContainer container(Map<String, RecallState> states) =>
         ProviderContainer(overrides: [
           vaultSourceProvider.overrideWithValue(source),
           appDatabaseProvider.overrideWith((ref) {
