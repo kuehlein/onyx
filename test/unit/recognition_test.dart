@@ -76,7 +76,7 @@ void main() {
 
       final states = await repo.loadStates();
       final s = states['algo-stack::valid-parens']!;
-      expect(s.streak, 2);
+      expect(s.activityCount, 2);
       expect(s.intervalDays, 7);
     });
 
@@ -94,7 +94,7 @@ void main() {
         now: now.add(const Duration(days: 1)),
       );
       final s = (await repo.loadStates())['c::s']!;
-      expect(s.streak, 0);
+      expect(s.activityCount, 0);
       expect(s.intervalDays, 1);
     });
   });

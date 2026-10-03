@@ -4,6 +4,7 @@ import '../database/database.dart';
 import 'recognition.dart';
 import 'study_scheduler.dart';
 import 'study_state.dart';
+import 'study_state_model.dart';
 
 /// Reads and writes the recognition ("explain") clock — the algorithm track's
 /// second clock. Kept entirely separate from [SrsRepository]: explaining never
@@ -16,27 +17,20 @@ class RecognitionRepository {
   static String keyFor(String cardId, String sectionSlug) =>
       '$cardId::$sectionSlug';
 
-  /// All recognition states, keyed `"cardId::sectionSlug"`.
+  /// All practice ("explain") scheduling state, keyed `"cardId::sectionSlug"`.
   ///
-  /// Reads the unified `study_states` record (ADR-0024 slice 5) and reconstructs
-  /// the legacy [RecognitionState] shape. The practice `dataSlug` is namespaced
-  /// (`recognize:<aspect>`), so [studyAspect] strips it back to the section slug —
-  /// keeping the keys byte-identical to the old ones. `recognition_states` is still
-  /// dual-written (until slice 5c) but no longer read here.
-  Future<Map<String, RecognitionState>> loadStates() async {
+  /// Reads the unified `study_states` record (ADR-0024) and decodes each practice
+  /// row into a [PracticeState] domain type (see `study_state_model.dart`). The
+  /// practice `dataSlug` is namespaced (`recognize:<aspect>`), so [studyAspect]
+  /// strips it back to the section slug — keeping the keys byte-identical to the
+  /// pre-migration ones.
+  Future<Map<String, PracticeState>> loadStates() async {
     final rows = await (_db.select(_db.studyStates)
           ..where((t) => t.kind.equals(StudyKind.practice.wire)))
         .get();
     return {
       for (final r in rows)
-        keyFor(r.cardId, studyAspect(r.dataSlug)): RecognitionState(
-          cardId: r.cardId,
-          sectionSlug: studyAspect(r.dataSlug),
-          lastExplainedAt: r.lastActivityAt ?? r.dueAt,
-          dueAt: r.dueAt,
-          intervalDays: r.intervalDays ?? 0,
-          streak: r.activityCount,
-        ),
+        keyFor(r.cardId, studyAspect(r.dataSlug)): PracticeState.fromRow(r),
     };
   }
 
@@ -54,7 +48,7 @@ class RecognitionRepository {
     final result = const PracticeScheduler().schedule(
       outcome: outcome,
       now: now,
-      priorStreak: existing?.streak ?? 0,
+      priorStreak: existing?.activityCount ?? 0,
     );
     // Persist the unified practice datum (ADR-0024 slice 5c — the sole state
     // write). The practice dataSlug is namespaced ('recognize:<aspect>') so it

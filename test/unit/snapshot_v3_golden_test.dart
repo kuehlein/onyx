@@ -142,7 +142,7 @@ void main() {
       expect(rec.cardId, 'algo-two-sum');
       expect(rec.sectionSlug, 'approach');
       expect(rec.intervalDays, 7);
-      expect(rec.streak, 2);
+      expect(rec.activityCount, 2);
       expect(rec.dueAt.toUtc(), DateTime.utc(2026, 2, 8, 9));
       expect(rec.lastExplainedAt.toUtc(), DateTime.utc(2026, 2, 1, 9));
 
