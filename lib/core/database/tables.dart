@@ -5,27 +5,6 @@ import 'package:drift/drift.dart';
 // unix seconds (drift's default DateTime encoding), matching the INTEGER columns
 // documented in the architecture.
 
-/// FSRS state per `(cardId, sectionSlug)` pair — each quizzable section has its
-/// own forgetting curve.
-class SrsStates extends Table {
-  TextColumn get cardId => text()();
-  TextColumn get sectionSlug => text()();
-  RealColumn get stability => real().withDefault(const Constant(0))();
-  RealColumn get difficulty => real().withDefault(const Constant(5))();
-
-  /// FSRS learning state: 1=learning, 2=review, 3=relearning (see fsrs State).
-  IntColumn get state => integer().withDefault(const Constant(1))();
-
-  /// FSRS learning/relearning step index; null once the card reaches review.
-  IntColumn get step => integer().nullable()();
-  DateTimeColumn get dueAt => dateTime()();
-  DateTimeColumn get lastReview => dateTime().nullable()();
-  IntColumn get reviewCount => integer().withDefault(const Constant(0))();
-
-  @override
-  Set<Column<Object>> get primaryKey => {cardId, sectionSlug};
-}
-
 /// Full, append-only review log; never deleted. Used for activity analysis and
 /// FSRS optimization.
 class Reviews extends Table {
@@ -159,31 +138,8 @@ class AppliedAttempts extends Table {
   BoolColumn get verified => boolean().nullable()();
 }
 
-/// The recognition ("explain") clock for algorithm problems — a lightweight
-/// SECOND clock alongside FSRS, one row per `(cardId, sectionSlug)` you've
-/// explained out loud. Deliberately NOT an FSRS curve: a simple expanding
-/// interval (see core/srs/recognition.dart), so a phone-only day can still keep
-/// a pattern recognizable between solves. It never touches the solve clock
-/// (`srs_state`) and, for now, carries no readiness weight — it is purely a
-/// scheduling signal.
-class RecognitionStates extends Table {
-  TextColumn get cardId => text()();
-  TextColumn get sectionSlug => text()();
-  DateTimeColumn get lastExplainedAt => dateTime()();
-  DateTimeColumn get dueAt => dateTime()();
-
-  /// Current spacing in days (the last interval applied).
-  IntColumn get intervalDays => integer()();
-
-  /// Consecutive "solid" explanations; resets to 0 on a "lost" outcome.
-  IntColumn get streak => integer().withDefault(const Constant(0))();
-
-  @override
-  Set<Column<Object>> get primaryKey => {cardId, sectionSlug};
-}
-
-/// Unified study-state record (ADR-0024 — #155): collapses [SrsStates] (the FSRS
-/// recall clock) and [RecognitionStates] (the expanding-interval practice clock)
+/// Unified study-state record (ADR-0024 — #155): the SOLE study-state store,
+/// collapsing the former FSRS recall clock and expanding-interval practice clock
 /// into ONE table keyed `(cardId, dataSlug)`, **deck/config-free**, so a card
 /// reused across decks keeps one shared schedule (advance-anywhere) while
 /// genuinely-different practice (recall vs explain) keeps independent schedules.
@@ -193,10 +149,10 @@ class RecognitionStates extends Table {
 /// *storage* form for the kind-tagged payload; the *model* is a common core
 /// (cardId, dataSlug, kind, dueAt, lastActivityAt, activityCount) + one payload
 /// (recall: stability/difficulty/fsrsState/step; practice: intervalDays, with the
-/// streak kept in `activityCount`).
+/// streak kept in `activityCount`). The per-kind DOMAIN types the app reads are
+/// `RecallState`/`PracticeState` (see `study_state_model.dart`).
 ///
-/// Populated by the v2→v3 migration (see `database.dart`); the legacy tables stay
-/// readable until the writer/reader flip completes (ADR-0024 slices 4-7). A
+/// Created at schema v3; the two legacy tables were dropped at v4 (slice 7). A
 /// `status` column (retain-but-detach, #158) is deferred to its consumer.
 ///
 /// The generated row class is named `StudyStateRow` (not the default `StudyState`)

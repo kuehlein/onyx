@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onyx/core/database/database.dart';
@@ -64,126 +63,6 @@ void main() {
       expect(StudyKind.fromWire('bogus-forward-incompatible'), isNull);
     });
   });
-
-  group('backfillStudyStates (v2→v3 migration mapping)', () {
-    late AppDatabase db;
-    setUp(() => db = AppDatabase.withExecutor(NativeDatabase.memory()));
-    tearDown(() => db.close());
-
-    // A relearning recall row with a null lastReview edge case, a plain recall
-    // row, a mock practice row, AND the algorithm two-clock case: the SAME
-    // (cardId, sectionSlug) living in BOTH legacy tables.
-    Future<void> seedLegacy() async {
-      await db.into(db.srsStates).insert(SrsStatesCompanion.insert(
-            cardId: 'algo-x',
-            sectionSlug: 'approach',
-            stability: const Value(12.5),
-            difficulty: const Value(6.25),
-            state: const Value(2),
-            step: const Value(null),
-            dueAt: DateTime.utc(2026, 2, 15, 9),
-            lastReview: Value(DateTime.utc(2026, 2, 3, 9)),
-            reviewCount: const Value(4),
-          ));
-      await db.into(db.srsStates).insert(SrsStatesCompanion.insert(
-            cardId: 'concept-y',
-            sectionSlug: 'when-to-use',
-            stability: const Value(2),
-            difficulty: const Value(7.1),
-            state: const Value(3), // relearning
-            step: const Value(1),
-            dueAt: DateTime.utc(2026, 2, 4, 9, 10),
-            lastReview: const Value(null),
-            reviewCount: const Value(2),
-          ));
-      // Same (cardId, sectionSlug) as the recall row above → MUST NOT collide.
-      await db.into(db.recognitionStates).insert(
-            RecognitionStatesCompanion.insert(
-              cardId: 'algo-x',
-              sectionSlug: 'approach',
-              lastExplainedAt: DateTime.utc(2026, 2, 1, 9),
-              dueAt: DateTime.utc(2026, 2, 8, 9),
-              intervalDays: 7,
-              streak: const Value(2),
-            ),
-          );
-      await db.into(db.recognitionStates).insert(
-            RecognitionStatesCompanion.insert(
-              cardId: 'sd-z',
-              sectionSlug: 'mock',
-              lastExplainedAt: DateTime.utc(2026, 1, 20, 9),
-              dueAt: DateTime.utc(2026, 1, 27, 9),
-              intervalDays: 7,
-              streak: const Value(3),
-            ),
-          );
-    }
-
-    test('maps both clocks byte-exact, with no PK collision', () async {
-      await seedLegacy();
-      await db.backfillStudyStates();
-
-      final states = await StudyStateRepository(db).loadStates();
-      // 2 recall + 2 practice = 4 rows; the algo card contributes one of each.
-      expect(states.length, 4);
-
-      // --- recall (FSRS) payload verbatim; bare slug; counters remapped. ---
-      final recall = states['algo-x::approach']!;
-      expect(recall.kind, StudyKind.recall.wire);
-      expect(recall.stability, 12.5);
-      expect(recall.difficulty, 6.25);
-      expect(recall.fsrsState, 2);
-      expect(recall.step, isNull);
-      expect(recall.activityCount, 4, reason: 'reviewCount → activityCount');
-      expect(recall.lastActivityAt?.toUtc(), DateTime.utc(2026, 2, 3, 9));
-      expect(recall.dueAt.toUtc(), DateTime.utc(2026, 2, 15, 9));
-      expect(recall.intervalDays, isNull,
-          reason: 'recall has no practice payload');
-
-      final relearn = states['concept-y::when-to-use']!;
-      expect(relearn.fsrsState, 3);
-      expect(relearn.step, 1);
-      expect(relearn.lastActivityAt, isNull,
-          reason: 'null lastReview preserved');
-
-      // --- practice payload; namespaced slug; streak → activityCount. ---
-      final practice = states['algo-x::recognize:approach']!;
-      expect(practice.kind, StudyKind.practice.wire);
-      expect(practice.intervalDays, 7);
-      expect(practice.activityCount, 2, reason: 'streak → activityCount');
-      expect(practice.lastActivityAt?.toUtc(), DateTime.utc(2026, 2, 1, 9));
-      expect(practice.dueAt.toUtc(), DateTime.utc(2026, 2, 8, 9));
-      expect(practice.stability, isNull,
-          reason: 'practice has no FSRS payload');
-      expect(practice.difficulty, isNull);
-      expect(practice.fsrsState, isNull);
-
-      final mock = states['sd-z::recognize:mock']!;
-      expect(mock.kind, StudyKind.practice.wire);
-      expect(mock.intervalDays, 7);
-      expect(mock.activityCount, 3);
-    });
-
-    test('is idempotent (safe to re-run)', () async {
-      await seedLegacy();
-      await db.backfillStudyStates();
-      await db.backfillStudyStates(); // insert-or-replace, no PK crash
-      expect((await StudyStateRepository(db).loadStates()).length, 4);
-    });
-
-    test('loadByKind filters to one scheduling model', () async {
-      await seedLegacy();
-      await db.backfillStudyStates();
-      final repo = StudyStateRepository(db);
-      expect((await repo.loadByKind(StudyKind.recall)).keys.toSet(),
-          {'algo-x::approach', 'concept-y::when-to-use'});
-      expect((await repo.loadByKind(StudyKind.practice)).keys.toSet(),
-          {'algo-x::recognize:approach', 'sd-z::recognize:mock'});
-    });
-  },
-      skip: _sqliteAvailable
-          ? false
-          : 'libsqlite3 unavailable — run inside the nix dev shell');
 
   group('writers persist the unified record (slice 4/5c)', () {
     late AppDatabase db;
@@ -275,7 +154,7 @@ void main() {
       expect(rows.containsKey('c2::s'), isTrue);
     });
 
-    test('writers no longer touch the legacy tables (slice 5c)', () async {
+    test('both clocks on one section land as two unified rows', () async {
       final at = DateTime.utc(2026, 5, 1, 9);
       await SrsRepository(db).recordReview(
           cardId: 'c',
@@ -287,69 +166,49 @@ void main() {
           sectionSlug: 's',
           outcome: ExplainOutcome.solid,
           now: at);
-      // Both clocks land in the unified record...
+      // Both clocks land in the unified record as two independent rows.
       expect((await StudyStateRepository(db).loadStates()).length, 2);
-      // ...and the legacy state tables are written by nothing now.
-      expect(await db.select(db.srsStates).get(), isEmpty);
-      expect(await db.select(db.recognitionStates).get(), isEmpty);
     });
   },
       skip: _sqliteAvailable
           ? false
           : 'libsqlite3 unavailable — run inside the nix dev shell');
 
-  // Exercises the ACTUAL v2→v3 onUpgrade invocation (not just backfillStudyStates
-  // called directly): createTable(study_states) + the backfill, on a file-backed
-  // DB rolled back to user_version 2. There is no drift schema-replay tooling, so
-  // we simulate a v2 DB by dropping the table + resetting the version.
-  group('v2→v3 upgrade path (onUpgrade)', () {
-    test('onUpgrade creates + backfills study_states from the legacy clocks',
+  // Exercises the v3→v4 onUpgrade: the legacy clocks are dropped. `deleteTable` is
+  // first-use in this repo, so this pins that a real reopen removes them. There is
+  // no drift schema-replay tooling, so we simulate a v3 DB by hand-creating the two
+  // legacy tables via raw SQL and rolling user_version back to 3.
+  group('v3→v4 upgrade path (drops the legacy tables)', () {
+    test('onUpgrade drops srs_states + recognition_states, keeps study_states',
         () async {
-      final dir = Directory.systemTemp.createTempSync('onyx_mig_');
+      final dir = Directory.systemTemp.createTempSync('onyx_mig4_');
       final file = File(p.join(dir.path, 'test.sqlite'));
       try {
-        // Open at the current schema (v3) so onCreate builds every table, then
-        // seed the two legacy clocks (incl. the algo two-clock on one section).
+        // Open at the current schema (v4), then hand-recreate the two legacy
+        // tables and roll user_version back to 3 — a DB that upgraded through v3.
         var db = AppDatabase.withExecutor(NativeDatabase(file));
-        await db.into(db.srsStates).insert(SrsStatesCompanion.insert(
-              cardId: 'algo',
-              sectionSlug: 'approach',
-              stability: const Value(10),
-              difficulty: const Value(6),
-              state: const Value(2),
-              step: const Value(null),
-              dueAt: DateTime.utc(2026, 5, 1, 9),
-              lastReview: Value(DateTime.utc(2026, 4, 20, 9)),
-              reviewCount: const Value(3),
-            ));
-        await db.into(db.recognitionStates).insert(
-              RecognitionStatesCompanion.insert(
-                cardId: 'algo',
-                sectionSlug: 'approach',
-                lastExplainedAt: DateTime.utc(2026, 4, 18, 9),
-                dueAt: DateTime.utc(2026, 4, 25, 9),
-                intervalDays: 7,
-                streak: const Value(2),
-              ),
-            );
-        // Simulate a real v2 DB: study_states did not exist, user_version == 2.
-        await db.customStatement('DROP TABLE study_states');
-        await db.customStatement('PRAGMA user_version = 2');
+        await db.customStatement(
+            'CREATE TABLE srs_states (card_id TEXT NOT NULL, section_slug TEXT NOT NULL)');
+        await db.customStatement(
+            'CREATE TABLE recognition_states (card_id TEXT NOT NULL, section_slug TEXT NOT NULL)');
+        await db.customStatement('PRAGMA user_version = 3');
         await db.close();
 
-        // Reopen → drift sees user_version 2 < schemaVersion 3 → runs onUpgrade,
-        // which must createTable(study_states) + backfillStudyStates().
+        // Reopen → drift sees user_version 3 < schemaVersion 4 → runs the from<4
+        // step, dropping both legacy tables (DROP TABLE IF EXISTS).
         db = AppDatabase.withExecutor(NativeDatabase(file));
-        final states = await StudyStateRepository(db).loadStates();
-        expect(states.keys.toSet(),
-            {'algo::approach', 'algo::recognize:approach'});
-        expect(states['algo::approach']!.kind, StudyKind.recall.wire);
-        expect(states['algo::approach']!.stability, 10);
-        expect(states['algo::approach']!.activityCount, 3);
-        final practice = states['algo::recognize:approach']!;
-        expect(practice.kind, StudyKind.practice.wire);
-        expect(practice.intervalDays, 7);
-        expect(practice.activityCount, 2);
+        await StudyStateRepository(db)
+            .loadStates(); // force the migration to run
+        final names = (await db
+                .customSelect(
+                    "SELECT name FROM sqlite_master WHERE type='table'")
+                .get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+        expect(names, isNot(contains('srs_states')));
+        expect(names, isNot(contains('recognition_states')));
+        expect(names, contains('study_states'),
+            reason: 'the unified record survives the drop');
         await db.close();
       } finally {
         dir.deleteSync(recursive: true);

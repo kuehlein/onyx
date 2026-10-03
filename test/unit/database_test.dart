@@ -36,21 +36,6 @@ void main() {
           .getSingle();
       expect(row.value, '/vault/Flashcards');
     });
-
-    test('srs_state applies column defaults and composite key', () async {
-      await db.into(db.srsStates).insert(
-            SrsStatesCompanion.insert(
-              cardId: 'card-1',
-              sectionSlug: 'when-to-use',
-              dueAt: DateTime.utc(2026, 1, 1),
-            ),
-          );
-      final state = await db.select(db.srsStates).getSingle();
-      expect(state.stability, 0.0);
-      expect(state.difficulty, 5.0); // FSRS default difficulty
-      expect(state.reviewCount, 0);
-      expect(state.lastReview, isNull);
-    });
   },
       skip: _sqliteAvailable
           ? false

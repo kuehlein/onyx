@@ -154,13 +154,8 @@ class SnapshotService {
   /// [_applyPayload].
   static Future<void> clearProgress(AppDatabase db) async {
     await db.transaction(() async {
-      await db.delete(db.srsStates).go();
       await db.delete(db.reviews).go();
       await db.delete(db.appliedAttempts).go();
-      await db.delete(db.recognitionStates).go();
-      // The unified mirror (ADR-0024) is derived from the two legacy clocks, so
-      // it is wiped alongside them — else a vault switch would bleed the outgoing
-      // vault's unified rows into the next (invisible until slice 5 reads them).
       await db.delete(db.studyStates).go();
     });
   }
@@ -168,8 +163,7 @@ class SnapshotService {
   /// Replace the DB tables with [data] (the merged union, already v4-shaped by
   /// [mergeSnapshots]). Private: callers pass a payload that already folds in the
   /// local rows (see [restore]). Writes the unified `study_states` directly; the
-  /// legacy state tables are cleared but not written — they're no longer read
-  /// (ADR-0024 slice 5a) and are dropped in slice 7.
+  /// legacy state tables were dropped in slice 7 (ADR-0024).
   Future<void> _applyPayload(Map<String, dynamic> data) async {
     List<Map<String, dynamic>> rows(String key) =>
         (data[key] as List? ?? const []).cast<Map<String, dynamic>>();
@@ -178,8 +172,6 @@ class SnapshotService {
     final applied = rows('appliedAttempts');
 
     await _db.transaction(() async {
-      await _db.delete(_db.srsStates).go();
-      await _db.delete(_db.recognitionStates).go();
       await _db.delete(_db.studyStates).go();
       await _db.delete(_db.reviews).go();
       await _db.delete(_db.appliedAttempts).go();
